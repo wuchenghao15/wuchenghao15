@@ -1,0 +1,674 @@
+{% extends "base.html" %}
+
+{% block title %}AI规则管理 - MTSCOS AI 系统{% endblock %}
+
+{% block extra_css %}
+    <style>
+        /* AI规则管理页面特定样式 */
+        .rules-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .rules-header h3 {
+            margin: 0;
+            color: #333;
+        }
+        
+        .search-filter {
+            margin-bottom: 20px;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        
+        .search-filter input,
+        .search-filter select {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        
+        .search-filter input {
+            flex: 1;
+            max-width: 400px;
+        }
+        
+        .bulk-actions {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .bulk-actions input[type="checkbox"] {
+            margin-right: 5px;
+        }
+    </style>
+{% endblock %}
+
+    <!-- 载入过渡动画组件 -->
+    <div class="transition-overlay" id="transition-overlay">
+        <div class="transition-content">
+            <div class="transition-spinner">
+                <div class="spinner-ring">
+                    <div class="spinner-inner"></div>
+                    <div class="spinner-dot"></div>
+                </div>
+            </div>
+            <div class="transition-text" id="transition-text">正在加载...</div>
+        </div>
+    </div>
+
+    {% block content %}
+    <div class="container">
+        <!-- 主内容区 -->
+        <div class="main-content">
+            <!-- 侧边菜单 -->
+            <aside class="sidebar">
+                <nav class="menu">
+                    <ul>
+                        <!-- 仪表盘 - 仅管理员可见 -->
+                        {% if user.role in ['admin', 'super_admin', 'hardware_vikey_admin'] %}
+                        <li class="menu-item">
+                            <a href="{{ url_for('main.dashboard') }}">仪表盘</a>
+                        </li>
+                        {% endif %}
+                        
+                        {% if user.role == 'hardware_vikey_admin' or user.role == 'super_admin' %}
+                        <li class="menu-item">
+                            <a href="{{ url_for('main.permissions') }}">权限管理</a>
+                        </li>
+                        {% endif %}
+                        
+                        <li class="menu-item active">
+                            <a href="{{ url_for('main.ai_rules') }}">AI规则管理</a>
+                        </li>
+                        <li class="menu-item">
+                            <a href="{{ url_for('main.approval') }}">审批管理</a>
+                        </li>
+                        <li class="menu-item">
+                            <a href="{{ url_for('main.cleanup') }}">系统清理</a>
+                        </li>
+                        <li class="menu-item">
+                            <a href="{{ url_for('main.system_config') }}">系统配置</a>
+                        </li>
+                        <li class="menu-item">
+                            <a href="{{ url_for('main.projects') }}">项目管理</a>
+                        </li>
+                        <li class="menu-item">
+                            <a href="{{ url_for('main.tasks') }}">任务管理</a>
+                        </li>
+                        <li class="menu-item">
+                            <a href="{{ url_for('main.reports') }}">报告中心</a>
+                        </li>
+                    </ul>
+                </nav>
+            </aside>
+            
+            <!-- 内容区域 -->
+            <section class="content">
+                <div class="content-header">
+                    <h2>AI规则管理</h2>
+                    <p>管理AI托管的规则和配置</p>
+                    <div class="action-buttons">
+                        <a href="{{ url_for('main.dashboard') }}" class="btn btn-primary"><svg class="svg-icon" viewBox="0 0 576 512" width="16" height="16"><path d="M575.8 255.3c0-1.1-.3-2.1-.7-3l-96-160c-5.2-8.7-14.6-14.3-25.1-14.3H416V48c0-26.5-21.5-48-48-48H208c-26.5 0-48 21.5-48 48v32H128c-10.5 0-19.9 5.6-25.1 14.3l-96 160c-.4.9-.7 1.9-.7 3 0 16.5 13.5 30 30 30h34V464c0 26.5 21.5 48 48 48H448c26.5 0 48-21.5 48-48V285.3h34c16.5 0 30-13.5 30-30zM160 464V288H96l96-160h32v112c0 8.8 7.2 16 16 16h32c8.8 0 16-7.2 16-16V128h192l96 160h-64v176H160z"/></svg> 返回主页</a>
+                    </div>
+                </div>
+                
+                <!-- 状态消息 -->
+                <div id="status-message" class="status-message" style="display: none;"></div>
+                
+                <!-- 添加规则按钮 -->
+                <div class="rules-header">
+                    <h3>AI规则列表</h3>
+                    <button class="btn btn-add" onclick="openAddModal()">添加AI规则</button>
+                </div>
+                
+                <!-- 搜索和过滤 -->
+                <div class="search-filter" style="margin-bottom: 20px; display: flex; gap: 10px; align-items: center;">
+                    <input type="text" id="search-input" placeholder="搜索规则名称或描述" style="padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px; flex: 1; max-width: 400px;">
+                    <select id="type-filter" style="padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px;">
+                        <option value="">所有类型</option>
+                        <option value="approval">审批规则</option>
+                        <option value="monitoring">监控规则</option>
+                        <option value="optimization">优化规则</option>
+                        <option value="security">安全规则</option>
+                        <option value="custom">自定义规则</option>
+                    </select>
+                    <select id="status-filter" style="padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px;">
+                        <option value="">所有状态</option>
+                        <option value="1">启用</option>
+                        <option value="0">禁用</option>
+                    </select>
+                    <select id="priority-filter" style="padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px;">
+                        <option value="">所有优先级</option>
+                        <option value="high">高</option>
+                        <option value="medium">中</option>
+                        <option value="low">低</option>
+                    </select>
+                    <button class="btn btn-secondary" onclick="applyFilters()">筛选</button>
+                    <button class="btn btn-secondary" onclick="resetFilters()">重置</button>
+                </div>
+                
+                <!-- 批量操作 -->
+                <div class="bulk-actions">
+                    <input type="checkbox" id="select-all" onclick="toggleSelectAll()">
+                    <label for="select-all">全选</label>
+                    <button class="btn btn-secondary" onclick="bulkEnable()">批量启用</button>
+                    <button class="btn btn-secondary" onclick="bulkDisable()">批量禁用</button>
+                    <button class="btn btn-danger" onclick="bulkDelete()">批量删除</button>
+                    <button class="btn btn-primary" onclick="autoGenerateRule()">AI自动生成规则</button>
+                </div>
+                
+                <!-- 规则表格 -->
+                <div class="ai-rules-container">
+                    <div class="table-container">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th><input type="checkbox" id="header-checkbox" onclick="toggleSelectAll()"></th>
+                                    <th>ID</th>
+                                    <th>规则名称</th>
+                                    <th>规则类型</th>
+                                    <th>描述</th>
+                                    <th>状态</th>
+                                    <th>优先级</th>
+                                    <th>创建时间</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="rules-table-body">
+                                {% for rule in ai_rules %}
+                                <tr data-rule-id="{{ rule.id }}">
+                                    <td><input type="checkbox" class="rule-checkbox" value="{{ rule.id }}"></td>
+                                    <td>{{ rule.id }}</td>
+                                    <td>{{ rule.rule_name }}</td>
+                                    <td>{{ rule.rule_type }}</td>
+                                    <td>{{ rule.description }}</td>
+                                    <td>
+                                        {% if rule.is_active %}
+                                        <span class="status-badge status-active">启用</span>
+                                        {% else %}
+                                        <span class="status-badge status-inactive">禁用</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="priority-badge priority-{{ rule.priority }}">{{ rule.priority }}</span>
+                                    </td>
+                                    <td>{{ rule.created_at }}</td>
+                                    <td>
+                                        <button class="btn btn-primary" onclick="openEditModal({{ rule.id }})">编辑</button>
+                                        <button class="btn btn-secondary" onclick="toggleRuleStatus({{ rule.id }}, {{ not rule.is_active }})">{{ '禁用' if rule.is_active else '启用' }}</button>
+                                        <button class="btn btn-danger" onclick="deleteRule({{ rule.id }})">删除</button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                                {% if not ai_rules %}
+                                <tr>
+                                    <td colspan="9" style="text-align: center; padding: 20px;">暂无AI规则</td>
+                                </tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
+    
+    <!-- 添加规则模态框 -->
+    <div id="add-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">添加AI规则</h2>
+                <span class="close" onclick="closeAddModal()">&times;</span>
+            </div>
+            <form id="add-rule-form">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="add-rule-name">规则名称</label>
+                        <input type="text" id="add-rule-name" name="rule_name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="add-rule-type">规则类型</label>
+                        <select id="add-rule-type" name="rule_type" required>
+                            <option value="approval">审批规则</option>
+                            <option value="monitoring">监控规则</option>
+                            <option value="optimization">优化规则</option>
+                            <option value="security">安全规则</option>
+                            <option value="custom">自定义规则</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="add-priority">优先级</label>
+                    <select id="add-priority" name="priority">
+                        <option value="high">高</option>
+                        <option value="medium" selected>中</option>
+                        <option value="low">低</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="add-rule-content">规则内容</label>
+                    <textarea id="add-rule-content" name="rule_content" required></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="add-description">描述</label>
+                    <textarea id="add-description" name="description"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="add-is-active">状态</label>
+                    <select id="add-is-active" name="is_active">
+                        <option value="1" selected>启用</option>
+                        <option value="0">禁用</option>
+                    </select>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeAddModal()">取消</button>
+                    <button type="submit" class="btn btn-primary">添加</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- 编辑规则模态框 -->
+    <div id="edit-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">编辑AI规则</h2>
+                <span class="close" onclick="closeEditModal()">&times;</span>
+            </div>
+            <form id="edit-rule-form">
+                <input type="hidden" id="edit-rule-id" name="id">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="edit-rule-name">规则名称</label>
+                        <input type="text" id="edit-rule-name" name="rule_name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-rule-type">规则类型</label>
+                        <select id="edit-rule-type" name="rule_type" required>
+                            <option value="approval">审批规则</option>
+                            <option value="monitoring">监控规则</option>
+                            <option value="optimization">优化规则</option>
+                            <option value="security">安全规则</option>
+                            <option value="custom">自定义规则</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="edit-priority">优先级</label>
+                    <select id="edit-priority" name="priority">
+                        <option value="high">高</option>
+                        <option value="medium">中</option>
+                        <option value="low">低</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="edit-rule-content">规则内容</label>
+                    <textarea id="edit-rule-content" name="rule_content" required></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="edit-description">描述</label>
+                    <textarea id="edit-description" name="description"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="edit-is-active">状态</label>
+                    <select id="edit-is-active" name="is_active">
+                        <option value="1">启用</option>
+                        <option value="0">禁用</option>
+                    </select>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeEditModal()">取消</button>
+                    <button type="submit" class="btn btn-primary">保存</button>
+                </div>
+            </form>
+        </div>
+    </div>
+{% endblock %}
+
+{% block extra_js %}
+    <script>
+        // 全选/取消全选
+        function toggleSelectAll() {
+            const checkboxes = document.querySelectorAll('.rule-checkbox');
+            const selectAllCheckbox = document.getElementById('select-all');
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = selectAllCheckbox.checked;
+            });
+        }
+        
+        // 批量启用
+        function bulkEnable() {
+            const selectedCheckboxes = document.querySelectorAll('.rule-checkbox:checked');
+            if (selectedCheckboxes.length === 0) {
+                MTSCOS_AI.showTip('请选择要启用的规则', 'error');
+                return;
+            }
+            
+            const ruleIds = Array.from(selectedCheckboxes).map(checkbox => checkbox.value);
+            bulkUpdateStatus(ruleIds, 1, '启用');
+        }
+        
+        // 批量禁用
+        function bulkDisable() {
+            const selectedCheckboxes = document.querySelectorAll('.rule-checkbox:checked');
+            if (selectedCheckboxes.length === 0) {
+                MTSCOS_AI.showTip('请选择要禁用的规则', 'error');
+                return;
+            }
+            
+            const ruleIds = Array.from(selectedCheckboxes).map(checkbox => checkbox.value);
+            bulkUpdateStatus(ruleIds, 0, '禁用');
+        }
+        
+        // 批量删除
+        function bulkDelete() {
+            const selectedCheckboxes = document.querySelectorAll('.rule-checkbox:checked');
+            if (selectedCheckboxes.length === 0) {
+                MTSCOS_AI.showTip('请选择要删除的规则', 'error');
+                return;
+            }
+            
+            if (confirm('确定要删除选中的规则吗？')) {
+                const ruleIds = Array.from(selectedCheckboxes).map(checkbox => checkbox.value);
+                
+                Promise.all(ruleIds.map(ruleId => {
+                    return fetch(`/api/ai-rules/${ruleId}`, {
+                        method: 'DELETE'
+                    }).then(response => response.json());
+                }))
+                .then(results => {
+                    const failed = results.filter(r => !r.success);
+                    if (failed.length === 0) {
+                        MTSCOS_AI.showTip('批量删除成功', 'success');
+                        location.reload();
+                    } else {
+                        MTSCOS_AI.showTip(`批量删除失败，${failed.length}个规则删除失败`, 'error');
+                    }
+                })
+                .catch(error => {
+                    MTSCOS_AI.showTip('批量删除失败: ' + error.message, 'error');
+                });
+            }
+        }
+        
+        // 批量更新状态
+        function bulkUpdateStatus(ruleIds, isActive, action) {
+            Promise.all(ruleIds.map(ruleId => {
+                return fetch(`/api/ai-rules/${ruleId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ is_active: isActive })
+                }).then(response => response.json());
+            }))
+            .then(results => {
+                const failed = results.filter(r => !r.success);
+                if (failed.length === 0) {
+                    MTSCOS_AI.showTip(`批量${action}成功`, 'success');
+                    location.reload();
+                } else {
+                    MTSCOS_AI.showTip(`批量${action}失败，${failed.length}个规则${action}失败`, 'error');
+                }
+            })
+            .catch(error => {
+                MTSCOS_AI.showTip(`批量${action}失败: ` + error.message, 'error');
+            });
+        }
+        
+        // AI自动生成规则
+        function autoGenerateRule() {
+            if (confirm('确定要让AI自动生成规则吗？')) {
+                // 调用AI生成规则API
+                fetch('/api/ai-rules/generate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        MTSCOS_AI.showTip('AI规则生成成功！', 'success');
+                        // 重新加载页面以显示新生成的规则
+                        setTimeout(() => {
+                            location.reload();
+                        }, 1000);
+                    } else {
+                        MTSCOS_AI.showTip('AI规则生成失败: ' + data.message, 'error');
+                    }
+                })
+                .catch(error => {
+                    MTSCOS_AI.showTip('AI规则生成失败: ' + error.message, 'error');
+                });
+            }
+        }
+        
+        // 添加规则模态框
+        function openAddModal() {
+            document.getElementById('add-modal').style.display = 'block';
+            document.getElementById('add-rule-form').reset();
+        }
+        
+        function closeAddModal() {
+            document.getElementById('add-modal').style.display = 'none';
+        }
+        
+        // 编辑规则模态框
+        function openEditModal(ruleId) {
+            // 获取规则数据
+            fetch(`/api/ai-rules`) 
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const rule = data.rules.find(r => r.id === ruleId);
+                        if (rule) {
+                            // 填充表单
+                            document.getElementById('edit-rule-id').value = rule.id;
+                            document.getElementById('edit-rule-name').value = rule.rule_name;
+                            document.getElementById('edit-rule-type').value = rule.rule_type;
+                            document.getElementById('edit-rule-content').value = rule.rule_content;
+                            document.getElementById('edit-description').value = rule.description;
+                            document.getElementById('edit-priority').value = rule.priority;
+                            document.getElementById('edit-is-active').value = rule.is_active;
+                            
+                            // 打开模态框
+                            document.getElementById('edit-modal').style.display = 'block';
+                        }
+                    }
+                })
+                .catch(error => {
+                    MTSCOS_AI.showTip('获取规则数据失败: ' + error.message, 'error');
+                });
+        }
+        
+        function closeEditModal() {
+            document.getElementById('edit-modal').style.display = 'none';
+        }
+        
+        // 点击模态框外部关闭
+        window.onclick = function(event) {
+            const addModal = document.getElementById('add-modal');
+            const editModal = document.getElementById('edit-modal');
+            if (event.target == addModal) {
+                closeAddModal();
+            } else if (event.target == editModal) {
+                closeEditModal();
+            }
+        }
+        
+        // 添加规则表单提交
+        document.getElementById('add-rule-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = {
+                rule_name: document.getElementById('add-rule-name').value,
+                rule_type: document.getElementById('add-rule-type').value,
+                rule_content: document.getElementById('add-rule-content').value,
+                description: document.getElementById('add-description').value,
+                priority: document.getElementById('add-priority').value,
+                is_active: parseInt(document.getElementById('add-is-active').value)
+            };
+            
+            fetch('/api/ai-rules', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(formData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    MTSCOS_AI.showTip('规则添加成功', 'success');
+                    closeAddModal();
+                    // 重新加载页面
+                    location.reload();
+                } else {
+                    MTSCOS_AI.showTip('规则添加失败: ' + data.message, 'error');
+                }
+            })
+            .catch(error => {
+                MTSCOS_AI.showTip('规则添加失败: ' + error.message, 'error');
+            });
+        });
+        
+        // 编辑规则表单提交
+        document.getElementById('edit-rule-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const ruleId = document.getElementById('edit-rule-id').value;
+            const formData = {
+                rule_name: document.getElementById('edit-rule-name').value,
+                rule_type: document.getElementById('edit-rule-type').value,
+                rule_content: document.getElementById('edit-rule-content').value,
+                description: document.getElementById('edit-description').value,
+                priority: document.getElementById('edit-priority').value,
+                is_active: parseInt(document.getElementById('edit-is-active').value)
+            };
+            
+            fetch(`/api/ai-rules/${ruleId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(formData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    MTSCOS_AI.showTip('规则更新成功', 'success');
+                    closeEditModal();
+                    // 重新加载页面
+                    location.reload();
+                } else {
+                    MTSCOS_AI.showTip('规则更新失败: ' + data.message, 'error');
+                }
+            })
+            .catch(error => {
+                MTSCOS_AI.showTip('规则更新失败: ' + error.message, 'error');
+            });
+        });
+        
+        // 删除规则
+        function deleteRule(ruleId) {
+            if (confirm('确定要删除该规则吗？')) {
+                fetch(`/api/ai-rules/${ruleId}`, {
+                    method: 'DELETE'
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        MTSCOS_AI.showTip('规则删除成功', 'success');
+                        // 重新加载页面
+                        location.reload();
+                    } else {
+                        MTSCOS_AI.showTip('规则删除失败: ' + data.message, 'error');
+                    }
+                })
+                .catch(error => {
+                    MTSCOS_AI.showTip('规则删除失败: ' + error.message, 'error');
+                });
+            }
+        }
+        
+        // 切换规则状态
+        function toggleRuleStatus(ruleId, isActive) {
+            fetch(`/api/ai-rules/${ruleId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ is_active: isActive })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    MTSCOS_AI.showTip('规则状态更新成功', 'success');
+                    location.reload();
+                } else {
+                    MTSCOS_AI.showTip('规则状态更新失败: ' + data.message, 'error');
+                }
+            })
+            .catch(error => {
+                MTSCOS_AI.showTip('规则状态更新失败: ' + error.message, 'error');
+            });
+        }
+        
+        // 应用筛选条件
+        function applyFilters() {
+            const searchTerm = document.getElementById('search-input').value.toLowerCase();
+            const typeFilter = document.getElementById('type-filter').value;
+            const statusFilter = document.getElementById('status-filter').value;
+            const priorityFilter = document.getElementById('priority-filter').value;
+            
+            const rows = document.querySelectorAll('#rules-table-body tr');
+            
+            rows.forEach(row => {
+                // 获取行数据
+                const ruleName = row.cells[2].textContent.toLowerCase();
+                const description = row.cells[4].textContent.toLowerCase();
+                const ruleType = row.cells[3].textContent;
+                const statusElement = row.cells[5].querySelector('.status-badge');
+                const status = statusElement.classList.contains('status-active') ? '1' : '0';
+                const priorityElement = row.cells[6].querySelector('.priority-badge');
+                const priority = priorityElement.classList.contains('priority-high') ? 'high' : 
+                               priorityElement.classList.contains('priority-medium') ? 'medium' : 'low';
+                
+                // 检查搜索条件
+                const matchesSearch = !searchTerm || ruleName.includes(searchTerm) || description.includes(searchTerm);
+                const matchesType = !typeFilter || ruleType === typeFilter;
+                const matchesStatus = !statusFilter || status === statusFilter;
+                const matchesPriority = !priorityFilter || priority === priorityFilter;
+                
+                // 显示或隐藏行
+                if (matchesSearch && matchesType && matchesStatus && matchesPriority) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        }
+        
+        // 重置筛选条件
+        function resetFilters() {
+            document.getElementById('search-input').value = '';
+            document.getElementById('type-filter').value = '';
+            document.getElementById('status-filter').value = '';
+            document.getElementById('priority-filter').value = '';
+            applyFilters();
+        }
+        
+        // 添加搜索框实时筛选
+        document.getElementById('search-input').addEventListener('input', applyFilters);
+        document.getElementById('type-filter').addEventListener('change', applyFilters);
+        document.getElementById('status-filter').addEventListener('change', applyFilters);
+        document.getElementById('priority-filter').addEventListener('change', applyFilters);
+    </script>
+{% endblock %}

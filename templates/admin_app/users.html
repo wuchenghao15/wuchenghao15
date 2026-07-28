@@ -1,0 +1,119 @@
+{% extends 'super_admin_base.html' %}
+
+{% block title %}用户管理 - MTSCOS AI{% endblock %}
+
+{% block header_icon %}<i class="fas fa-users"></i>{% endblock %}
+{% block header_title %}用户管理{% endblock %}
+
+{% block breadcrumb %}
+    <i class="fas fa-chevron-right"></i>
+    <span>用户管理</span>
+{% endblock %}
+
+{% block header_actions %}
+<button class="action-btn action-btn-secondary" onclick="window.location.href='/'">
+    <i class="fas fa-home action-btn-icon"></i>
+    <span>返回首页</span>
+</button>
+<button class="action-btn action-btn-primary" onclick="window.location.href='/admin_app/roles'">
+    <i class="fas fa-key action-btn-icon"></i>
+    <span>角色权限</span>
+</button>
+{% endblock %}
+
+{% block content %}
+<div class="stats-grid">
+    <div class="stat-card users">
+        <div class="stat-icon users"><i class="fas fa-users"></i></div>
+        <div class="stat-info">
+            <div class="stat-value">{{ user_stats.total_users or 0 }}</div>
+            <div class="stat-label">用户总数</div>
+        </div>
+    </div>
+    <div class="stat-card exams">
+        <div class="stat-icon exams"><i class="fas fa-user-check"></i></div>
+        <div class="stat-info">
+            <div class="stat-value">{{ user_stats.active_users or 0 }}</div>
+            <div class="stat-label">活跃用户</div>
+        </div>
+    </div>
+    <div class="stat-card courses">
+        <div class="stat-icon courses"><i class="fas fa-user-lock"></i></div>
+        <div class="stat-info">
+            <div class="stat-value">{{ user_stats.inactive_users or 0 }}</div>
+            <div class="stat-label">非活跃用户</div>
+        </div>
+    </div>
+    <div class="stat-card questions">
+        <div class="stat-icon questions"><i class="fas fa-user-shield"></i></div>
+        <div class="stat-info">
+            <div class="stat-value">{{ user_stats.admin_users or 0 }}</div>
+            <div class="stat-label">管理员数</div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <div class="card-title">
+            <div class="icon"><i class="fas fa-list"></i></div>
+            <span>用户列表</span>
+        </div>
+        <div class="search-bar">
+            <input type="text" placeholder="搜索用户名..." id="user-search">
+            <button class="action-btn action-btn-primary btn-sm" onclick="searchUsers()">
+                <i class="fas fa-search"></i> 搜索
+            </button>
+        </div>
+    </div>
+    <div class="card-body">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>用户名</th>
+                    <th>邮箱</th>
+                    <th>角色</th>
+                    <th>状态</th>
+                    <th>创建时间</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for u in users %}
+                <tr>
+                    <td>{{ u.id }}</td>
+                    <td>{{ u.username }}</td>
+                    <td>{{ u.email or '-' }}</td>
+                    <td><span class="role-tag {{ u.role }}">{{ get_role_name(u.role) }}</span></td>
+                    <td>{% if u.is_active %}<span class="status-tag status-active">活跃</span>{% else %}<span class="status-tag status-draft">禁用</span>{% endif %}</td>
+                    <td>{{ u.created_at[:10] if u.created_at else '-' }}</td>
+                    <td>
+                        <div class="btn-group">
+                            <button class="action-btn action-btn-secondary btn-sm">编辑</button>
+                            <button class="action-btn action-btn-secondary btn-sm">详情</button>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+                {% if not users %}
+                <tr><td colspan="7" class="empty-state">暂无用户数据</td></tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function searchUsers() {
+    const keyword = document.getElementById('user-search').value.toLowerCase();
+    const rows = document.querySelectorAll('.data-table tbody tr');
+    rows.forEach(row => {
+        const username = row.querySelector('td:nth-child(2)').textContent.toLowerCase();
+        row.style.display = username.includes(keyword) ? '' : 'none';
+    });
+}
+</script>
+{% endblock %}

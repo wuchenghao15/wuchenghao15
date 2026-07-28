@@ -1,0 +1,113 @@
+{% extends 'super_admin_base.html' %}
+
+{% block title %}题目管理 - MTSCOS AI{% endblock %}
+
+{% block header_icon %}<i class="fas fa-question-circle"></i>{% endblock %}
+{% block header_title %}题目管理{% endblock %}
+
+{% block breadcrumb %}
+    <i class="fas fa-chevron-right"></i>
+    <span>题目管理</span>
+{% endblock %}
+
+{% block header_actions %}
+<button class="action-btn action-btn-secondary" onclick="window.location.href='/admin_app/dashboard'">
+    <i class="fas fa-arrow-left action-btn-icon"></i>
+    <span>返回管理首页</span>
+</button>
+<button class="action-btn action-btn-primary" onclick="window.location.href='/admin_app/exams'">
+    <i class="fas fa-file-alt action-btn-icon"></i>
+    <span>考试管理</span>
+</button>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <div class="card-title">
+            <div class="icon"><i class="fas fa-list"></i></div>
+            <span>题目列表</span>
+        </div>
+        <div class="search-bar">
+            <input type="text" placeholder="搜索题目内容..." id="question-search">
+            <button class="action-btn action-btn-primary" onclick="searchQuestions()">搜索</button>
+        </div>
+    </div>
+    {% if questions %}
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>题目内容</th>
+                <th>所属考试</th>
+                <th>题型</th>
+                <th>分值</th>
+                <th>排序</th>
+                <th>操作</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for question in questions %}
+            <tr>
+                <td>{{ question.id }}</td>
+                <td style="max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="{{ question.question_text }}">{{ question.question_text }}</td>
+                <td>{{ question.exam_id or '-' }}</td>
+                <td>
+                    {% if question.question_type == 'single_choice' %}<span class="status-tag status-published">单选题</span>{% endif %}
+                    {% if question.question_type == 'multiple_choice' %}<span class="status-tag status-active">多选题</span>{% endif %}
+                    {% if question.question_type == 'true_false' %}<span class="status-tag status-draft">判断题</span>{% endif %}
+                    {% if question.question_type == 'fill_blank' %}<span class="status-tag status-completed">填空题</span>{% endif %}
+                    {% if question.question_type == 'short_answer' %}<span class="status-tag status-pending">简答题</span>{% endif %}
+                    {% if question.question_type == 'essay' %}<span style="color: var(--purple-color); font-weight: 500;">论述题</span>{% endif %}
+                    {% if question.question_type == 'listening' %}<span style="color: var(--danger-color); font-weight: 500;">听力题</span>{% endif %}
+                    {% if not ['single_choice', 'multiple_choice', 'true_false', 'fill_blank', 'short_answer', 'essay', 'listening']|select('equalto', question.question_type)|first %}
+                    {{ question.question_type or '-' }}
+                    {% endif %}
+                </td>
+                <td>{{ question.score or 0 }}分</td>
+                <td>{{ question.question_order or 0 }}</td>
+                <td>
+                    <div class="btn-group">
+                        <button class="action-btn action-btn-secondary btn-sm"><i class="fas fa-edit"></i> 编辑</button>
+                        <button class="action-btn action-btn-secondary btn-sm"><i class="fas fa-eye"></i> 查看</button>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state">
+        <i class="fas fa-question-circle"></i>
+        <p>暂无题目数据</p>
+    </div>
+    {% endif %}
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <div class="card-title">
+            <div class="icon"><i class="fas fa-info-circle"></i></div>
+            <span>使用说明</span>
+        </div>
+    </div>
+    <div style="font-size: 14px; color: var(--text-secondary); line-height: 1.8;">
+        <p><strong style="color: var(--text-primary);">题目类型:</strong> 支持单选题、多选题、判断题、填空题、简答题、论述题、听力题等多种题型。</p>
+        <p><strong style="color: var(--text-primary);">难度等级:</strong> 简单、中等、困难三个等级，用于智能出题和学习路径规划。</p>
+        <p><strong style="color: var(--text-primary);">状态管理:</strong> 活跃状态的题目可用于考试和练习，非活跃题目将被隐藏。</p>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function searchQuestions() {
+    const keyword = document.getElementById('question-search').value.toLowerCase();
+    const rows = document.querySelectorAll('.data-table tbody tr');
+    rows.forEach(row => {
+        const text = row.querySelector('td:nth-child(2)').textContent.toLowerCase();
+        row.style.display = text.includes(keyword) ? '' : 'none';
+    });
+}
+</script>
+{% endblock %}

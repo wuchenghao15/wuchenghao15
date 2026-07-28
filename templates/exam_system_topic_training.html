@@ -1,0 +1,464 @@
+{% extends 'student_base.html' %}
+
+{% block title %}专题训练 - MTSCOS AI{% endblock %}
+{% block page_title %}
+专题训练
+{% if education_type %}
+    · 
+    {%- if education_type == 'nine_year' %}九年制义务教育 (数学、语文、英语、物理、化学、政治)
+    {%- elif education_type == 'adult' %}成人教育 (数学、语文、英语、日语)
+    {%- else %}通用学习 (数学、语文、英语、物理、化学、政治、日语){% endif %}
+{% endif %}
+{% endblock %}
+
+{% block extra_styles %}
+<style>
+    .ai-suggestion {
+        background: rgba(139, 92, 246, 0.1);
+        border: 1px solid rgba(139, 92, 246, 0.3);
+        border-radius: var(--radius-md);
+        padding: 16px; margin-bottom: 20px;
+        display: flex; gap: 12px;
+    }
+    .ai-suggestion i { font-size: 20px; color: var(--dark-primary-light); flex-shrink: 0; margin-top: 4px; }
+    .ai-suggestion-content h4 { font-size: 14px; font-weight: 600; color: var(--dark-primary-light); margin-bottom: 4px; }
+    .ai-suggestion-content p { font-size: 13px; color: var(--dark-text-secondary); line-height: 1.5; }
+
+    .filter-bar {
+        background: rgba(20, 20, 40, 0.9); border: 1px solid var(--dark-border);
+        border-radius: var(--radius-lg); padding: 14px 20px; margin-bottom: 20px;
+        display: flex; gap: 12px; flex-wrap: wrap; align-items: center;
+    }
+    .filter-item { display: flex; align-items: center; gap: 8px; }
+    .filter-item label { font-size: 13px; color: var(--dark-text-secondary); font-weight: 500; }
+    .filter-item select {
+        padding: 8px 12px; border-radius: var(--radius-md);
+        background: rgba(30, 30, 60, 0.6); border: 1px solid var(--dark-border);
+        color: var(--dark-text-primary); font-size: 13px;
+        outline: none; cursor: pointer;
+    }
+    .filter-item select:focus { border-color: var(--dark-primary-color); }
+
+    .topic-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+
+    .topic-card {
+        background: rgba(20, 20, 40, 0.9); border: 1px solid var(--dark-border);
+        border-radius: var(--radius-lg); overflow: hidden;
+        box-shadow: 0 0 20px rgba(99, 102, 241, 0.08);
+        transition: transform .2s, box-shadow .2s, border-color .2s;
+        cursor: pointer;
+    }
+    .topic-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 0 30px rgba(139, 92, 246, 0.15);
+        border-color: rgba(139, 92, 246, 0.4);
+    }
+
+    .topic-header {
+        padding: 16px;
+        background: linear-gradient(135deg, rgba(99,102,241,0.1), rgba(139,92,246,0.1));
+        border-bottom: 1px solid var(--dark-border);
+    }
+    .topic-badge {
+        display: inline-flex; align-items: center; gap: 6px;
+        padding: 4px 10px; border-radius: 999px; font-size: 11px;
+        background: rgba(139,92,246,0.2); color: var(--dark-primary-light);
+        margin-bottom: 10px;
+    }
+    .topic-title { font-size: 16px; font-weight: 700; line-height: 1.3; }
+    .topic-desc { font-size: 12px; color: var(--dark-text-secondary); margin-top: 4px; line-height: 1.4; }
+
+    .topic-body { padding: 16px; }
+
+    .topic-meta {
+        display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
+        margin-bottom: 14px;
+    }
+    .meta-box {
+        text-align: center; padding: 10px;
+        background: rgba(30, 30, 60, 0.6); border-radius: var(--radius-md);
+    }
+    .meta-box .meta-value { font-size: 18px; font-weight: 700; color: var(--dark-primary-light); }
+    .meta-box .meta-label { font-size: 11px; color: var(--dark-text-secondary); margin-top: 2px; }
+
+    .topic-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
+    .topic-tag {
+        padding: 3px 10px; border-radius: 999px; font-size: 11px;
+        background: rgba(30, 30, 60, 0.8); color: var(--dark-text-secondary);
+    }
+    .topic-tag.hot { background: rgba(239,68,68,0.15); color: var(--dark-danger); }
+    .topic-tag.recommend { background: rgba(34,197,94,0.15); color: var(--dark-success); }
+
+    .topic-progress { margin-bottom: 14px; }
+    .progress-header { display: flex; justify-content: space-between; font-size: 11px; color: var(--dark-text-secondary); margin-bottom: 6px; }
+    .progress-bar { height: 6px; background: rgba(30, 30, 60, 0.6); border-radius: 999px; overflow: hidden; }
+    .progress-fill {
+        height: 100%; background: linear-gradient(90deg, var(--dark-primary-color), var(--dark-primary-light));
+        border-radius: 999px; transition: width 0.5s ease;
+    }
+
+    .btn {
+        display: inline-flex; align-items: center; gap: 6px;
+        padding: 9px 18px; border-radius: var(--radius-md);
+        text-decoration: none; font-weight: 600; font-size: 13px;
+        border: none; cursor: pointer;
+        background: linear-gradient(135deg, var(--dark-primary-color), var(--dark-primary-light));
+        color: #fff; transition: all .2s;
+        width: 100%; justify-content: center;
+    }
+    .btn:hover { transform: translateY(-1px); box-shadow: 0 5px 20px rgba(99, 102, 241, 0.3); }
+
+    .search-box {
+        position: relative; flex: 1; max-width: 280px;
+    }
+    .search-box input {
+        width: 100%; padding: 8px 12px 8px 32px;
+        border: 1px solid var(--dark-border); border-radius: var(--radius-md);
+        background: rgba(30, 30, 60, 0.6); color: var(--dark-text-primary);
+        font-size: 12px; outline: none; transition: all .2s;
+    }
+    .search-box input:focus { border-color: var(--dark-primary-color); background: rgba(30, 30, 60, 0.8); }
+    .search-box input::placeholder { color: var(--dark-text-secondary); }
+    .search-box i {
+        position: absolute; left: 10px; top: 50%; transform: translateY(-50%);
+        color: var(--dark-text-secondary); font-size: 12px;
+    }
+
+    @media (max-width: 900px) { .topic-grid { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 600px) { .topic-grid { grid-template-columns: 1fr; } .filter-bar { flex-direction: column; align-items: flex-start; } .topic-meta { grid-template-columns: 1fr; } }
+</style>
+{% endblock %}
+
+{% block content %}
+    <div class="ai-suggestion">
+        <i class="fas fa-lightbulb"></i>
+        <div class="ai-suggestion-content">
+            <h4>AI智能推荐</h4>
+            <p>根据您的学习进度和考试目标，建议优先训练：<strong>高考数学压轴题专题</strong>、<strong>英语阅读理解技巧专题</strong>、<strong>物理力学综合专题</strong>。这些专题能有效提升您的考试竞争力。</p>
+        </div>
+    </div>
+
+    <div class="filter-bar">
+        <div class="search-box">
+            <i class="fas fa-search"></i>
+            <input type="text" id="searchInput" placeholder="搜索专题名称、描述..." oninput="filterTopics()">
+        </div>
+        <div class="filter-item" style="margin-left: auto;">
+            <label><i class="fas fa-graduation-cap"></i> 考试类型</label>
+            <select id="examType">
+                <option value="all">全部考试</option>
+                {% if education_type in ['nine_year', 'adult', 'general'] %}
+                <option value="gaokao">高考</option>
+                <option value="zhongkao">中考</option>
+                {% endif %}
+                {% if education_type in ['adult', 'general'] %}
+                <option value="cet4">英语四级</option>
+                <option value="cet6">英语六级</option>
+                <option value="japanese">日语等级</option>
+                {% endif %}
+            </select>
+        </div>
+        <div class="filter-item">
+            <label><i class="fas fa-book"></i> 科目</label>
+            <select id="subject">
+                <option value="all">全部科目</option>
+                {% if education_type in ['nine_year', 'adult', 'general'] %}
+                <option value="math">数学</option>
+                <option value="chinese">语文</option>
+                <option value="english">英语</option>
+                <option value="physics">物理</option>
+                <option value="chemistry">化学</option>
+                <option value="politics">政治</option>
+                {% endif %}
+                {% if education_type in ['adult', 'general'] %}
+                <option value="japanese">日语</option>
+                {% endif %}
+            </select>
+        </div>
+        <div class="filter-item">
+            <label><i class="fas fa-star"></i> 难度</label>
+            <select id="difficulty">
+                <option value="all">全部难度</option>
+                <option value="easy">入门</option>
+                <option value="medium">进阶</option>
+                <option value="hard">高级</option>
+                <option value="expert">专家</option>
+            </select>
+        </div>
+        <div class="filter-item" style="margin-left: auto;">
+            <button class="btn" style="width: auto; padding: 7px 16px; font-size: 12px;" onclick="filterTopics()">
+                <i class="fas fa-filter"></i> 筛选
+            </button>
+        </div>
+    </div>
+
+    <div class="topic-grid" id="topicGrid">
+        <div class="topic-card" onclick="startTopic('gaokao-math压轴')">
+            <div class="topic-header">
+                <span class="topic-badge"><i class="fas fa-trophy"></i> 高考专题</span>
+                <div class="topic-title">数学 - 压轴题突破</div>
+                <div class="topic-desc">深入解析高考数学压轴题，掌握导数、圆锥曲线等难点题型的解题策略</div>
+            </div>
+            <div class="topic-body">
+                <div class="topic-meta">
+                    <div class="meta-box"><div class="meta-value">35</div><div class="meta-label">题目数</div></div>
+                    <div class="meta-box"><div class="meta-value">180</div><div class="meta-label">分钟</div></div>
+                    <div class="meta-box"><div class="meta-value">专家</div><div class="meta-label">难度</div></div>
+                </div>
+                <div class="topic-tags">
+                    <span class="topic-tag hot"><i class="fas fa-fire"></i> 热门</span>
+                    <span class="topic-tag recommend"><i class="fas fa-thumbs-up"></i> AI推荐</span>
+                    <span class="topic-tag">导数</span>
+                    <span class="topic-tag">圆锥曲线</span>
+                </div>
+                <div class="topic-progress">
+                    <div class="progress-header"><span>完成进度</span><span><b>28%</b></span></div>
+                    <div class="progress-bar"><div class="progress-fill" style="width: 28%"></div></div>
+                </div>
+                <button class="btn"><i class="fas fa-play"></i> 开始训练</button>
+            </div>
+        </div>
+
+        <div class="topic-card" onclick="startTopic('gaokao-english阅读')">
+            <div class="topic-header">
+                <span class="topic-badge"><i class="fas fa-trophy"></i> 高考专题</span>
+                <div class="topic-title">英语 - 阅读理解技巧</div>
+                <div class="topic-desc">掌握高考英语阅读理解的解题技巧，提高阅读速度和准确率</div>
+            </div>
+            <div class="topic-body">
+                <div class="topic-meta">
+                    <div class="meta-box"><div class="meta-value">50</div><div class="meta-label">篇数</div></div>
+                    <div class="meta-box"><div class="meta-value">150</div><div class="meta-label">分钟</div></div>
+                    <div class="meta-box"><div class="meta-value">高级</div><div class="meta-label">难度</div></div>
+                </div>
+                <div class="topic-tags">
+                    <span class="topic-tag recommend"><i class="fas fa-thumbs-up"></i> AI推荐</span>
+                    <span class="topic-tag">细节题</span>
+                    <span class="topic-tag">推理题</span>
+                    <span class="topic-tag">主旨题</span>
+                </div>
+                <div class="topic-progress">
+                    <div class="progress-header"><span>完成进度</span><span><b>45%</b></span></div>
+                    <div class="progress-bar"><div class="progress-fill" style="width: 45%"></div></div>
+                </div>
+                <button class="btn"><i class="fas fa-play"></i> 开始训练</button>
+            </div>
+        </div>
+
+        <div class="topic-card" onclick="startTopic('gaokao-physics力学')">
+            <div class="topic-header">
+                <span class="topic-badge"><i class="fas fa-trophy"></i> 高考专题</span>
+                <div class="topic-title">物理 - 力学综合应用</div>
+                <div class="topic-desc">系统梳理力学知识体系，掌握牛顿运动定律、动量守恒、能量守恒等核心考点</div>
+            </div>
+            <div class="topic-body">
+                <div class="topic-meta">
+                    <div class="meta-box"><div class="meta-value">40</div><div class="meta-label">题目数</div></div>
+                    <div class="meta-box"><div class="meta-value">120</div><div class="meta-label">分钟</div></div>
+                    <div class="meta-box"><div class="meta-value">高级</div><div class="meta-label">难度</div></div>
+                </div>
+                <div class="topic-tags">
+                    <span class="topic-tag hot"><i class="fas fa-fire"></i> 热门</span>
+                    <span class="topic-tag">牛顿定律</span>
+                    <span class="topic-tag">动量守恒</span>
+                    <span class="topic-tag">能量守恒</span>
+                </div>
+                <div class="topic-progress">
+                    <div class="progress-header"><span>完成进度</span><span><b>32%</b></span></div>
+                    <div class="progress-bar"><div class="progress-fill" style="width: 32%"></div></div>
+                </div>
+                <button class="btn"><i class="fas fa-play"></i> 开始训练</button>
+            </div>
+        </div>
+
+        <div class="topic-card" onclick="startTopic('gaokao-chinese写作')">
+            <div class="topic-header">
+                <span class="topic-badge"><i class="fas fa-trophy"></i> 高考专题</span>
+                <div class="topic-title">语文 - 作文高分攻略</div>
+                <div class="topic-desc">掌握高考作文写作技巧，学会审题立意、结构安排和素材运用</div>
+            </div>
+            <div class="topic-body">
+                <div class="topic-meta">
+                    <div class="meta-box"><div class="meta-value">25</div><div class="meta-label">篇数</div></div>
+                    <div class="meta-box"><div class="meta-value">180</div><div class="meta-label">分钟</div></div>
+                    <div class="meta-box"><div class="meta-value">进阶</div><div class="meta-label">难度</div></div>
+                </div>
+                <div class="topic-tags">
+                    <span class="topic-tag">议论文</span>
+                    <span class="topic-tag">记叙文</span>
+                    <span class="topic-tag">素材积累</span>
+                </div>
+                <div class="topic-progress">
+                    <div class="progress-header"><span>完成进度</span><span><b>60%</b></span></div>
+                    <div class="progress-bar"><div class="progress-fill" style="width: 60%"></div></div>
+                </div>
+                <button class="btn"><i class="fas fa-play"></i> 开始训练</button>
+            </div>
+        </div>
+
+        <div class="topic-card" onclick="startTopic('zhongkao-math函数')">
+            <div class="topic-header">
+                <span class="topic-badge"><i class="fas fa-award"></i> 中考专题</span>
+                <div class="topic-title">数学 - 函数综合专题</div>
+                <div class="topic-desc">掌握一次函数、二次函数、反比例函数的图像与性质，提升综合应用能力</div>
+            </div>
+            <div class="topic-body">
+                <div class="topic-meta">
+                    <div class="meta-box"><div class="meta-value">30</div><div class="meta-label">题目数</div></div>
+                    <div class="meta-box"><div class="meta-value">90</div><div class="meta-label">分钟</div></div>
+                    <div class="meta-box"><div class="meta-value">进阶</div><div class="meta-label">难度</div></div>
+                </div>
+                <div class="topic-tags">
+                    <span class="topic-tag hot"><i class="fas fa-fire"></i> 热门</span>
+                    <span class="topic-tag">一次函数</span>
+                    <span class="topic-tag">二次函数</span>
+                    <span class="topic-tag">反比例函数</span>
+                </div>
+                <div class="topic-progress">
+                    <div class="progress-header"><span>完成进度</span><span><b>75%</b></span></div>
+                    <div class="progress-bar"><div class="progress-fill" style="width: 75%"></div></div>
+                </div>
+                <button class="btn"><i class="fas fa-play"></i> 开始训练</button>
+            </div>
+        </div>
+
+        <div class="topic-card" onclick="startTopic('cet4-vocab')">
+            <div class="topic-header">
+                <span class="topic-badge"><i class="fas fa-globe"></i> 四级专题</span>
+                <div class="topic-title">英语四级 - 核心词汇</div>
+                <div class="topic-desc">系统学习英语四级核心词汇，掌握词根词缀记忆法，提升词汇量</div>
+            </div>
+            <div class="topic-body">
+                <div class="topic-meta">
+                    <div class="meta-box"><div class="meta-value">2000</div><div class="meta-label">词汇数</div></div>
+                    <div class="meta-box"><div class="meta-value">300</div><div class="meta-label">分钟</div></div>
+                    <div class="meta-box"><div class="meta-value">入门</div><div class="meta-label">难度</div></div>
+                </div>
+                <div class="topic-tags">
+                    <span class="topic-tag">词根词缀</span>
+                    <span class="topic-tag">高频词汇</span>
+                    <span class="topic-tag">记忆技巧</span>
+                </div>
+                <div class="topic-progress">
+                    <div class="progress-header"><span>完成进度</span><span><b>15%</b></span></div>
+                    <div class="progress-bar"><div class="progress-fill" style="width: 15%"></div></div>
+                </div>
+                <button class="btn"><i class="fas fa-play"></i> 开始训练</button>
+            </div>
+        </div>
+
+        <div class="topic-card" onclick="startTopic('cet4-reading')">
+            <div class="topic-header">
+                <span class="topic-badge"><i class="fas fa-globe"></i> 四级专题</span>
+                <div class="topic-title">英语四级 - 阅读理解</div>
+                <div class="topic-desc">熟悉四级阅读题型，掌握快速阅读和精准定位技巧</div>
+            </div>
+            <div class="topic-body">
+                <div class="topic-meta">
+                    <div class="meta-box"><div class="meta-value">80</div><div class="meta-label">篇数</div></div>
+                    <div class="meta-box"><div class="meta-value">200</div><div class="meta-label">分钟</div></div>
+                    <div class="meta-box"><div class="meta-value">进阶</div><div class="meta-label">难度</div></div>
+                </div>
+                <div class="topic-tags">
+                    <span class="topic-tag">快速阅读</span>
+                    <span class="topic-tag">仔细阅读</span>
+                    <span class="topic-tag">选词填空</span>
+                </div>
+                <div class="topic-progress">
+                    <div class="progress-header"><span>完成进度</span><span><b>40%</b></span></div>
+                    <div class="progress-bar"><div class="progress-fill" style="width: 40%"></div></div>
+                </div>
+                <button class="btn"><i class="fas fa-play"></i> 开始训练</button>
+            </div>
+        </div>
+
+        <div class="topic-card" onclick="startTopic('japanese-n2-grammar')">
+            <div class="topic-header">
+                <span class="topic-badge"><i class="fas fa-language"></i> 日语专题</span>
+                <div class="topic-title">日语N2 - 语法精讲</div>
+                <div class="topic-desc">系统学习日语N2核心语法点，掌握各类句型的用法和区别</div>
+            </div>
+            <div class="topic-body">
+                <div class="topic-meta">
+                    <div class="meta-box"><div class="meta-value">150</div><div class="meta-label">语法点</div></div>
+                    <div class="meta-box"><div class="meta-value">200</div><div class="meta-label">分钟</div></div>
+                    <div class="meta-box"><div class="meta-value">进阶</div><div class="meta-label">难度</div></div>
+                </div>
+                <div class="topic-tags">
+                    <span class="topic-tag">句型</span>
+                    <span class="topic-tag">助词</span>
+                    <span class="topic-tag">敬语</span>
+                </div>
+                <div class="topic-progress">
+                    <div class="progress-header"><span>完成进度</span><span><b>22%</b></span></div>
+                    <div class="progress-bar"><div class="progress-fill" style="width: 22%"></div></div>
+                </div>
+                <button class="btn"><i class="fas fa-play"></i> 开始训练</button>
+            </div>
+        </div>
+
+        <div class="topic-card" onclick="startTopic('gaokao-chemistry有机')">
+            <div class="topic-header">
+                <span class="topic-badge"><i class="fas fa-trophy"></i> 高考专题</span>
+                <div class="topic-title">化学 - 有机化学基础</div>
+                <div class="topic-desc">掌握有机物的结构、性质、反应类型，学会有机推断和合成路线设计</div>
+            </div>
+            <div class="topic-body">
+                <div class="topic-meta">
+                    <div class="meta-box"><div class="meta-value">35</div><div class="meta-label">题目数</div></div>
+                    <div class="meta-box"><div class="meta-value">120</div><div class="meta-label">分钟</div></div>
+                    <div class="meta-box"><div class="meta-value">高级</div><div class="meta-label">难度</div></div>
+                </div>
+                <div class="topic-tags">
+                    <span class="topic-tag">有机物结构</span>
+                    <span class="topic-tag">有机反应</span>
+                    <span class="topic-tag">推断题</span>
+                </div>
+                <div class="topic-progress">
+                    <div class="progress-header"><span>完成进度</span><span><b>18%</b></span></div>
+                    <div class="progress-bar"><div class="progress-fill" style="width: 18%"></div></div>
+                </div>
+                <button class="btn"><i class="fas fa-play"></i> 开始训练</button>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+function startTopic(topicId) {
+    alert('即将开始专题训练: ' + topicId);
+}
+
+function filterTopics() {
+    const searchInput = document.getElementById('searchInput');
+    const searchTerm = searchInput ? searchInput.value.toLowerCase().trim() : '';
+    const examType = document.getElementById('examType').value;
+    const subject = document.getElementById('subject').value;
+    const difficulty = document.getElementById('difficulty').value;
+    const topicCards = document.querySelectorAll('.topic-card');
+
+    topicCards.forEach(card => {
+        const title = card.querySelector('.topic-title')?.textContent.toLowerCase() || '';
+        const desc = card.querySelector('.topic-desc')?.textContent.toLowerCase() || '';
+        const badge = card.querySelector('.topic-badge')?.textContent.toLowerCase() || '';
+        
+        let match = true;
+        
+        if (searchTerm && !title.includes(searchTerm) && !desc.includes(searchTerm) && !badge.includes(searchTerm)) {
+            match = false;
+        }
+        
+        if (match && examType !== 'all' && !badge.includes(examType)) {
+            match = false;
+        }
+        
+        if (match && subject !== 'all' && !title.includes(subject)) {
+            match = false;
+        }
+        
+        card.style.display = match ? '' : 'none';
+    });
+}
+</script>
+{% endblock %}

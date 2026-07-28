@@ -1,0 +1,945 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI自我学习系统 - MTSCOS AI</title>
+    <link rel="stylesheet" href="/assets/css/mtscos-design-system.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/assets/tailwind.min.css">
+    <style>
+        body {
+            background: var(--bg-page);
+            color: var(--text-primary);
+            font-family: var(--font-sans);
+            min-height: 100vh;
+            margin: 0;
+            padding: 0;
+        }
+        
+        .dashboard-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 24px 20px;
+        }
+        
+        .nav-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 24px;
+        }
+        
+        .back-btn {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: var(--accent-soft);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-sm);
+            color: var(--accent-text);
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        
+        .back-btn:hover {
+            background: var(--accent-hover);
+            border-color: var(--accent);
+            color: var(--accent-text-bright);
+        }
+        
+        .header-section {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+        
+        .header-title {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+        }
+        
+        .header-title i {
+            color: var(--accent);
+        }
+        
+        .header-subtitle {
+            font-size: 14px;
+            color: var(--text-muted);
+        }
+        
+        .status-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 16px;
+            border-radius: var(--radius-full);
+            font-size: 13px;
+            font-weight: 500;
+            margin-top: 16px;
+        }
+        
+        .status-indicator.running {
+            background: var(--success-soft);
+            color: var(--success);
+            border: 1px solid var(--border-subtle);
+        }
+        
+        .status-indicator.stopped {
+            background: var(--danger-soft);
+            color: var(--danger);
+            border: 1px solid var(--border-subtle);
+        }
+        
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+        
+        .status-indicator.running .status-dot {
+            background: var(--success);
+        }
+        
+        .status-indicator.stopped .status-dot {
+            background: var(--danger);
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        
+        .stat-card {
+            background: var(--bg-card);
+            backdrop-filter: blur(var(--glass-blur));
+            -webkit-backdrop-filter: blur(var(--glass-blur));
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-md);
+            padding: 20px;
+            box-shadow: var(--shadow-md);
+            transition: border-color 0.2s;
+        }
+        
+        .stat-card:hover {
+            border-color: var(--accent);
+        }
+        
+        .stat-icon {
+            font-size: 24px;
+            margin-bottom: 10px;
+            color: var(--accent-text);
+        }
+        
+        .stat-value {
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 4px;
+        }
+        
+        .stat-label {
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+        
+        .domains-section {
+            background: var(--bg-card);
+            backdrop-filter: blur(var(--glass-blur));
+            -webkit-backdrop-filter: blur(var(--glass-blur));
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-md);
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: var(--shadow-md);
+        }
+        
+        .section-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--text-primary);
+        }
+        
+        .section-title i {
+            color: var(--accent);
+        }
+        
+        .domain-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        
+        .domain-tag {
+            padding: 6px 16px;
+            border-radius: var(--radius-full);
+            font-size: 13px;
+            font-weight: 500;
+            background: var(--accent-soft);
+            border: 1px solid var(--border-subtle);
+            color: var(--accent-text);
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+        
+        .domain-tag:hover {
+            background: var(--accent-hover);
+            border-color: var(--accent);
+        }
+        
+        .action-section {
+            background: var(--bg-card);
+            backdrop-filter: blur(var(--glass-blur));
+            -webkit-backdrop-filter: blur(var(--glass-blur));
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-md);
+            padding: 24px;
+            box-shadow: var(--shadow-md);
+        }
+        
+        .action-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            justify-content: center;
+        }
+        
+        .action-btn {
+            padding: 10px 24px;
+            border-radius: var(--radius-sm);
+            font-size: 14px;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-family: var(--font-sans);
+        }
+        
+        .action-btn-primary {
+            background: var(--accent);
+            color: white;
+        }
+        
+        .action-btn-primary:hover {
+            background: #4338ca;
+        }
+        
+        .action-btn-secondary {
+            background: var(--bg-card-alt);
+            color: var(--text-secondary);
+            border: 1px solid var(--border-strong);
+        }
+        
+        .action-btn-secondary:hover {
+            background: var(--accent-soft);
+            color: var(--accent-text);
+            border-color: var(--accent);
+        }
+        
+        .action-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* 学习日志 */
+        .learning-log {
+            background: var(--bg-card);
+            backdrop-filter: blur(var(--glass-blur));
+            -webkit-backdrop-filter: blur(var(--glass-blur));
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-md);
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: var(--shadow-md);
+        }
+
+        .log-container {
+            max-height: 400px;
+            overflow-y: auto;
+            scrollbar-width: none;
+        }
+
+        .log-container::-webkit-scrollbar {
+            display: none;
+        }
+
+        .log-item {
+            display: flex;
+            gap: 12px;
+            padding: 10px 0;
+            border-bottom: 1px solid var(--border-subtle);
+        }
+
+        .log-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: var(--radius-sm);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            font-size: 14px;
+        }
+
+        .log-icon.learning { background: var(--success-soft); color: var(--success); }
+        .log-icon.discovery { background: var(--accent-soft); color: var(--accent-text); }
+        .log-icon.error { background: var(--danger-soft); color: var(--danger); }
+        .log-icon.insight { background: var(--warning-soft); color: var(--warning); }
+
+        .log-content {
+            flex: 1;
+        }
+
+        .log-title {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 4px;
+            color: var(--text-primary);
+        }
+
+        .log-desc {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-bottom: 4px;
+        }
+
+        .log-time {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        /* 知识搜索 */
+        .search-section {
+            background: var(--bg-card);
+            backdrop-filter: blur(var(--glass-blur));
+            -webkit-backdrop-filter: blur(var(--glass-blur));
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-md);
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: var(--shadow-md);
+        }
+
+        .search-input-container {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .search-input {
+            flex: 1;
+            padding: 10px 14px;
+            border: 1px solid var(--border-strong);
+            border-radius: var(--radius-sm);
+            background: var(--bg-card-alt);
+            color: var(--text-primary);
+            font-size: 14px;
+            outline: none;
+            transition: all 0.2s;
+            font-family: var(--font-sans);
+        }
+
+        .search-input:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-soft);
+        }
+
+        .search-input::placeholder {
+            color: var(--text-faint);
+        }
+
+        .search-results {
+            display: grid;
+            gap: 12px;
+        }
+
+        .search-result-item {
+            padding: 14px 16px;
+            background: var(--bg-card-alt);
+            border-radius: var(--radius-sm);
+            border-left: 3px solid var(--accent);
+            transition: background 0.2s;
+            border: 1px solid var(--border-subtle);
+            border-left: 3px solid var(--accent);
+        }
+
+        .search-result-item:hover {
+            background: var(--accent-soft);
+        }
+
+        .result-title {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 6px;
+            color: var(--text-primary);
+        }
+
+        .result-category {
+            display: inline-block;
+            padding: 3px 8px;
+            background: var(--accent-soft);
+            border-radius: var(--radius-sm);
+            font-size: 11px;
+            color: var(--accent-text);
+            margin-bottom: 6px;
+            font-weight: 500;
+        }
+
+        .result-content {
+            font-size: 13px;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+        
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid var(--border-strong);
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+        
+        .last-updated {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .refresh-indicator {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .refresh-indicator i {
+            animation: spin-refresh 1s linear infinite;
+        }
+        
+        @keyframes spin-refresh {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        
+        .toast-message {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            padding: 12px 20px;
+            border-radius: var(--radius-sm);
+            font-size: 14px;
+            font-weight: 500;
+            z-index: 1000;
+            display: none;
+            box-shadow: var(--shadow-md);
+        }
+        
+        .toast-message.show {
+            display: block;
+        }
+        
+        .toast-success {
+            background: var(--success);
+            color: white;
+        }
+        
+        .toast-error {
+            background: var(--danger);
+            color: white;
+        }
+        
+        .toast-info {
+            background: var(--accent);
+            color: white;
+        }
+        
+        .progress-bar {
+            height: 4px;
+            background: var(--bg-card-alt);
+            border-radius: var(--radius-full);
+            margin-top: 10px;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: var(--accent);
+            border-radius: var(--radius-full);
+            transition: width 0.2s;
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <div class="nav-bar">
+            <a href="/" class="back-btn" onclick="goBack()">
+                <i class="fas fa-arrow-left"></i>
+                <span>返回首页</span>
+            </a>
+            <div style="flex: 1;"></div>
+        </div>
+        
+        <div class="header-section">
+            <h1 class="header-title">
+                <i class="fas fa-brain"></i>
+                AI自我学习系统
+            </h1>
+            <p class="header-subtitle">自动从网络学习知识，持续壮大脑库</p>
+            <div id="status-indicator" class="status-indicator stopped">
+                <span class="status-dot"></span>
+                <span id="status-text">系统未启动</span>
+            </div>
+        </div>
+        
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon"><i class="fas fa-book-open"></i></div>
+                <div class="stat-value" id="knowledge-count">0</div>
+                <div class="stat-label">脑库知识总量</div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="knowledge-progress" style="width: 0%"></div>
+                </div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-icon"><i class="fas fa-list-check"></i></div>
+                <div class="stat-value" id="rule-count">0</div>
+                <div class="stat-label">学习规则数量</div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="rule-progress" style="width: 0%"></div>
+                </div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-icon">🌐</div>
+                <div class="stat-value" id="domain-count">0</div>
+                <div class="stat-label">学习领域数量</div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-icon">⏱️</div>
+                <div class="stat-value" id="learning-cycle">--</div>
+                <div class="stat-label">下次学习时间</div>
+            </div>
+        </div>
+        
+        <div class="domains-section">
+            <h2 class="section-title">
+                <i class="fas fa-tag"></i>
+                学习领域
+            </h2>
+            <div id="domain-tags" class="domain-tags">
+                <span style="color: #94a3b8;">加载中...</span>
+            </div>
+        </div>
+        
+        <div class="action-section">
+            <h2 class="section-title">
+                <i class="fas fa-play-circle"></i>
+                操作控制
+            </h2>
+            <div class="action-buttons">
+                <button class="action-btn action-btn-primary" id="btn-trigger" onclick="triggerLearning()">
+                    <i class="fas fa-graduation-cap"></i>
+                    手动触发学习
+                </button>
+                <button class="action-btn action-btn-secondary" id="btn-discover" onclick="discoverDirections()">
+                    <i class="fas fa-search"></i>
+                    发现学习方向
+                </button>
+                <button class="action-btn action-btn-secondary" id="btn-refresh" onclick="refreshStatus()">
+                    <i class="fas fa-sync-alt"></i>
+                    刷新状态
+                </button>
+                <button class="action-btn action-btn-secondary" id="btn-clear-log" onclick="clearLogs()">
+                    <i class="fas fa-trash"></i>
+                    清空日志
+                </button>
+            </div>
+            
+            <div class="info-row">
+                <div class="last-updated">
+                    <i class="fas fa-clock"></i>
+                    <span>最后更新: <span id="last-updated">--</span></span>
+                </div>
+                <div class="refresh-indicator" id="refresh-indicator" style="display: none;">
+                    <i class="fas fa-spinner"></i>
+                    <span>刷新中...</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="search-section">
+            <h2 class="section-title">
+                <i class="fas fa-search"></i>
+                知识库搜索
+            </h2>
+            <div class="search-input-container">
+                <input type="text" class="search-input" id="knowledge-search" placeholder="搜索知识库中的知识..." onkeypress="handleSearchKey(event)">
+                <button class="action-btn action-btn-primary" onclick="searchKnowledge()">
+                    <i class="fas fa-search"></i>
+                    搜索
+                </button>
+            </div>
+            <div id="search-results" class="search-results">
+                <div style="text-align: center; color: #94a3b8; padding: 20px;">输入关键词搜索知识库</div>
+            </div>
+        </div>
+
+        <div class="learning-log">
+            <h2 class="section-title">
+                <i class="fas fa-history"></i>
+                学习日志
+            </h2>
+            <div class="log-container" id="learning-log-container">
+                <div style="text-align: center; color: #94a3b8; padding: 20px;">加载学习日志中...</div>
+            </div>
+        </div>
+    </div>
+    
+    <div id="toast-message" class="toast-message"></div>
+    
+    <script>
+        var refreshInterval = null;
+        
+        function showToast(message, type = 'info') {
+            var toast = document.getElementById('toast-message');
+            toast.textContent = message;
+            toast.className = 'toast-message toast-' + type + ' show';
+            
+            setTimeout(function() {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+        
+        function formatDateTime(dt) {
+            var date = new Date(dt);
+            return date.toLocaleString('zh-CN', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
+        }
+        
+        function calculateNextLearningTime(lastUpdated) {
+            var last = new Date(lastUpdated);
+            var next = new Date(last.getTime() + 30 * 60 * 1000);
+            var now = new Date();
+            
+            if (next > now) {
+                var diff = Math.floor((next - now) / 1000);
+                var minutes = Math.floor(diff / 60);
+                var seconds = diff % 60;
+                return minutes + '分' + seconds + '秒';
+            } else {
+                return '即将开始';
+            }
+        }
+        
+        function updateUI(data) {
+            var status = data.status;
+            
+            var statusIndicator = document.getElementById('status-indicator');
+            var statusText = document.getElementById('status-text');
+            
+            if (status.is_running) {
+                statusIndicator.className = 'status-indicator running';
+                statusText.textContent = '系统运行中';
+            } else {
+                statusIndicator.className = 'status-indicator stopped';
+                statusText.textContent = '系统未启动';
+            }
+            
+            document.getElementById('knowledge-count').textContent = status.knowledge_count;
+            document.getElementById('rule-count').textContent = status.rule_count;
+            document.getElementById('domain-count').textContent = (status.learning_domains || []).length;
+            document.getElementById('last-updated').textContent = formatDateTime(status.last_updated);
+            
+            var knowledgeProgress = Math.min((status.knowledge_count / 1000) * 100, 100);
+            var ruleProgress = Math.min((status.rule_count / 50) * 100, 100);
+            
+            document.getElementById('knowledge-progress').style.width = knowledgeProgress + '%';
+            document.getElementById('rule-progress').style.width = ruleProgress + '%';
+            
+            document.getElementById('learning-cycle').textContent = calculateNextLearningTime(status.last_updated);
+            
+            var domainTags = document.getElementById('domain-tags');
+            domainTags.innerHTML = '';
+            
+            if (status.learning_domains && status.learning_domains.length > 0) {
+                status.learning_domains.forEach(function(domain) {
+                    var tag = document.createElement('span');
+                    tag.className = 'domain-tag';
+                    tag.textContent = domain;
+                    domainTags.appendChild(tag);
+                });
+            } else {
+                domainTags.innerHTML = '<span style="color: #94a3b8;">暂无学习领域</span>';
+            }
+        }
+        
+        function refreshStatus() {
+            var indicator = document.getElementById('refresh-indicator');
+            indicator.style.display = 'flex';
+            
+            fetch('/api/ai_engine/self_learning/status')
+                .then(function(response) {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(function(data) {
+                    if (data.success) {
+                        updateUI(data);
+                        showToast('状态刷新成功', 'success');
+                    } else {
+                        showToast('刷新失败: ' + data.error, 'error');
+                    }
+                })
+                .catch(function(error) {
+                    showToast('网络错误: ' + error.message, 'error');
+                })
+                .finally(function() {
+                    indicator.style.display = 'none';
+                });
+        }
+        
+        function triggerLearning() {
+            var btn = document.getElementById('btn-trigger');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 学习中...';
+            
+            fetch('/api/ai_engine/self_learning/trigger')
+                .then(function(response) {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(function(data) {
+                    if (data.success) {
+                        showToast('学习触发成功！新增 ' + data.learned_count + ' 条知识', 'success');
+                        setTimeout(refreshStatus, 2000);
+                    } else {
+                        showToast('触发失败: ' + data.error, 'error');
+                    }
+                })
+                .catch(function(error) {
+                    showToast('网络错误: ' + error.message, 'error');
+                })
+                .finally(function() {
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fas fa-graduation-cap"></i> 手动触发学习';
+                });
+        }
+        
+        function discoverDirections() {
+            var btn = document.getElementById('btn-discover');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 发现中...';
+            
+            fetch('/api/ai_engine/self_learning/discover')
+                .then(function(response) {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(function(data) {
+                    if (data.success) {
+                        var message = '发现了 ' + data.discovered_count + ' 个新学习方向';
+                        if (data.new_rules && data.new_rules.length > 0) {
+                            message += '，已添加到规则';
+                        }
+                        showToast(message, 'success');
+                        setTimeout(refreshStatus, 2000);
+                    } else {
+                        showToast('发现失败: ' + data.error, 'error');
+                    }
+                })
+                .catch(function(error) {
+                    showToast('网络错误: ' + error.message, 'error');
+                })
+                .finally(function() {
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fas fa-search"></i> 发现学习方向';
+                });
+        }
+        
+        function goBack() {
+            event.preventDefault();
+            if (history.length > 1) {
+                history.back();
+            } else {
+                window.location.href = '/';
+            }
+        }
+        
+        function initAutoRefresh() {
+            refreshInterval = setInterval(refreshStatus, 30000);
+        }
+        
+        function handleSearchKey(event) {
+            if (event.key === 'Enter') {
+                searchKnowledge();
+            }
+        }
+
+        function searchKnowledge() {
+            var query = document.getElementById('knowledge-search').value.trim();
+            if (!query) {
+                showToast('请输入搜索关键词', 'error');
+                return;
+            }
+
+            var resultsContainer = document.getElementById('search-results');
+            resultsContainer.innerHTML = '<div style="text-align: center; color: #94a3b8; padding: 20px;"><i class="fas fa-spinner fa-spin"></i> 搜索中...</div>';
+
+            fetch('/api/ai_engine/knowledge/search?q=' + encodeURIComponent(query))
+                .then(function(response) {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(function(data) {
+                    if (data.results && data.results.length > 0) {
+                        var html = '';
+                        data.results.forEach(function(item) {
+                            var categoryName = {
+                                'technology': '技术知识',
+                                'security': '安全知识',
+                                'education': '教育知识',
+                                'system': '系统知识',
+                                'rule': '学习规则',
+                                'other': '其他'
+                            }[item.category] || item.category;
+
+                            html += '<div class="search-result-item">' +
+                                '<div class="result-title">' + (item.title || '未命名知识') + '</div>' +
+                                '<span class="result-category">' + categoryName + '</span>' +
+                                '<div class="result-content">' + (item.content || '').substring(0, 200) + (item.content && item.content.length > 200 ? '...' : '') + '</div>' +
+                                '</div>';
+                        });
+                        resultsContainer.innerHTML = html;
+                    } else {
+                        resultsContainer.innerHTML = '<div style="text-align: center; color: #94a3b8; padding: 20px;"><i class="fas fa-search"></i> 未找到相关知识</div>';
+                    }
+                })
+                .catch(function(error) {
+                    showToast('搜索失败: ' + error.message, 'error');
+                    resultsContainer.innerHTML = '<div style="text-align: center; color: #ef4444; padding: 20px;">搜索失败，请重试</div>';
+                });
+        }
+
+        function loadLogs() {
+            var container = document.getElementById('learning-log-container');
+            container.innerHTML = '<div style="text-align: center; color: #94a3b8; padding: 20px;"><i class="fas fa-spinner fa-spin"></i> 加载日志中...</div>';
+
+            fetch('/api/ai_engine/self_learning/logs')
+                .then(function(response) {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(function(data) {
+                    if (data.logs && data.logs.length > 0) {
+                        var html = '';
+                        data.logs.slice(0, 50).forEach(function(log) {
+                            var iconClass = 'learning';
+                            var icon = 'fa-book-open';
+                            if (log.type === 'discovery') {
+                                iconClass = 'discovery';
+                                icon = 'fa-search';
+                            } else if (log.type === 'error') {
+                                iconClass = 'error';
+                                icon = 'fa-exclamation-triangle';
+                            } else if (log.type === 'insight') {
+                                iconClass = 'insight';
+                                icon = 'fa-lightbulb';
+                            }
+
+                            html += '<div class="log-item">' +
+                                '<div class="log-icon ' + iconClass + '"><i class="fas ' + icon + '"></i></div>' +
+                                '<div class="log-content">' +
+                                '<div class="log-title">' + escapeHtml(log.title) + '</div>' +
+                                '<div class="log-desc">' + escapeHtml(log.description || '') + '</div>' +
+                                '<div class="log-time">' + formatDateTime(log.timestamp) + '</div>' +
+                                '</div>' +
+                                '</div>';
+                        });
+                        container.innerHTML = html;
+                    } else {
+                        container.innerHTML = '<div style="text-align: center; color: #94a3b8; padding: 20px;"><i class="fas fa-history"></i> 暂无学习日志</div>';
+                    }
+                })
+                .catch(function(error) {
+                    console.error('加载日志失败:', error);
+                    container.innerHTML = '<div style="text-align: center; color: #ef4444; padding: 20px;">加载日志失败</div>';
+                });
+        }
+
+        function clearLogs() {
+            if (!confirm('确定要清空学习日志吗？')) return;
+
+            fetch('/api/ai_engine/self_learning/logs/clear', { method: 'POST' })
+                .then(function(response) {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(function(data) {
+                    if (data.success) {
+                        showToast('日志清空成功', 'success');
+                        loadLogs();
+                    } else {
+                        showToast('清空失败: ' + data.error, 'error');
+                    }
+                })
+                .catch(function(error) {
+                    showToast('清空失败: ' + error.message, 'error');
+                });
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            return text.replace(/&/g, '&amp;')
+                       .replace(/</g, '&lt;')
+                       .replace(/>/g, '&gt;')
+                       .replace(/"/g, '&quot;')
+                       .replace(/'/g, '&#039;');
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            refreshStatus();
+            loadLogs();
+            initAutoRefresh();
+        });
+    </script>
+</body>
+</html>

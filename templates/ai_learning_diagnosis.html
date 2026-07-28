@@ -1,0 +1,869 @@
+{% extends "base.html" %}
+
+{% block title %}AI智能学习诊断{% endblock %}
+
+{% block head %}
+<style>
+    .diagnosis-container {
+        max-width: 1200px;
+        margin: 30px auto;
+        padding: 0 20px;
+    }
+    .diagnosis-header {
+        text-align: center;
+        margin-bottom: 30px;
+    }
+    .diagnosis-header h1 {
+        color: #333;
+        font-size: 32px;
+        margin-bottom: 10px;
+    }
+    .diagnosis-header p {
+        color: #666;
+        font-size: 14px;
+    }
+    .tabs {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 20px;
+        border-bottom: 2px solid #eee;
+    }
+    .tab {
+        padding: 12px 24px;
+        border: none;
+        background: none;
+        color: #666;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        border-bottom: 3px solid transparent;
+        transition: all 0.3s;
+    }
+    .tab.active {
+        color: #667eea;
+        border-bottom-color: #667eea;
+    }
+    .tab:hover {
+        color: #667eea;
+    }
+    .form-section {
+        background: white;
+        border-radius: 12px;
+        padding: 25px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        margin-bottom: 20px;
+    }
+    .form-row {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 15px;
+        margin-bottom: 20px;
+    }
+    .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+    .form-group label {
+        font-size: 13px;
+        color: #555;
+        font-weight: 500;
+    }
+    .form-group select,
+    .form-group input {
+        padding: 10px 12px;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        font-size: 14px;
+        background: #fafafa;
+    }
+    .form-group select:focus,
+    .form-group input:focus {
+        outline: none;
+        border-color: #667eea;
+        background: white;
+    }
+    .btn-group {
+        display: flex;
+        gap: 12px;
+        margin-top: 20px;
+    }
+    .btn {
+        padding: 12px 24px;
+        border: none;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+    .btn-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    }
+    .btn-secondary {
+        background: #f0f0f0;
+        color: #666;
+    }
+    .btn-success {
+        background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+        color: white;
+    }
+    .diagnosis-summary {
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        gap: 15px;
+        margin-bottom: 20px;
+    }
+    .summary-card {
+        background: #f8f9fa;
+        padding: 20px;
+        border-radius: 10px;
+        text-align: center;
+        border-left: 4px solid #667eea;
+    }
+    .summary-card.critical {
+        border-left-color: #dc3545;
+        background: #fff5f5;
+    }
+    .summary-card.warning {
+        border-left-color: #ffc107;
+        background: #fffcf5;
+    }
+    .summary-card.normal {
+        border-left-color: #17a2b8;
+        background: #f0f8ff;
+    }
+    .summary-card.excellent {
+        border-left-color: #28a745;
+        background: #f0fff4;
+    }
+    .summary-card .value {
+        font-size: 28px;
+        font-weight: bold;
+        color: #333;
+        margin-bottom: 5px;
+    }
+    .summary-card .label {
+        font-size: 12px;
+        color: #888;
+    }
+    .analytics-section {
+        margin-bottom: 20px;
+    }
+    .domain-card {
+        border: 1px solid #eee;
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 15px;
+        background: #fafafa;
+    }
+    .domain-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 15px;
+    }
+    .domain-name {
+        font-weight: 600;
+        color: #333;
+    }
+    .domain-score {
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 500;
+        background: #e8f4fd;
+        color: #0c5460;
+    }
+    .point-list {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+    }
+    .point-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px;
+        background: white;
+        border-radius: 8px;
+        border: 1px solid #eee;
+    }
+    .point-info {
+        flex: 1;
+    }
+    .point-name {
+        font-size: 13px;
+        color: #333;
+        margin-bottom: 4px;
+    }
+    .point-level {
+        font-size: 11px;
+        padding: 2px 8px;
+        border-radius: 10px;
+    }
+    .point-level.excellent {
+        background: #d4edda;
+        color: #155724;
+    }
+    .point-level.good {
+        background: #d1ecf1;
+        color: #0c5460;
+    }
+    .point-level.medium {
+        background: #fff3cd;
+        color: #856404;
+    }
+    .point-level.weak {
+        background: #f8d7da;
+        color: #721c24;
+    }
+    .point-score {
+        font-size: 16px;
+        font-weight: bold;
+        color: #667eea;
+    }
+    .recommendation-list {
+        margin-top: 15px;
+    }
+    .recommendation-item {
+        display: flex;
+        gap: 15px;
+        padding: 15px;
+        border-radius: 10px;
+        margin-bottom: 10px;
+        background: #f8f9fa;
+    }
+    .rec-priority {
+        padding: 4px 10px;
+        border-radius: 20px;
+        font-size: 11px;
+        font-weight: 600;
+        white-space: nowrap;
+    }
+    .rec-priority.high {
+        background: #f8d7da;
+        color: #721c24;
+    }
+    .rec-priority.medium {
+        background: #fff3cd;
+        color: #856404;
+    }
+    .rec-priority.low {
+        background: #d1ecf1;
+        color: #0c5460;
+    }
+    .rec-content h4 {
+        margin: 0 0 5px 0;
+        font-size: 14px;
+        color: #333;
+    }
+    .rec-content p {
+        margin: 0;
+        font-size: 13px;
+        color: #666;
+    }
+    .task-list {
+        margin-top: 15px;
+    }
+    .task-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 15px;
+        border-bottom: 1px solid #eee;
+    }
+    .task-item:hover {
+        background: #f8f9fa;
+    }
+    .task-info {
+        flex: 1;
+    }
+    .task-title {
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 4px;
+    }
+    .task-meta {
+        font-size: 12px;
+        color: #888;
+    }
+    .task-progress {
+        width: 150px;
+        height: 8px;
+        background: #eee;
+        border-radius: 4px;
+        overflow: hidden;
+    }
+    .progress-fill {
+        height: 100%;
+        border-radius: 4px;
+        transition: width 0.5s;
+    }
+    .progress-fill.good {
+        background: linear-gradient(90deg, #11998e, #38ef7d);
+    }
+    .progress-fill.medium {
+        background: linear-gradient(90deg, #f7b733, #fc4a1a);
+    }
+    .progress-fill.weak {
+        background: linear-gradient(90deg, #fc4a1a, #ff6b6b);
+    }
+    .task-status {
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 500;
+        margin-left: 15px;
+    }
+    .status-pending {
+        background: #fff3cd;
+        color: #856404;
+    }
+    .status-in-progress {
+        background: #d1ecf1;
+        color: #0c5460;
+    }
+    .status-completed {
+        background: #d4edda;
+        color: #155724;
+    }
+    .loading {
+        display: inline-block;
+        width: 20px;
+        height: 20px;
+        border: 2px solid #f3f3f3;
+        border-top: 2px solid #667eea;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin-right: 8px;
+    }
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+    .history-section {
+        margin-top: 20px;
+    }
+    .history-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 15px;
+        border-bottom: 1px solid #eee;
+    }
+    .history-info {
+        flex: 1;
+    }
+    .history-date {
+        font-size: 13px;
+        color: #888;
+    }
+    .history-score {
+        font-size: 18px;
+        font-weight: bold;
+    }
+    .history-score.excellent {
+        color: #28a745;
+    }
+    .history-score.normal {
+        color: #17a2b8;
+    }
+    .history-score.warning {
+        color: #ffc107;
+    }
+    .history-score.critical {
+        color: #dc3545;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="diagnosis-container">
+    <div class="diagnosis-header">
+        <h1>🔍 AI智能学习诊断</h1>
+        <p>全面分析学习情况，精准定位知识薄弱点，提供个性化提升方案</p>
+    </div>
+
+    <div class="tabs">
+        <button class="tab active" onclick="switchTab('diagnose')"><i class="fas fa-target"></i> 学习诊断</button>
+        <button class="tab" onclick="switchTab('analytics')"><i class="fas fa-chart-bar"></i> 学习分析</button>
+        <button class="tab" onclick="switchTab('recommendations')"><i class="fas fa-lightbulb"></i> 改进建议</button>
+        <button class="tab" onclick="switchTab('tasks')"><i class="fas fa-list-check"></i> 提升任务</button>
+        <button class="tab" onclick="switchTab('history')">📜 诊断历史</button>
+    </div>
+
+    <div id="tab-diagnose" class="form-section">
+        <h3>开始诊断</h3>
+        <div class="form-row">
+            <div class="form-group">
+                <label>用户ID</label>
+                <input type="text" id="diagnose-user-id" placeholder="请输入用户ID">
+            </div>
+            <div class="form-group">
+                <label>科目</label>
+                <select id="diagnose-subject">
+                    <option value="">请选择科目</option>
+                    <option value="语文">语文</option>
+                    <option value="数学">数学</option>
+                    <option value="英语">英语</option>
+                    <option value="物理">物理</option>
+                    <option value="化学">化学</option>
+                    <option value="生物">生物</option>
+                    <option value="历史">历史</option>
+                    <option value="地理">地理</option>
+                    <option value="政治">政治</option>
+                </select>
+            </div>
+        </div>
+        <div class="btn-group">
+            <button class="btn btn-primary" onclick="startDiagnosis()">
+                <span class="loading" id="loading-diagnose" style="display:none"></span>
+                开始诊断
+            </button>
+            <button class="btn btn-success" onclick="generateReport()"><i class="fas fa-file"></i> 生成报告</button>
+        </div>
+
+        <div id="diagnosis-result" style="display:none; margin-top:30px">
+            <div class="diagnosis-summary">
+                <div class="summary-card" id="summary-score">
+                    <div class="value">0</div>
+                    <div class="label">综合得分</div>
+                </div>
+                <div class="summary-card" id="summary-level">
+                    <div class="value">-</div>
+                    <div class="label">诊断等级</div>
+                </div>
+                <div class="summary-card" id="summary-gaps">
+                    <div class="value">0</div>
+                    <div class="label">知识漏洞</div>
+                </div>
+                <div class="summary-card" id="summary-weak">
+                    <div class="value">0</div>
+                    <div class="label">薄弱领域</div>
+                </div>
+                <div class="summary-card" id="summary-strong">
+                    <div class="value">0</div>
+                    <div class="label">优势领域</div>
+                </div>
+            </div>
+
+            <div class="analytics-section">
+                <h4>详细分析</h4>
+                <div id="analytics-detail"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="tab-analytics" class="form-section" style="display:none">
+        <h3>学习分析</h3>
+        <div class="form-row">
+            <div class="form-group">
+                <label>用户ID</label>
+                <input type="text" id="analytics-user-id" placeholder="请输入用户ID">
+            </div>
+            <div class="form-group">
+                <label>科目</label>
+                <select id="analytics-subject">
+                    <option value="">请选择科目</option>
+                    <option value="语文">语文</option>
+                    <option value="数学">数学</option>
+                    <option value="英语">英语</option>
+                    <option value="物理">物理</option>
+                    <option value="化学">化学</option>
+                    <option value="生物">生物</option>
+                    <option value="历史">历史</option>
+                    <option value="地理">地理</option>
+                    <option value="政治">政治</option>
+                </select>
+            </div>
+        </div>
+        <button class="btn btn-primary" onclick="loadAnalytics()">加载分析</button>
+        <div id="analytics-content" style="display:none; margin-top:20px"></div>
+    </div>
+
+    <div id="tab-recommendations" class="form-section" style="display:none">
+        <h3>改进建议</h3>
+        <div class="form-row">
+            <div class="form-group">
+                <label>用户ID</label>
+                <input type="text" id="rec-user-id" placeholder="请输入用户ID">
+            </div>
+            <div class="form-group">
+                <label>科目</label>
+                <select id="rec-subject">
+                    <option value="">请选择科目</option>
+                    <option value="语文">语文</option>
+                    <option value="数学">数学</option>
+                    <option value="英语">英语</option>
+                    <option value="物理">物理</option>
+                    <option value="化学">化学</option>
+                    <option value="生物">生物</option>
+                    <option value="历史">历史</option>
+                    <option value="地理">地理</option>
+                    <option value="政治">政治</option>
+                </select>
+            </div>
+        </div>
+        <button class="btn btn-primary" onclick="loadRecommendations()">获取建议</button>
+        <div class="recommendation-list" id="recommendation-content">
+            <p style="color:#888; text-align:center; padding:20px">暂无建议</p>
+        </div>
+    </div>
+
+    <div id="tab-tasks" class="form-section" style="display:none">
+        <h3>提升任务</h3>
+        <div class="form-row">
+            <div class="form-group">
+                <label>用户ID</label>
+                <input type="text" id="task-user-id" placeholder="请输入用户ID">
+            </div>
+            <div class="form-group">
+                <label>科目</label>
+                <select id="task-subject">
+                    <option value="">请选择科目</option>
+                    <option value="语文">语文</option>
+                    <option value="数学">数学</option>
+                    <option value="英语">英语</option>
+                    <option value="物理">物理</option>
+                    <option value="化学">化学</option>
+                    <option value="生物">生物</option>
+                    <option value="历史">历史</option>
+                    <option value="地理">地理</option>
+                    <option value="政治">政治</option>
+                </select>
+            </div>
+        </div>
+        <button class="btn btn-primary" onclick="loadTasks()">加载任务</button>
+        <div class="task-list" id="task-content">
+            <p style="color:#888; text-align:center; padding:20px">暂无任务</p>
+        </div>
+    </div>
+
+    <div id="tab-history" class="form-section" style="display:none">
+        <h3>诊断历史</h3>
+        <div class="form-row">
+            <div class="form-group">
+                <label>用户ID</label>
+                <input type="text" id="history-user-id" placeholder="请输入用户ID">
+            </div>
+            <div class="form-group">
+                <label>科目</label>
+                <select id="history-subject">
+                    <option value="">全部科目</option>
+                    <option value="语文">语文</option>
+                    <option value="数学">数学</option>
+                    <option value="英语">英语</option>
+                    <option value="物理">物理</option>
+                    <option value="化学">化学</option>
+                    <option value="生物">生物</option>
+                    <option value="历史">历史</option>
+                    <option value="地理">地理</option>
+                    <option value="政治">政治</option>
+                </select>
+            </div>
+        </div>
+        <button class="btn btn-primary" onclick="loadHistory()">加载历史</button>
+        <div class="history-section" id="history-content">
+            <p style="color:#888; text-align:center; padding:20px">暂无历史记录</p>
+        </div>
+    </div>
+</div>
+
+<script>
+    let currentTab = 'diagnose';
+    let currentDiagnosis = null;
+
+    function switchTab(tab) {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('[id^="tab-"]').forEach(t => t.style.display = 'none');
+        
+        event.target.classList.add('active');
+        document.getElementById('tab-' + tab).style.display = 'block';
+        currentTab = tab;
+    }
+
+    async function startDiagnosis() {
+        const user_id = document.getElementById('diagnose-user-id').value;
+        const subject = document.getElementById('diagnose-subject').value;
+
+        if (!user_id || !subject) {
+            alert('请输入用户ID并选择科目');
+            return;
+        }
+
+        document.getElementById('loading-diagnose').style.display = 'inline-block';
+
+        try {
+            const response = await fetch('/api/ai/diagnosis/diagnose', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ user_id, subject })
+            });
+            const result = await response.json();
+            
+            if (result.success) {
+                currentDiagnosis = result.data;
+                displayDiagnosis(result.data);
+            } else {
+                alert('诊断失败: ' + result.error);
+            }
+        } catch (error) {
+            alert('诊断失败: ' + error.message);
+        } finally {
+            document.getElementById('loading-diagnose').style.display = 'none';
+        }
+    }
+
+    function displayDiagnosis(data) {
+        document.getElementById('diagnosis-result').style.display = 'block';
+        
+        const levelColors = {
+            'critical': 'critical',
+            'warning': 'warning',
+            'normal': 'normal',
+            'excellent': 'excellent'
+        };
+        
+        const levelLabels = {
+            'critical': '严重',
+            'warning': '警告',
+            'normal': '正常',
+            'excellent': '优秀'
+        };
+
+        const scoreCard = document.getElementById('summary-score');
+        scoreCard.className = 'summary-card ' + levelColors[data.diagnosis_level];
+        scoreCard.querySelector('.value').textContent = data.overall_score;
+
+        const levelCard = document.getElementById('summary-level');
+        levelCard.className = 'summary-card ' + levelColors[data.diagnosis_level];
+        levelCard.querySelector('.value').textContent = levelLabels[data.diagnosis_level];
+
+        document.getElementById('summary-gaps').querySelector('.value').textContent = data.knowledge_gaps.length;
+        document.getElementById('summary-weak').querySelector('.value').textContent = data.weak_areas.length;
+        document.getElementById('summary-strong').querySelector('.value').textContent = data.strong_areas.length;
+
+        const detail = document.getElementById('analytics-detail');
+        detail.innerHTML = Object.entries(data.analytics).map(([domain, points]) => {
+            const avg = Object.values(points).reduce((sum, p) => sum + p.correct_rate, 0) / Object.keys(points).length;
+            return `
+                <div class="domain-card">
+                    <div class="domain-header">
+                        <span class="domain-name">${domain}</span>
+                        <span class="domain-score">${(avg * 100).toFixed(1)}%</span>
+                    </div>
+                    <div class="point-list">
+                        ${Object.entries(points).map(([point, pdata]) => {
+                            const levelClass = pdata.skill_level === '精通' ? 'excellent' : 
+                                              pdata.skill_level === '掌握良好' ? 'good' :
+                                              pdata.skill_level === '需要巩固' ? 'medium' : 'weak';
+                            return `
+                                <div class="point-item">
+                                    <div class="point-info">
+                                        <div class="point-name">${point}</div>
+                                        <span class="point-level ${levelClass}">${pdata.skill_level}</span>
+                                    </div>
+                                    <span class="point-score">${(pdata.correct_rate * 100).toFixed(0)}%</span>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    async function generateReport() {
+        const user_id = document.getElementById('diagnose-user-id').value;
+        const subject = document.getElementById('diagnose-subject').value;
+
+        if (!user_id || !subject) {
+            alert('请输入用户ID并选择科目');
+            return;
+        }
+
+        try {
+            const response = await fetch('/api/ai/diagnosis/report', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ user_id, subject })
+            });
+            const result = await response.json();
+            
+            if (result.success) {
+                alert('报告生成成功！\n\n' + 
+                      `综合得分: ${result.data.report.overall_summary.overall_score}\n` +
+                      `诊断等级: ${result.data.report.overall_summary.diagnosis_level}\n` +
+                      `知识漏洞: ${result.data.report.overall_summary.knowledge_gap_count}个\n` +
+                      `薄弱领域: ${result.data.report.overall_summary.weak_area_count}个\n` +
+                      `优势领域: ${result.data.report.overall_summary.strong_area_count}个`);
+            } else {
+                alert('生成报告失败: ' + result.error);
+            }
+        } catch (error) {
+            alert('生成报告失败: ' + error.message);
+        }
+    }
+
+    async function loadAnalytics() {
+        const user_id = document.getElementById('analytics-user-id').value;
+        const subject = document.getElementById('analytics-subject').value;
+
+        if (!user_id || !subject) {
+            alert('请输入用户ID并选择科目');
+            return;
+        }
+
+        try {
+            const response = await fetch(`/api/ai/diagnosis/analytics?user_id=${user_id}&subject=${subject}`);
+            const result = await response.json();
+            
+            if (result.success) {
+                document.getElementById('analytics-content').style.display = 'block';
+                const content = document.getElementById('analytics-content');
+                
+                content.innerHTML = Object.entries(result.data.analytics).map(([domain, points]) => {
+                    return `
+                        <div class="domain-card">
+                            <div class="domain-header">
+                                <span class="domain-name">${domain}</span>
+                            </div>
+                            <div class="point-list">
+                                ${points.map(p => {
+                                    const levelClass = p.skill_level === '精通' ? 'excellent' : 
+                                                      p.skill_level === '掌握良好' ? 'good' :
+                                                      p.skill_level === '需要巩固' ? 'medium' : 'weak';
+                                    return `
+                                        <div class="point-item">
+                                            <div class="point-info">
+                                                <div class="point-name">${p.knowledge_point}</div>
+                                                <span class="point-level ${levelClass}">${p.skill_level}</span>
+                                            </div>
+                                            <span class="point-score">${(p.correct_rate * 100).toFixed(0)}%</span>
+                                        </div>
+                                    `;
+                                }).join('')}
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+        } catch (error) {
+            alert('加载分析失败: ' + error.message);
+        }
+    }
+
+    async function loadRecommendations() {
+        const user_id = document.getElementById('rec-user-id').value;
+        const subject = document.getElementById('rec-subject').value;
+
+        if (!user_id || !subject) {
+            alert('请输入用户ID并选择科目');
+            return;
+        }
+
+        try {
+            const response = await fetch('/api/ai/diagnosis/diagnose', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ user_id, subject })
+            });
+            const result = await response.json();
+            
+            if (result.success) {
+                const container = document.getElementById('recommendation-content');
+                container.innerHTML = result.data.recommendations.map(r => `
+                    <div class="recommendation-item">
+                        <span class="rec-priority ${r.priority}">${r.priority === 'high' ? '高' : r.priority === 'medium' ? '中' : '低'}</span>
+                        <div class="rec-content">
+                            <h4>${r.title}</h4>
+                            <p>${r.content}</p>
+                        </div>
+                    </div>
+                `).join('');
+            }
+        } catch (error) {
+            alert('获取建议失败: ' + error.message);
+        }
+    }
+
+    async function loadTasks() {
+        const user_id = document.getElementById('task-user-id').value;
+        const subject = document.getElementById('task-subject').value;
+
+        if (!user_id) {
+            alert('请输入用户ID');
+            return;
+        }
+
+        let url = `/api/ai/diagnosis/tasks?user_id=${user_id}`;
+        if (subject) url += `&subject=${subject}`;
+
+        try {
+            const response = await fetch(url);
+            const result = await response.json();
+            
+            if (result.success) {
+                const container = document.getElementById('task-content');
+                container.innerHTML = result.data.tasks.map(t => {
+                    const progress = (t.current_score / t.target_score * 100);
+                    const progressClass = progress >= 80 ? 'good' : progress >= 50 ? 'medium' : 'weak';
+                    return `
+                        <div class="task-item">
+                            <div class="task-info">
+                                <div class="task-title">${t.task_content}</div>
+                                <div class="task-meta">${t.knowledge_point} | 截止: ${t.deadline}</div>
+                            </div>
+                            <div class="task-progress">
+                                <div class="progress-fill ${progressClass}" style="width:${progress}%"></div>
+                            </div>
+                            <span class="task-status status-${t.status}">${t.status === 'pending' ? '待开始' : t.status === 'in_progress' ? '进行中' : '已完成'}</span>
+                        </div>
+                    `;
+                }).join('');
+            }
+        } catch (error) {
+            alert('加载任务失败: ' + error.message);
+        }
+    }
+
+    async function loadHistory() {
+        const user_id = document.getElementById('history-user-id').value;
+        const subject = document.getElementById('history-subject').value;
+
+        if (!user_id) {
+            alert('请输入用户ID');
+            return;
+        }
+
+        let url = `/api/ai/diagnosis/history?user_id=${user_id}`;
+        if (subject && subject !== '全部科目') url += `&subject=${subject}`;
+
+        try {
+            const response = await fetch(url);
+            const result = await response.json();
+            
+            if (result.success) {
+                const container = document.getElementById('history-content');
+                container.innerHTML = result.data.history.map(h => `
+                    <div class="history-item">
+                        <div class="history-info">
+                            <div>${h.subject}</div>
+                            <div class="history-date">${h.created_at}</div>
+                        </div>
+                        <span class="history-score ${h.diagnosis_level}">${h.overall_score}</span>
+                    </div>
+                `).join('');
+            }
+        } catch (error) {
+            alert('加载历史失败: ' + error.message);
+        }
+    }
+</script>
+{% endblock %}

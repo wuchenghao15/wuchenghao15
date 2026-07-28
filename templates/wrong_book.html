@@ -1,0 +1,425 @@
+{% extends 'student_base.html' %}
+
+{% block title %}错题本 - MTSCOS AI{% endblock %}
+{% block page_title %}
+错题本
+{% if education_type %}
+    · 
+    {%- if education_type == 'nine_year' %}九年制义务教育 (数学、语文、英语、物理、化学、政治)
+    {%- elif education_type == 'adult' %}成人教育 (数学、语文、英语、日语)
+    {%- else %}通用学习 (数学、语文、英语、物理、化学、政治、日语){% endif %}
+{% endif %}
+{% endblock %}
+
+{% block extra_styles %}
+<style>
+    .stats-row {
+        display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px;
+    }
+    .stat-card {
+        background: rgba(20, 20, 40, 0.9); border: 1px solid var(--dark-border);
+        border-radius: var(--radius-lg); padding: 20px;
+        box-shadow: 0 0 20px rgba(99, 102, 241, 0.08);
+    }
+    .stat-icon {
+        width: 40px; height: 40px; border-radius: var(--radius-md);
+        display: flex; align-items: center; justify-content: center; font-size: 18px;
+        margin-bottom: 12px;
+    }
+    .stat-icon.total { background: rgba(239,68,68,0.15); color: var(--dark-danger); }
+    .stat-icon.review { background: rgba(249,115,22,0.15); color: var(--dark-warning); }
+    .stat-icon.mastered { background: rgba(34,197,94,0.15); color: var(--dark-success); }
+    .stat-icon.today { background: rgba(59,130,246,0.15); color: var(--dark-info); }
+    .stat-value { font-size: 28px; font-weight: 700; color: var(--dark-text-primary); }
+    .stat-label { font-size: 12px; color: var(--dark-text-secondary); margin-top: 4px; }
+
+    .filter-bar {
+        display: flex; align-items: center; gap: 12px; margin-bottom: 20px; flex-wrap: wrap;
+    }
+    .filter-tabs {
+        display: flex; gap: 8px;
+    }
+    .filter-tab {
+        display: inline-flex; align-items: center; gap: 6px;
+        padding: 8px 16px; border-radius: 999px; font-size: 13px;
+        background: rgba(30, 30, 60, 0.6); color: var(--dark-text-secondary);
+        text-decoration: none; border: 1px solid transparent;
+        transition: all .2s;
+        cursor: pointer;
+    }
+    .filter-tab:hover { background: rgba(99,102,241,0.15); color: var(--dark-primary-color); border-color: rgba(99,102,241,0.3); }
+    .filter-tab.active { background: var(--dark-primary-color); color: #fff; border-color: var(--dark-primary-color); }
+
+    .subject-filter {
+        display: flex; gap: 8px; flex-wrap: wrap;
+    }
+    .subject-chip {
+        padding: 6px 14px; border-radius: 999px; font-size: 12px;
+        background: rgba(30, 30, 60, 0.6); color: var(--dark-text-secondary);
+        border: 1px solid transparent;
+        cursor: pointer;
+        transition: all .2s;
+    }
+    .subject-chip:hover { background: rgba(99,102,241,0.15); color: var(--dark-primary-color); }
+    .subject-chip.active { background: rgba(99,102,241,0.2); color: var(--dark-primary-color); border-color: rgba(99,102,241,0.3); }
+
+    .action-bar {
+        display: flex; align-items: center; gap: 12px; margin-bottom: 20px;
+    }
+    .btn {
+        display: inline-flex; align-items: center; gap: 6px;
+        padding: 10px 24px; border-radius: var(--radius-md); text-decoration: none;
+        font-weight: 600; font-size: 13px; border: none; cursor: pointer;
+        background: linear-gradient(135deg, var(--dark-primary-color), var(--dark-primary-light)); color: #fff; transition: all .2s;
+    }
+    .btn:hover { transform: translateY(-1px); box-shadow: 0 5px 20px rgba(99, 102, 241, 0.3); }
+    .btn-outline { background: transparent; color: var(--dark-text-primary); border: 1px solid var(--dark-border); }
+    .btn-outline:hover { background: rgba(99,102,241,0.15); border-color: var(--dark-primary-color); color: var(--dark-primary-color); }
+    .btn-success { background: linear-gradient(135deg, var(--dark-success), #16a34a); }
+    .btn-warning { background: linear-gradient(135deg, var(--dark-warning), #d97706); }
+
+    .search-box {
+        position: relative; flex: 1; max-width: 300px;
+    }
+    .search-box input {
+        width: 100%; padding: 9px 14px 9px 36px;
+        border: 1px solid var(--dark-border); border-radius: var(--radius-md);
+        background: rgba(30, 30, 60, 0.6); color: var(--dark-text-primary);
+        font-size: 13px; outline: none; transition: all .2s;
+    }
+    .search-box input:focus { border-color: var(--dark-primary-color); background: rgba(30, 30, 60, 0.8); }
+    .search-box input::placeholder { color: var(--dark-text-secondary); }
+    .search-box i {
+        position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
+        color: var(--dark-text-secondary); font-size: 14px;
+    }
+
+    .wrong-list {
+        display: grid; gap: 16px;
+    }
+    .wrong-card {
+        background: rgba(20, 20, 40, 0.9); border: 1px solid var(--dark-border);
+        border-radius: var(--radius-lg); padding: 20px;
+        box-shadow: 0 0 20px rgba(99, 102, 241, 0.08);
+        transition: transform .2s, box-shadow .2s, border-color .2s;
+    }
+    .wrong-card:hover { transform: translateY(-2px); box-shadow: 0 0 20px rgba(99, 102, 241, 0.12); border-color: rgba(99, 102, 241, 0.3); }
+    .wrong-header {
+        display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;
+        margin-bottom: 14px;
+    }
+    .wrong-tags {
+        display: flex; gap: 8px; flex-wrap: wrap;
+    }
+    .tag {
+        font-size: 11px; padding: 3px 10px; border-radius: 999px; white-space: nowrap;
+    }
+    .tag.subject { background: rgba(99,102,241,0.15); color: var(--dark-primary-color); }
+    .tag.type { background: rgba(59,130,246,0.15); color: var(--dark-info); }
+    .tag.wrong-count { background: rgba(239,68,68,0.15); color: var(--dark-danger); }
+    .tag.date { background: rgba(148,163,184,0.15); color: var(--dark-text-secondary); }
+
+    .question-text {
+        font-size: 14px; line-height: 1.6; color: var(--dark-text-primary);
+        margin-bottom: 12px;
+    }
+    .question-options {
+        display: grid; gap: 8px; margin-bottom: 12px;
+    }
+    .option-item {
+        display: flex; align-items: flex-start; gap: 8px;
+        padding: 8px 12px; border-radius: var(--radius-md);
+        font-size: 13px;
+    }
+    .option-item.wrong { background: rgba(239,68,68,0.1); border-left: 3px solid var(--dark-danger); }
+    .option-item.correct { background: rgba(34,197,94,0.1); border-left: 3px solid var(--dark-success); }
+    .option-item.normal { background: rgba(30, 30, 60, 0.4); }
+    .option-letter { font-weight: 600; color: var(--dark-text-secondary); }
+
+    .analysis-section {
+        background: rgba(30, 30, 60, 0.4); border-radius: var(--radius-md);
+        padding: 14px 16px;
+        margin-bottom: 14px;
+    }
+    .analysis-title {
+        font-size: 12px; font-weight: 600; color: var(--dark-warning);
+        margin-bottom: 6px;
+        display: flex; align-items: center; gap: 6px;
+    }
+    .analysis-text { font-size: 13px; color: var(--dark-text-secondary); line-height: 1.5; }
+
+    .wrong-footer {
+        display: flex; align-items: center; justify-content: space-between;
+        padding-top: 12px;
+        border-top: 1px solid var(--dark-border);
+    }
+    .wrong-meta {
+        display: flex; gap: 16px; font-size: 12px; color: var(--dark-text-secondary);
+    }
+    .wrong-meta span { display: flex; align-items: center; gap: 4px; }
+
+    .empty-state {
+        text-align: center; padding: 60px 20px;
+        background: rgba(20, 20, 40, 0.9); border: 1px solid var(--dark-border);
+        border-radius: var(--radius-lg);
+    }
+    .empty-state i { font-size: 48px; margin-bottom: 16px; color: var(--dark-border); }
+    .empty-state h3 { font-size: 18px; margin-bottom: 8px; }
+    .empty-state p { font-size: 14px; color: var(--dark-text-secondary); }
+
+    @media (max-width: 768px) {
+        .stats-row { grid-template-columns: repeat(2, 1fr); }
+        .filter-bar { flex-direction: column; align-items: flex-start; }
+        .action-bar { flex-direction: column; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+    <div class="stats-row">
+        <div class="stat-card">
+            <div class="stat-icon total"><i class="fas fa-circle-xmark"></i></div>
+            <div class="stat-value">{{ total_wrong|default(0) }}</div>
+            <div class="stat-label">错题总数</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon review"><i class="fas fa-clock-rotate-left"></i></div>
+            <div class="stat-value">{{ pending_review|default(0) }}</div>
+            <div class="stat-label">待复习</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon mastered"><i class="fas fa-check-circle"></i></div>
+            <div class="stat-value">{{ mastered_count|default(0) }}</div>
+            <div class="stat-label">已掌握</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon today"><i class="fas fa-calendar-day"></i></div>
+            <div class="stat-value">{{ today_wrong|default(0) }}</div>
+            <div class="stat-label">今日新增</div>
+        </div>
+    </div>
+
+    <div class="filter-bar">
+        <div class="search-box">
+            <i class="fas fa-search"></i>
+            <input type="text" id="searchInput" placeholder="搜索错题内容、知识点..." oninput="filterWrongQuestions()">
+        </div>
+        <div class="filter-tabs" style="margin-left: auto;">
+            <span class="filter-tab active" onclick="filterWrong('all')"><i class="fas fa-layer-group"></i> 全部</span>
+            <span class="filter-tab" onclick="filterWrong('pending')"><i class="fas fa-clock-rotate-left"></i> 待复习</span>
+            <span class="filter-tab" onclick="filterWrong('recent')"><i class="fas fa-clock"></i> 最近一周</span>
+            <span class="filter-tab" onclick="filterWrong('mastered')"><i class="fas fa-check-circle"></i> 已掌握</span>
+        </div>
+    </div>
+
+    <div class="subject-filter">
+        <span class="subject-chip active" onclick="filterSubject('all')">全部科目</span>
+        {% if education_type in ['nine_year', 'adult', 'general'] %}
+        <span class="subject-chip" onclick="filterSubject('数学')">数学</span>
+        <span class="subject-chip" onclick="filterSubject('语文')">语文</span>
+        <span class="subject-chip" onclick="filterSubject('英语')">英语</span>
+        <span class="subject-chip" onclick="filterSubject('物理')">物理</span>
+        <span class="subject-chip" onclick="filterSubject('化学')">化学</span>
+        <span class="subject-chip" onclick="filterSubject('政治')">政治</span>
+        {% endif %}
+        {% if education_type in ['adult', 'general'] %}
+        <span class="subject-chip" onclick="filterSubject('日语')">日语</span>
+        {% endif %}
+    </div>
+
+    <div class="action-bar">
+        <button class="btn btn-success" onclick="startReview()"><i class="fas fa-play"></i> 开始错题复习</button>
+        <button class="btn btn-warning" onclick="exportWrong()"><i class="fas fa-download"></i> 导出错题</button>
+        <button class="btn-outline" onclick="clearMastered()"><i class="fas fa-trash"></i> 清理已掌握</button>
+    </div>
+
+    {% if wrong_questions %}
+    <div class="wrong-list">
+        {% for question in wrong_questions %}
+        <div class="wrong-card" data-id="{{ question.id }}">
+            <div class="wrong-header">
+                <div class="wrong-tags">
+                    <span class="tag subject">{{ question.subject or '综合' }}</span>
+                    <span class="tag type">{{ question.question_type or '单选题' }}</span>
+                    <span class="tag wrong-count"><i class="fas fa-times"></i> 错{{ question.wrong_count or 1 }}次</span>
+                    <span class="tag date">{{ question.wrong_date or '未知时间' }}</span>
+                </div>
+                <div style="display:flex;gap:8px;">
+                    <button class="btn-outline" style="padding:6px 12px;font-size:12px" onclick="markMastered({{ question.id }})"><i class="fas fa-check"></i> 标记掌握</button>
+                </div>
+            </div>
+
+            <div class="question-text">{{ question.content or '暂无题目内容' }}</div>
+
+            {% if question.options %}
+            <div class="question-options">
+                {% for opt in question.options %}
+                <div class="option-item {% if opt.is_user_answer and not opt.is_correct %}wrong{% elif opt.is_correct %}correct{% else %}normal{% endif %}">
+                    <span class="option-letter">{{ opt.letter }}</span>
+                    <span>{{ opt.content }}</span>
+                    {% if opt.is_user_answer and not opt.is_correct %}<i class="fas fa-xmark" style="color:var(--dark-danger);margin-left:auto"></i>{% endif %}
+                    {% if opt.is_correct %}<i class="fas fa-check" style="color:var(--dark-success);margin-left:auto"></i>{% endif %}
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            {% if question.analysis %}
+            <div class="analysis-section">
+                <div class="analysis-title"><i class="fas fa-lightbulb"></i> 解析</div>
+                <div class="analysis-text">{{ question.analysis }}</div>
+            </div>
+            {% endif %}
+
+            <div class="wrong-footer">
+                <div class="wrong-meta">
+                    <span><i class="fas fa-calendar"></i> 最后错误: {{ question.last_wrong_date or '-' }}</span>
+                    <span><i class="fas fa-book-open"></i> 知识点: {{ question.knowledge_point or '未分类' }}</span>
+                </div>
+                <button class="btn" style="padding:6px 14px;font-size:12px" onclick="practiceQuestion({{ question.id }})"><i class="fas fa-pen"></i> 再练一次</button>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <i class="fas fa-circle-check"></i>
+        <h3>暂无错题</h3>
+        <p>太棒了！您还没有错题记录，继续保持！</p>
+        <button class="btn" style="margin-top:16px" onclick="goToPractice()"><i class="fas fa-book-open"></i> 开始练习</button>
+    </div>
+    {% endif %}
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+function filterWrong(type) {
+    document.querySelectorAll('.filter-tab').forEach(tab => tab.classList.remove('active'));
+    event.target.classList.add('active');
+    console.log('Filter wrong questions:', type);
+}
+
+function filterSubject(subject) {
+    document.querySelectorAll('.subject-chip').forEach(chip => chip.classList.remove('active'));
+    event.target.classList.add('active');
+    console.log('Filter subject:', subject);
+}
+
+function filterWrongQuestions() {
+    const searchInput = document.getElementById('searchInput');
+    const searchTerm = searchInput ? searchInput.value.toLowerCase().trim() : '';
+    const wrongCards = document.querySelectorAll('.wrong-card');
+
+    wrongCards.forEach(card => {
+        const content = card.querySelector('.question-text')?.textContent.toLowerCase() || '';
+        const tags = card.querySelectorAll('.tag');
+        let tagText = '';
+        tags.forEach(tag => tagText += tag.textContent.toLowerCase() + ' ');
+        
+        if (searchTerm && !content.includes(searchTerm) && !tagText.includes(searchTerm)) {
+            card.style.display = 'none';
+        } else {
+            card.style.display = '';
+        }
+    });
+}
+
+function startReview() {
+    window.location.href = '/exam_system/custom_test?mode=wrong_review';
+}
+
+async function exportWrong() {
+    try {
+        var response = await fetch('/api/wrong_book/export', {
+            method: 'GET'
+        });
+        
+        if (response.ok) {
+            var blob = await response.blob();
+            var url = window.URL.createObjectURL(blob);
+            var a = document.createElement('a');
+            a.href = url;
+            a.download = 'wrong_book_export_' + new Date().toISOString().slice(0,10) + '.json';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+            showToast('错题本导出成功', 'success');
+        } else {
+            showToast('导出失败', 'error');
+        }
+    } catch (error) {
+        console.error('导出错题本失败:', error);
+        showToast('网络错误，导出失败', 'error');
+    }
+}
+
+async function clearMastered() {
+    if(!confirm('确定要清理所有已掌握的错题吗？此操作不可恢复。')) return;
+    
+    try {
+        var response = await fetch('/api/wrong_book/clear_mastered', {
+            method: 'DELETE'
+        });
+        
+        var result = await response.json();
+        if (result.success) {
+            showToast('已掌握错题清理成功', 'success');
+            loadWrongBook();
+        } else {
+            showToast('清理失败: ' + (result.message || '未知错误'), 'error');
+        }
+    } catch (error) {
+        console.error('清理已掌握错题失败:', error);
+        showToast('网络错误，清理失败', 'error');
+    }
+}
+
+async function markMastered(id) {
+    if(!confirm('确定标记这道题为已掌握吗？')) return;
+    
+    try {
+        var response = await fetch('/api/wrong_book/' + id + '/mark_mastered', {
+            method: 'PUT'
+        });
+        
+        var result = await response.json();
+        if (result.success) {
+            showToast('已标记为掌握', 'success');
+            document.querySelector(`.wrong-card[data-id="${id}"]`).style.opacity = '0.5';
+        } else {
+            showToast('标记失败: ' + (result.message || '未知错误'), 'error');
+        }
+    } catch (error) {
+        console.error('标记已掌握失败:', error);
+        showToast('网络错误，标记失败', 'error');
+    }
+}
+
+function practiceQuestion(id) {
+    window.location.href = `/exam/start/${id}?mode=review`;
+}
+
+function goToPractice() {
+    window.location.href = '/exam_system/daily_practice';
+}
+
+function showToast(message, type='info') {
+    var existing = document.querySelector('.mtscos-toast');
+    if (existing) existing.remove();
+    
+    var toast = document.createElement('div');
+    toast.className = 'mtscos-toast';
+    toast.style.cssText = `
+        position: fixed; top: 80px; right: 20px; padding: 14px 24px; border-radius: 10px; 
+        color: #fff; font-size: 14px; font-weight: 500; z-index: 9999;
+        background: ${type === 'success' ? '#22c55e' : type === 'error' ? '#ef4444' : '#6366f1'};
+        box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+        animation: toastSlideIn 0.3s ease-out;
+    `;
+    toast.innerHTML = '<i class="fas fa-' + (type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle') + '" style="margin-right: 8px;"></i>' + message;
+    document.body.appendChild(toast);
+    setTimeout(function() { toast.remove(); }, 3000);
+}
+</script>
+{% endblock %}

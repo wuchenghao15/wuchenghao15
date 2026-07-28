@@ -1,0 +1,371 @@
+{% extends 'super_admin_base.html' %}
+
+{% block title %}USB密钥加密狗 · Vikey Manager · 二次开发控制台{% endblock %}
+
+{% block header_icon %}<i class="fas fa-key"></i>{% endblock %}
+{% block header_title %}Vikey 密钥加密狗管理 / 二次开发{% endblock %}
+
+{% block breadcrumb %}
+    <i class="fas fa-chevron-right"></i>
+    <span>Vikey 加密狗（二次开发契约）</span>
+{% endblock %}
+
+{% block header_actions %}
+<button class="action-btn action-btn-secondary" onclick="detect()">
+    <i class="fas fa-search action-btn-icon"></i>
+    <span>探测 USB 设备</span>
+</button>
+<button class="action-btn action-btn-primary" onclick="window.location.href='/shadow_system'">
+    <i class="fas fa-moon action-btn-icon"></i>
+    <span>影子系统联动</span>
+</button>
+{% endblock %}
+
+{% block content %}
+<div class="card" style="margin-bottom:24px;">
+    <div class="card-header">
+        <div class="card-title">
+            <div class="icon"><i class="fas fa-usb"></i></div>
+            <span>设备探测（HID / Mock Driver 自动降级）</span>
+        </div>
+    </div>
+    <div id="detect-result-grid" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(300px,1fr)); gap:16px;">
+        <div style="grid-column:1/-1; text-align:center; color:var(--text-muted); padding:32px 0;">
+            点击右上角 <strong>"探测 USB 设备"</strong> 开始扫描；首次会自动展示演示加密狗
+            <code style="background:var(--bg-secondary); padding:2px 8px; border-radius:6px;">MTSCOS-VIKEY-DEMO-0001</code>。
+        </div>
+    </div>
+    <div style="margin-top:16px; font-size:12px; color:var(--text-muted);" id="detect-source"></div>
+</div>
+
+<div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(360px,1fr)); gap:24px; margin-bottom:24px;">
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title">
+                <div class="icon"><i class="fas fa-user-lock"></i></div>
+                <span>① 绑定：设备 ↔ 用户</span>
+            </div>
+        </div>
+        <div class="vk-form">
+            <label>序列号（不填则取探测到的第一个设备）</label>
+            <input type="text" id="bind-serial" placeholder="例如 MTSCOS-VIKEY-DEMO-0001">
+            <label>用户名 *</label>
+            <input type="text" id="bind-username" placeholder="例如 admin / caopw / wuchenghao15" required>
+            <label>角色</label>
+            <select id="bind-role">
+                <option>user</option><option>student</option><option>teacher</option>
+                <option>parent</option><option selected>admin</option><option>super_admin</option>
+            </select>
+            <label>PIN（可选；二次开发可做6位数字加密狗PIN）</label>
+            <input type="password" id="bind-pin" placeholder="例如 889900（仅保存在加密狗绑定记录里，不会明文展示）">
+            <button class="action-btn action-btn-primary" onclick="doBind()">
+                <i class="fas fa-link"></i> 绑定设备并生成 auth_token
+            </button>
+            <div style="margin-top:16px;" id="bind-result"></div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title">
+                <div class="icon"><i class="fas fa-shield-alt"></i></div>
+                <span>② 鉴权：serial + auth_token → 挑战响应</span>
+            </div>
+        </div>
+        <div class="vk-form">
+            <label>序列号 *</label>
+            <input type="text" id="auth-serial" placeholder="设备序列号">
+            <label>auth_token *（绑定后返回，二次开发契约：仅前端本地保存）</label>
+            <input type="password" id="auth-token" placeholder="vk_xxxx…">
+            <label>PIN（设置过则必填，用来做二次校验）</label>
+            <input type="password" id="auth-pin" placeholder="如果绑定了PIN，请输入">
+            <label>用户名（可选；为超级管理员登录时做关联校验）</label>
+            <input type="text" id="auth-username" placeholder="wuchenghao15 等">
+            <button class="action-btn action-btn-primary" onclick="doAuth()">
+                <i class="fas fa-check-circle"></i> 发起鉴权并生成 challenge_response
+            </button>
+            <div style="margin-top:16px;" id="auth-result"></div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title">
+                <div class="icon"><i class="fas fa-certificate"></i></div>
+                <span>③ 证书颁发：X.509 契约（二次开发）</span>
+            </div>
+        </div>
+        <div class="vk-form">
+            <label>序列号 *（要求已经①绑定过）</label>
+            <input type="text" id="cert-serial" placeholder="设备序列号">
+            <label>Owner（可选；默认取绑定用户）</label>
+            <input type="text" id="cert-owner" placeholder="例如 Security Team">
+            <button class="action-btn action-btn-primary" onclick="issueCert()">
+                <i class="fas fa-file-signature"></i> 颁发5年有效期 X.509 证书给设备
+            </button>
+            <div style="margin-top:16px;" id="cert-result"></div>
+        </div>
+    </div>
+</div>
+
+<div class="card" style="margin-bottom:24px;">
+    <div class="card-header">
+        <div class="card-title">
+            <div class="icon"><i class="fas fa-list-alt"></i></div>
+            <span>④ 操作日志（vikey_operations_log）</span>
+        </div>
+        <button class="action-btn action-btn-secondary" onclick="loadLogs()"><i class="fas fa-sync-alt"></i> 刷新</button>
+    </div>
+    <table class="data-table" id="logs-table">
+        <thead>
+            <tr><th>ID</th><th>操作</th><th>结果</th><th>SN</th><th>Username</th><th>IP</th><th>User-Agent</th><th>时间</th><th>详情</th></tr>
+        </thead>
+        <tbody>
+            <tr><td colspan="9" style="text-align:center; padding:32px; color:var(--text-muted);">加载中…</td></tr>
+        </tbody>
+    </table>
+</div>
+
+<div class="card" style="margin-bottom:24px;">
+    <div class="card-header">
+        <div class="card-title">
+            <div class="icon"><i class="fas fa-fingerprint"></i></div>
+            <span>⑤ 设备证书列表（vikey_device_certs）</span>
+        </div>
+        <button class="action-btn action-btn-secondary" onclick="loadCerts()"><i class="fas fa-sync-alt"></i> 刷新</button>
+    </div>
+    <table class="data-table" id="certs-table">
+        <thead>
+            <tr><th>ID</th><th>SN</th><th>证书编号</th><th>Subject DN</th><th>Issuer DN</th><th>颁发于</th><th>生效</th><th>过期</th><th>状态</th><th>Owner</th><th>证书哈希（前12）</th></tr>
+        </thead>
+        <tbody>
+            <tr><td colspan="11" style="text-align:center; padding:32px; color:var(--text-muted);">加载中…</td></tr>
+        </tbody>
+    </table>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.vk-form label { display:block; font-size:12px; color:var(--text-muted); margin:10px 0 4px; }
+.vk-form input, .vk-form select {
+    width:100%; padding:10px 12px; border-radius:var(--radius-sm);
+    border:1px solid var(--border-strong); background:var(--bg-card-alt); color:var(--text-primary);
+    font-size:13px; font-family:var(--font-sans); outline:none;
+}
+.vk-form input:focus, .vk-form select:focus {
+    border-color:var(--accent);
+}
+.vk-form > button { margin-top:16px; }
+.vk-device-card {
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    padding: 20px;
+    background: var(--bg-card);
+    backdrop-filter: blur(var(--glass-blur));
+    -webkit-backdrop-filter: blur(var(--glass-blur));
+    box-shadow: var(--shadow-md);
+}
+.vk-device-card.present {
+    border-color: var(--success);
+    background: var(--success-soft);
+}
+.vk-device-card h4 { margin:0 0 12px; font-size:15px; font-weight:700; color:var(--text-primary); }
+.vk-device-card .row { display:flex; justify-content:space-between; gap:8px; font-size:12px; line-height:1.9; }
+.vk-device-card .row .k { color:var(--text-muted); }
+.vk-device-card .row .v { color:var(--text-primary); font-family:var(--font-mono); max-width:58%; overflow:hidden; text-overflow:ellipsis; }
+.vk-device-card .pill {
+    display:inline-block; padding:4px 10px; border-radius:var(--radius-full); font-size:11px; font-weight:700;
+}
+.pill.ok { background: var(--success-soft); color: var(--success); }
+.pill.no { background: var(--danger-soft); color: var(--danger); }
+.pill.info { background: var(--accent-soft); color: var(--accent-text); }
+.result-success {
+    background: var(--success-soft);
+    border:1px solid var(--success);
+    padding:12px 14px;
+    border-radius:var(--radius-sm);
+    font-size:12px;
+    color:var(--success);
+    line-height:1.8;
+    word-break:break-all;
+}
+.result-error {
+    background: var(--danger-soft);
+    border:1px solid var(--danger);
+    padding:12px 14px;
+    border-radius:var(--radius-sm);
+    font-size:12px;
+    color:var(--danger);
+    line-height:1.8;
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function detect() {
+    fetch('/api/vikey/detect').then(r => r.json()).then(data => {
+        if (!data.success) { alert('探测失败：' + data.message); return; }
+        const d = data.data || {};
+        document.getElementById('detect-source').textContent =
+            '设备数量：' + (d.present_count || 0) + '　｜　驱动来源：' + (d._source || 'unknown') +
+            '　｜　真实HID驱动在 core.services.vikey_driver 存在时会自动替换此Mock层（二次开发透明替换）。';
+        const grid = document.getElementById('detect-result-grid');
+        const list = d.devices || [];
+        if (!list.length) { grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; color:#ef4444; padding:32px 0;">未检测到任何加密狗设备（请插入Vikey USB Key）</div>'; return; }
+        grid.innerHTML = list.map(dev => {
+            const present = !!dev.present;
+            return `<div class="vk-device-card ${present ? 'present' : ''}">
+                <h4>
+                    ${present ? '<span class="pill ok">已插入</span>' : '<span class="pill no">空槽</span>'}
+                    槽位 #${dev.slot}
+                    ${dev.cert_issued ? ' <span class="pill info">已发证</span>' : ''}
+                </h4>
+                <div class="row"><span class="k">Serial</span><span class="v">${dev.serial || '-'}</span></div>
+                <div class="row"><span class="k">User</span><span class="v">${dev.username || '未绑定'}</span></div>
+                <div class="row"><span class="k">Role</span><span class="v">${dev.role || '-'}</span></div>
+                <div class="row"><span class="k">Manufacturer</span><span class="v">${dev.manufacturer || 'MTSCOS SecureUSB'}</span></div>
+                <div class="row"><span class="k">Product</span><span class="v">${dev.product || 'Vikey G2 Pro'}</span></div>
+                <div class="row"><span class="k">Firmware</span><span class="v">${dev.firmware || '-'}</span></div>
+                <div class="row"><span class="k">Bound at</span><span class="v">${(dev.bound_at || '').slice(0,19).replace('T',' ') || '-'}</span></div>
+            </div>`;
+        }).join('');
+    }).catch(e => alert('探测异常：' + e.message));
+}
+
+function doBind() {
+    const serial = document.getElementById('bind-serial').value.trim();
+    const username = document.getElementById('bind-username').value.trim();
+    const role = document.getElementById('bind-role').value;
+    const pin = document.getElementById('bind-pin').value;
+    const box = document.getElementById('bind-result');
+    if (!username) { box.className = 'result-error'; box.textContent = '请填写用户名'; return; }
+    fetch('/api/vikey/bind', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ serial, username, role, pin }),
+    }).then(r => r.json()).then(data => {
+        if (data.success) {
+            const b = data.binding || {};
+            box.className = 'result-success';
+            box.innerHTML =
+                '<strong>✅ 绑定成功：</strong>' + (data.message || '') + '<br>' +
+                'Serial: <code style="font-family:monospace;">' + b.serial + '</code><br>' +
+                'User / Role: <code>' + b.username + ' / ' + b.role + '</code><br>' +
+                '<strong style="color:#dc2626;">auth_token（请复制到本地保存；二次开发契约：登录时传 vikey_auth_token+vikey_serial）</strong><br>' +
+                '<code style="background:rgba(99,102,241,0.1); padding:4px 8px; border-radius:6px; display:inline-block; margin-top:4px;">' + b.auth_token + '</code><br>' +
+                'PIN设置: ' + (b.pin_set ? '是' : '否') + '；Bound at: ' + (b.bound_at || '').slice(0,19).replace('T',' ');
+        } else {
+            box.className = 'result-error';
+            box.textContent = '❌ ' + (data.message || '绑定失败');
+        }
+    }).catch(e => { box.className='result-error'; box.textContent='异常：' + e.message; });
+}
+
+function doAuth() {
+    const serial = document.getElementById('auth-serial').value.trim();
+    const token = document.getElementById('auth-token').value.trim();
+    const pin = document.getElementById('auth-pin').value;
+    const username = document.getElementById('auth-username').value.trim() || null;
+    const box = document.getElementById('auth-result');
+    if (!serial || !token) { box.className='result-error'; box.textContent='serial + auth_token 必填'; return; }
+    fetch('/api/vikey/auth', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ serial, vikey_auth_token: token, pin, username }),
+    }).then(r => r.json()).then(data => {
+        if (data.success) {
+            box.className = 'result-success';
+            box.innerHTML =
+                '<strong>✅ 鉴权通过（二次开发挑战响应已生成）</strong><br>' +
+                (data.message || '') + '<br>' +
+                'challenge_response（60秒内一次性）：<br>' +
+                '<code style="background:rgba(99,102,241,0.1); padding:4px 8px; border-radius:6px; display:inline-block; margin-top:4px;">' + data.challenge_response + '</code><br>' +
+                'Serial: ' + data.serial + '；关联用户: ' + (data.username || '未关联') + '；有效期: ' + data.valid_seconds + 's';
+        } else {
+            box.className = 'result-error';
+            box.textContent = '❌ ' + (data.message || '鉴权失败') + '（reason=' + (data.reason||'') + '）';
+        }
+    }).catch(e => { box.className='result-error'; box.textContent='异常：' + e.message; });
+}
+
+function issueCert() {
+    const serial = document.getElementById('cert-serial').value.trim();
+    const owner = document.getElementById('cert-owner').value.trim() || null;
+    const box = document.getElementById('cert-result');
+    if (!serial) { box.className='result-error'; box.textContent='serial 必填（必须是已绑定的设备）'; return; }
+    fetch('/api/vikey/issue_cert', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ serial, owner }),
+    }).then(r => r.json()).then(data => {
+        if (data.success) {
+            const c = data.cert || {};
+            box.className = 'result-success';
+            box.innerHTML =
+                '<strong>✅ 证书颁发成功（X.509最小化契约）</strong><br>' +
+                (data.message || '') + '<br>' +
+                '证书编号：<code>' + c.cert_sn + '</code><br>' +
+                'Subject DN：<code style="font-family:monospace; word-break:break-all;">' + c.subject_dn + '</code><br>' +
+                'Issuer DN：<code style="font-family:monospace;">' + c.issuer_dn + '</code><br>' +
+                '生效：' + (c.not_before || '').slice(0,19).replace('T',' ') +
+                '　→　过期：' + (c.not_after || '').slice(0,19).replace('T',' ') + '<br>' +
+                '证书 PEM 哈希（SHA256，供二次开发校验）：<code>' + c.cert_pem_hash + '</code>';
+            setTimeout(loadCerts, 300);
+        } else {
+            box.className = 'result-error';
+            box.textContent = '❌ ' + (data.message || '颁发失败');
+        }
+    }).catch(e => { box.className='result-error'; box.textContent='异常：' + e.message; });
+}
+
+function loadLogs() {
+    fetch('/api/vikey/logs').then(r => r.json()).then(data => {
+        const tb = document.querySelector('#logs-table tbody');
+        if (!data.success) { tb.innerHTML = '<tr><td colspan="9" style="color:#ef4444;">加载失败：' + data.message + '</td></tr>'; return; }
+        const rows = data.data || [];
+        if (!rows.length) { tb.innerHTML = '<tr><td colspan="9" style="text-align:center; padding:32px; color:var(--text-muted);">暂无操作记录</td></tr>'; return; }
+        tb.innerHTML = rows.slice(0, 200).map(l => `<tr>
+            <td>${l.id}</td>
+            <td>${l.op_type || ''}</td>
+            <td><span class="pill ${(l.result || '').startsWith('ok') ? 'ok' : 'no'}" style="padding:2px 8px;">${l.result || ''}</span></td>
+            <td style="font-family:monospace; font-size:12px;">${l.serial || ''}</td>
+            <td>${l.username || ''}</td>
+            <td style="font-family:monospace; font-size:12px;">${l.ip || ''}</td>
+            <td style="font-size:11px; color:var(--text-muted); max-width:220px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${(l.user_agent||'').replace(/"/g,'&quot;')}">${l.user_agent || ''}</td>
+            <td>${(l.created_at || '').slice(0,19).replace('T',' ')}</td>
+            <td style="font-size:12px; max-width:320px; overflow:hidden; text-overflow:ellipsis;">${l.detail || ''}</td>
+        </tr>`).join('');
+    }).catch(e => { document.querySelector('#logs-table tbody').innerHTML = '<tr><td colspan="9" style="color:#ef4444;">异常：' + e.message + '</td></tr>'; });
+}
+
+function loadCerts() {
+    fetch('/api/vikey/certs').then(r => r.json()).then(data => {
+        const tb = document.querySelector('#certs-table tbody');
+        if (!data.success) { tb.innerHTML = '<tr><td colspan="11" style="color:#ef4444;">加载失败：' + data.message + '</td></tr>'; return; }
+        const rows = data.data || [];
+        if (!rows.length) { tb.innerHTML = '<tr><td colspan="11" style="text-align:center; padding:32px; color:var(--text-muted);">暂无证书记录（先用①绑定再用③颁发）</td></tr>'; return; }
+        tb.innerHTML = rows.map(c => {
+            const stCls = c.status === 'active' ? 'status-completed' : 'status-pending';
+            return `<tr>
+                <td>${c.id}</td>
+                <td style="font-family:monospace; font-size:12px;">${c.serial || ''}</td>
+                <td style="font-family:monospace; font-size:12px;">${c.cert_sn || ''}</td>
+                <td style="font-size:11px; color:var(--text-primary);">${c.subject_dn || ''}</td>
+                <td style="font-size:11px; color:var(--text-muted);">${c.issuer_dn || ''}</td>
+                <td>${(c.issued_at || '').slice(0,19).replace('T',' ')}</td>
+                <td>${(c.not_before || '').slice(0,10)}</td>
+                <td>${(c.not_after || '').slice(0,10)}</td>
+                <td><span class="status-badge ${stCls}">${c.status || 'active'}</span></td>
+                <td>${c.owner || ''}</td>
+                <td style="font-family:monospace; font-size:12px;">${(c.cert_pem_hash || '').slice(0,12)}…</td>
+            </tr>`;
+        }).join('');
+    }).catch(e => { document.querySelector('#certs-table tbody').innerHTML = '<tr><td colspan="11" style="color:#ef4444;">异常：' + e.message + '</td></tr>'; });
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    detect();
+    loadLogs();
+    loadCerts();
+});
+</script>
+{% endblock %}

@@ -1,0 +1,968 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>成人教育管理 - MTSCOS AI</title>
+    <link rel="stylesheet" href="/assets/css/mtscos-design-system.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/assets/tailwind.min.css">
+    <style>
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .nav-tabs .nav-item.active {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+        }
+        .stat-card {
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            border-radius: 12px;
+            padding: 20px;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(16, 185, 129, 0.4);
+        }
+        .table-container {
+            overflow-x: auto;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid rgba(16, 185, 129, 0.1);
+        }
+        th {
+            background: rgba(16, 185, 129, 0.1);
+            font-weight: 600;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal.show {
+            display: flex;
+        }
+        .modal-content {
+            background: #1a1a2e;
+            border-radius: 16px;
+            padding: 30px;
+            width: 90%;
+            max-width: 500px;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            border-radius: 8px;
+            background: rgba(0,0,0,0.3);
+            color: white;
+            box-sizing: border-box;
+        }
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+            outline: none;
+            border-color: #10b981;
+        }
+        .badge {
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .badge-active { background: #10b981; color: white; }
+        .badge-completed { background: #6366f1; color: white; }
+        .badge-pending { background: #f59e0b; color: white; }
+        .badge-failed { background: #ef4444; color: white; }
+        .progress-bar {
+            height: 8px;
+            background: rgba(16, 185, 129, 0.2);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #10b981, #059669);
+            border-radius: 4px;
+            transition: width 0.3s;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mx-auto px-4 py-6">
+        <h1 class="text-2xl font-bold mb-6">
+            <i class="fas fa-briefcase" style="color: #10b981;"></i> 成人教育管理系统
+        </h1>
+
+        <div class="stat-card mb-6">
+            <h3 class="font-semibold mb-4">教育数据统计</h3>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div>
+                    <div class="text-2xl font-bold" id="stat-learners">0</div>
+                    <div class="text-sm text-gray-400">学员总数</div>
+                </div>
+                <div>
+                    <div class="text-2xl font-bold" id="stat-programs">0</div>
+                    <div class="text-sm text-gray-400">培训项目</div>
+                </div>
+                <div>
+                    <div class="text-2xl font-bold" id="stat-exams">0</div>
+                    <div class="text-sm text-gray-400">认证考试</div>
+                </div>
+                <div>
+                    <div class="text-2xl font-bold" id="stat-certificates">0</div>
+                    <div class="text-sm text-gray-400">证书颁发</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex border-b border-gray-700 mb-4">
+            <div class="nav-tabs flex">
+                <div class="nav-item px-4 py-2 cursor-pointer active" onclick="switchTab('career')">职业导向学习</div>
+                <div class="nav-item px-4 py-2 cursor-pointer" onclick="switchTab('study-plan')">学习计划</div>
+                <div class="nav-item px-4 py-2 cursor-pointer" onclick="switchTab('credits')">学分证书</div>
+                <div class="nav-item px-4 py-2 cursor-pointer" onclick="switchTab('corporate')">企业培训</div>
+                <div class="nav-item px-4 py-2 cursor-pointer" onclick="switchTab('exam')">在线考试认证</div>
+                <div class="nav-item px-4 py-2 cursor-pointer" onclick="switchTab('community')">学习社群</div>
+            </div>
+        </div>
+
+        <div id="tab-career" class="tab-content active">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-lg font-semibold">职业导向学习</h2>
+                <button class="btn-primary" onclick="openModal('set-career-modal')">
+                    <i class="fas fa-plus"></i> 设置职业方向
+                </button>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="stat-card">
+                    <h3>职业方向推荐</h3>
+                    <input type="number" id="career-user-id" placeholder="用户ID" class="form-control mb-2">
+                    <button class="btn-primary" onclick="getCareerRecommendation()">获取推荐</button>
+                    <div id="career-recommendation" class="mt-4"></div>
+                </div>
+                <div class="stat-card">
+                    <h3>职业目标管理</h3>
+                    <input type="number" id="goal-user-id" placeholder="用户ID" class="form-control mb-2">
+                    <button class="btn-primary" onclick="loadUserGoals()">查看目标</button>
+                    <div id="user-goals" class="mt-4"></div>
+                </div>
+            </div>
+            <div class="table-container mt-4">
+                <table id="career-table">
+                    <thead>
+                        <tr>
+                            <th>用户ID</th>
+                            <th>职业方向</th>
+                            <th>目标级别</th>
+                            <th>创建时间</th>
+                            <th>状态</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="tab-study-plan" class="tab-content">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-lg font-semibold">碎片化学习计划</h2>
+                <button class="btn-primary" onclick="openModal('create-plan-modal')">
+                    <i class="fas fa-plus"></i> 创建学习计划
+                </button>
+            </div>
+            <div class="table-container">
+                <table id="plan-table">
+                    <thead>
+                        <tr>
+                            <th>计划ID</th>
+                            <th>用户ID</th>
+                            <th>科目</th>
+                            <th>目标级别</th>
+                            <th>周学时</th>
+                            <th>进度</th>
+                            <th>状态</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="tab-credits" class="tab-content">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-lg font-semibold">学分证书管理</h2>
+                <div>
+                    <button class="btn-primary" onclick="openModal('add-credits-modal')" style="margin-right: 8px;">
+                        <i class="fas fa-plus"></i> 增加学分
+                    </button>
+                    <button class="btn-primary" onclick="openModal('issue-cert-modal')">
+                        <i class="fas fa-award"></i> 发放证书
+                    </button>
+                </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="stat-card">
+                    <h3>学分查询</h3>
+                    <input type="number" id="credits-user-id" placeholder="用户ID" class="form-control mb-2">
+                    <button class="btn-primary" onclick="getCreditSummary()">查询学分</button>
+                    <div id="credit-summary" class="mt-4"></div>
+                </div>
+                <div class="stat-card">
+                    <h3>证书查询</h3>
+                    <input type="number" id="cert-user-id" placeholder="用户ID" class="form-control mb-2">
+                    <button class="btn-primary" onclick="listCertificates()">查询证书</button>
+                    <div id="cert-list" class="mt-4"></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="tab-corporate" class="tab-content">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-lg font-semibold">企业培训</h2>
+                <div>
+                    <button class="btn-primary" onclick="openModal('create-company-modal')" style="margin-right: 8px;">
+                        <i class="fas fa-building"></i> 创建企业
+                    </button>
+                    <button class="btn-primary" onclick="openModal('create-program-modal')">
+                        <i class="fas fa-plus"></i> 创建培训项目
+                    </button>
+                </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <h3>培训项目列表</h3>
+                    <div class="table-container">
+                        <table id="program-table">
+                            <thead>
+                                <tr>
+                                    <th>项目ID</th>
+                                    <th>企业ID</th>
+                                    <th>项目名称</th>
+                                    <th>类型</th>
+                                    <th>时长(小时)</th>
+                                    <th>所需学分</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+                <div>
+                    <h3>员工培训状态</h3>
+                    <input type="number" id="employee-user-id" placeholder="员工ID" class="form-control mb-2">
+                    <button class="btn-primary" onclick="getEmployeeStatus()">查询状态</button>
+                    <div id="employee-status" class="mt-4"></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="tab-exam" class="tab-content">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-lg font-semibold">在线考试认证</h2>
+                <button class="btn-primary" onclick="openModal('create-exam-modal')">
+                    <i class="fas fa-plus"></i> 创建考试
+                </button>
+            </div>
+            <div class="table-container">
+                <table id="exam-table">
+                    <thead>
+                        <tr>
+                            <th>考试ID</th>
+                            <th>考试名称</th>
+                            <th>类型</th>
+                            <th>科目</th>
+                            <th>时长(分钟)</th>
+                            <th>总分/及格</th>
+                            <th>题目数</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+            <div class="stat-card mt-4">
+                <h3>用户认证证书</h3>
+                <input type="number" id="cert-user-id-exam" placeholder="用户ID" class="form-control mb-2">
+                <button class="btn-primary" onclick="getUserCertifications()">查询认证</button>
+                <div id="user-certifications" class="mt-4"></div>
+            </div>
+        </div>
+
+        <div id="tab-community" class="tab-content">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-lg font-semibold">学习社群</h2>
+                <button class="btn-primary" onclick="openModal('create-community-modal')">
+                    <i class="fas fa-users"></i> 创建社群
+                </button>
+            </div>
+            <div class="table-container">
+                <table id="community-table">
+                    <thead>
+                        <tr>
+                            <th>社群ID</th>
+                            <th>名称</th>
+                            <th>分类</th>
+                            <th>成员数</th>
+                            <th>隐私</th>
+                            <th>创建时间</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div id="set-career-modal" class="modal">
+        <div class="modal-content">
+            <h3>设置职业方向</h3>
+            <div class="form-group">
+                <label>用户ID</label>
+                <input type="number" id="career-set-user-id">
+            </div>
+            <div class="form-group">
+                <label>职业方向</label>
+                <select id="career-set-path">
+                    <option value="software_development">软件开发</option>
+                    <option value="data_science">数据科学</option>
+                    <option value="product_management">产品管理</option>
+                    <option value="ux_design">UX设计</option>
+                    <option value="cybersecurity">网络安全</option>
+                    <option value="digital_marketing">数字营销</option>
+                    <option value="business_analysis">商业分析</option>
+                    <option value="project_management">项目管理</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>目标级别</label>
+                <input type="text" id="career-set-level" placeholder="如: 高级工程师">
+            </div>
+            <div class="flex justify-end gap-2">
+                <button class="btn-primary" onclick="setCareerPath()">设置</button>
+                <button class="btn-primary" style="background:#64748b" onclick="closeModal('set-career-modal')">取消</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="create-plan-modal" class="modal">
+        <div class="modal-content">
+            <h3>创建学习计划</h3>
+            <div class="form-group">
+                <label>用户ID</label>
+                <input type="number" id="plan-user-id">
+            </div>
+            <div class="form-group">
+                <label>科目</label>
+                <input type="text" id="plan-subject" placeholder="如: Python编程">
+            </div>
+            <div class="form-group">
+                <label>目标级别</label>
+                <input type="text" id="plan-target-level" placeholder="如: 精通">
+            </div>
+            <div class="form-group">
+                <label>周学时</label>
+                <input type="number" id="plan-weekly-hours" value="5">
+            </div>
+            <div class="form-group">
+                <label>计划名称</label>
+                <input type="text" id="plan-name" placeholder="计划名称">
+            </div>
+            <div class="flex justify-end gap-2">
+                <button class="btn-primary" onclick="createStudyPlan()">创建</button>
+                <button class="btn-primary" style="background:#64748b" onclick="closeModal('create-plan-modal')">取消</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="add-credits-modal" class="modal">
+        <div class="modal-content">
+            <h3>增加学分</h3>
+            <div class="form-group">
+                <label>用户ID</label>
+                <input type="number" id="credits-add-user-id">
+            </div>
+            <div class="form-group">
+                <label>学分类型</label>
+                <select id="credits-add-type">
+                    <option value="course_completion">课程完成</option>
+                    <option value="exam_passed">考试通过</option>
+                    <option value="activity_participation">活动参与</option>
+                    <option value="project_completion">项目完成</option>
+                    <option value="study_duration">学习时长</option>
+                    <option value="certification">证书认证</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>学分数量</label>
+                <input type="number" id="credits-add-amount">
+            </div>
+            <div class="form-group">
+                <label>科目</label>
+                <input type="text" id="credits-add-subject" placeholder="可选">
+            </div>
+            <div class="flex justify-end gap-2">
+                <button class="btn-primary" onclick="addCredits()">增加</button>
+                <button class="btn-primary" style="background:#64748b" onclick="closeModal('add-credits-modal')">取消</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="issue-cert-modal" class="modal">
+        <div class="modal-content">
+            <h3>发放证书</h3>
+            <div class="form-group">
+                <label>用户ID</label>
+                <input type="number" id="cert-issue-user-id">
+            </div>
+            <div class="form-group">
+                <label>证书类型</label>
+                <select id="cert-issue-type">
+                    <option value="course_completion">课程完成</option>
+                    <option value="professional_cert">职业认证</option>
+                    <option value="skill_cert">技能证书</option>
+                    <option value="exam_passed">考试通过</option>
+                    <option value="advanced_study">进修证书</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>科目</label>
+                <input type="text" id="cert-issue-subject" placeholder="如: Python编程">
+            </div>
+            <div class="form-group">
+                <label>级别</label>
+                <input type="text" id="cert-issue-level" placeholder="如: 高级">
+            </div>
+            <div class="form-group">
+                <label>正确率</label>
+                <input type="number" id="cert-issue-accuracy" placeholder="0-100" value="80">
+            </div>
+            <div class="flex justify-end gap-2">
+                <button class="btn-primary" onclick="issueCertificate()">发放</button>
+                <button class="btn-primary" style="background:#64748b" onclick="closeModal('issue-cert-modal')">取消</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="create-company-modal" class="modal">
+        <div class="modal-content">
+            <h3>创建企业</h3>
+            <div class="form-group">
+                <label>企业ID</label>
+                <input type="text" id="company-id">
+            </div>
+            <div class="form-group">
+                <label>企业名称</label>
+                <input type="text" id="company-name">
+            </div>
+            <div class="form-group">
+                <label>行业</label>
+                <input type="text" id="company-industry" placeholder="如: 互联网">
+            </div>
+            <div class="form-group">
+                <label>员工数量</label>
+                <input type="number" id="company-employee-count" value="0">
+            </div>
+            <div class="form-group">
+                <label>联系邮箱</label>
+                <input type="email" id="company-contact-email">
+            </div>
+            <div class="flex justify-end gap-2">
+                <button class="btn-primary" onclick="createCompany()">创建</button>
+                <button class="btn-primary" style="background:#64748b" onclick="closeModal('create-company-modal')">取消</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="create-program-modal" class="modal">
+        <div class="modal-content">
+            <h3>创建培训项目</h3>
+            <div class="form-group">
+                <label>企业ID</label>
+                <input type="text" id="program-company-id">
+            </div>
+            <div class="form-group">
+                <label>项目名称</label>
+                <input type="text" id="program-name">
+            </div>
+            <div class="form-group">
+                <label>培训类型</label>
+                <select id="program-training-type">
+                    <option value="onboarding">新员工入职</option>
+                    <option value="skill_upgrade">技能提升</option>
+                    <option value="management_training">管理培训</option>
+                    <option value="certification">认证培训</option>
+                    <option value="product_training">产品培训</option>
+                    <option value="compliance">合规培训</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>目标角色</label>
+                <input type="text" id="program-target-role" placeholder="如: 软件工程师">
+            </div>
+            <div class="form-group">
+                <label>时长(小时)</label>
+                <input type="number" id="program-duration">
+            </div>
+            <div class="form-group">
+                <label>所需学分</label>
+                <input type="number" id="program-credits" value="0">
+            </div>
+            <div class="flex justify-end gap-2">
+                <button class="btn-primary" onclick="createTrainingProgram()">创建</button>
+                <button class="btn-primary" style="background:#64748b" onclick="closeModal('create-program-modal')">取消</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="create-exam-modal" class="modal">
+        <div class="modal-content">
+            <h3>创建考试</h3>
+            <div class="form-group">
+                <label>考试名称</label>
+                <input type="text" id="exam-name">
+            </div>
+            <div class="form-group">
+                <label>考试类型</label>
+                <select id="exam-type">
+                    <option value="certification">认证考试</option>
+                    <option value="assessment">能力评估</option>
+                    <option value="placement">入学测试</option>
+                    <option value="final">结业考试</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>科目</label>
+                <input type="text" id="exam-subject" placeholder="如: 数据分析">
+            </div>
+            <div class="form-group">
+                <label>时长(分钟)</label>
+                <input type="number" id="exam-duration">
+            </div>
+            <div class="form-group">
+                <label>总分</label>
+                <input type="number" id="exam-total-score">
+            </div>
+            <div class="form-group">
+                <label>及格分数</label>
+                <input type="number" id="exam-passing-score">
+            </div>
+            <div class="form-group">
+                <label>题目数</label>
+                <input type="number" id="exam-question-count">
+            </div>
+            <div class="flex justify-end gap-2">
+                <button class="btn-primary" onclick="createExam()">创建</button>
+                <button class="btn-primary" style="background:#64748b" onclick="closeModal('create-exam-modal')">取消</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="create-community-modal" class="modal">
+        <div class="modal-content">
+            <h3>创建社群</h3>
+            <div class="form-group">
+                <label>社群名称</label>
+                <input type="text" id="community-name">
+            </div>
+            <div class="form-group">
+                <label>分类</label>
+                <select id="community-category">
+                    <option value="career_development">职业发展</option>
+                    <option value="skill_sharing">技能分享</option>
+                    <option value="study_group">学习小组</option>
+                    <option value="industry_discussion">行业讨论</option>
+                    <option value="networking">人脉拓展</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>描述</label>
+                <textarea id="community-description"></textarea>
+            </div>
+            <div class="form-group">
+                <label>最大成员数</label>
+                <input type="number" id="community-max-members" value="500">
+            </div>
+            <div class="form-group">
+                <label>隐私设置</label>
+                <select id="community-privacy">
+                    <option value="public">公开</option>
+                    <option value="private">私有</option>
+                </select>
+            </div>
+            <div class="flex justify-end gap-2">
+                <button class="btn-primary" onclick="createCommunity()">创建</button>
+                <button class="btn-primary" style="background:#64748b" onclick="closeModal('create-community-modal')">取消</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function switchTab(tabName) {
+            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            event.target.classList.add('active');
+            document.getElementById('tab-' + tabName).classList.add('active');
+            if (tabName === 'study-plan') loadStudyPlans();
+            if (tabName === 'corporate') loadPrograms();
+            if (tabName === 'exam') loadExams();
+            if (tabName === 'community') loadCommunities();
+        }
+
+        function openModal(modalId) {
+            document.getElementById(modalId).classList.add('show');
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('show');
+        }
+
+        function apiCall(url, method, data, callback) {
+            var xhr = new XMLHttpRequest();
+            xhr.open(method, url, true);
+            xhr.setRequestHeader('Content-Type', 'application/json');
+            xhr.onreadystatechange = function() {
+                if (xhr.readyState === 4) {
+                    if (xhr.status === 200) {
+                        try {
+                            callback(null, JSON.parse(xhr.responseText));
+                        } catch(e) {
+                            callback(e, null);
+                        }
+                    } else {
+                        callback(new Error('API Error'), null);
+                    }
+                }
+            };
+            xhr.send(data ? JSON.stringify(data) : null);
+        }
+
+        function loadStats() {
+            apiCall('/api/adult/stats', 'GET', null, function(err, data) {
+                if (!err && data.success) {
+                    document.getElementById('stat-learners').textContent = data.total_learners || 0;
+                    document.getElementById('stat-programs').textContent = data.total_programs || 0;
+                    document.getElementById('stat-exams').textContent = data.total_exams || 0;
+                    document.getElementById('stat-certificates').textContent = data.total_certificates || 0;
+                }
+            });
+        }
+
+        function getCareerRecommendation() {
+            var userId = document.getElementById('career-user-id').value;
+            apiCall('/api/adult/career/recommendation/' + userId, 'GET', null, function(err, data) {
+                if (!err && data.success) {
+                    var html = '<div>推荐职业方向: ' + data.career_path + '</div>';
+                    html += '<div>匹配度: ' + (data.match_score * 100).toFixed(1) + '%</div>';
+                    html += '<div>推荐原因: ' + data.reason + '</div>';
+                    if (data.recommended_courses) {
+                        html += '<div class="mt-2">推荐课程:</div>';
+                        data.recommended_courses.forEach(function(course) {
+                            html += '<div>- ' + course + '</div>';
+                        });
+                    }
+                    document.getElementById('career-recommendation').innerHTML = html;
+                }
+            });
+        }
+
+        function loadUserGoals() {
+            var userId = document.getElementById('goal-user-id').value;
+            apiCall('/api/adult/career/recommendation/' + userId, 'GET', null, function(err, data) {
+                if (!err && data.success) {
+                    var html = '<div>职业方向: ' + (data.career_path || '未设置') + '</div>';
+                    html += '<div>目标级别: ' + (data.target_level || '-') + '</div>';
+                    document.getElementById('user-goals').innerHTML = html;
+                }
+            });
+        }
+
+        function setCareerPath() {
+            var data = {
+                user_id: parseInt(document.getElementById('career-set-user-id').value),
+                career_path: document.getElementById('career-set-path').value,
+                target_level: document.getElementById('career-set-level').value
+            };
+            apiCall('/api/adult/career/path', 'POST', data, function(err, result) {
+                if (!err && result.success) {
+                    alert('职业方向设置成功');
+                    closeModal('set-career-modal');
+                } else {
+                    alert('设置失败: ' + (result.error || '未知错误'));
+                }
+            });
+        }
+
+        function loadStudyPlans() {
+            var tbody = document.querySelector('#plan-table tbody');
+            tbody.innerHTML = '<tr><td colspan="8">暂无数据</td></tr>';
+        }
+
+        function createStudyPlan() {
+            var data = {
+                user_id: parseInt(document.getElementById('plan-user-id').value),
+                subject: document.getElementById('plan-subject').value,
+                target_level: document.getElementById('plan-target-level').value,
+                weekly_hours: parseInt(document.getElementById('plan-weekly-hours').value),
+                plan_name: document.getElementById('plan-name').value
+            };
+            apiCall('/api/adult/study/plan', 'POST', data, function(err, result) {
+                if (!err && result.success) {
+                    alert('学习计划创建成功');
+                    closeModal('create-plan-modal');
+                    loadStudyPlans();
+                } else {
+                    alert('创建失败: ' + (result.error || '未知错误'));
+                }
+            });
+        }
+
+        function getCreditSummary() {
+            var userId = document.getElementById('credits-user-id').value;
+            apiCall('/api/adult/credits/summary/' + userId, 'GET', null, function(err, data) {
+                if (!err && data.success) {
+                    var html = '<div>总学分: ' + data.total_credits + '</div>';
+                    if (data.credit_details) {
+                        data.credit_details.forEach(function(detail) {
+                            html += '<div>' + detail.credit_type + ': ' + detail.credits + '</div>';
+                        });
+                    }
+                    document.getElementById('credit-summary').innerHTML = html;
+                }
+            });
+        }
+
+        function addCredits() {
+            var data = {
+                user_id: parseInt(document.getElementById('credits-add-user-id').value),
+                credit_type: document.getElementById('credits-add-type').value,
+                credits: parseInt(document.getElementById('credits-add-amount').value),
+                subject: document.getElementById('credits-add-subject').value
+            };
+            apiCall('/api/adult/credits', 'POST', data, function(err, result) {
+                if (!err && result.success) {
+                    alert('学分增加成功');
+                    closeModal('add-credits-modal');
+                    getCreditSummary();
+                } else {
+                    alert('操作失败: ' + (result.error || '未知错误'));
+                }
+            });
+        }
+
+        function listCertificates() {
+            var userId = document.getElementById('cert-user-id').value;
+            apiCall('/api/adult/certificate/list/' + userId, 'GET', null, function(err, data) {
+                if (!err && data.success) {
+                    var html = '';
+                    if (data.certificates && data.certificates.length > 0) {
+                        data.certificates.forEach(function(cert) {
+                            html += '<div>证书ID: ' + cert.certificate_id + '</div>';
+                            html += '<div>类型: ' + cert.certificate_type + '</div>';
+                            html += '<div>科目: ' + cert.subject + '</div>';
+                            html += '<div>级别: ' + cert.level + '</div>';
+                            html += '<div>颁发时间: ' + cert.issued_at + '</div>';
+                            html += '<hr>';
+                        });
+                    } else {
+                        html = '<div>暂无证书</div>';
+                    }
+                    document.getElementById('cert-list').innerHTML = html;
+                }
+            });
+        }
+
+        function issueCertificate() {
+            var data = {
+                user_id: parseInt(document.getElementById('cert-issue-user-id').value),
+                certificate_type: document.getElementById('cert-issue-type').value,
+                subject: document.getElementById('cert-issue-subject').value,
+                level: document.getElementById('cert-issue-level').value,
+                accuracy: parseFloat(document.getElementById('cert-issue-accuracy').value) / 100
+            };
+            apiCall('/api/adult/certificate/issue', 'POST', data, function(err, result) {
+                if (!err && result.success) {
+                    alert('证书发放成功');
+                    closeModal('issue-cert-modal');
+                    listCertificates();
+                } else {
+                    alert('操作失败: ' + (result.error || '未知错误'));
+                }
+            });
+        }
+
+        function createCompany() {
+            var data = {
+                company_id: document.getElementById('company-id').value,
+                company_name: document.getElementById('company-name').value,
+                industry: document.getElementById('company-industry').value,
+                employee_count: parseInt(document.getElementById('company-employee-count').value),
+                contact_email: document.getElementById('company-contact-email').value
+            };
+            apiCall('/api/adult/corporate/company', 'POST', data, function(err, result) {
+                if (!err && result.success) {
+                    alert('企业创建成功');
+                    closeModal('create-company-modal');
+                    loadPrograms();
+                } else {
+                    alert('创建失败: ' + (result.error || '未知错误'));
+                }
+            });
+        }
+
+        function createTrainingProgram() {
+            var data = {
+                company_id: document.getElementById('program-company-id').value,
+                program_name: document.getElementById('program-name').value,
+                training_type: document.getElementById('program-training-type').value,
+                target_role: document.getElementById('program-target-role').value,
+                duration_hours: parseFloat(document.getElementById('program-duration').value),
+                required_credits: parseFloat(document.getElementById('program-credits').value)
+            };
+            apiCall('/api/adult/corporate/program', 'POST', data, function(err, result) {
+                if (!err && result.success) {
+                    alert('培训项目创建成功');
+                    closeModal('create-program-modal');
+                    loadPrograms();
+                } else {
+                    alert('创建失败: ' + (result.error || '未知错误'));
+                }
+            });
+        }
+
+        function loadPrograms() {
+            var tbody = document.querySelector('#program-table tbody');
+            tbody.innerHTML = '<tr><td colspan="6">暂无数据</td></tr>';
+        }
+
+        function getEmployeeStatus() {
+            var userId = document.getElementById('employee-user-id').value;
+            apiCall('/api/adult/corporate/status/' + userId, 'GET', null, function(err, data) {
+                if (!err && data.success) {
+                    var html = '<div>培训项目数: ' + (data.enrollments || []).length + '</div>';
+                    if (data.enrollments) {
+                        data.enrollments.forEach(function(enroll) {
+                            html += '<div>项目: ' + enroll.program_name + '</div>';
+                            html += '<div>进度: ' + (enroll.progress * 100).toFixed(1) + '%</div>';
+                            html += '<div>状态: ' + (enroll.completed ? '已完成' : '进行中') + '</div>';
+                            html += '<hr>';
+                        });
+                    }
+                    document.getElementById('employee-status').innerHTML = html;
+                }
+            });
+        }
+
+        function loadExams() {
+            var tbody = document.querySelector('#exam-table tbody');
+            tbody.innerHTML = '<tr><td colspan="8">暂无数据</td></tr>';
+        }
+
+        function createExam() {
+            var data = {
+                exam_name: document.getElementById('exam-name').value,
+                exam_type: document.getElementById('exam-type').value,
+                subject: document.getElementById('exam-subject').value,
+                duration_minutes: parseInt(document.getElementById('exam-duration').value),
+                total_score: parseFloat(document.getElementById('exam-total-score').value),
+                passing_score: parseFloat(document.getElementById('exam-passing-score').value),
+                question_count: parseInt(document.getElementById('exam-question-count').value)
+            };
+            apiCall('/api/adult/exam', 'POST', data, function(err, result) {
+                if (!err && result.success) {
+                    alert('考试创建成功');
+                    closeModal('create-exam-modal');
+                    loadExams();
+                } else {
+                    alert('创建失败: ' + (result.error || '未知错误'));
+                }
+            });
+        }
+
+        function getUserCertifications() {
+            var userId = document.getElementById('cert-user-id-exam').value;
+            apiCall('/api/adult/exam/certifications/' + userId, 'GET', null, function(err, data) {
+                if (!err && data.success) {
+                    var html = '';
+                    if (data.certifications && data.certifications.length > 0) {
+                        data.certifications.forEach(function(cert) {
+                            html += '<div>证书ID: ' + cert.certificate_id + '</div>';
+                            html += '<div>考试名称: ' + cert.exam_name + '</div>';
+                            html += '<div>科目: ' + cert.subject + '</div>';
+                            html += '<div>分数: ' + cert.score + '/' + cert.total_score + '</div>';
+                            html += '<div>获取时间: ' + cert.issued_at + '</div>';
+                            html += '<hr>';
+                        });
+                    } else {
+                        html = '<div>暂无认证证书</div>';
+                    }
+                    document.getElementById('user-certifications').innerHTML = html;
+                }
+            });
+        }
+
+        function loadCommunities() {
+            var tbody = document.querySelector('#community-table tbody');
+            tbody.innerHTML = '<tr><td colspan="7">暂无数据</td></tr>';
+        }
+
+        function createCommunity() {
+            var data = {
+                group_name: document.getElementById('community-name').value,
+                category: document.getElementById('community-category').value,
+                description: document.getElementById('community-description').value,
+                max_members: parseInt(document.getElementById('community-max-members').value),
+                privacy: document.getElementById('community-privacy').value
+            };
+            apiCall('/api/adult/community', 'POST', data, function(err, result) {
+                if (!err && result.success) {
+                    alert('社群创建成功');
+                    closeModal('create-community-modal');
+                    loadCommunities();
+                } else {
+                    alert('创建失败: ' + (result.error || '未知错误'));
+                }
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            loadStats();
+        });
+    </script>
+</body>
+</html>

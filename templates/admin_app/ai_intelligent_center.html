@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI智能中心 - MTSCOS AI</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --primary: #1890ff;
+            --bg: #f0f2f5;
+            --card-bg: #fff;
+            --text: #333;
+            --text-secondary: #666;
+            --border: #e8e8e8;
+            --success: #52c41a;
+            --warning: #faad14;
+            --danger: #ff4d4f;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
+        .header h1 { font-size: 24px; }
+        .header .actions { display: flex; gap: 10px; }
+        .btn { padding: 8px 20px; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; }
+        .btn-primary { background: var(--primary); color: #fff; }
+        .btn-primary:hover { background: #40a9ff; }
+        .btn-secondary { background: #fff; color: var(--text); border: 1px solid var(--border); }
+        .btn-secondary:hover { border-color: var(--primary); color: var(--primary); }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 15px; margin-bottom: 25px; }
+        .stat-card { background: var(--card-bg); border-radius: 10px; padding: 20px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.06); transition: transform 0.2s; }
+        .stat-card:hover { transform: translateY(-3px); box-shadow: 0 4px 16px rgba(0,0,0,0.1); }
+        .stat-card .icon { font-size: 28px; margin-bottom: 8px; }
+        .stat-card .value { font-size: 26px; font-weight: 700; color: var(--primary); }
+        .stat-card .label { font-size: 13px; color: var(--text-secondary); margin-top: 4px; }
+        .section { background: var(--card-bg); border-radius: 10px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+        .section-title { font-size: 16px; font-weight: 600; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; }
+        .feature-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
+        .feature-card { padding: 15px; border: 1px solid var(--border); border-radius: 8px; cursor: pointer; transition: all 0.2s; text-decoration: none; color: var(--text); display: block; }
+        .feature-card:hover { border-color: var(--primary); background: #e6f7ff; transform: translateY(-2px); }
+        .feature-card .feat-icon { font-size: 24px; margin-bottom: 8px; }
+        .feature-card .feat-name { font-weight: 600; font-size: 14px; }
+        .feature-card .feat-desc { font-size: 12px; color: var(--text-secondary); margin-top: 4px; }
+        .task-list { }
+        .task-item { display: flex; justify-content: space-between; align-items: center; padding: 12px; border-bottom: 1px solid var(--border); }
+        .task-item:last-child { border-bottom: none; }
+        .task-item .task-name { font-weight: 500; }
+        .task-item .task-meta { font-size: 12px; color: var(--text-secondary); }
+        .badge { padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; }
+        .badge-pending { background: #fff7e6; color: #fa8c16; }
+        .badge-running { background: #e6f7ff; color: #1890ff; }
+        .badge-completed { background: #f6ffed; color: #52c41a; }
+        .badge-failed { background: #fff1f0; color: #ff4d4f; }
+        .empty { text-align: center; color: var(--text-secondary); padding: 30px; }
+        .action-bar { display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🧠 AI智能中心</h1>
+        <div class="actions">
+            <a href="/admin/ai-scheduler" class="btn btn-primary"><i class="fas fa-chart-bar"></i> 调度仪表盘</a>
+            <a href="/admin" class="btn btn-secondary">返回管理</a>
+        </div>
+    </div>
+
+    <div class="stats-grid" id="stats-grid">
+        <div class="stat-card"><div class="icon">⏳</div><div class="value" id="stat-pending">-</div><div class="label">待执行任务</div></div>
+        <div class="stat-card"><div class="icon">🔄</div><div class="value" id="stat-running">-</div><div class="label">运行中任务</div></div>
+        <div class="stat-card"><div class="icon">✅</div><div class="value" id="stat-completed">-</div><div class="label">今日完成</div></div>
+        <div class="stat-card"><div class="icon"><i class="fas fa-robot"></i></div><div class="value" id="stat-proactive">-</div><div class="label">主动行为</div></div>
+        <div class="stat-card"><div class="icon"><i class="fas fa-users"></i></div><div class="value" id="stat-employees">-</div><div class="label">活跃AI员工</div></div>
+        <div class="stat-card"><div class="icon">🔗</div><div class="value" id="stat-integrations">-</div><div class="label">系统集成</div></div>
+    </div>
+
+    <div class="action-bar">
+        <button class="btn btn-primary" onclick="autoDispatch()"><i class="fas fa-bolt"></i> 自动调度</button>
+        <button class="btn btn-primary" onclick="proactiveScan()">🔍 主动扫描</button>
+        <button class="btn btn-secondary" onclick="loadAll()">🔄 刷新数据</button>
+    </div>
+
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+        <div class="section">
+            <div class="section-title">
+                <span><i class="fas fa-list-check"></i> 待执行任务</span>
+                <a href="/admin/ai-scheduler" style="font-size:13px;color:var(--primary);text-decoration:none;">查看全部 →</a>
+            </div>
+            <div class="task-list" id="task-list">
+                <div class="empty">加载中...</div>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="section-title">
+                <span><i class="fas fa-robot"></i> AI主动行为</span>
+                <a href="/admin/ai-scheduler" style="font-size:13px;color:var(--primary);text-decoration:none;">查看全部 →</a>
+            </div>
+            <div class="task-list" id="action-list">
+                <div class="empty">加载中...</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="section">
+        <div class="section-title"><i class="fas fa-target"></i> AI功能模块</div>
+        <div class="feature-grid">
+            <a href="/admin/ai-scheduler" class="feature-card">
+                <div class="feat-icon"><i class="fas fa-chart-bar"></i></div>
+                <div class="feat-name">AI调度中心</div>
+                <div class="feat-desc">动态任务调度、员工分配、自动调度</div>
+            </a>
+            <a href="/admin/ai-tutor" class="feature-card">
+                <div class="feat-icon"><i class="fas fa-chalkboard-user"></i></div>
+                <div class="feat-name">AI辅导助手</div>
+                <div class="feat-desc">智能辅导、个性化学习建议</div>
+            </a>
+            <a href="/admin/ai-question-generator" class="feature-card">
+                <div class="feat-icon"><i class="fas fa-file-alt"></i></div>
+                <div class="feat-name">AI题目生成</div>
+                <div class="feat-desc">智能出题、知识点覆盖</div>
+            </a>
+            <a href="/admin/ai-exam-composer" class="feature-card">
+                <div class="feat-icon"><i class="fas fa-list-check"></i></div>
+                <div class="feat-name">AI考试编排</div>
+                <div class="feat-desc">智能组卷、难度控制</div>
+            </a>
+            <a href="/admin/ai-study-path" class="feature-card">
+                <div class="feat-icon">🗺️</div>
+                <div class="feat-name">AI学习路径</div>
+                <div class="feat-desc">个性化学习路径规划</div>
+            </a>
+            <a href="/admin/ai-adaptive-learning" class="feature-card">
+                <div class="feat-icon">🔄</div>
+                <div class="feat-name">AI自适应学习</div>
+                <div class="feat-desc">动态调整学习内容和难度</div>
+            </a>
+            <a href="/admin/communication-center" class="feature-card">
+                <div class="feat-icon">💬</div>
+                <div class="feat-name">通讯中心</div>
+                <div class="feat-desc">通知、邮件、短信、交流</div>
+            </a>
+            <a href="/admin/security-vulnerability" class="feature-card">
+                <div class="feat-icon">🔐</div>
+                <div class="feat-name">安全管理</div>
+                <div class="feat-desc">漏洞管理、攻击模拟、代码扫描</div>
+            </a>
+            <a href="/admin/sslvpn-management" class="feature-card">
+                <div class="feat-icon">🔒</div>
+                <div class="feat-name">SSL/VPN管理</div>
+                <div class="feat-desc">证书、HTTPS、VPN、代理</div>
+            </a>
+            <a href="/admin/education-management" class="feature-card">
+                <div class="feat-icon">🎓</div>
+                <div class="feat-name">教育管理</div>
+                <div class="feat-desc">大纲、题库同步、学习追踪</div>
+            </a>
+            <a href="/admin/personalization" class="feature-card">
+                <div class="feat-icon"><i class="fas fa-cog"></i></div>
+                <div class="feat-name">个性化设置</div>
+                <div class="feat-desc">主题、布局、模块管理</div>
+            </a>
+            <a href="/admin/permission-management" class="feature-card">
+                <div class="feat-icon">🛡️</div>
+                <div class="feat-name">权限管理</div>
+                <div class="feat-desc">角色、模块、审计日志</div>
+            </a>
+        </div>
+    </div>
+
+    <script>
+        async function loadStats() {
+            try {
+                const res = await fetch('/api/optimization/ai-scheduler/stats');
+                const data = await res.json();
+                if (data.success) {
+                    const s = data.data;
+                    document.getElementById('stat-pending').textContent = s.pending_tasks || 0;
+                    document.getElementById('stat-running').textContent = s.running_tasks || 0;
+                    document.getElementById('stat-completed').textContent = s.completed_today || 0;
+                    document.getElementById('stat-proactive').textContent = s.proactive_actions || 0;
+                    document.getElementById('stat-employees').textContent = s.active_employees || 0;
+                    document.getElementById('stat-integrations').textContent = s.system_integrations || 0;
+                }
+            } catch(e) { console.error('加载统计失败:', e); }
+        }
+
+        async function loadTasks() {
+            try {
+                const res = await fetch('/api/optimization/ai-scheduler/tasks?limit=5');
+                const data = await res.json();
+                const list = document.getElementById('task-list');
+                if (data.success && data.data.length > 0) {
+                    list.innerHTML = data.data.map(t => `
+                        <div class="task-item">
+                            <div>
+                                <div class="task-name">${t.task_name || '未命名任务'}</div>
+                                <div class="task-meta">${t.target_module || ''} | 优先级: ${t.priority || 'normal'}</div>
+                            </div>
+                            <span class="badge badge-${t.status || 'pending'}">${t.status || 'pending'}</span>
+                        </div>
+                    `).join('');
+                } else {
+                    list.innerHTML = '<div class="empty">暂无待执行任务</div>';
+                }
+            } catch(e) {
+                document.getElementById('task-list').innerHTML = '<div class="empty">加载失败</div>';
+            }
+        }
+
+        async function loadActions() {
+            try {
+                const res = await fetch('/api/optimization/ai-scheduler/proactive-actions?limit=5');
+                const data = await res.json();
+                const list = document.getElementById('action-list');
+                if (data.success && data.data.length > 0) {
+                    list.innerHTML = data.data.map(a => `
+                        <div class="task-item">
+                            <div>
+                                <div class="task-name">${a.action_description || a.action_type}</div>
+                                <div class="task-meta">${a.target_system || ''} | ${a.created_at || ''}</div>
+                            </div>
+                            <span class="badge badge-${a.status === 'success' ? 'completed' : a.status === 'failed' ? 'failed' : 'running'}">${a.status || 'pending'}</span>
+                        </div>
+                    `).join('');
+                } else {
+                    list.innerHTML = '<div class="empty">暂无主动行为记录</div>';
+                }
+            } catch(e) {
+                document.getElementById('action-list').innerHTML = '<div class="empty">加载失败</div>';
+            }
+        }
+
+        async function autoDispatch() {
+            try {
+                const res = await fetch('/api/optimization/ai-scheduler/auto-dispatch', { method: 'POST' });
+                const data = await res.json();
+                if (data.success) {
+                    alert('自动调度完成！' + (data.message || ''));
+                    loadAll();
+                } else {
+                    alert('调度失败: ' + (data.error || ''));
+                }
+            } catch(e) { alert('请求失败'); }
+        }
+
+        async function proactiveScan() {
+            try {
+                const res = await fetch('/api/optimization/ai-scheduler/proactive-scan', { method: 'POST' });
+                const data = await res.json();
+                if (data.success) {
+                    alert('主动扫描完成！' + (data.message || ''));
+                    loadAll();
+                } else {
+                    alert('扫描失败: ' + (data.error || ''));
+                }
+            } catch(e) { alert('请求失败'); }
+        }
+
+        function loadAll() {
+            loadStats();
+            loadTasks();
+            loadActions();
+        }
+
+        loadAll();
+        setInterval(loadStats, 30000);
+    </script>
+</body>
+</html>

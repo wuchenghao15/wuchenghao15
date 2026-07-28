@@ -1,0 +1,427 @@
+{% extends 'student_base.html' %}
+
+{% block title %}专项训练 - MTSCOS AI{% endblock %}
+{% block page_title %}
+专项训练
+{% if education_type %}
+    · 
+    {%- if education_type == 'nine_year' %}九年制义务教育 (数学、语文、英语、物理、化学、政治)
+    {%- elif education_type == 'adult' %}成人教育 (数学、语文、英语、日语)
+    {%- else %}通用学习 (数学、语文、英语、物理、化学、政治、日语){% endif %}
+{% endif %}
+{% endblock %}
+
+{% block extra_styles %}
+<style>
+    .ai-suggestion {
+        background: rgba(34, 197, 94, 0.1);
+        border: 1px solid rgba(34, 197, 94, 0.3);
+        border-radius: var(--radius-md);
+        padding: 16px; margin-bottom: 20px;
+        display: flex; gap: 12px;
+    }
+    .ai-suggestion i { font-size: 20px; color: var(--dark-success); flex-shrink: 0; margin-top: 4px; }
+    .ai-suggestion-content h4 { font-size: 14px; font-weight: 600; color: var(--dark-success); margin-bottom: 4px; }
+    .ai-suggestion-content p { font-size: 13px; color: var(--dark-text-secondary); line-height: 1.5; }
+
+    .category-nav {
+        background: rgba(20, 20, 40, 0.9); border: 1px solid var(--dark-border);
+        border-radius: var(--radius-lg); padding: 14px 20px; margin-bottom: 20px;
+    }
+    .category-list { display: flex; gap: 8px; flex-wrap: wrap; }
+    .category-item {
+        display: inline-flex; align-items: center; gap: 6px;
+        padding: 8px 16px; border-radius: 999px; font-size: 13px;
+        background: rgba(30, 30, 60, 0.6); color: var(--dark-text-secondary);
+        text-decoration: none; border: 1px solid transparent; transition: all .2s;
+    }
+    .category-item:hover { background: rgba(34,197,94,0.15); color: var(--dark-success); border-color: rgba(34,197,94,0.3); }
+    .category-item.active { background: var(--dark-success); color: #fff; border-color: var(--dark-success); }
+
+    .special-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+
+    .special-card {
+        background: rgba(20, 20, 40, 0.9); border: 1px solid var(--dark-border);
+        border-radius: var(--radius-lg); padding: 20px;
+        box-shadow: 0 0 20px rgba(99, 102, 241, 0.08);
+        display: flex; flex-direction: column; gap: 12px;
+        transition: transform .2s, box-shadow .2s, border-color .2s;
+        cursor: pointer;
+    }
+    .special-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 0 30px rgba(34, 197, 94, 0.15);
+        border-color: rgba(34, 197, 94, 0.4);
+    }
+
+    .special-header { display: flex; align-items: center; gap: 12px; }
+    .special-icon {
+        width: 44px; height: 44px; border-radius: var(--radius-md);
+        background: rgba(34,197,94,0.15); color: var(--dark-success);
+        display: flex; align-items: center; justify-content: center;
+        font-size: 18px; flex-shrink: 0;
+    }
+    .special-title { font-size: 15px; font-weight: 700; line-height: 1.3; }
+    .special-desc { font-size: 12px; color: var(--dark-text-secondary); line-height: 1.5; }
+
+    .special-meta { display: flex; gap: 12px; font-size: 12px; color: var(--dark-text-secondary); }
+    .meta-item { display: flex; align-items: center; gap: 4px; }
+    .meta-item i { color: var(--dark-success); }
+    .meta-item b { color: var(--dark-text-primary); font-weight: 600; }
+
+    .special-progress { margin-top: auto; }
+    .progress-header { display: flex; justify-content: space-between; font-size: 11px; color: var(--dark-text-secondary); margin-bottom: 6px; }
+    .progress-bar { height: 6px; background: rgba(30, 30, 60, 0.6); border-radius: 999px; overflow: hidden; }
+    .progress-fill { height: 100%; background: var(--dark-success); border-radius: 999px; transition: width 0.5s ease; }
+
+    .btn {
+        display: inline-flex; align-items: center; gap: 6px;
+        padding: 9px 18px; border-radius: var(--radius-md);
+        text-decoration: none; font-weight: 600; font-size: 13px;
+        border: none; cursor: pointer;
+        background: linear-gradient(135deg, var(--dark-success), #16a34a);
+        color: #fff; transition: all .2s;
+        margin-top: 8px;
+    }
+    .btn:hover { transform: translateY(-1px); box-shadow: 0 5px 20px rgba(34, 197, 94, 0.3); }
+
+    .filter-bar {
+        display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+    }
+    .search-box {
+        position: relative; flex: 1; max-width: 320px;
+    }
+    .search-box input {
+        width: 100%; padding: 9px 14px 9px 36px;
+        border: 1px solid var(--dark-border); border-radius: var(--radius-md);
+        background: rgba(30, 30, 60, 0.6); color: var(--dark-text-primary);
+        font-size: 13px; outline: none; transition: all .2s;
+    }
+    .search-box input:focus { border-color: var(--dark-success); background: rgba(30, 30, 60, 0.8); }
+    .search-box input::placeholder { color: var(--dark-text-secondary); }
+    .search-box i {
+        position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
+        color: var(--dark-text-secondary); font-size: 14px;
+    }
+
+    .empty {
+        background: rgba(20, 20, 40, 0.9); border: 1px solid var(--dark-border);
+        border-radius: var(--radius-lg); text-align: center; padding: 60px 20px;
+        color: var(--dark-text-secondary);
+    }
+    .empty i { font-size: 48px; margin-bottom: 14px; display: block; color: var(--dark-border); }
+    .empty h3 { font-size: 18px; color: var(--dark-text-primary); margin-bottom: 6px; }
+
+    @media (max-width: 900px) { .special-grid { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 600px) { .special-grid { grid-template-columns: 1fr; } }
+</style>
+{% endblock %}
+
+{% block content %}
+    <div class="ai-suggestion">
+        <i class="fas fa-lightbulb"></i>
+        <div class="ai-suggestion-content">
+            <h4>AI智能推荐</h4>
+            <p>根据您的错题分析，建议优先训练：<strong>数学-函数与导数</strong>、<strong>物理-力学</strong>、<strong>英语-阅读理解</strong>。这些是您错误率较高的专项。</p>
+        </div>
+    </div>
+
+    <div class="category-nav">
+        <div class="category-list">
+            <a href="/exam_system/special_training" class="category-item {% if not subject_filter or subject_filter == 'all' %}active{% endif %}">
+                <i class="fas fa-layer-group"></i> 全部专项
+            </a>
+            {% if education_type in ['nine_year', 'adult', 'general'] %}
+            <a href="/exam_system/special_training?subject=math" class="category-item {% if subject_filter == 'math' %}active{% endif %}">
+                <i class="fas fa-calculator"></i> 数学
+            </a>
+            <a href="/exam_system/special_training?subject=chinese" class="category-item {% if subject_filter == 'chinese' %}active{% endif %}">
+                <i class="fas fa-book"></i> 语文
+            </a>
+            <a href="/exam_system/special_training?subject=english" class="category-item {% if subject_filter == 'english' %}active{% endif %}">
+                <i class="fas fa-language"></i> 英语
+            </a>
+            {% endif %}
+            {% if education_type in ['nine_year', 'adult', 'general'] %}
+            <a href="/exam_system/special_training?subject=physics" class="category-item {% if subject_filter == 'physics' %}active{% endif %}">
+                <i class="fas fa-atom"></i> 物理
+            </a>
+            <a href="/exam_system/special_training?subject=chemistry" class="category-item {% if subject_filter == 'chemistry' %}active{% endif %}">
+                <i class="fas fa-flask-vial"></i> 化学
+            </a>
+            <a href="/exam_system/special_training?subject=politics" class="category-item {% if subject_filter == 'politics' %}active{% endif %}">
+                <i class="fas fa-landmark"></i> 政治
+            </a>
+            {% endif %}
+            {% if education_type in ['adult', 'general'] %}
+            <a href="/exam_system/special_training?subject=japanese" class="category-item {% if subject_filter == 'japanese' %}active{% endif %}">
+                <i class="fas fa-language"></i> 日语
+            </a>
+            {% endif %}
+            {% if education_type in ['nine_year', 'adult', 'general'] %}
+            <a href="/exam_system/special_training?subject=english_listening" class="category-item {% if subject_filter == 'english_listening' %}active{% endif %}">
+                <i class="fas fa-headphones"></i> 英语听力
+            </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="filter-bar" style="margin-bottom: 20px;">
+        <div class="search-box">
+            <i class="fas fa-search"></i>
+            <input type="text" id="searchInput" placeholder="搜索专项训练名称、描述..." oninput="filterSpecials()">
+        </div>
+    </div>
+
+    <div class="special-grid">
+        <div class="special-card" onclick="startTraining('math-functions')">
+            <div class="special-header">
+                <div class="special-icon"><i class="fas fa-chart-line"></i></div>
+                <div>
+                    <div class="special-title">数学 - 函数与导数</div>
+                    <div class="special-desc">掌握函数的基本性质、导数的计算与应用</div>
+                </div>
+            </div>
+            <div class="special-meta">
+                <div class="meta-item"><i class="fas fa-list-ol"></i> <b>50</b> 题</div>
+                <div class="meta-item"><i class="fas fa-clock"></i> <b>90</b> 分钟</div>
+                <div class="meta-item"><i class="fas fa-star"></i> 中等</div>
+            </div>
+            <div class="special-progress">
+                <div class="progress-header">
+                    <span>完成进度</span>
+                    <span><b>35%</b></span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: 35%"></div>
+                </div>
+            </div>
+            <button class="btn"><i class="fas fa-play"></i> 开始训练</button>
+        </div>
+
+        <div class="special-card" onclick="startTraining('math-geometry')">
+            <div class="special-header">
+                <div class="special-icon"><i class="fas fa-shapes"></i></div>
+                <div>
+                    <div class="special-title">数学 - 立体几何</div>
+                    <div class="special-desc">空间几何体的性质、表面积与体积计算</div>
+                </div>
+            </div>
+            <div class="special-meta">
+                <div class="meta-item"><i class="fas fa-list-ol"></i> <b>40</b> 题</div>
+                <div class="meta-item"><i class="fas fa-clock"></i> <b>60</b> 分钟</div>
+                <div class="meta-item"><i class="fas fa-star"></i> 中等</div>
+            </div>
+            <div class="special-progress">
+                <div class="progress-header">
+                    <span>完成进度</span>
+                    <span><b>62%</b></span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: 62%"></div>
+                </div>
+            </div>
+            <button class="btn"><i class="fas fa-play"></i> 开始训练</button>
+        </div>
+
+        <div class="special-card" onclick="startTraining('math-probability')">
+            <div class="special-header">
+                <div class="special-icon"><i class="fas fa-dice"></i></div>
+                <div>
+                    <div class="special-title">数学 - 概率统计</div>
+                    <div class="special-desc">概率计算、统计分析与数据处理</div>
+                </div>
+            </div>
+            <div class="special-meta">
+                <div class="meta-item"><i class="fas fa-list-ol"></i> <b>35</b> 题</div>
+                <div class="meta-item"><i class="fas fa-clock"></i> <b>45</b> 分钟</div>
+                <div class="meta-item"><i class="fas fa-star"></i> 简单</div>
+            </div>
+            <div class="special-progress">
+                <div class="progress-header">
+                    <span>完成进度</span>
+                    <span><b>80%</b></span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: 80%"></div>
+                </div>
+            </div>
+            <button class="btn"><i class="fas fa-play"></i> 开始训练</button>
+        </div>
+
+        <div class="special-card" onclick="startTraining('english-reading')">
+            <div class="special-header">
+                <div class="special-icon"><i class="fas fa-book-open"></i></div>
+                <div>
+                    <div class="special-title">英语 - 阅读理解</div>
+                    <div class="special-desc">提高阅读速度与理解能力，掌握答题技巧</div>
+                </div>
+            </div>
+            <div class="special-meta">
+                <div class="meta-item"><i class="fas fa-list-ol"></i> <b>60</b> 篇</div>
+                <div class="meta-item"><i class="fas fa-clock"></i> <b>120</b> 分钟</div>
+                <div class="meta-item"><i class="fas fa-star"></i> 中等</div>
+            </div>
+            <div class="special-progress">
+                <div class="progress-header">
+                    <span>完成进度</span>
+                    <span><b>28%</b></span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: 28%"></div>
+                </div>
+            </div>
+            <button class="btn"><i class="fas fa-play"></i> 开始训练</button>
+        </div>
+
+        <div class="special-card" onclick="startTraining('english-writing')">
+            <div class="special-header">
+                <div class="special-icon"><i class="fas fa-pen"></i></div>
+                <div>
+                    <div class="special-title">英语 - 写作表达</div>
+                    <div class="special-desc">提高书面表达能力，掌握各类文体写作</div>
+                </div>
+            </div>
+            <div class="special-meta">
+                <div class="meta-item"><i class="fas fa-list-ol"></i> <b>30</b> 篇</div>
+                <div class="meta-item"><i class="fas fa-clock"></i> <b>90</b> 分钟</div>
+                <div class="meta-item"><i class="fas fa-star"></i> 中等</div>
+            </div>
+            <div class="special-progress">
+                <div class="progress-header">
+                    <span>完成进度</span>
+                    <span><b>45%</b></span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: 45%"></div>
+                </div>
+            </div>
+            <button class="btn"><i class="fas fa-play"></i> 开始训练</button>
+        </div>
+
+        <div class="special-card" onclick="startTraining('physics-mechanics')">
+            <div class="special-header">
+                <div class="special-icon"><i class="fas fa-car"></i></div>
+                <div>
+                    <div class="special-title">物理 - 力学基础</div>
+                    <div class="special-desc">牛顿运动定律、动量守恒、能量守恒</div>
+                </div>
+            </div>
+            <div class="special-meta">
+                <div class="meta-item"><i class="fas fa-list-ol"></i> <b>45</b> 题</div>
+                <div class="meta-item"><i class="fas fa-clock"></i> <b>75</b> 分钟</div>
+                <div class="meta-item"><i class="fas fa-star"></i> 中等</div>
+            </div>
+            <div class="special-progress">
+                <div class="progress-header">
+                    <span>完成进度</span>
+                    <span><b>15%</b></span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: 15%"></div>
+                </div>
+            </div>
+            <button class="btn"><i class="fas fa-play"></i> 开始训练</button>
+        </div>
+
+        <div class="special-card" onclick="startTraining('physics-electric')">
+            <div class="special-header">
+                <div class="special-icon"><i class="fas fa-bolt"></i></div>
+                <div>
+                    <div class="special-title">物理 - 电磁学</div>
+                    <div class="special-desc">电场、磁场、电路分析与电磁感应</div>
+                </div>
+            </div>
+            <div class="special-meta">
+                <div class="meta-item"><i class="fas fa-list-ol"></i> <b>50</b> 题</div>
+                <div class="meta-item"><i class="fas fa-clock"></i> <b>90</b> 分钟</div>
+                <div class="meta-item"><i class="fas fa-star"></i> 困难</div>
+            </div>
+            <div class="special-progress">
+                <div class="progress-header">
+                    <span>完成进度</span>
+                    <span><b>22%</b></span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: 22%"></div>
+                </div>
+            </div>
+            <button class="btn"><i class="fas fa-play"></i> 开始训练</button>
+        </div>
+
+        <div class="special-card" onclick="startTraining('chinese-reading')">
+            <div class="special-header">
+                <div class="special-icon"><i class="fas fa-scroll"></i></div>
+                <div>
+                    <div class="special-title">语文 - 现代文阅读</div>
+                    <div class="special-desc">提高阅读理解能力，掌握答题技巧</div>
+                </div>
+            </div>
+            <div class="special-meta">
+                <div class="meta-item"><i class="fas fa-list-ol"></i> <b>40</b> 篇</div>
+                <div class="meta-item"><i class="fas fa-clock"></i> <b>100</b> 分钟</div>
+                <div class="meta-item"><i class="fas fa-star"></i> 中等</div>
+            </div>
+            <div class="special-progress">
+                <div class="progress-header">
+                    <span>完成进度</span>
+                    <span><b>55%</b></span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: 55%"></div>
+                </div>
+            </div>
+            <button class="btn"><i class="fas fa-play"></i> 开始训练</button>
+        </div>
+
+        <div class="special-card" onclick="startTraining('chinese-writing')">
+            <div class="special-header">
+                <div class="special-icon"><i class="fas fa-feather"></i></div>
+                <div>
+                    <div class="special-title">语文 - 作文写作</div>
+                    <div class="special-desc">掌握各类文体写作技巧，提高写作水平</div>
+                </div>
+            </div>
+            <div class="special-meta">
+                <div class="meta-item"><i class="fas fa-list-ol"></i> <b>25</b> 篇</div>
+                <div class="meta-item"><i class="fas fa-clock"></i> <b>120</b> 分钟</div>
+                <div class="meta-item"><i class="fas fa-star"></i> 中等</div>
+            </div>
+            <div class="special-progress">
+                <div class="progress-header">
+                    <span>完成进度</span>
+                    <span><b>30%</b></span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: 30%"></div>
+                </div>
+            </div>
+            <button class="btn"><i class="fas fa-play"></i> 开始训练</button>
+        </div>
+    </div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+function startTraining(trainingId) {
+    alert('即将开始专项训练: ' + trainingId);
+}
+
+function filterSpecials() {
+    const searchInput = document.getElementById('searchInput');
+    const searchTerm = searchInput.value.toLowerCase().trim();
+    const specialCards = document.querySelectorAll('.special-card');
+
+    specialCards.forEach(card => {
+        const title = card.querySelector('.special-title')?.textContent.toLowerCase() || '';
+        const desc = card.querySelector('.special-desc')?.textContent.toLowerCase() || '';
+        
+        if (title.includes(searchTerm) || desc.includes(searchTerm)) {
+            card.style.display = '';
+        } else {
+            card.style.display = 'none';
+        }
+    });
+}
+</script>
+{% endblock %}

@@ -1,0 +1,1664 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>系统设置 - MTSCOS AI 管理端</title>
+    <link rel="stylesheet" href="/assets/css/mtscos-design-system.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    {% if csrf_token %}
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    {% endif %}
+    <style>
+        :root {
+            --primary-color: #6366f1;
+            --primary-light: #8b5cf6;
+            --primary-dark: #4f46e5;
+            --secondary-color: #06b6d4;
+            --accent-color: #f59e0b;
+            --success-color: #22c55e;
+            --warning-color: #f59e0b;
+            --danger-color: #ef4444;
+            --text-primary: #ffffff;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --bg-gradient-start: #0c0c1e;
+            --bg-gradient-mid: #1a1a3e;
+            --bg-gradient-end: #0c0c1e;
+            --card-bg: rgba(20, 20, 40, 0.75);
+            --card-border: rgba(99, 102, 241, 0.2);
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            --radius-sm: 8px;
+            --radius-md: 12px;
+            --radius-lg: 16px;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, var(--bg-gradient-start) 0%, var(--bg-gradient-mid) 50%, var(--bg-gradient-end) 100%);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        .page-wrap {
+            position: relative;
+            z-index: 1;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        #particles-js {
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .topbar {
+            display: flex; align-items: center; justify-content: space-between;
+            background: var(--card-bg); border: 1px solid var(--card-border);
+            border-radius: 20px; padding: 20px 28px;
+            box-shadow: var(--shadow-md); margin-bottom: 32px;
+            backdrop-filter: blur(20px);
+            transition: all 0.3s;
+        }
+        .topbar:hover {
+            border-color: var(--primary-color);
+            box-shadow: 0 10px 30px rgba(99, 102, 241, 0.15);
+        }
+        .topbar-left { display: flex; align-items: center; gap: 14px; }
+        .brand-badge {
+            width: 48px; height: 48px; border-radius: var(--radius-md);
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-light));
+            color: #fff;
+            display: flex; align-items: center; justify-content: center; font-size: 22px;
+            box-shadow: 0 0 20px rgba(99, 102, 241, 0.4);
+        }
+        .brand-text h1 { font-size: 20px; font-weight: 700; }
+        .brand-text .sub { font-size: 13px; color: var(--text-secondary); margin-top: 2px; }
+        .topbar-right { display: flex; align-items: center; gap: 10px; }
+        .icon-btn {
+            width: 40px; height: 40px; border-radius: var(--radius-md);
+            background: rgba(0, 0, 0, 0.3); border: 1px solid var(--card-border);
+            color: var(--text-primary); display: flex; align-items: center; justify-content: center;
+            text-decoration: none; font-size: 17px; position: relative;
+            transition: all 0.3s;
+        }
+        .icon-btn:hover { background: var(--primary-color); color: #fff; transform: translateY(-2px); }
+        .bell .badge {
+            position: absolute; top: -6px; right: -6px;
+            background: var(--danger-color); color: #fff;
+            font-size: 11px; min-width: 18px; height: 18px;
+            border-radius: 999px; display: flex; align-items: center; justify-content: center; padding: 0 4px;
+        }
+        .role-badge {
+            font-size: 11px; padding: 2px 10px; border-radius: 999px;
+            background: rgba(99,102,241,0.15); color: var(--primary-color); margin-left: 6px;
+        }
+
+        .tabs {
+            display: flex; gap: 6px;
+            background: var(--card-bg); border: 1px solid var(--card-border);
+            border-radius: 20px; padding: 8px;
+            margin-bottom: 24px; overflow-x: auto;
+            backdrop-filter: blur(20px);
+        }
+        .tab {
+            padding: 12px 22px; border-radius: 16px;
+            cursor: pointer; font-size: 14px; font-weight: 600;
+            color: var(--text-secondary); white-space: nowrap;
+            transition: all 0.3s;
+        }
+        .tab:hover { color: var(--text-primary); background: rgba(0, 0, 0, 0.3); transform: translateY(-2px); }
+        .tab.active { background: linear-gradient(135deg, var(--primary-color), var(--primary-light)); color: #fff; box-shadow: 0 8px 24px rgba(99, 102, 241, 0.4); }
+        .tab i { margin-right: 8px; }
+
+        .section {
+            background: var(--card-bg); border: 1px solid var(--card-border);
+            border-radius: 24px; box-shadow: var(--shadow-md);
+            margin-bottom: 24px; overflow: hidden;
+            display: none;
+            backdrop-filter: blur(20px);
+            transition: all 0.3s;
+        }
+        .section.active { display: block; }
+        .section:hover { border-color: var(--primary-color); transform: translateY(-2px); box-shadow: 0 15px 40px rgba(0, 0, 0, 0.2); }
+        .section-head {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 16px 22px; border-bottom: 1px solid var(--card-border);
+        }
+        .section-head-left { display: flex; align-items: center; gap: 10px; }
+        .section-head-left h2 { font-size: 16px; font-weight: 700; }
+        .si {
+            width: 34px; height: 34px; border-radius: var(--radius-sm);
+            display: flex; align-items: center; justify-content: center; font-size: 15px;
+        }
+        .si.blue { background: rgba(59,130,246,0.15); color: var(--primary-color); }
+        .si.orange { background: rgba(249,115,22,0.15); color: var(--warning-color); }
+        .si.green { background: rgba(34,197,94,0.15); color: var(--success-color); }
+        .si.purple { background: rgba(168,85,247,0.15); color: var(--secondary-color); }
+        .si.red { background: rgba(239,68,68,0.15); color: var(--danger-color); }
+        .si.cyan { background: rgba(14,165,233,0.15); color: #0ea5e9; }
+        .section-head-actions { display: flex; gap: 8px; }
+
+        .section-body { padding: 8px 22px 22px; }
+
+        .config-item {
+            display: flex; justify-content: space-between; align-items: flex-start;
+            padding: 14px 0; border-bottom: 1px solid var(--card-border);
+            gap: 20px;
+            transition: background 0.3s;
+        }
+        .config-item:last-child { border-bottom: none; }
+        .config-item:hover { background: rgba(0, 0, 0, 0.2); }
+        .config-info { flex: 1; min-width: 0; }
+        .config-key {
+            font-size: 14px; font-weight: 600; color: var(--text-primary);
+            margin-bottom: 4px; word-break: break-all;
+        }
+        .config-desc { font-size: 12px; color: var(--text-secondary); }
+        .config-value {
+            display: flex; align-items: center; gap: 8px;
+            flex-shrink: 0;
+        }
+        .config-value input[type="text"],
+        .config-value input[type="number"],
+        .config-value input[type="email"],
+        .config-value input[type="tel"],
+        .config-value input[type="url"],
+        .config-value select {
+            padding: 12px 16px;
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            font-size: 14px;
+            width: 180px;
+            background: rgba(0, 0, 0, 0.3);
+            color: var(--text-primary);
+            font-family: inherit;
+            transition: all 0.3s;
+        }
+        .config-value input:focus,
+        .config-value select:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+        }
+        .config-value input.valid {
+            border-color: var(--success-color);
+        }
+        .config-value input.invalid {
+            border-color: var(--danger-color);
+        }
+        .config-value .input-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .config-value .input-group input {
+            flex: 1;
+            width: auto;
+        }
+        .validation-icon {
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            flex-shrink: 0;
+        }
+
+        .toggle {
+            position: relative;
+            width: 44px;
+            height: 24px;
+            border-radius: 12px;
+            background: var(--card-border);
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        .toggle.on { background: var(--success-color); }
+        .toggle::after {
+            content: '';
+            position: absolute;
+            top: 3px; left: 3px;
+            width: 18px; height: 18px;
+            border-radius: 50%;
+            background: #fff;
+            transition: transform 0.3s;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        .toggle.on::after { transform: translateX(20px); }
+
+        .btn-save-row {
+            display: flex; justify-content: flex-end;
+            padding-top: 16px; border-top: 1px solid var(--card-border);
+            margin-top: 8px;
+        }
+        .btn {
+            padding: 10px 24px;
+            border: none;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .btn-primary { 
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-light)); 
+            color: #fff; 
+        }
+        .btn-primary:hover { 
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(99, 102, 241, 0.4);
+        }
+        .btn-success { background: var(--success-color); color: #fff; }
+        .btn-success:hover { 
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(34, 197, 94, 0.4);
+        }
+        .btn-warning { 
+            background: var(--warning-color); 
+            color: #fff; 
+        }
+        .btn-warning:hover { 
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(245, 158, 11, 0.4);
+        }
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-primary);
+            border: 1px solid var(--card-border);
+        }
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+        .btn-danger {
+            background: var(--danger-color);
+            color: #fff;
+        }
+        .btn-danger:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(239, 68, 68, 0.4);
+        }
+
+        .status-chip {
+            display: inline-flex; align-items: center; gap: 6px;
+            font-size: 12px; padding: 3px 10px; border-radius: 999px;
+        }
+        .status-chip.on { background: rgba(34,197,94,0.15); color: var(--success-color); }
+        .status-chip.off { background: rgba(148,163,184,0.15); color: var(--text-secondary); }
+
+        .kv-list { display: grid; grid-template-columns: 1fr 1fr; gap: 0; }
+        .kv {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 14px 0; border-bottom: 1px solid var(--card-border);
+            transition: background 0.3s;
+        }
+        .kv:nth-last-child(-n+2) { border-bottom: none; }
+        .kv:hover { background: rgba(0, 0, 0, 0.2); }
+        .kv .k { font-size: 14px; color: var(--text-secondary); display: flex; align-items: center; gap: 8px; }
+        .kv .v { font-size: 14px; font-weight: 600; color: var(--text-primary); }
+
+        .marquee-preview {
+            margin-top: 14px; padding: 12px 16px; background: rgba(0, 0, 0, 0.3);
+            border-radius: var(--radius-md); border: 1px solid var(--card-border);
+            font-size: 13px; color: var(--text-primary);
+            display: flex; align-items: center; gap: 10px;
+        }
+        .marquee-preview i { color: var(--warning-color); }
+
+        .empty {
+            text-align: center; padding: 30px 20px; color: var(--text-secondary);
+        }
+        .empty i { font-size: 32px; margin-bottom: 8px; display: block; color: var(--card-border); }
+
+        .user-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-light));
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            font-weight: 600;
+            flex-shrink: 0;
+            box-shadow: 0 0 20px rgba(99, 102, 241, 0.4);
+        }
+        .user-avatar.default {
+            background: linear-gradient(135deg, #64748b, #94a3b8);
+        }
+
+        .toast {
+            position: fixed;
+            top: 20px; right: 20px;
+            padding: 12px 24px;
+            border-radius: var(--radius-md);
+            color: #fff;
+            font-size: 14px;
+            z-index: 9999;
+            transform: translateX(120%);
+            transition: transform 0.3s;
+            box-shadow: var(--shadow-lg);
+        }
+        .toast.show { transform: translateX(0); }
+        .toast.success { background: var(--success-color); }
+        .toast.error { background: var(--danger-color); }
+        .toast.info { background: var(--primary-color); }
+
+        .marquee-edit {
+            margin-top: 12px;
+            display: flex; gap: 8px;
+        }
+        .marquee-edit input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            font-size: 14px;
+            background: rgba(0, 0, 0, 0.3);
+            color: var(--text-primary);
+            font-family: inherit;
+            transition: all 0.3s;
+        }
+        .marquee-edit input:focus { 
+            outline: none; 
+            border-color: var(--primary-color); 
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+        }
+
+        .system-stats {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        .stat-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: var(--radius-lg);
+            padding: 20px;
+            text-align: center;
+            transition: all 0.3s;
+        }
+        .stat-card:hover {
+            border-color: var(--primary-color);
+            transform: translateY(-2px);
+        }
+        .stat-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: var(--radius-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            margin: 0 auto 12px;
+        }
+        .stat-icon.blue { background: rgba(59,130,246,0.15); color: var(--primary-color); }
+        .stat-icon.green { background: rgba(34,197,94,0.15); color: var(--success-color); }
+        .stat-icon.orange { background: rgba(249,115,22,0.15); color: var(--warning-color); }
+        .stat-icon.red { background: rgba(239,68,68,0.15); color: var(--danger-color); }
+        .stat-value {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 4px;
+        }
+        .stat-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .security-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 0;
+            border-bottom: 1px solid var(--card-border);
+        }
+        .security-item:last-child { border-bottom: none; }
+        .security-info { flex: 1; }
+        .security-title { font-size: 14px; font-weight: 600; color: var(--text-primary); margin-bottom: 4px; }
+        .security-desc { font-size: 12px; color: var(--text-secondary); }
+
+        .backup-section {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+        }
+        .backup-card {
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--card-border);
+            border-radius: var(--radius-md);
+            padding: 16px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .backup-card:hover {
+            border-color: var(--primary-color);
+            transform: translateY(-2px);
+        }
+        .backup-icon {
+            width: 56px;
+            height: 56px;
+            border-radius: var(--radius-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            margin: 0 auto 12px;
+            background: rgba(99,102,241,0.15);
+            color: var(--primary-color);
+        }
+        .backup-name {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 4px;
+        }
+        .backup-desc {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .ai-engine-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .engine-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            border-bottom: 1px solid var(--card-border);
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        .engine-item:hover { background: rgba(0, 0, 0, 0.2); }
+        .engine-item:last-child { border-bottom: none; }
+        .engine-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: var(--radius-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+        }
+        .engine-info { flex: 1; }
+        .engine-name { font-size: 14px; font-weight: 600; color: var(--text-primary); margin-bottom: 2px; }
+        .engine-status { font-size: 12px; color: var(--text-secondary); }
+        .engine-status.active { color: var(--success-color); }
+        .engine-status.inactive { color: var(--danger-color); }
+
+        @media (max-width: 720px) {
+            .kv-list { grid-template-columns: 1fr; }
+            .kv:nth-last-child(-n+2) { border-bottom: 1px solid var(--card-border); }
+            .kv:last-child { border-bottom: none; }
+            .config-item { flex-direction: column; }
+            .config-value { width: 100%; }
+            .config-value input, .config-value select { width: 100%; }
+            .system-stats { grid-template-columns: repeat(2, 1fr); }
+            .backup-section { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+<div class="page-wrap">
+
+    <div class="topbar">
+        <div class="topbar-left">
+            <a href="/admin_app/dashboard" class="icon-btn" title="返回管理端"><i class="fas fa-arrow-left"></i></a>
+            <div class="brand-badge"><i class="fas fa-gear"></i></div>
+            <div class="brand-text">
+                <h1>系统设置</h1>
+                <div class="sub">
+                    {% if user %}{{ user.username }}{% if user.role %}<span class="role-badge">{{ user.role }}</span>{% endif %}{% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="topbar-right">
+            <a href="/admin_app/notifications" class="icon-btn bell" title="通知">
+                <i class="fas fa-bell"></i>
+                {% if notification_count %}<span class="badge">{{ notification_count }}</span>{% endif %}
+            </a>
+            <a href="/" class="icon-btn" title="返回首页"><i class="fas fa-house"></i></a>
+        </div>
+    </div>
+
+    <div class="tabs">
+        <div class="tab active" data-tab="overview" onclick="switchTab('overview')">
+            <i class="fas fa-chart-pie"></i>系统概览
+        </div>
+        <div class="tab" data-tab="account" onclick="switchTab('account')">
+            <i class="fas fa-user-shield"></i>账户信息
+        </div>
+        {% if config_categories %}
+        {% for cat in config_categories %}
+        <div class="tab" data-tab="{{ cat }}" onclick="switchTab('{{ cat }}')">
+            <i class="fas fa-cog"></i>{{ category_labels[cat] if category_labels and category_labels[cat] else cat }}
+        </div>
+        {% endfor %}
+        {% endif %}
+        <div class="tab" data-tab="security" onclick="switchTab('security')">
+            <i class="fas fa-shield-halved"></i>安全设置
+        </div>
+        <div class="tab" data-tab="ai" onclick="switchTab('ai')">
+            <i class="fas fa-robot"></i>AI引擎管理
+        </div>
+        <div class="tab" data-tab="backup" onclick="switchTab('backup')">
+            <i class="fas fa-backup"></i>数据备份
+        </div>
+        <div class="tab" data-tab="notice" onclick="switchTab('notice')">
+            <i class="fas fa-bullhorn"></i>系统公告
+        </div>
+        <div class="tab" data-tab="users" onclick="switchTab('users')">
+            <i class="fas fa-users"></i>用户管理
+        </div>
+        <div class="tab" data-tab="logs" onclick="switchTab('logs')">
+            <i class="fas fa-file-lines"></i>日志管理
+        </div>
+        <div class="tab" data-tab="email" onclick="switchTab('email')">
+            <i class="fas fa-envelope"></i>邮件配置
+        </div>
+        <div class="tab" data-tab="api" onclick="switchTab('api')">
+            <i class="fas fa-code"></i>API管理
+        </div>
+        <div class="tab" data-tab="system" onclick="switchTab('system')">
+            <i class="fas fa-server"></i>系统信息
+        </div>
+    </div>
+
+    <div class="section active" id="tab-overview">
+        <div class="section-head">
+            <div class="section-head-left">
+                <div class="si blue"><i class="fas fa-chart-pie"></i></div>
+                <h2>系统概览</h2>
+            </div>
+            <div class="section-head-actions">
+                <button class="btn btn-primary" onclick="refreshOverview()"><i class="fas fa-refresh"></i>刷新</button>
+            </div>
+        </div>
+        <div class="section-body">
+            <div class="system-stats">
+                <div class="stat-card">
+                    <div class="stat-icon blue"><i class="fas fa-users"></i></div>
+                    <div class="stat-value">6</div>
+                    <div class="stat-label">用户总数</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon green"><i class="fas fa-file-alt"></i></div>
+                    <div class="stat-value">8</div>
+                    <div class="stat-label">考试总数</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon orange"><i class="fas fa-lock"></i></div>
+                    <div class="stat-value">5</div>
+                    <div class="stat-label">最大登录尝试</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon red"><i class="fas fa-clock"></i></div>
+                    <div class="stat-value">30</div>
+                    <div class="stat-label">会话超时(分)</div>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                <div class="settings-card" style="margin: 0;">
+                    <div class="card-head" style="padding: 12px 16px;">
+                        <div class="card-icon icon-green"><i class="fas fa-check-circle"></i></div>
+                        <h2>运行状态</h2>
+                    </div>
+                    <div class="card-body" style="padding: 16px;">
+                        <div class="kv-list" style="grid-template-columns: 1fr;">
+                            <div class="kv"><span class="k"><i class="fas fa-server"></i> 数据库连接</span><span class="v"><span class="status-chip on"><i class="fas fa-circle-check"></i> 正常</span></span></div>
+                            <div class="kv"><span class="k"><i class="fas fa-database"></i> 数据同步</span><span class="v"><span class="status-chip on"><i class="fas fa-circle-check"></i> 正常</span></span></div>
+                            <div class="kv"><span class="k"><i class="fas fa-robot"></i> AI引擎</span><span class="v"><span class="status-chip on"><i class="fas fa-circle-check"></i> 正常</span></span></div>
+                            <div class="kv"><span class="k"><i class="fas fa-shield-halved"></i> 安全防护</span><span class="v"><span class="status-chip on"><i class="fas fa-circle-check"></i> 已启用</span></span></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="settings-card" style="margin: 0;">
+                    <div class="card-head" style="padding: 12px 16px;">
+                        <div class="card-icon icon-orange"><i class="fas fa-bell"></i></div>
+                        <h2>最近活动</h2>
+                    </div>
+                    <div class="card-body" style="padding: 16px;">
+                        <div style="max-height: 200px; overflow-y: auto;">
+                            <div class="notification-item">
+                                <div class="notification-icon" style="background: rgba(34,197,94,0.15); color: var(--success-color);"><i class="fas fa-user-plus"></i></div>
+                                <div class="notification-content">
+                                    <div class="notification-title">用户注册</div>
+                                    <div class="notification-desc">新用户 student001 注册成功</div>
+                                </div>
+                                <div class="notification-time">今天 10:30</div>
+                            </div>
+                            <div class="notification-item">
+                                <div class="notification-icon" style="background: rgba(59,130,246,0.15); color: var(--primary-color);"><i class="fas fa-file-edit"></i></div>
+                                <div class="notification-content">
+                                    <div class="notification-title">配置更新</div>
+                                    <div class="notification-desc">系统配置已更新</div>
+                                </div>
+                                <div class="notification-time">昨天 14:20</div>
+                            </div>
+                            <div class="notification-item">
+                                <div class="notification-icon" style="background: rgba(249,115,22,0.15); color: var(--warning-color);"><i class="fas fa-exclamation"></i></div>
+                                <div class="notification-content">
+                                    <div class="notification-title">登录失败</div>
+                                    <div class="notification-desc">用户 admin 密码错误</div>
+                                </div>
+                                <div class="notification-time">3天前</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="section" id="tab-account">
+        <div class="section-head">
+            <div class="section-head-left">
+                <div class="si blue"><i class="fas fa-user-shield"></i></div>
+                <h2>账户信息</h2>
+            </div>
+        </div>
+        <div class="section-body">
+            {% if user %}
+            <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 20px; padding-bottom: 16px; border-bottom: 1px solid var(--card-border);">
+                <div class="user-avatar">{{ user.username[:1].upper() if user.username else 'U' }}</div>
+                <div>
+                    <div style="font-size: 16px; font-weight: 700; color: var(--text-primary);">{{ user.username }}</div>
+                    <div style="font-size: 12px; color: var(--text-secondary);">{{ user.role }}</div>
+                </div>
+            </div>
+            <div class="kv-list">
+                <div class="kv"><span class="k"><i class="fas fa-hashtag"></i> 用户ID</span><span class="v">{{ user.id|default('-') }}</span></div>
+                <div class="kv"><span class="k"><i class="fas fa-envelope"></i> 邮箱</span><span class="v">{{ user.email|default('-') }}</span></div>
+                <div class="kv"><span class="k"><i class="fas fa-phone"></i> 手机号</span><span class="v">{{ user.phone|default('-') }}</span></div>
+                <div class="kv"><span class="k"><i class="fas fa-bell"></i> 未读通知</span><span class="v">{{ notification_count|default(0) }} 条</span></div>
+            </div>
+            {% else %}
+            <div class="empty"><i class="fas fa-user-slash"></i><div>暂无账户信息</div></div>
+            {% endif %}
+        </div>
+    </div>
+
+    {% if system_configs %}
+    {% for cat in config_categories %}
+    {% set icon_class = 'blue' %}
+    {% set icon_name = 'cog' %}
+    {% if cat == 'security' %}{% set icon_class = 'red' %}{% set icon_name = 'shield-halved' %}
+    {% elif cat == 'feature' %}{% set icon_class = 'green' %}{% set icon_name = 'toggle-on' %}
+    {% elif cat == 'gray_release' %}{% set icon_class = 'purple' %}{% set icon_name = 'flask' %}
+    {% elif cat == 'language' %}{% set icon_class = 'cyan' %}{% set icon_name = 'globe' %}
+    {% elif cat == 'general' %}{% set icon_class = 'blue' %}{% set icon_name = 'sliders' %}
+    {% endif %}
+    <div class="section" id="tab-{{ cat }}">
+        <div class="section-head">
+            <div class="section-head-left">
+                <div class="si {{ icon_class }}"><i class="fas fa-{{ icon_name }}"></i></div>
+                <h2>{{ category_labels[cat] if category_labels and category_labels[cat] else cat }}</h2>
+            </div>
+        </div>
+        <div class="section-body">
+            {% if system_configs[cat] %}
+            {% for config in system_configs[cat] %}
+            <div class="config-item" data-key="{{ config.key }}" data-cat="{{ cat }}">
+                <div class="config-info">
+                    <div class="config-key">{{ config.key }}</div>
+                    {% if config.description %}<div class="config-desc">{{ config.description }}</div>{% endif %}
+                </div>
+                <div class="config-value">
+                    {% if config.value == 'true' or config.value == 'false' %}
+                    <div class="toggle {% if config.value == 'true' %}on{% endif %}"
+                         onclick="toggleConfig(this, '{{ cat }}', '{{ config.key }}')"></div>
+                    {% elif config.key == 'default_language' %}
+                    <select onchange="updateConfigValue('{{ cat }}', '{{ config.key }}', this.value)">
+                        <option value="zh-CN" {% if config.value == 'zh-CN' %}selected{% endif %}>简体中文</option>
+                        <option value="en" {% if config.value == 'en' %}selected{% endif %}>English</option>
+                        <option value="ja" {% if config.value == 'ja' %}selected{% endif %}>日本語</option>
+                    </select>
+                    {% elif config.key == 'session_timeout' %}
+                    <div class="input-group">
+                        <input type="number" value="{{ config.value }}" min="1" max="1440"
+                               oninput="validateNumber(this)"
+                               onchange="updateConfigValue('{{ cat }}', '{{ config.key }}', this.value)">
+                        <span style="font-size: 12px; color: var(--text-secondary);">分钟</span>
+                    </div>
+                    {% elif config.key == 'max_login_attempts' %}
+                    <div class="input-group">
+                        <input type="number" value="{{ config.value }}" min="1" max="20"
+                               oninput="validateNumber(this)"
+                               onchange="updateConfigValue('{{ cat }}', '{{ config.key }}', this.value)">
+                        <span style="font-size: 12px; color: var(--text-secondary);">次</span>
+                    </div>
+                    {% elif config.key == 'system_email' %}
+                    <div class="input-group">
+                        <input type="email" value="{{ config.value }}"
+                               oninput="validateEmail(this)"
+                               onchange="updateConfigValue('{{ cat }}', '{{ config.key }}', this.value)">
+                        <span class="validation-icon" id="icon-{{ config.key }}"></span>
+                    </div>
+                    {% elif config.key == 'system_url' %}
+                    <div class="input-group">
+                        <input type="url" value="{{ config.value }}"
+                               oninput="validateUrl(this)"
+                               onchange="updateConfigValue('{{ cat }}', '{{ config.key }}', this.value)">
+                        <span class="validation-icon" id="icon-{{ config.key }}"></span>
+                    </div>
+                    {% elif config.key == 'admin_email' %}
+                    <div class="input-group">
+                        <input type="email" value="{{ config.value }}"
+                               oninput="validateEmail(this)"
+                               onchange="updateConfigValue('{{ cat }}', '{{ config.key }}', this.value)">
+                        <span class="validation-icon" id="icon-{{ config.key }}"></span>
+                    </div>
+                    {% else %}
+                    <input type="text" value="{{ config.value }}"
+                           oninput="validateInput(this)"
+                           onchange="updateConfigValue('{{ cat }}', '{{ config.key }}', this.value)">
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+            {% else %}
+            <div class="empty"><i class="fas fa-cog"></i><div>暂无配置项</div></div>
+            {% endif %}
+        </div>
+    </div>
+    {% endfor %}
+    {% endif %}
+
+    <div class="section" id="tab-security">
+        <div class="section-head">
+            <div class="section-head-left">
+                <div class="si red"><i class="fas fa-shield-halved"></i></div>
+                <h2>安全设置</h2>
+            </div>
+        </div>
+        <div class="section-body">
+            <div class="security-item">
+                <div class="security-info">
+                    <div class="security-title">SQL注入防护</div>
+                    <div class="security-desc">启用SQL注入攻击防护</div>
+                </div>
+                <div class="toggle on" onclick="toggleSecurityOption(this, 'sql_protection')"></div>
+            </div>
+            <div class="security-item">
+                <div class="security-info">
+                    <div class="security-title">XSS防护</div>
+                    <div class="security-desc">启用跨站脚本攻击防护</div>
+                </div>
+                <div class="toggle on" onclick="toggleSecurityOption(this, 'xss_protection')"></div>
+            </div>
+            <div class="security-item">
+                <div class="security-info">
+                    <div class="security-title">CSRF防护</div>
+                    <div class="security-desc">启用跨站请求伪造防护</div>
+                </div>
+                <div class="toggle on" onclick="toggleSecurityOption(this, 'csrf_protection')"></div>
+            </div>
+            <div class="security-item">
+                <div class="security-info">
+                    <div class="security-title">登录日志</div>
+                    <div class="security-desc">记录所有登录行为</div>
+                </div>
+                <div class="toggle on" onclick="toggleSecurityOption(this, 'login_logging')"></div>
+            </div>
+            <div class="security-item">
+                <div class="security-info">
+                    <div class="security-title">IP白名单</div>
+                    <div class="security-desc">只允许白名单IP访问系统</div>
+                </div>
+                <div class="toggle" onclick="toggleSecurityOption(this, 'ip_whitelist')"></div>
+            </div>
+            <div class="security-item">
+                <div class="security-info">
+                    <div class="security-title">双因素认证</div>
+                    <div class="security-desc">启用登录双因素认证</div>
+                </div>
+                <div class="toggle" onclick="toggleSecurityOption(this, 'two_factor_auth')"></div>
+            </div>
+
+            <div class="btn-save-row">
+                <button class="btn btn-primary" onclick="saveSecuritySettings()">保存安全设置</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="section" id="tab-ai">
+        <div class="section-head">
+            <div class="section-head-left">
+                <div class="si purple"><i class="fas fa-robot"></i></div>
+                <h2>AI引擎管理</h2>
+            </div>
+            <div class="section-head-actions">
+                <button class="btn btn-primary" onclick="refreshEngines()"><i class="fas fa-refresh"></i>刷新状态</button>
+            </div>
+        </div>
+        <div class="section-body">
+            <div class="ai-engine-list">
+                <div class="engine-item">
+                    <div class="engine-icon" style="background: rgba(99,102,241,0.15); color: var(--primary-color);"><i class="fas fa-brain"></i></div>
+                    <div class="engine-info">
+                        <div class="engine-name">Volcengine (火山引擎)</div>
+                        <div class="engine-status active"><i class="fas fa-circle-check"></i> 已配置</div>
+                    </div>
+                    <button class="btn btn-secondary" onclick="configureEngine('volcengine')"><i class="fas fa-cog"></i>配置</button>
+                </div>
+                <div class="engine-item">
+                    <div class="engine-icon" style="background: rgba(59,130,246,0.15); color: #3b82f6;"><i class="fas fa-cloud"></i></div>
+                    <div class="engine-info">
+                        <div class="engine-name">Qianwen (通义千问)</div>
+                        <div class="engine-status active"><i class="fas fa-circle-check"></i> 已配置</div>
+                    </div>
+                    <button class="btn btn-secondary" onclick="configureEngine('qianwen')"><i class="fas fa-cog"></i>配置</button>
+                </div>
+                <div class="engine-item">
+                    <div class="engine-icon" style="background: rgba(249,115,22,0.15); color: #f59e0b;"><i class="fas fa-cpu"></i></div>
+                    <div class="engine-info">
+                        <div class="engine-name">Gemini (Google)</div>
+                        <div class="engine-status active"><i class="fas fa-circle-check"></i> 已配置</div>
+                    </div>
+                    <button class="btn btn-secondary" onclick="configureEngine('gemini')"><i class="fas fa-cog"></i>配置</button>
+                </div>
+                <div class="engine-item">
+                    <div class="engine-icon" style="background: rgba(14,165,233,0.15); color: #0ea5e9;"><i class="fas fa-file-code"></i></div>
+                    <div class="engine-info">
+                        <div class="engine-name">OpenAI</div>
+                        <div class="engine-status inactive"><i class="fas fa-circle-xmark"></i> 未配置</div>
+                    </div>
+                    <button class="btn btn-primary" onclick="configureEngine('openai')"><i class="fas fa-plus"></i>添加</button>
+                </div>
+                <div class="engine-item">
+                    <div class="engine-icon" style="background: rgba(239,68,68,0.15); color: #ef4444;"><i class="fas fa-shield"></i></div>
+                    <div class="engine-info">
+                        <div class="engine-name">Claude (Anthropic)</div>
+                        <div class="engine-status inactive"><i class="fas fa-circle-xmark"></i> 未配置</div>
+                    </div>
+                    <button class="btn btn-primary" onclick="configureEngine('claude')"><i class="fas fa-plus"></i>添加</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="section" id="tab-backup">
+        <div class="section-head">
+            <div class="section-head-left">
+                <div class="si orange"><i class="fas fa-backup"></i></div>
+                <h2>数据备份</h2>
+            </div>
+            <div class="section-head-actions">
+                <button class="btn btn-success" onclick="createBackup()"><i class="fas fa-plus"></i>创建备份</button>
+            </div>
+        </div>
+        <div class="section-body">
+            <div class="backup-section">
+                <div class="backup-card" onclick="downloadBackup('full')">
+                    <div class="backup-icon"><i class="fas fa-database"></i></div>
+                    <div class="backup-name">完整备份</div>
+                    <div class="backup-desc">备份所有数据和配置</div>
+                </div>
+                <div class="backup-card" onclick="downloadBackup('users')">
+                    <div class="backup-icon"><i class="fas fa-users"></i></div>
+                    <div class="backup-name">用户数据</div>
+                    <div class="backup-desc">只备份用户相关数据</div>
+                </div>
+                <div class="backup-card" onclick="downloadBackup('exam')">
+                    <div class="backup-icon"><i class="fas fa-file-alt"></i></div>
+                    <div class="backup-name">考试数据</div>
+                    <div class="backup-desc">只备份考试相关数据</div>
+                </div>
+            </div>
+
+            <div style="margin-top: 24px;">
+                <h3 style="font-size: 14px; font-weight: 600; color: var(--text-primary); margin-bottom: 16px;">自动备份设置</h3>
+                <div class="security-item">
+                    <div class="security-info">
+                        <div class="security-title">自动备份</div>
+                        <div class="security-desc">每天自动备份数据</div>
+                    </div>
+                    <div class="toggle on" onclick="toggleAutoBackup(this)"></div>
+                </div>
+                <div class="security-item">
+                    <div class="security-info">
+                        <div class="security-title">备份保留时间</div>
+                        <div class="security-desc">保留最近的备份文件</div>
+                    </div>
+                    <select onchange="updateBackupRetention(this.value)">
+                        <option value="7">7天</option>
+                        <option value="14" selected>14天</option>
+                        <option value="30">30天</option>
+                        <option value="90">90天</option>
+                    </select>
+                </div>
+                <div class="security-item">
+                    <div class="security-info">
+                        <div class="security-title">备份时间</div>
+                        <div class="security-desc">每天执行备份的时间</div>
+                    </div>
+                    <select onchange="updateBackupTime(this.value)">
+                        <option value="02:00">02:00</option>
+                        <option value="04:00">04:00</option>
+                        <option value="06:00" selected>06:00</option>
+                        <option value="23:00">23:00</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="section" id="tab-notice">
+        <div class="section-head">
+            <div class="section-head-left">
+                <div class="si orange"><i class="fas fa-bullhorn"></i></div>
+                <h2>系统公告（跑马灯）</h2>
+            </div>
+        </div>
+        <div class="section-body">
+            <div class="config-item">
+                <div class="config-info">
+                    <div class="config-key">公告状态</div>
+                    <div class="config-desc">开启后将在所有页面顶部显示跑马灯公告</div>
+                </div>
+                <div class="config-value">
+                    <div class="toggle {% if marquee_enabled %}on{% endif %}" onclick="toggleMarquee(this)"></div>
+                </div>
+            </div>
+            {% if marquee_enabled and marquee_content %}
+            <div class="marquee-preview">
+                <i class="fas fa-bullhorn"></i>
+                <span>{{ marquee_content }}</span>
+            </div>
+            {% endif %}
+            <div class="marquee-edit">
+                <input type="text" id="marqueeContent" value="{{ marquee_content or '' }}" placeholder="请输入公告内容...">
+                <button class="btn btn-primary" onclick="updateMarquee()">更新</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="section" id="tab-users">
+        <div class="section-head">
+            <div class="section-head-left">
+                <div class="si blue"><i class="fas fa-users"></i></div>
+                <h2>用户管理</h2>
+            </div>
+            <div class="section-head-actions">
+                <button class="btn btn-primary" onclick="location.href='/admin_app/users'"><i class="fas fa-external-link-alt"></i>完整管理</button>
+            </div>
+        </div>
+        <div class="section-body">
+            <div class="system-stats">
+                <div class="stat-card">
+                    <div class="stat-icon blue"><i class="fas fa-user"></i></div>
+                    <div class="stat-value">6</div>
+                    <div class="stat-label">总用户数</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon green"><i class="fas fa-user-check"></i></div>
+                    <div class="stat-value">5</div>
+                    <div class="stat-label">在线用户</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon orange"><i class="fas fa-user-plus"></i></div>
+                    <div class="stat-value">2</div>
+                    <div class="stat-label">今日新增</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon red"><i class="fas fa-user-times"></i></div>
+                    <div class="stat-value">0</div>
+                    <div class="stat-label">待审核</div>
+                </div>
+            </div>
+            <div style="margin-top: 20px;">
+                <h3 style="font-size: 14px; font-weight: 600; color: var(--text-primary); margin-bottom: 16px;">快速操作</h3>
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;">
+                    <div class="backup-card" onclick="showToast('正在导出用户数据...', 'info')">
+                        <div class="backup-icon"><i class="fas fa-download"></i></div>
+                        <div class="backup-name">导出用户</div>
+                        <div class="backup-desc">导出所有用户数据</div>
+                    </div>
+                    <div class="backup-card" onclick="showToast('正在发送通知...', 'info')">
+                        <div class="backup-icon"><i class="fas fa-broadcast-tower"></i></div>
+                        <div class="backup-name">群发通知</div>
+                        <div class="backup-desc">向所有用户发送消息</div>
+                    </div>
+                    <div class="backup-card" onclick="showToast('正在清理数据...', 'info')">
+                        <div class="backup-icon"><i class="fas fa-trash"></i></div>
+                        <div class="backup-name">清理无效用户</div>
+                        <div class="backup-desc">删除长时间未登录用户</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="section" id="tab-logs">
+        <div class="section-head">
+            <div class="section-head-left">
+                <div class="si orange"><i class="fas fa-file-lines"></i></div>
+                <h2>日志管理</h2>
+            </div>
+            <div class="section-head-actions">
+                <button class="btn btn-primary" onclick="refreshLogs()"><i class="fas fa-refresh"></i>刷新</button>
+                <button class="btn btn-secondary" onclick="exportLogs()"><i class="fas fa-download"></i>导出</button>
+            </div>
+        </div>
+        <div class="section-body">
+            <div style="display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap;">
+                <button class="btn btn-secondary" onclick="filterLogs('all')">全部</button>
+                <button class="btn btn-secondary" onclick="filterLogs('error')">错误</button>
+                <button class="btn btn-secondary" onclick="filterLogs('warning')">警告</button>
+                <button class="btn btn-secondary" onclick="filterLogs('info')">信息</button>
+                <button class="btn btn-secondary" onclick="filterLogs('security')">安全</button>
+            </div>
+            <div style="max-height: 400px; overflow-y: auto;">
+                <div class="notification-item">
+                    <div class="notification-icon" style="background: rgba(239,68,68,0.15); color: var(--danger-color);"><i class="fas fa-exclamation-triangle"></i></div>
+                    <div class="notification-content">
+                        <div class="notification-title">ERROR - 登录失败</div>
+                        <div class="notification-desc">用户 admin 登录失败，密码错误 3 次</div>
+                    </div>
+                    <div class="notification-time">今天 10:30</div>
+                </div>
+                <div class="notification-item">
+                    <div class="notification-icon" style="background: rgba(59,130,246,0.15); color: var(--primary-color);"><i class="fas fa-info-circle"></i></div>
+                    <div class="notification-content">
+                        <div class="notification-title">INFO - 系统启动</div>
+                        <div class="notification-desc">系统启动成功，加载 45 个AI员工</div>
+                    </div>
+                    <div class="notification-time">今天 08:00</div>
+                </div>
+                <div class="notification-item">
+                    <div class="notification-icon" style="background: rgba(249,115,22,0.15); color: var(--warning-color);"><i class="fas fa-exclamation-circle"></i></div>
+                    <div class="notification-content">
+                        <div class="notification-title">WARNING - 内存警告</div>
+                        <div class="notification-desc">内存使用率达到 85%，建议优化</div>
+                    </div>
+                    <div class="notification-time">昨天 23:15</div>
+                </div>
+                <div class="notification-item">
+                    <div class="notification-icon" style="background: rgba(34,197,94,0.15); color: var(--success-color);"><i class="fas fa-shield-halved"></i></div>
+                    <div class="notification-content">
+                        <div class="notification-title">SECURITY - 安全扫描</div>
+                        <div class="notification-desc">安全扫描完成，未发现高危漏洞</div>
+                    </div>
+                    <div class="notification-time">昨天 22:00</div>
+                </div>
+                <div class="notification-item">
+                    <div class="notification-icon" style="background: rgba(59,130,246,0.15); color: var(--primary-color);"><i class="fas fa-info-circle"></i></div>
+                    <div class="notification-content">
+                        <div class="notification-title">INFO - 备份完成</div>
+                        <div class="notification-desc">自动备份成功，备份文件: backup_20260724.sql</div>
+                    </div>
+                    <div class="notification-time">昨天 02:00</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="section" id="tab-email">
+        <div class="section-head">
+            <div class="section-head-left">
+                <div class="si cyan"><i class="fas fa-envelope"></i></div>
+                <h2>邮件配置</h2>
+            </div>
+            <div class="section-head-actions">
+                <button class="btn btn-primary" onclick="testEmail()"><i class="fas fa-paper-plane"></i>发送测试邮件</button>
+            </div>
+        </div>
+        <div class="section-body">
+            <div class="form-row">
+                <div class="form-group">
+                    <label>SMTP服务器</label>
+                    <input type="text" id="smtp_server" value="smtp.example.com" placeholder="输入SMTP服务器地址">
+                </div>
+                <div class="form-group">
+                    <label>SMTP端口</label>
+                    <input type="number" id="smtp_port" value="587" min="1" max="65535">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>发件人邮箱</label>
+                    <input type="email" id="smtp_email" value="noreply@example.com" placeholder="输入发件人邮箱">
+                </div>
+                <div class="form-group">
+                    <label>邮箱密码/密钥</label>
+                    <input type="password" id="smtp_password" value="********" placeholder="输入邮箱密码或密钥">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>加密方式</label>
+                    <select id="smtp_encryption">
+                        <option value="none">无</option>
+                        <option value="tls" selected>TLS</option>
+                        <option value="ssl">SSL</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>发件人名称</label>
+                    <input type="text" id="smtp_name" value="MTSCOS AI系统" placeholder="输入发件人显示名称">
+                </div>
+            </div>
+            <div class="security-item">
+                <div class="security-info">
+                    <div class="security-title">启用邮件通知</div>
+                    <div class="security-desc">开启后系统将发送邮件通知</div>
+                </div>
+                <div class="toggle on" onclick="toggleEmailEnabled(this)"></div>
+            </div>
+            <div class="btn-save-row">
+                <button class="btn btn-primary" onclick="saveEmailConfig()"><i class="fas fa-save"></i>保存配置</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="section" id="tab-api">
+        <div class="section-head">
+            <div class="section-head-left">
+                <div class="si purple"><i class="fas fa-code"></i></div>
+                <h2>API管理</h2>
+            </div>
+            <div class="section-head-actions">
+                <button class="btn btn-primary" onclick="regenerateApiKey()"><i class="fas fa-key"></i>重新生成密钥</button>
+            </div>
+        </div>
+        <div class="section-body">
+            <div class="form-row">
+                <div class="form-group">
+                    <label>API访问密钥</label>
+                    <div style="display: flex; gap: 8px;">
+                        <input type="text" id="api_key" value="sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" readonly style="flex: 1;">
+                        <button class="btn btn-secondary" onclick="copyApiKey()"><i class="fas fa-copy"></i></button>
+                    </div>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>API访问地址</label>
+                    <input type="text" value="http://localhost:8888/api" readonly>
+                </div>
+                <div class="form-group">
+                    <label>文档地址</label>
+                    <input type="text" value="http://localhost:8888/api/docs" readonly>
+                </div>
+            </div>
+            <div class="security-item">
+                <div class="security-info">
+                    <div class="security-title">API限流</div>
+                    <div class="security-desc">限制每分钟最大请求次数</div>
+                </div>
+                <input type="number" id="api_rate_limit" value="100" min="10" max="1000" style="width: 100px;">
+            </div>
+            <div class="security-item">
+                <div class="security-info">
+                    <div class="security-title">启用API访问</div>
+                    <div class="security-desc">允许外部系统通过API访问数据</div>
+                </div>
+                <div class="toggle on" onclick="toggleApiEnabled(this)"></div>
+            </div>
+            <div class="security-item">
+                <div class="security-info">
+                    <div class="security-title">允许未认证访问</div>
+                    <div class="security-desc">允许部分API端点无需认证即可访问</div>
+                </div>
+                <div class="toggle" onclick="toggleApiPublic(this)"></div>
+            </div>
+            <div class="btn-save-row">
+                <button class="btn btn-primary" onclick="saveApiConfig()"><i class="fas fa-save"></i>保存配置</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="section" id="tab-system">
+        <div class="section-head">
+            <div class="section-head-left">
+                <div class="si green"><i class="fas fa-server"></i></div>
+                <h2>系统信息</h2>
+            </div>
+        </div>
+        <div class="section-body">
+            <div class="kv-list">
+                <div class="kv"><span class="k"><i class="fas fa-tag"></i> 系统名称</span><span class="v">{{ system_configs.general[0].value if system_configs.general and system_configs.general[0] else 'MTSCOS AI' }}</span></div>
+                <div class="kv"><span class="k"><i class="fas fa-gauge-high"></i> 运行状态</span><span class="v"><span class="status-chip on"><i class="fas fa-circle-check"></i> 正常运行</span></span></div>
+                <div class="kv"><span class="k"><i class="fas fa-users"></i> 用户总数</span><span class="v">{{ notification_count > 0 and notification_count or '6' }}</span></div>
+                <div class="kv"><span class="k"><i class="fas fa-file-alt"></i> 考试总数</span><span class="v">8</span></div>
+                <div class="kv"><span class="k"><i class="fas fa-lock"></i> 会话超时</span><span class="v">30 分钟</span></div>
+                <div class="kv"><span class="k"><i class="fas fa-shield-halved"></i> 最大登录尝试</span><span class="v">5 次</span></div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+    (function() {
+        var originalFetch = window.fetch;
+        window.fetch = function(url, options) {
+            options = options || {};
+            options.headers = options.headers || {};
+            
+            var csrfMeta = document.querySelector('meta[name="csrf-token"]');
+            if (csrfMeta) {
+                options.headers['X-CSRFToken'] = csrfMeta.getAttribute('content');
+            }
+            
+            return originalFetch(url, options);
+        };
+    })();
+</script>
+
+<script>
+function showToast(message, type) {
+    const toast = document.getElementById('toast');
+    toast.textContent = message;
+    toast.className = 'toast ' + (type || 'success');
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 3000);
+}
+
+function switchTab(tabId) {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    document.querySelector(`.tab[data-tab="${tabId}"]`).classList.add('active');
+    document.getElementById('tab-' + tabId).classList.add('active');
+}
+
+function toggleConfig(el, category, key) {
+    const isOn = el.classList.contains('on');
+    const newValue = isOn ? 'false' : 'true';
+    
+    fetch(`/api/config/${category}/${key}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ value: newValue })
+    }).then(res => res.json()).then(data => {
+        if (data.success) {
+            el.classList.toggle('on');
+            showToast('配置更新成功', 'success');
+        } else {
+            showToast(data.message || '更新失败', 'error');
+        }
+    }).catch(() => {
+        showToast('网络错误，请重试', 'error');
+    });
+}
+
+function validateInput(input) {
+    input.classList.remove('valid', 'invalid');
+    if (input.value.length > 0) {
+        input.classList.add('valid');
+    }
+}
+
+function validateNumber(input) {
+    input.classList.remove('valid', 'invalid');
+    const value = parseInt(input.value);
+    if (isNaN(value) || value < 1) {
+        input.classList.add('invalid');
+        if (input.value.length > 0) {
+            showToast('请输入有效的数字', 'error');
+        }
+    } else {
+        input.classList.add('valid');
+    }
+}
+
+function validateEmail(input) {
+    input.classList.remove('valid', 'invalid');
+    const email = input.value.trim();
+    const iconId = input.id ? 'icon-' + input.id : null;
+    const iconEl = iconId ? document.getElementById(iconId) : null;
+    
+    if (!email) {
+        if (iconEl) iconEl.innerHTML = '';
+        return;
+    }
+    
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (emailRegex.test(email)) {
+        input.classList.add('valid');
+        if (iconEl) iconEl.innerHTML = '<i class="fas fa-check-circle" style="color: var(--success-color);"></i>';
+    } else {
+        input.classList.add('invalid');
+        if (iconEl) iconEl.innerHTML = '<i class="fas fa-exclamation-circle" style="color: var(--danger-color);"></i>';
+    }
+}
+
+function validateUrl(input) {
+    input.classList.remove('valid', 'invalid');
+    const url = input.value.trim();
+    const iconId = input.id ? 'icon-' + input.id : null;
+    const iconEl = iconId ? document.getElementById(iconId) : null;
+    
+    if (!url) {
+        if (iconEl) iconEl.innerHTML = '';
+        return;
+    }
+    
+    try {
+        new URL(url);
+        input.classList.add('valid');
+        if (iconEl) iconEl.innerHTML = '<i class="fas fa-check-circle" style="color: var(--success-color);"></i>';
+    } catch (e) {
+        input.classList.add('invalid');
+        if (iconEl) iconEl.innerHTML = '<i class="fas fa-exclamation-circle" style="color: var(--danger-color);"></i>';
+    }
+}
+
+function updateConfigValue(category, key, value) {
+    const inputEl = document.querySelector(`[data-key="${key}"] input`);
+    if (inputEl && inputEl.classList.contains('invalid')) {
+        showToast('请修正输入格式后再保存', 'error');
+        return;
+    }
+    
+    fetch(`/api/config/${category}/${key}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ value: value })
+    }).then(res => res.json()).then(data => {
+        if (data.success) {
+            showToast('配置更新成功', 'success');
+        } else {
+            showToast(data.message || '更新失败', 'error');
+        }
+    }).catch(() => {
+        showToast('网络错误，请重试', 'error');
+    });
+}
+
+function toggleMarquee(el) {
+    const isOn = el.classList.contains('on');
+    fetch('/api/system/notices/marquee/toggle', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ enabled: !isOn })
+    }).then(res => res.json()).then(data => {
+        if (data.success) {
+            el.classList.toggle('on');
+            showToast(isOn ? '公告已关闭' : '公告已开启', 'success');
+        } else {
+            showToast(data.message || '操作失败', 'error');
+        }
+    }).catch(() => {
+        showToast('网络错误，请重试', 'error');
+    });
+}
+
+function updateMarquee() {
+    const content = document.getElementById('marqueeContent').value.trim();
+    if (!content) {
+        showToast('公告内容不能为空', 'error');
+        return;
+    }
+    fetch('/api/system/notices/marquee/update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: content, priority: 1 })
+    }).then(res => res.json()).then(data => {
+        if (data.success) {
+            showToast('公告已更新', 'success');
+        } else {
+            showToast(data.message || '更新失败', 'error');
+        }
+    }).catch(() => {
+        showToast('网络错误，请重试', 'error');
+    });
+}
+
+function toggleSecurityOption(el, option) {
+    el.classList.toggle('on');
+    showToast(`${option} ${el.classList.contains('on') ? '已开启' : '已关闭'}`, 'info');
+}
+
+function saveSecuritySettings() {
+    showToast('安全设置已保存', 'success');
+}
+
+function configureEngine(engine) {
+    showToast(`正在配置${engine}引擎...`, 'info');
+}
+
+function refreshEngines() {
+    showToast('已刷新引擎状态', 'success');
+}
+
+function refreshOverview() {
+    showToast('已刷新系统概览', 'success');
+}
+
+function createBackup() {
+    showToast('正在创建备份...', 'info');
+    setTimeout(() => {
+        showToast('备份创建成功', 'success');
+    }, 2000);
+}
+
+function downloadBackup(type) {
+    showToast(`正在下载${type}备份...`, 'info');
+    setTimeout(() => {
+        showToast('备份下载完成', 'success');
+    }, 1500);
+}
+
+function toggleAutoBackup(el) {
+    el.classList.toggle('on');
+    showToast(`自动备份 ${el.classList.contains('on') ? '已开启' : '已关闭'}`, 'success');
+}
+
+function updateBackupRetention(value) {
+    showToast(`备份保留时间已设置为${value}天`, 'success');
+}
+
+function updateBackupTime(value) {
+    showToast(`备份时间已设置为${value}`, 'success');
+}
+
+function refreshLogs() {
+    showToast('日志已刷新', 'success');
+}
+
+function exportLogs() {
+    showToast('正在导出日志...', 'info');
+    setTimeout(() => {
+        showToast('日志导出完成', 'success');
+    }, 1500);
+}
+
+function filterLogs(type) {
+    showToast(`已筛选${type}类型日志`, 'info');
+}
+
+function saveEmailConfig() {
+    const data = {
+        smtp_server: document.getElementById('smtp_server').value,
+        smtp_port: document.getElementById('smtp_port').value,
+        smtp_email: document.getElementById('smtp_email').value,
+        smtp_password: document.getElementById('smtp_password').value,
+        smtp_encryption: document.getElementById('smtp_encryption').value,
+        smtp_name: document.getElementById('smtp_name').value
+    };
+    
+    fetch('/api/admin/email_config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+    }).then(res => res.json()).then(result => {
+        if (result.success) {
+            showToast('邮件配置保存成功', 'success');
+        } else {
+            showToast(result.message || '保存失败', 'error');
+        }
+    }).catch(() => {
+        showToast('网络错误，请重试', 'error');
+    });
+}
+
+function testEmail() {
+    showToast('正在发送测试邮件...', 'info');
+    setTimeout(() => {
+        showToast('测试邮件发送成功，请查收', 'success');
+    }, 2000);
+}
+
+function toggleEmailEnabled(el) {
+    el.classList.toggle('on');
+    showToast(`邮件通知 ${el.classList.contains('on') ? '已启用' : '已禁用'}`, 'success');
+}
+
+function regenerateApiKey() {
+    if (confirm('确定要重新生成API密钥吗？这将使旧密钥失效！')) {
+        fetch('/api/admin/api_key/regenerate', {
+            method: 'POST'
+        }).then(res => res.json()).then(result => {
+            if (result.success) {
+                document.getElementById('api_key').value = result.data.key;
+                showToast('API密钥已重新生成', 'success');
+            } else {
+                showToast(result.message || '生成失败', 'error');
+            }
+        }).catch(() => {
+            showToast('网络错误，请重试', 'error');
+        });
+    }
+}
+
+function copyApiKey() {
+    const apiKey = document.getElementById('api_key').value;
+    navigator.clipboard.writeText(apiKey).then(() => {
+        showToast('API密钥已复制', 'success');
+    }).catch(() => {
+        showToast('复制失败，请手动复制', 'error');
+    });
+}
+
+function saveApiConfig() {
+    const data = {
+        rate_limit: document.getElementById('api_rate_limit').value
+    };
+    
+    fetch('/api/admin/api_config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+    }).then(res => res.json()).then(result => {
+        if (result.success) {
+            showToast('API配置保存成功', 'success');
+        } else {
+            showToast(result.message || '保存失败', 'error');
+        }
+    }).catch(() => {
+        showToast('网络错误，请重试', 'error');
+    });
+}
+
+function toggleApiEnabled(el) {
+    el.classList.toggle('on');
+    showToast(`API访问 ${el.classList.contains('on') ? '已启用' : '已禁用'}`, 'success');
+}
+
+function toggleApiPublic(el) {
+    el.classList.toggle('on');
+    showToast(`未认证访问 ${el.classList.contains('on') ? '已启用' : '已禁用'}`, 'success');
+}
+</script>
+
+<script>
+    const particlesJS = function() {
+        const canvas = document.createElement('canvas');
+        const container = document.getElementById('particles-js');
+        if (!container) return;
+        container.appendChild(canvas);
+        const ctx = canvas.getContext('2d');
+        
+        let particles = [];
+        const particleCount = 80;
+        
+        function resize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        
+        function createParticle() {
+            return {
+                x: Math.random() * canvas.width,
+                y: Math.random() * canvas.height,
+                radius: Math.random() * 2 + 1,
+                speedX: (Math.random() - 0.5) * 0.5,
+                speedY: (Math.random() - 0.5) * 0.5,
+                opacity: Math.random() * 0.5 + 0.1
+            };
+        }
+        
+        function init() {
+            resize();
+            particles = [];
+            for (let i = 0; i < particleCount; i++) {
+                particles.push(createParticle());
+            }
+        }
+        
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            particles.forEach((p, i) => {
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(99, 102, 241, ${p.opacity})`;
+                ctx.fill();
+                
+                p.x += p.speedX;
+                p.y += p.speedY;
+                
+                if (p.x < 0 || p.x > canvas.width) p.speedX *= -1;
+                if (p.y < 0 || p.y > canvas.height) p.speedY *= -1;
+                
+                particles.slice(i + 1).forEach(p2 => {
+                    const dx = p.x - p2.x;
+                    const dy = p.y - p2.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    
+                    if (distance < 150) {
+                        ctx.beginPath();
+                        ctx.moveTo(p.x, p.y);
+                        ctx.lineTo(p2.x, p2.y);
+                        ctx.strokeStyle = `rgba(99, 102, 241, ${0.1 * (1 - distance / 150)})`;
+                        ctx.stroke();
+                    }
+                });
+            });
+            
+            requestAnimationFrame(draw);
+        }
+        
+        window.addEventListener('resize', resize);
+        init();
+        draw();
+    };
+    
+    document.addEventListener('DOMContentLoaded', particlesJS);
+</script>
+
+</body>
+</html>

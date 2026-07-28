@@ -1,0 +1,289 @@
+{% extends 'super_admin_base.html' %}
+
+{% block title %}影子系统 - MTSCOS AI{% endblock %}
+
+{% block header_icon %}<i class="fas fa-moon"></i>{% endblock %}
+{% block header_title %}影子系统{% endblock %}
+
+{% block breadcrumb %}
+    <i class="fas fa-chevron-right"></i>
+    <span>影子系统</span>
+{% endblock %}
+
+{% block header_actions %}
+<button class="action-btn action-btn-secondary" onclick="window.location.href='/backup_manager'">
+    <i class="fas fa-database action-btn-icon"></i>
+    <span>备份/快照管理</span>
+</button>
+<button class="action-btn action-btn-primary" onclick="window.location.href='/history_gallery'">
+    <i class="fas fa-history action-btn-icon"></i>
+    <span>历史馆追溯</span>
+</button>
+{% endblock %}
+
+{% block content %}
+<div class="card" style="margin-bottom:24px;">
+    <div class="card-header">
+        <div class="card-title">
+            <div class="icon"><i class="fas fa-layer-group"></i></div>
+            <span>影子系统三态切换</span>
+        </div>
+        <div style="display:flex; gap:12px; align-items:center;">
+            <span class="status-badge" id="status-current-mode" style="padding:8px 14px; font-weight:700;">模式加载中…</span>
+            <button class="action-btn action-btn-primary" onclick="refreshState()">
+                <i class="fas fa-sync-alt"></i> 刷新状态
+            </button>
+        </div>
+    </div>
+    <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(260px,1fr)); gap:16px;">
+        <div class="shadow-mode-card" id="card-live" onclick="switchMode('live')">
+            <div class="smc-icon live"><i class="fas fa-play-circle"></i></div>
+            <div class="smc-title">Live 真实生产</div>
+            <div class="smc-desc">实际对外提供服务的真实环境；默认启用；变更直接生效。</div>
+            <div class="smc-status" id="status-live">状态：检测中</div>
+        </div>
+        <div class="shadow-mode-card" id="card-shadow" onclick="switchMode('shadow')">
+            <div class="smc-icon shadow"><i class="fas fa-cloud-moon"></i></div>
+            <div class="smc-title">Shadow 演练镜像</div>
+            <div class="smc-desc">与生产相同结构但独立写入的影子层；用于变更演练、快照联动；可随时回滚。</div>
+            <div class="smc-status" id="status-shadow">状态：检测中</div>
+        </div>
+        <div class="shadow-mode-card" id="card-cold" onclick="switchMode('cold')">
+            <div class="smc-icon cold"><i class="fas fa-snowflake"></i></div>
+            <div class="smc-title">Cold 冷备归档</div>
+            <div class="smc-desc">离线冷备模式；启用时 Live/Shadow 都停止对外；用于归档和灾难恢复切换。</div>
+            <div class="smc-status" id="status-cold">状态：检测中</div>
+        </div>
+    </div>
+    <div style="margin-top:20px;">
+        <div style="font-size:12px; color:var(--text-muted); margin-bottom:8px;">切换说明（附带快照ID → 绑定基线恢复点）：</div>
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px,1fr)); gap:12px; align-items:flex-end;">
+            <div>
+                <label style="display:block; font-size:12px; color:var(--text-muted); margin-bottom:4px;">绑定快照ID（snapshot.id，可选）</label>
+                <input type="number" id="inp-linked-snapshot" placeholder="例如：1 或 2" style="width:100%; padding:10px 12px; border:1px solid var(--border-color); border-radius:var(--radius-md); background:var(--bg-primary); color:var(--text-primary);">
+            </div>
+            <div>
+                <label style="display:block; font-size:12px; color:var(--text-muted); margin-bottom:4px;">备注（可空）</label>
+                <input type="text" id="inp-note" placeholder="例如：演练 v2.4.1 新功能" style="width:100%; padding:10px 12px; border:1px solid var(--border-color); border-radius:var(--radius-md); background:var(--bg-primary); color:var(--text-primary);">
+            </div>
+            <div>
+                <label style="display:block; font-size:12px; color:var(--text-muted); margin-bottom:4px;">切到Live时是否同时关闭Shadow（可选）</label>
+                <label style="display:flex; align-items:center; gap:8px; font-size:13px;"><input type="checkbox" id="inp-shadow-off" checked> 切Live强制关Shadow</label>
+            </div>
+            <button class="action-btn action-btn-primary" onclick="doSwitch()">
+                <i class="fas fa-exchange-alt"></i> 应用切换
+            </button>
+        </div>
+    </div>
+</div>
+
+<div class="card" style="margin-bottom:24px;">
+    <div class="card-header">
+        <div class="card-title">
+            <div class="icon"><i class="fas fa-link"></i></div>
+            <span>模式 ↔ 快照恢复节点绑定</span>
+        </div>
+        <button class="action-btn action-btn-secondary" onclick="linkSnapshotToMode()">
+            <i class="fas fa-paperclip"></i> 绑定选中的快照
+        </button>
+    </div>
+    <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px,1fr)); gap:12px; align-items:flex-end;">
+        <div>
+            <label style="display:block; font-size:12px; color:var(--text-muted); margin-bottom:4px;">模式</label>
+            <select id="inp-link-mode" style="width:100%; padding:10px 12px; border:1px solid var(--border-color); border-radius:var(--radius-md); background:var(--bg-primary); color:var(--text-primary);">
+                <option value="shadow" selected>shadow</option>
+                <option value="live">live</option>
+                <option value="cold">cold</option>
+            </select>
+        </div>
+        <div style="grid-column: span 2;">
+            <label style="display:block; font-size:12px; color:var(--text-muted); margin-bottom:4px;">快照ID（可在快照列表查询）</label>
+            <input type="number" id="inp-link-snapshot-id" placeholder="例：1" style="width:100%; padding:10px 12px; border:1px solid var(--border-color); border-radius:var(--radius-md); background:var(--bg-primary); color:var(--text-primary);">
+        </div>
+    </div>
+</div>
+
+<div class="card" style="margin-bottom:24px;">
+    <div class="card-header">
+        <div class="card-title">
+            <div class="icon"><i class="fas fa-camera-retro"></i></div>
+            <span>快照恢复节点（供影子/Live绑定使用）</span>
+        </div>
+        <div style="display:flex; gap:8px;">
+            <button class="action-btn action-btn-secondary" onclick="loadSnapshots()">
+                <i class="fas fa-sync-alt"></i> 刷新
+            </button>
+            <button class="action-btn action-btn-primary" onclick="createSnapshot()">
+                <i class="fas fa-plus"></i> 新建快照恢复节点
+            </button>
+        </div>
+    </div>
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>ID</th><th>名称</th><th>版本</th><th>哈希（前16）</th><th>大小</th><th>创建时间</th><th>创建者</th>
+                <th>状态</th><th>Shadow</th><th>恢复次数</th><th>上次恢复</th><th>操作</th>
+            </tr>
+        </thead>
+        <tbody id="snap-tbody">
+            <tr><td colspan="12" style="text-align:center; padding:32px; color:var(--text-muted);">加载中…</td></tr>
+        </tbody>
+    </table>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.shadow-mode-card {
+    padding: 24px;
+    border-radius: var(--radius-md);
+    background: var(--bg-card);
+    backdrop-filter: blur(var(--glass-blur));
+    -webkit-backdrop-filter: blur(var(--glass-blur));
+    box-shadow: var(--shadow-md);
+    border: 1px solid var(--glass-border);
+    transition: background 0.2s, border-color 0.2s;
+    cursor: pointer;
+}
+.shadow-mode-card:hover {
+    background: var(--accent-soft);
+    border-color: var(--border-strong);
+}
+.shadow-mode-card.active {
+    border-color: var(--accent);
+    background: var(--accent-soft);
+}
+.shadow-mode-card .smc-icon {
+    width:56px; height:56px; border-radius:var(--radius-md); display:flex; align-items:center; justify-content:center; font-size:24px; margin-bottom:14px;
+}
+.smc-icon.live { background: var(--success-soft); color: var(--success); }
+.smc-icon.shadow { background: var(--accent-soft); color: var(--accent-text); }
+.smc-icon.cold { background: var(--accent-secondary-soft); color: var(--accent-secondary); }
+.smc-title { font-size:16px; font-weight:700; color: var(--text-primary); margin-bottom:8px; }
+.smc-desc { font-size:12px; color: var(--text-muted); line-height:1.6; min-height:52px; margin-bottom:14px; }
+.smc-status { font-size:12px; font-weight:600; }
+.smc-status.on { color: var(--success); }
+.smc-status.off { color: var(--text-muted); }
+.status-badge { padding: 8px 14px; border-radius: var(--radius-full); }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let lastState = null;
+
+function refreshState() {
+    fetch('/api/shadow/status')
+        .then(r => r.json())
+        .then(data => {
+            if (!data.success) { alert(data.message); return; }
+            lastState = data.data;
+            const cur = (lastState.mode || 'live');
+            const cm = document.getElementById('status-current-mode');
+            cm.textContent = '当前：' + cur.toUpperCase();
+            cm.style.background = cur === 'live' ? 'rgba(34,197,94,0.12)' : cur === 'shadow' ? 'rgba(99,102,241,0.12)' : 'rgba(6,182,212,0.12)';
+            cm.style.color = cur === 'live' ? '#22c55e' : cur === 'shadow' ? '#6366f1' : '#06b6d4';
+            (lastState.modes || []).forEach(m => {
+                const key = m.mode;
+                const card = document.getElementById('card-' + key);
+                const st = document.getElementById('status-' + key);
+                if (!card || !st) return;
+                const on = !!parseInt(m.enabled || 0);
+                card.classList.toggle('active', on);
+                st.textContent = on ? '启用（' + (m.switch_at || '').slice(0,19).replace('T',' ') + ' · ' + (m.switched_by || 'SYSTEM') + '）' : '未启用';
+                st.classList.toggle('on', on);
+                st.classList.toggle('off', !on);
+            });
+        })
+        .catch(e => alert('状态获取失败：' + e.message));
+}
+
+function switchMode(mode) {
+    doSwitch(mode);
+}
+
+function doSwitch(forcedMode) {
+    const mode = forcedMode || prompt('输入要切换的模式：live / shadow / cold', (lastState && lastState.mode) || 'live');
+    if (!mode) return;
+    const body = {
+        mode: mode,
+        note: document.getElementById('inp-note').value.trim(),
+        linked_snapshot_id: parseInt(document.getElementById('inp-linked-snapshot').value) || null,
+        shadow_off: !!document.getElementById('inp-shadow-off').checked,
+    };
+    fetch('/api/shadow/switch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+    }).then(r => r.json()).then(data => {
+        alert(data.message);
+        if (data.success) refreshState();
+    }).catch(e => alert('切换失败：' + e.message));
+}
+
+function linkSnapshotToMode() {
+    const sid = parseInt(document.getElementById('inp-link-snapshot-id').value);
+    const mode = document.getElementById('inp-link-mode').value;
+    if (!sid) { alert('请先填入快照ID'); return; }
+    fetch('/api/shadow/snapshot_link', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mode, snapshot_id: sid }),
+    }).then(r => r.json()).then(data => {
+        alert(data.message);
+        if (data.success) refreshState();
+    }).catch(e => alert('绑定失败：' + e.message));
+}
+
+function createSnapshot() {
+    const desc = prompt('快照描述（可空）', '手动新建恢复节点');
+    const shadow = confirm('是否同时把本快照标记为 shadow 模式下的联动快照？');
+    fetch('/api/snapshot/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ description: desc || '', shadow_mode: shadow }),
+    }).then(r => r.json()).then(data => {
+        alert(data.message);
+        if (data.success) loadSnapshots();
+    }).catch(e => alert('创建失败：' + e.message));
+}
+
+function loadSnapshots() {
+    fetch('/api/snapshot/list').then(r => r.json()).then(data => {
+        const tb = document.getElementById('snap-tbody');
+        if (!data.success) { tb.innerHTML = '<tr><td colspan="12" style="color:#ef4444;">加载失败：' + data.message + '</td></tr>'; return; }
+        const rows = data.data || [];
+        if (!rows.length) { tb.innerHTML = '<tr><td colspan="12" style="text-align:center; padding:32px; color:var(--text-muted);">暂无快照恢复节点（点击右上角"新建快照恢复节点"）</td></tr>'; return; }
+        tb.innerHTML = rows.map(s => {
+            const statusCls = s.status === 'completed' ? 'status-completed' : (s.status === 'restored' ? 'status-running' : 'status-pending');
+            return `<tr>
+                <td>${s.id}</td>
+                <td><strong>${s.name}</strong><br><span style="color:var(--text-muted); font-size:12px;">${s.description || ''}</span></td>
+                <td>${s.version || '-'}</td>
+                <td style="font-family:monospace; font-size:12px;">${s.hash || '-'}</td>
+                <td>${s.size}</td>
+                <td>${(s.created_at || '').slice(0,19).replace('T',' ')}</td>
+                <td>${s.created_by || '-'}</td>
+                <td><span class="status-badge ${statusCls}">${s.status}</span></td>
+                <td>${s.shadow_mode ? '<span style="color:#6366f1;font-weight:600;">是</span>' : '-'}</td>
+                <td>${s.restore_count || 0}</td>
+                <td>${(s.last_restored_at || '').slice(0,19).replace('T',' ') || '-'}</td>
+                <td><button class="action-btn action-btn-secondary btn-sm" onclick="restoreSnapshot(${s.id})">记录恢复</button></td>
+            </tr>`;
+        }).join('');
+    }).catch(e => { document.getElementById('snap-tbody').innerHTML = '<tr><td colspan="12" style="color:#ef4444;">加载异常：' + e.message + '</td></tr>'; });
+}
+
+function restoreSnapshot(id) {
+    if (!confirm('确认对快照#' + id + '执行一次"恢复记录"（RESTORE-ONLY：不会真正覆盖磁盘文件，只写入恢复次数+时间戳到历史馆）')) return;
+    fetch('/api/snapshot/restore/' + id, { method: 'POST' })
+        .then(r => r.json()).then(data => { alert(data.message); if (data.success) loadSnapshots(); })
+        .catch(e => alert('恢复失败：' + e.message));
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    refreshState();
+    loadSnapshots();
+});
+</script>
+{% endblock %}

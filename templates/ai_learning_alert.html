@@ -1,0 +1,714 @@
+{% extends "base.html" %}
+
+{% block title %}AI学习预警系统{% endblock %}
+
+{% block head %}
+<style>
+    .alert-container {
+        max-width: 1200px;
+        margin: 30px auto;
+        padding: 0 20px;
+    }
+    .alert-header {
+        text-align: center;
+        margin-bottom: 30px;
+    }
+    .alert-header h1 {
+        color: #333;
+        font-size: 32px;
+        margin-bottom: 10px;
+    }
+    .alert-header p {
+        color: #666;
+        font-size: 14px;
+    }
+    .tabs {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 20px;
+        border-bottom: 2px solid #eee;
+    }
+    .tab {
+        padding: 12px 24px;
+        border: none;
+        background: none;
+        color: #666;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        border-bottom: 3px solid transparent;
+        transition: all 0.3s;
+    }
+    .tab.active {
+        color: #667eea;
+        border-bottom-color: #667eea;
+    }
+    .tab:hover {
+        color: #667eea;
+    }
+    .form-section {
+        background: white;
+        border-radius: 12px;
+        padding: 25px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        margin-bottom: 20px;
+    }
+    .form-row {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 15px;
+        margin-bottom: 20px;
+    }
+    .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+    .form-group label {
+        font-size: 13px;
+        color: #555;
+        font-weight: 500;
+    }
+    .form-group input {
+        padding: 10px 12px;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        font-size: 14px;
+        background: #fafafa;
+    }
+    .form-group input:focus {
+        outline: none;
+        border-color: #667eea;
+        background: white;
+    }
+    .btn-group {
+        display: flex;
+        gap: 12px;
+        margin-top: 20px;
+    }
+    .btn {
+        padding: 12px 24px;
+        border: none;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+    .btn-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+    }
+    .btn-secondary {
+        background: #f5f5f5;
+        color: #666;
+    }
+    .btn-secondary:hover {
+        background: #eee;
+    }
+    .btn-success {
+        background: #10b981;
+        color: white;
+    }
+    .btn-success:hover {
+        background: #059669;
+    }
+    .result-section {
+        display: none;
+    }
+    .result-section.show {
+        display: block;
+    }
+    .risk-card {
+        background: white;
+        border-radius: 12px;
+        padding: 25px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        margin-bottom: 20px;
+    }
+    .risk-card .risk-title {
+        font-size: 18px;
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 20px;
+    }
+    .overall-risk {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        margin-bottom: 20px;
+    }
+    .risk-score-circle {
+        width: 100px;
+        height: 100px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 28px;
+        font-weight: bold;
+        color: white;
+    }
+    .risk-score-circle.high { background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); }
+    .risk-score-circle.medium { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); }
+    .risk-score-circle.low { background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); }
+    .risk-score-circle.normal { background: linear-gradient(135deg, #10b981 0%, #059669 100%); }
+    .risk-info {
+        flex: 1;
+    }
+    .risk-info .risk-level {
+        font-size: 24px;
+        font-weight: bold;
+        margin-bottom: 5px;
+    }
+    .risk-info .risk-desc {
+        color: #666;
+        font-size: 14px;
+    }
+    .risk-details {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 15px;
+    }
+    .risk-detail-card {
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 15px;
+        text-align: center;
+    }
+    .risk-detail-card .detail-label {
+        font-size: 12px;
+        color: #666;
+        margin-bottom: 8px;
+    }
+    .risk-detail-card .detail-score {
+        font-size: 24px;
+        font-weight: bold;
+    }
+    .risk-detail-card .detail-score.high { color: #ef4444; }
+    .risk-detail-card .detail-score.medium { color: #f59e0b; }
+    .risk-detail-card .detail-score.low { color: #3b82f6; }
+    .risk-detail-card .detail-score.normal { color: #10b981; }
+    .alert-list {
+        background: white;
+        border-radius: 12px;
+        padding: 25px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        margin-bottom: 20px;
+    }
+    .alert-list h3 {
+        color: #333;
+        font-size: 18px;
+        margin-bottom: 20px;
+    }
+    .alert-item {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        padding: 15px;
+        border-radius: 8px;
+        margin-bottom: 10px;
+        background: #f8f9fa;
+    }
+    .alert-item.critical { border-left: 4px solid #ef4444; }
+    .alert-item.warning { border-left: 4px solid #f59e0b; }
+    .alert-item.info { border-left: 4px solid #3b82f6; }
+    .alert-level-badge {
+        padding: 4px 12px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: 600;
+        color: white;
+    }
+    .alert-level-badge.critical { background: #ef4444; }
+    .alert-level-badge.warning { background: #f59e0b; }
+    .alert-level-badge.info { background: #3b82f6; }
+    .alert-content {
+        flex: 1;
+    }
+    .alert-content .alert-type {
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 5px;
+    }
+    .alert-content .alert-desc {
+        color: #666;
+        font-size: 14px;
+    }
+    .alert-content .alert-time {
+        color: #999;
+        font-size: 12px;
+        margin-top: 5px;
+    }
+    .alert-actions {
+        display: flex;
+        gap: 10px;
+    }
+    .loading-spinner {
+        display: none;
+        text-align: center;
+        padding: 40px;
+    }
+    .loading-spinner.show {
+        display: block;
+    }
+    .spinner {
+        width: 40px;
+        height: 40px;
+        border: 4px solid #f3f3f3;
+        border-top: 4px solid #667eea;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin: 0 auto 20px;
+    }
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+    .filter-bar {
+        display: flex;
+        gap: 15px;
+        margin-bottom: 20px;
+        align-items: center;
+    }
+    .filter-bar select {
+        padding: 10px 12px;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        font-size: 14px;
+        background: #fafafa;
+    }
+    .alert-types-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 15px;
+    }
+    .alert-type-card {
+        background: white;
+        border-radius: 12px;
+        padding: 20px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    }
+    .alert-type-card .type-name {
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 5px;
+    }
+    .alert-type-card .type-desc {
+        color: #666;
+        font-size: 14px;
+    }
+    .alert-levels-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 15px;
+    }
+    .alert-level-card {
+        background: white;
+        border-radius: 12px;
+        padding: 20px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        text-align: center;
+    }
+    .alert-level-card .level-name {
+        font-size: 20px;
+        font-weight: bold;
+        margin-bottom: 10px;
+    }
+    .alert-level-card .level-color {
+        width: 40px;
+        height: 40px;
+        border-radius: 8px;
+        margin: 0 auto;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="alert-container">
+    <div class="alert-header">
+        <h1>AI学习预警系统</h1>
+        <p>实时监控学生学习状态，及时发现学习问题并发出预警</p>
+    </div>
+
+    <div class="tabs">
+        <button class="tab active" onclick="switchTab('analyze')">学习分析</button>
+        <button class="tab" onclick="switchTab('alerts')">预警管理</button>
+        <button class="tab" onclick="switchTab('risk')">风险画像</button>
+        <button class="tab" onclick="switchTab('config')">预警配置</button>
+    </div>
+
+    <div id="analyze-tab" class="tab-content">
+        <div class="form-section">
+            <h3 style="color: #333; margin-bottom: 20px;">分析学生学习状态</h3>
+            
+            <div class="form-row" style="grid-template-columns: repeat(2, 1fr);">
+                <div class="form-group">
+                    <label>用户ID</label>
+                    <input type="text" id="user_id" placeholder="请输入用户ID" value="4">
+                </div>
+                <div class="form-group" style="align-self: flex-end;">
+                    <button class="btn btn-primary" onclick="analyzeStudent()">开始分析</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="loading-spinner" id="loading">
+            <div class="spinner"></div>
+            <p>AI正在分析学习状态，请稍候...</p>
+        </div>
+
+        <div class="result-section" id="result">
+            <div class="risk-card">
+                <div class="risk-title">综合风险评估</div>
+                <div class="overall-risk">
+                    <div class="risk-score-circle" id="risk_circle">--</div>
+                    <div class="risk-info">
+                        <div class="risk-level" id="risk_level">--</div>
+                        <div class="risk-desc">基于作业、考试、活跃度、错题率的综合评估</div>
+                    </div>
+                </div>
+                <div class="risk-details" id="risk_details"></div>
+            </div>
+
+            <div class="alert-list">
+                <h3>预警列表</h3>
+                <div id="alerts_list"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="alerts-tab" class="tab-content" style="display: none;">
+        <div class="form-section">
+            <div class="filter-bar">
+                <div class="form-group">
+                    <label>用户ID</label>
+                    <input type="text" id="alert_user_id" placeholder="请输入用户ID" value="4">
+                </div>
+                <select id="alert_status" onchange="loadAlerts()">
+                    <option value="">全部状态</option>
+                    <option value="active">未处理</option>
+                    <option value="resolved">已解决</option>
+                </select>
+                <button class="btn btn-primary" onclick="loadAlerts()">查询</button>
+            </div>
+        </div>
+
+        <div class="alert-list" id="user_alerts_list"></div>
+    </div>
+
+    <div id="risk-tab" class="tab-content" style="display: none;">
+        <div class="form-section">
+            <div class="form-row" style="grid-template-columns: repeat(2, 1fr);">
+                <div class="form-group">
+                    <label>用户ID</label>
+                    <input type="text" id="risk_user_id" placeholder="请输入用户ID" value="4">
+                </div>
+                <div class="form-group" style="align-self: flex-end;">
+                    <button class="btn btn-primary" onclick="loadRiskProfile()">查询风险画像</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="risk-card" id="risk_profile_result" style="display: none;">
+            <div class="risk-title">风险画像</div>
+            <div class="overall-risk">
+                <div class="risk-score-circle" id="profile_risk_circle">--</div>
+                <div class="risk-info">
+                    <div class="risk-level" id="profile_risk_level">--</div>
+                    <div class="risk-desc">更新时间: <span id="profile_update_time">--</span></div>
+                </div>
+            </div>
+            <div class="risk-details" id="profile_risk_details"></div>
+        </div>
+    </div>
+
+    <div id="config-tab" class="tab-content" style="display: none;">
+        <div class="form-section">
+            <h3>预警类型</h3>
+            <div class="alert-types-grid" id="alert_types"></div>
+        </div>
+
+        <div class="form-section">
+            <h3>预警级别</h3>
+            <div class="alert-levels-grid" id="alert_levels"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function switchTab(tabName) {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(c => c.style.display = 'none');
+        
+        event.target.classList.add('active');
+        document.getElementById(tabName + '-tab').style.display = 'block';
+        
+        if (tabName === 'config') {
+            loadConfig();
+        }
+    }
+
+    async function analyzeStudent() {
+        const user_id = document.getElementById('user_id').value;
+        
+        if (!user_id) {
+            alert('请输入用户ID');
+            return;
+        }
+
+        document.getElementById('loading').classList.add('show');
+        document.getElementById('result').classList.remove('show');
+
+        try {
+            const response = await fetch('/api/ai/alert/analyze', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ user_id })
+            });
+
+            const data = await response.json();
+            
+            if (data.success) {
+                displayAnalysisResult(data.data);
+            } else {
+                alert(data.error || '分析失败');
+            }
+        } catch (error) {
+            alert('网络错误');
+        } finally {
+            document.getElementById('loading').classList.remove('show');
+        }
+    }
+
+    function displayAnalysisResult(data) {
+        const risk = data.risk_profile;
+        const overallRisk = risk.overall_risk;
+        
+        let riskClass = 'normal';
+        if (overallRisk >= 0.7) riskClass = 'high';
+        else if (overallRisk >= 0.4) riskClass = 'medium';
+        else if (overallRisk >= 0.2) riskClass = 'low';
+        
+        const circle = document.getElementById('risk_circle');
+        circle.className = `risk-score-circle ${riskClass}`;
+        circle.textContent = (overallRisk * 100).toFixed(0) + '%';
+        
+        document.getElementById('risk_level').textContent = risk.risk_level;
+
+        const details = document.getElementById('risk_details');
+        details.innerHTML = `
+            <div class="risk-detail-card">
+                <div class="detail-label">作业风险</div>
+                <div class="detail-score ${getRiskClass(risk.homework_risk)}">${(risk.homework_risk * 100).toFixed(0)}%</div>
+            </div>
+            <div class="risk-detail-card">
+                <div class="detail-label">考试风险</div>
+                <div class="detail-score ${getRiskClass(risk.exam_risk)}">${(risk.exam_risk * 100).toFixed(0)}%</div>
+            </div>
+            <div class="risk-detail-card">
+                <div class="detail-label">活跃度风险</div>
+                <div class="detail-score ${getRiskClass(risk.activity_risk)}">${(risk.activity_risk * 100).toFixed(0)}%</div>
+            </div>
+            <div class="risk-detail-card">
+                <div class="detail-label">错题风险</div>
+                <div class="detail-score ${getRiskClass(risk.error_risk)}">${(risk.error_risk * 100).toFixed(0)}%</div>
+            </div>
+        `;
+
+        const alertsList = document.getElementById('alerts_list');
+        if (data.alerts && data.alerts.length > 0) {
+            alertsList.innerHTML = data.alerts.map(alert => `
+                <div class="alert-item ${alert.alert_level}">
+                    <span class="alert-level-badge ${alert.alert_level}">${alert.alert_level}</span>
+                    <div class="alert-content">
+                        <div class="alert-type">${alert.alert_type}</div>
+                        <div class="alert-desc">${alert.description}</div>
+                        <div class="alert-time">创建时间: ${alert.created_at}</div>
+                    </div>
+                    <div class="alert-actions">
+                        <button class="btn btn-success" style="padding: 6px 12px; font-size: 12px;" onclick="resolveAlert('${alert.alert_id}')">解决</button>
+                    </div>
+                </div>
+            `).join('');
+        } else {
+            alertsList.innerHTML = '<div style="text-align: center; color: #666; padding: 20px;">暂无预警信息</div>';
+        }
+
+        document.getElementById('result').classList.add('show');
+    }
+
+    function getRiskClass(risk) {
+        if (risk >= 0.7) return 'high';
+        if (risk >= 0.4) return 'medium';
+        if (risk >= 0.2) return 'low';
+        return 'normal';
+    }
+
+    async function loadAlerts() {
+        const user_id = document.getElementById('alert_user_id').value;
+        const status = document.getElementById('alert_status').value;
+        
+        if (!user_id) {
+            alert('请输入用户ID');
+            return;
+        }
+
+        let url = `/api/ai/alert/user/${user_id}`;
+        if (status) url += `?status=${status}`;
+
+        try {
+            const response = await fetch(url);
+            const data = await response.json();
+            
+            if (data.success) {
+                const container = document.getElementById('user_alerts_list');
+                if (data.data.length > 0) {
+                    container.innerHTML = data.data.map(alert => `
+                        <div class="alert-item ${alert.alert_level}">
+                            <span class="alert-level-badge ${alert.alert_level}">${alert.alert_level}</span>
+                            <div class="alert-content">
+                                <div class="alert-type">${alert.alert_type}</div>
+                                <div class="alert-desc">${alert.description}</div>
+                                <div class="alert-time">创建时间: ${alert.created_at}</div>
+                                ${alert.resolved_at ? `<div class="alert-time">解决时间: ${alert.resolved_at}</div>` : ''}
+                            </div>
+                            <div class="alert-actions">
+                                ${alert.status === 'active' ? 
+                                    `<button class="btn btn-success" style="padding: 6px 12px; font-size: 12px;" onclick="resolveAlert('${alert.alert_id}')">解决</button>` :
+                                    '<span style="color: #10b981; font-size: 12px;">已解决</span>'
+                                }
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    container.innerHTML = '<div style="text-align: center; color: #666; padding: 20px;">暂无预警信息</div>';
+                }
+            } else {
+                alert(data.error);
+            }
+        } catch (error) {
+            alert('网络错误');
+        }
+    }
+
+    async function resolveAlert(alert_id) {
+        if (!confirm('确认解决此预警？')) return;
+
+        try {
+            const response = await fetch(`/api/ai/alert/${alert_id}/resolve`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({})
+            });
+
+            const data = await response.json();
+            
+            if (data.success) {
+                alert('预警已解决');
+                loadAlerts();
+                analyzeStudent();
+            } else {
+                alert(data.error);
+            }
+        } catch (error) {
+            alert('网络错误');
+        }
+    }
+
+    async function loadRiskProfile() {
+        const user_id = document.getElementById('risk_user_id').value;
+        
+        if (!user_id) {
+            alert('请输入用户ID');
+            return;
+        }
+
+        try {
+            const response = await fetch(`/api/ai/alert/risk-profile/${user_id}`);
+            const data = await response.json();
+            
+            if (data.success) {
+                const risk = data.data;
+                const overallRisk = risk.overall_risk;
+                
+                let riskClass = 'normal';
+                if (overallRisk >= 0.7) riskClass = 'high';
+                else if (overallRisk >= 0.4) riskClass = 'medium';
+                else if (overallRisk >= 0.2) riskClass = 'low';
+                
+                const circle = document.getElementById('profile_risk_circle');
+                circle.className = `risk-score-circle ${riskClass}`;
+                circle.textContent = (overallRisk * 100).toFixed(0) + '%';
+                
+                document.getElementById('profile_risk_level').textContent = risk.risk_level;
+                document.getElementById('profile_update_time').textContent = risk.last_updated || '--';
+
+                const details = document.getElementById('profile_risk_details');
+                details.innerHTML = `
+                    <div class="risk-detail-card">
+                        <div class="detail-label">作业风险</div>
+                        <div class="detail-score ${getRiskClass(risk.homework_risk)}">${(risk.homework_risk * 100).toFixed(0)}%</div>
+                    </div>
+                    <div class="risk-detail-card">
+                        <div class="detail-label">考试风险</div>
+                        <div class="detail-score ${getRiskClass(risk.exam_risk)}">${(risk.exam_risk * 100).toFixed(0)}%</div>
+                    </div>
+                    <div class="risk-detail-card">
+                        <div class="detail-label">活跃度风险</div>
+                        <div class="detail-score ${getRiskClass(risk.activity_risk)}">${(risk.activity_risk * 100).toFixed(0)}%</div>
+                    </div>
+                    <div class="risk-detail-card">
+                        <div class="detail-label">错题风险</div>
+                        <div class="detail-score ${getRiskClass(risk.error_risk)}">${(risk.error_risk * 100).toFixed(0)}%</div>
+                    </div>
+                `;
+
+                document.getElementById('risk_profile_result').style.display = 'block';
+            } else {
+                alert(data.error);
+                document.getElementById('risk_profile_result').style.display = 'none';
+            }
+        } catch (error) {
+            alert('网络错误');
+        }
+    }
+
+    async function loadConfig() {
+        try {
+            const typesResponse = await fetch('/api/ai/alert/types');
+            const typesData = await typesResponse.json();
+            
+            if (typesData.success) {
+                const typesContainer = document.getElementById('alert_types');
+                typesContainer.innerHTML = Object.entries(typesData.data).map(([key, value]) => `
+                    <div class="alert-type-card">
+                        <div class="type-name">${value.name}</div>
+                        <div class="type-desc">${value.description}</div>
+                    </div>
+                `).join('');
+            }
+
+            const levelsResponse = await fetch('/api/ai/alert/levels');
+            const levelsData = await levelsResponse.json();
+            
+            if (levelsData.success) {
+                const levelsContainer = document.getElementById('alert_levels');
+                levelsContainer.innerHTML = Object.entries(levelsData.data).map(([key, value]) => `
+                    <div class="alert-level-card">
+                        <div class="level-name">${value.name}</div>
+                        <div class="level-color" style="background: ${value.color};"></div>
+                        <div style="font-size: 12px; color: #666; margin-top: 10px;">阈值: ${(value.threshold * 100).toFixed(0)}%</div>
+                    </div>
+                `).join('');
+            }
+        } catch (error) {
+            console.error('加载配置失败');
+        }
+    }
+</script>
+{% endblock %}

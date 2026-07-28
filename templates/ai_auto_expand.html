@@ -1,0 +1,204 @@
+{% extends 'super_admin_base.html' %}
+
+{% block title %}AI自动扩展 - MTSCOS AI{% endblock %}
+
+{% block header_icon %}<i class="fas fa-expand-arrows-alt"></i>{% endblock %}
+{% block header_title %}AI自动扩展{% endblock %}
+
+{% block breadcrumb %}
+    <i class="fas fa-chevron-right"></i>
+    <span>AI自动扩展</span>
+{% endblock %}
+
+{% block header_actions %}
+<button class="action-btn action-btn-secondary" onclick="window.location.href='/admin_app/dashboard'">
+    <i class="fas fa-arrow-left action-btn-icon"></i>
+    <span>返回管理首页</span>
+</button>
+<button class="action-btn action-btn-primary" onclick="startExpand()">
+    <i class="fas fa-play action-btn-icon"></i>
+    <span>启动扩展</span>
+</button>
+{% endblock %}
+
+{% block content %}
+<div class="stats-grid">
+    <div class="stat-card expand">
+        <div class="stat-icon expand"><i class="fas fa-brain"></i></div>
+        <div class="stat-info">
+            <div class="stat-value">{{ expand_stats.total_expanded or 0 }}</div>
+            <div class="stat-label">已扩展知识点</div>
+        </div>
+    </div>
+    <div class="stat-card accuracy">
+        <div class="stat-icon accuracy"><i class="fas fa-chart-line"></i></div>
+        <div class="stat-info">
+            <div class="stat-value">{{ expand_stats.accuracy_rate or 0 }}%</div>
+            <div class="stat-label">扩展准确率</div>
+        </div>
+    </div>
+    <div class="stat-card pending">
+        <div class="stat-icon pending"><i class="fas fa-clock"></i></div>
+        <div class="stat-info">
+            <div class="stat-value">{{ expand_stats.pending_count or 0 }}</div>
+            <div class="stat-label">待审核扩展</div>
+        </div>
+    </div>
+    <div class="stat-card status">
+        <div class="stat-icon status"><i class="fas fa-power-off"></i></div>
+        <div class="stat-info">
+            <div class="stat-value" style="color: {{ 'var(--success-color)' if expand_stats.is_running else 'var(--danger-color)' }};">{{ '运行中' if expand_stats.is_running else '已停止' }}</div>
+            <div class="stat-label">扩展状态</div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <div class="card-title">
+            <div class="icon"><i class="fas fa-cog"></i></div>
+            <span>扩展配置</span>
+        </div>
+    </div>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px;">
+        <div style="padding: 16px; background: var(--bg-secondary); border-radius: var(--radius-md);">
+            <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 8px;">扩展模式</div>
+            <div style="font-size: 14px; font-weight: 600; color: var(--text-primary);">智能自动扩展</div>
+        </div>
+        <div style="padding: 16px; background: var(--bg-secondary); border-radius: var(--radius-md);">
+            <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 8px;">扩展范围</div>
+            <div style="font-size: 14px; font-weight: 600; color: var(--text-primary);">全学科知识点</div>
+        </div>
+        <div style="padding: 16px; background: var(--bg-secondary); border-radius: var(--radius-md);">
+            <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 8px;">批处理数量</div>
+            <div style="font-size: 14px; font-weight: 600; color: var(--text-primary);">100 条/批</div>
+        </div>
+        <div style="padding: 16px; background: var(--bg-secondary); border-radius: var(--radius-md);">
+            <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 8px;">自动审核</div>
+            <div style="font-size: 14px; font-weight: 600; color: var(--text-primary);">已启用</div>
+        </div>
+    </div>
+</div>
+
+<div class="grid-2">
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title">
+                <div class="icon"><i class="fas fa-history"></i></div>
+                <span>扩展历史记录</span>
+            </div>
+        </div>
+        {% if expand_history %}
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>扩展类型</th>
+                    <th>数量</th>
+                    <th>状态</th>
+                    <th>时间</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for record in expand_history %}
+                <tr>
+                    <td>{{ record.id }}</td>
+                    <td>{{ record.expand_type }}</td>
+                    <td>{{ record.count }}</td>
+                    <td>
+                        {% if record.status == 'completed' %}<span class="status-tag status-published">已完成</span>{% endif %}
+                        {% if record.status == 'running' %}<span class="status-tag status-active">进行中</span>{% endif %}
+                        {% if record.status == 'failed' %}<span class="status-tag status-failed">失败</span>{% endif %}
+                    </td>
+                    <td>{{ record.created_at[:19] if record.created_at else '-' }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="empty-state">
+            <i class="fas fa-history"></i>
+            <p>暂无扩展记录</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title">
+                <div class="icon"><i class="fas fa-clock"></i></div>
+                <span>待审核扩展</span>
+            </div>
+        </div>
+        {% if pending_expansions %}
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>知识点</th>
+                    <th>学科</th>
+                    <th>时间</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in pending_expansions %}
+                <tr>
+                    <td>{{ item.id }}</td>
+                    <td>{{ item.knowledge_point[:30] }}{% if item.knowledge_point|length > 30 %}...{% endif %}</td>
+                    <td>{{ item.subject }}</td>
+                    <td>{{ item.created_at[:19] if item.created_at else '-' }}</td>
+                    <td>
+                        <div class="btn-group">
+                            <button class="action-btn action-btn-secondary btn-sm">审核</button>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="empty-state">
+            <i class="fas fa-check-circle" style="color: var(--success-color);"></i>
+            <p>暂无待审核扩展</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.stat-card.expand { border-left-color: var(--purple-color); }
+.stat-card.accuracy { border-left-color: var(--success-color); }
+.stat-card.pending { border-left-color: var(--warning-color); }
+.stat-card.status { border-left-color: var(--primary-color); }
+
+.stat-card.expand::before { background: var(--purple-color); }
+.stat-card.accuracy::before { background: var(--success-color); }
+.stat-card.pending::before { background: var(--warning-color); }
+.stat-card.status::before { background: var(--primary-color); }
+
+.stat-icon.expand { background: rgba(168, 85, 247, 0.1); color: var(--purple-color); }
+.stat-icon.accuracy { background: rgba(34, 197, 94, 0.1); color: var(--success-color); }
+.stat-icon.pending { background: rgba(245, 158, 11, 0.1); color: var(--warning-color); }
+.stat-icon.status { background: rgba(99, 102, 241, 0.1); color: var(--primary-color); }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function startExpand() {
+    fetch('/api/ai/auto-expand/start', { method: 'POST' })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('AI自动扩展已启动');
+                window.location.reload();
+            } else {
+                alert('启动失败: ' + data.message);
+            }
+        });
+}
+</script>
+{% endblock %}

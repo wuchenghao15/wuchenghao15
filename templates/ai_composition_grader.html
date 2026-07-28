@@ -1,0 +1,583 @@
+{% extends "base.html" %}
+
+{% block title %}AI智能作文批改{% endblock %}
+
+{% block head %}
+<style>
+    .composition-container {
+        max-width: 1200px;
+        margin: 30px auto;
+        padding: 0 20px;
+    }
+    .composition-header {
+        text-align: center;
+        margin-bottom: 30px;
+    }
+    .composition-header h1 {
+        color: #333;
+        font-size: 32px;
+        margin-bottom: 10px;
+    }
+    .composition-header p {
+        color: #666;
+        font-size: 14px;
+    }
+    .tabs {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 20px;
+        border-bottom: 2px solid #eee;
+    }
+    .tab {
+        padding: 12px 24px;
+        border: none;
+        background: none;
+        color: #666;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        border-bottom: 3px solid transparent;
+        transition: all 0.3s;
+    }
+    .tab.active {
+        color: #667eea;
+        border-bottom-color: #667eea;
+    }
+    .tab:hover {
+        color: #667eea;
+    }
+    .form-section {
+        background: white;
+        border-radius: 12px;
+        padding: 25px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        margin-bottom: 20px;
+    }
+    .form-row {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 15px;
+        margin-bottom: 20px;
+    }
+    .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+    .form-group label {
+        font-size: 13px;
+        color: #555;
+        font-weight: 500;
+    }
+    .form-group select,
+    .form-group input {
+        padding: 10px 12px;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        font-size: 14px;
+        background: #fafafa;
+    }
+    .form-group textarea {
+        padding: 12px;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        font-size: 14px;
+        background: #fafafa;
+        resize: vertical;
+        min-height: 200px;
+        font-family: inherit;
+    }
+    .form-group select:focus,
+    .form-group input:focus,
+    .form-group textarea:focus {
+        outline: none;
+        border-color: #667eea;
+        background: white;
+    }
+    .btn-group {
+        display: flex;
+        gap: 12px;
+        margin-top: 20px;
+    }
+    .btn {
+        padding: 12px 24px;
+        border: none;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+    .btn-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+    }
+    .btn-secondary {
+        background: #f5f5f5;
+        color: #666;
+    }
+    .btn-secondary:hover {
+        background: #eee;
+    }
+    .result-section {
+        display: none;
+    }
+    .result-section.show {
+        display: block;
+    }
+    .score-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 12px;
+        padding: 30px;
+        color: white;
+        text-align: center;
+        margin-bottom: 20px;
+    }
+    .score-card .total-score {
+        font-size: 48px;
+        font-weight: bold;
+        margin-bottom: 10px;
+    }
+    .score-card .grade-level {
+        font-size: 20px;
+        opacity: 0.9;
+    }
+    .score-card .word-count {
+        font-size: 14px;
+        opacity: 0.8;
+        margin-top: 10px;
+    }
+    .criteria-grid {
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        gap: 15px;
+        margin-bottom: 20px;
+    }
+    .criteria-card {
+        background: white;
+        border-radius: 12px;
+        padding: 20px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        text-align: center;
+    }
+    .criteria-card .criteria-name {
+        font-size: 13px;
+        color: #666;
+        margin-bottom: 10px;
+    }
+    .criteria-card .criteria-score {
+        font-size: 28px;
+        font-weight: bold;
+        color: #667eea;
+    }
+    .criteria-card .criteria-bar {
+        height: 6px;
+        background: #f0f0f0;
+        border-radius: 3px;
+        margin-top: 10px;
+        overflow: hidden;
+    }
+    .criteria-card .criteria-bar-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+        border-radius: 3px;
+        transition: width 0.5s ease;
+    }
+    .comments-section, .suggestions-section {
+        background: white;
+        border-radius: 12px;
+        padding: 25px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        margin-bottom: 20px;
+    }
+    .comments-section h3, .suggestions-section h3 {
+        color: #333;
+        font-size: 18px;
+        margin-bottom: 15px;
+    }
+    .comment-list, .suggestion-list {
+        list-style: none;
+        padding: 0;
+    }
+    .comment-list li, .suggestion-list li {
+        padding: 10px 0;
+        border-bottom: 1px solid #f0f0f0;
+        color: #555;
+        font-size: 14px;
+    }
+    .comment-list li:last-child, .suggestion-list li:last-child {
+        border-bottom: none;
+    }
+    .keywords-section {
+        background: white;
+        border-radius: 12px;
+        padding: 25px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        margin-bottom: 20px;
+    }
+    .keywords-section h3 {
+        color: #333;
+        font-size: 18px;
+        margin-bottom: 15px;
+    }
+    .keyword-tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+    .keyword-tag {
+        padding: 8px 16px;
+        background: #f0f4ff;
+        color: #667eea;
+        border-radius: 20px;
+        font-size: 13px;
+    }
+    .history-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    .history-table th, .history-table td {
+        padding: 12px;
+        text-align: left;
+        border-bottom: 1px solid #eee;
+    }
+    .history-table th {
+        background: #f8f9fa;
+        font-weight: 600;
+        color: #555;
+    }
+    .history-table tr:hover {
+        background: #f8f9fa;
+    }
+    .history-table .grade-excellent { color: #10b981; }
+    .history-table .grade-good { color: #3b82f6; }
+    .history-table .grade-medium { color: #f59e0b; }
+    .history-table .grade-pass { color: #f97316; }
+    .history-table .grade-improve { color: #ef4444; }
+    .loading-spinner {
+        display: none;
+        text-align: center;
+        padding: 40px;
+    }
+    .loading-spinner.show {
+        display: block;
+    }
+    .spinner {
+        width: 40px;
+        height: 40px;
+        border: 4px solid #f3f3f3;
+        border-top: 4px solid #667eea;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin: 0 auto 20px;
+    }
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="composition-container">
+    <div class="composition-header">
+        <h1>AI智能作文批改</h1>
+        <p>基于AI技术的智能作文评分和详细批改，帮助学生提升写作能力</p>
+    </div>
+
+    <div class="tabs">
+        <button class="tab active" onclick="switchTab('grade')">作文批改</button>
+        <button class="tab" onclick="switchTab('history')">批改历史</button>
+        <button class="tab" onclick="switchTab('criteria')">评分标准</button>
+    </div>
+
+    <div id="grade-tab" class="tab-content">
+        <div class="form-section">
+            <h3 style="color: #333; margin-bottom: 20px;">提交作文</h3>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label>用户ID</label>
+                    <input type="text" id="user_id" placeholder="请输入用户ID" value="4">
+                </div>
+                <div class="form-group">
+                    <label>科目</label>
+                    <select id="subject">
+                        <option value="语文">语文</option>
+                        <option value="英语">英语</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>作文标题</label>
+                    <input type="text" id="title" placeholder="请输入作文标题">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>作文内容</label>
+                <textarea id="content" placeholder="请在此输入作文内容（至少50个字符）"></textarea>
+            </div>
+
+            <div class="btn-group">
+                <button class="btn btn-primary" onclick="gradeComposition()">开始批改</button>
+                <button class="btn btn-secondary" onclick="clearForm()">清空内容</button>
+            </div>
+        </div>
+
+        <div class="loading-spinner" id="loading">
+            <div class="spinner"></div>
+            <p>AI正在批改中，请稍候...</p>
+        </div>
+
+        <div class="result-section" id="result">
+            <div class="score-card">
+                <div class="total-score" id="total_score">0</div>
+                <div class="grade-level" id="grade_level">--</div>
+                <div class="word-count" id="word_count">字数: 0</div>
+            </div>
+
+            <div class="criteria-grid" id="criteria_grid"></div>
+
+            <div class="comments-section">
+                <h3>批改评语</h3>
+                <ul class="comment-list" id="comments"></ul>
+            </div>
+
+            <div class="suggestions-section">
+                <h3>改进建议</h3>
+                <ul class="suggestion-list" id="suggestions"></ul>
+            </div>
+
+            <div class="keywords-section">
+                <h3>关键词分析</h3>
+                <div class="keyword-tags" id="keywords"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="history-tab" class="tab-content" style="display: none;">
+        <div class="form-section">
+            <div class="form-row" style="grid-template-columns: repeat(2, 1fr);">
+                <div class="form-group">
+                    <label>用户ID</label>
+                    <input type="text" id="history_user_id" placeholder="请输入用户ID" value="4">
+                </div>
+                <div class="form-group" style="align-self: flex-end;">
+                    <button class="btn btn-primary" onclick="loadHistory()">查询历史</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-section">
+            <table class="history-table">
+                <thead>
+                    <tr>
+                        <th>批改ID</th>
+                        <th>标题</th>
+                        <th>总分</th>
+                        <th>等级</th>
+                        <th>创建时间</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody id="history_body"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="criteria-tab" class="tab-content" style="display: none;">
+        <div class="form-section">
+            <h3>评分标准</h3>
+            <div class="criteria-grid" id="criteria_info"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function switchTab(tabName) {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(c => c.style.display = 'none');
+        
+        event.target.classList.add('active');
+        document.getElementById(tabName + '-tab').style.display = 'block';
+        
+        if (tabName === 'criteria') {
+            loadCriteria();
+        }
+    }
+
+    function clearForm() {
+        document.getElementById('user_id').value = '4';
+        document.getElementById('title').value = '';
+        document.getElementById('content').value = '';
+        document.getElementById('result').classList.remove('show');
+    }
+
+    async function gradeComposition() {
+        const user_id = document.getElementById('user_id').value;
+        const title = document.getElementById('title').value;
+        const content = document.getElementById('content').value;
+        const subject = document.getElementById('subject').value;
+
+        if (!user_id) {
+            alert('请输入用户ID');
+            return;
+        }
+        if (!content || content.length < 50) {
+            alert('作文内容至少需要50个字符');
+            return;
+        }
+
+        document.getElementById('loading').classList.add('show');
+        document.getElementById('result').classList.remove('show');
+
+        try {
+            const response = await fetch('/api/ai/composition/grade', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ user_id, title, content, subject })
+            });
+
+            const data = await response.json();
+            
+            if (data.success) {
+                displayResult(data.data);
+            } else {
+                alert(data.error || '批改失败');
+            }
+        } catch (error) {
+            alert('网络错误，请重试');
+        } finally {
+            document.getElementById('loading').classList.remove('show');
+        }
+    }
+
+    function displayResult(data) {
+        document.getElementById('total_score').textContent = data.total_score;
+        document.getElementById('grade_level').textContent = data.grade_level;
+        document.getElementById('word_count').textContent = '字数: ' + data.word_count;
+
+        const criteriaGrid = document.getElementById('criteria_grid');
+        criteriaGrid.innerHTML = '';
+        
+        const criteria = data.criteria;
+        const scores = data.scores;
+        
+        for (const [key, value] of Object.entries(criteria)) {
+            const score = scores[key];
+            const maxScore = value.max_score;
+            const percentage = (score / maxScore) * 100;
+            
+            criteriaGrid.innerHTML += `
+                <div class="criteria-card">
+                    <div class="criteria-name">${value.name}</div>
+                    <div class="criteria-score">${score.toFixed(1)}</div>
+                    <div class="criteria-bar">
+                        <div class="criteria-bar-fill" style="width: ${percentage}%"></div>
+                    </div>
+                    <div style="font-size: 12px; color: #999; margin-top: 5px;">满分${maxScore}</div>
+                </div>
+            `;
+        }
+
+        const commentsList = document.getElementById('comments');
+        commentsList.innerHTML = data.comments.map(c => `<li>${c}</li>`).join('');
+
+        const suggestionsList = document.getElementById('suggestions');
+        suggestionsList.innerHTML = data.suggestions.map(s => `<li>${s}</li>`).join('');
+
+        const keywordsContainer = document.getElementById('keywords');
+        keywordsContainer.innerHTML = data.keywords.map(k => 
+            `<span class="keyword-tag">${k.word} (${k.frequency})</span>`
+        ).join('');
+
+        document.getElementById('result').classList.add('show');
+    }
+
+    async function loadHistory() {
+        const user_id = document.getElementById('history_user_id').value;
+        
+        if (!user_id) {
+            alert('请输入用户ID');
+            return;
+        }
+
+        try {
+            const response = await fetch(`/api/ai/composition/history?user_id=${user_id}`);
+            const data = await response.json();
+            
+            if (data.success) {
+                const tbody = document.getElementById('history_body');
+                tbody.innerHTML = data.data.map(item => {
+                    const gradeClass = {
+                        '优秀': 'grade-excellent',
+                        '良好': 'grade-good',
+                        '中等': 'grade-medium',
+                        '及格': 'grade-pass',
+                        '需改进': 'grade-improve'
+                    }[item.grade_level] || '';
+                    
+                    return `
+                        <tr>
+                            <td>${item.grading_id}</td>
+                            <td>${item.title || '无标题'}</td>
+                            <td>${item.total_score}</td>
+                            <td class="${gradeClass}">${item.grade_level}</td>
+                            <td>${item.created_at}</td>
+                            <td><button class="btn btn-secondary" style="padding: 6px 12px; font-size: 12px;" onclick="viewGrading('${item.grading_id}')">查看</button></td>
+                        </tr>
+                    `;
+                }).join('');
+            } else {
+                alert(data.error);
+            }
+        } catch (error) {
+            alert('网络错误');
+        }
+    }
+
+    async function viewGrading(grading_id) {
+        try {
+            const response = await fetch(`/api/ai/composition/grading/${grading_id}`);
+            const data = await response.json();
+            
+            if (data.success) {
+                switchTab('grade');
+                displayResult(data.data);
+            } else {
+                alert(data.error);
+            }
+        } catch (error) {
+            alert('网络错误');
+        }
+    }
+
+    async function loadCriteria() {
+        try {
+            const response = await fetch('/api/ai/composition/criteria');
+            const data = await response.json();
+            
+            if (data.success) {
+                const container = document.getElementById('criteria_info');
+                container.innerHTML = '';
+                
+                for (const [key, value] of Object.entries(data.data)) {
+                    container.innerHTML += `
+                        <div class="criteria-card">
+                            <div class="criteria-name">${value.name}</div>
+                            <div style="font-size: 16px; font-weight: bold; color: #667eea; margin-top: 10px;">${value.max_score}分</div>
+                            <div style="font-size: 12px; color: #999; margin-top: 5px;">权重: ${(value.weight * 100).toFixed(0)}%</div>
+                        </div>
+                    `;
+                }
+            }
+        } catch (error) {
+            console.error('加载评分标准失败');
+        }
+    }
+</script>
+{% endblock %}

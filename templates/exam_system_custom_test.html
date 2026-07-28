@@ -1,0 +1,412 @@
+{% extends 'student_base.html' %}
+
+{% block title %}自定义测试 - MTSCOS AI{% endblock %}
+{% block page_title %}自定义测试{% endblock %}
+
+{% block extra_styles %}
+<style>
+    .form-card {
+        background: rgba(20, 20, 40, 0.9); border: 1px solid var(--dark-border);
+        border-radius: var(--radius-lg); padding: 28px;
+        box-shadow: 0 0 20px rgba(99, 102, 241, 0.08);
+    }
+
+    .form-section { margin-bottom: 24px; }
+    .form-section:last-child { margin-bottom: 0; }
+    .form-section h3 {
+        font-size: 15px; font-weight: 600; margin-bottom: 16px;
+        display: flex; align-items: center; gap: 8px;
+        color: var(--dark-text-primary);
+    }
+    .form-section h3 i { color: var(--dark-warning); }
+
+    .form-row {
+        display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px;
+        margin-bottom: 16px;
+    }
+
+    .form-group {
+        display: flex; flex-direction: column; gap: 6px;
+    }
+
+    .form-group label {
+        font-size: 13px; font-weight: 500; color: var(--dark-text-secondary);
+    }
+
+    .form-group input, .form-group select, .form-group textarea {
+        padding: 10px 14px; border-radius: var(--radius-md);
+        background: rgba(30, 30, 60, 0.6); border: 1px solid var(--dark-border);
+        color: var(--dark-text-primary); font-size: 14px;
+        outline: none; transition: all 0.2s;
+    }
+
+    .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+        border-color: var(--dark-warning);
+        box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.1);
+    }
+
+    .form-group textarea { min-height: 80px; resize: vertical; }
+    .form-group select { cursor: pointer; }
+    .form-group.checkbox { flex-direction: row; align-items: center; }
+    .form-group.checkbox input { width: 18px; height: 18px; margin-right: 8px; }
+
+    .subject-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+    .subject-item {
+        display: flex; align-items: center; gap: 8px;
+        padding: 10px 14px; border-radius: var(--radius-md);
+        background: rgba(30, 30, 60, 0.6); border: 1px solid var(--dark-border);
+        cursor: pointer; transition: all 0.2s;
+    }
+    .subject-item:hover { border-color: var(--dark-warning); background: rgba(245, 158, 11, 0.1); }
+    .subject-item.selected { border-color: var(--dark-warning); background: rgba(245, 158, 11, 0.2); }
+    .subject-item input { width: 16px; height: 16px; }
+    .subject-item span { font-size: 13px; }
+
+    .difficulty-options { display: flex; gap: 10px; }
+    .difficulty-option {
+        flex: 1;
+        display: flex; align-items: center; justify-content: center; gap: 6px;
+        padding: 10px 14px; border-radius: var(--radius-md);
+        background: rgba(30, 30, 60, 0.6); border: 1px solid var(--dark-border);
+        cursor: pointer; transition: all 0.2s;
+    }
+    .difficulty-option:hover { border-color: var(--dark-warning); }
+    .difficulty-option.selected { border-color: var(--dark-warning); background: rgba(245, 158, 11, 0.2); }
+    .difficulty-option input { display: none; }
+
+    .btn {
+        display: inline-flex; align-items: center; gap: 8px;
+        padding: 12px 28px; border-radius: var(--radius-md);
+        text-decoration: none; font-weight: 600; font-size: 14px;
+        cursor: pointer; border: none;
+        background: linear-gradient(135deg, var(--dark-warning), #d97706);
+        color: #fff;
+        transition: all 0.2s;
+    }
+    .btn:hover { transform: translateY(-2px); box-shadow: 0 10px 30px rgba(245, 158, 11, 0.3); }
+    .btn-outline { background: transparent; color: var(--dark-text-primary); border: 1px solid var(--dark-border); }
+    .btn-outline:hover { background: rgba(245, 158, 11, 0.1); border-color: var(--dark-warning); color: var(--dark-warning); }
+
+    .btn-group {
+        display: flex; gap: 12px; justify-content: flex-end;
+        margin-top: 24px; padding-top: 20px;
+        border-top: 1px solid var(--dark-border);
+    }
+
+    .ai-suggestion {
+        background: rgba(99, 102, 241, 0.1);
+        border: 1px solid rgba(99, 102, 241, 0.3);
+        border-radius: var(--radius-md);
+        padding: 16px; margin-bottom: 16px;
+    }
+    .ai-suggestion-header {
+        display: flex; align-items: center; gap: 8px; margin-bottom: 10px;
+    }
+    .ai-suggestion-header i { color: var(--dark-primary-color); }
+    .ai-suggestion-header span { font-size: 13px; font-weight: 600; color: var(--dark-primary-color); }
+    .ai-suggestion p { font-size: 13px; color: var(--dark-text-secondary); line-height: 1.6; }
+
+    .preset-list {
+        display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;
+        margin-top: 12px;
+    }
+    .preset-item {
+        padding: 12px 16px; border-radius: var(--radius-md);
+        background: rgba(30, 30, 60, 0.6); border: 1px solid var(--dark-border);
+        cursor: pointer; transition: all 0.2s;
+    }
+    .preset-item:hover { border-color: var(--dark-primary-color); background: rgba(99, 102, 241, 0.1); }
+    .preset-item h4 { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+    .preset-item p { font-size: 12px; color: var(--dark-text-secondary); }
+
+    @media (max-width: 768px) {
+        .form-row { grid-template-columns: 1fr; }
+        .subject-grid { grid-template-columns: repeat(2, 1fr); }
+        .difficulty-options { flex-direction: column; }
+        .preset-list { grid-template-columns: 1fr; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+    <div class="form-card">
+        <div class="ai-suggestion">
+            <div class="ai-suggestion-header">
+                <i class="fas fa-lightbulb"></i>
+                <span>AI智能建议</span>
+            </div>
+            <p>根据您的学习进度和错题分析，建议选择以下配置：<br>
+            - <strong>数学</strong> + <strong>函数与导数</strong> + <strong>中等难度</strong><br>
+            - 建议题量：<strong>20道</strong>，时长：<strong>30分钟</strong><br>
+            - 重点复习：<strong>错题率较高的知识点</strong></p>
+        </div>
+
+        <form id="customTestForm" action="/exam_system/create_custom_test" method="POST">
+            <div class="form-section">
+                <h3><i class="fas fa-file-signature"></i> 基本信息</h3>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>测试名称</label>
+                        <input type="text" name="title" placeholder="输入测试名称，如：函数专项练习" required>
+                    </div>
+                    <div class="form-group">
+                        <label>测试描述</label>
+                        <input type="text" name="description" placeholder="简短描述测试目的">
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <h3><i class="fas fa-book-open"></i> 选择科目</h3>
+                <div class="subject-grid">
+                    <label class="subject-item">
+                        <input type="checkbox" name="subjects" value="math" checked>
+                        <span><i class="fas fa-calculator"></i> 数学</span>
+                    </label>
+                    <label class="subject-item">
+                        <input type="checkbox" name="subjects" value="chinese">
+                        <span><i class="fas fa-book"></i> 语文</span>
+                    </label>
+                    <label class="subject-item">
+                        <input type="checkbox" name="subjects" value="english">
+                        <span><i class="fas fa-language"></i> 英语</span>
+                    </label>
+                    <label class="subject-item">
+                        <input type="checkbox" name="subjects" value="physics">
+                        <span><i class="fas fa-atom"></i> 物理</span>
+                    </label>
+                    <label class="subject-item">
+                        <input type="checkbox" name="subjects" value="chemistry">
+                        <span><i class="fas fa-flask-vial"></i> 化学</span>
+                    </label>
+                    <label class="subject-item">
+                        <input type="checkbox" name="subjects" value="politics">
+                        <span><i class="fas fa-landmark"></i> 政治</span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <h3><i class="fas fa-chart-line"></i> 难度设置</h3>
+                <div class="difficulty-options">
+                    <label class="difficulty-option selected">
+                        <input type="radio" name="difficulty" value="mixed" checked>
+                        <i class="fas fa-random"></i>
+                        <span>混合难度</span>
+                    </label>
+                    <label class="difficulty-option">
+                        <input type="radio" name="difficulty" value="easy">
+                        <i class="fas fa-smile"></i>
+                        <span>简单</span>
+                    </label>
+                    <label class="difficulty-option">
+                        <input type="radio" name="difficulty" value="medium">
+                        <i class="fas fa-meh"></i>
+                        <span>中等</span>
+                    </label>
+                    <label class="difficulty-option">
+                        <input type="radio" name="difficulty" value="hard">
+                        <i class="fas fa-frown"></i>
+                        <span>困难</span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <h3><i class="fas fa-list-ol"></i> 题量与时长</h3>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>题目数量</label>
+                        <select name="question_count">
+                            <option value="10">10题</option>
+                            <option value="20" selected>20题</option>
+                            <option value="30">30题</option>
+                            <option value="50">50题</option>
+                            <option value="100">100题</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>测试时长（分钟）</label>
+                        <select name="duration">
+                            <option value="15">15分钟</option>
+                            <option value="30">30分钟</option>
+                            <option value="45">45分钟</option>
+                            <option value="60" selected>60分钟</option>
+                            <option value="90">90分钟</option>
+                            <option value="120">120分钟</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <h3><i class="fas fa-tags"></i> 题型选择</h3>
+                <div class="subject-grid">
+                    <label class="subject-item">
+                        <input type="checkbox" name="question_types" value="single_choice" checked>
+                        <span><i class="fas fa-circle-dot"></i> 单选题</span>
+                    </label>
+                    <label class="subject-item">
+                        <input type="checkbox" name="question_types" value="multiple_choice">
+                        <span><i class="fas fa-check-square"></i> 多选题</span>
+                    </label>
+                    <label class="subject-item">
+                        <input type="checkbox" name="question_types" value="fill_blank">
+                        <span><i class="fas fa-pen"></i> 填空题</span>
+                    </label>
+                    <label class="subject-item">
+                        <input type="checkbox" name="question_types" value="short_answer">
+                        <span><i class="fas fa-align-left"></i> 简答题</span>
+                    </label>
+                    <label class="subject-item">
+                        <input type="checkbox" name="question_types" value="calculation">
+                        <span><i class="fas fa-calculator"></i> 计算题</span>
+                    </label>
+                    <label class="subject-item">
+                        <input type="checkbox" name="question_types" value="listening">
+                        <span><i class="fas fa-headphones"></i> 听力题</span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <h3><i class="fas fa-clipboard-check"></i> 高级选项</h3>
+                <div class="form-row">
+                    <div class="form-group checkbox">
+                        <input type="checkbox" name="include_wrong_questions" id="include_wrong">
+                        <label for="include_wrong">包含错题复习</label>
+                    </div>
+                    <div class="form-group checkbox">
+                        <input type="checkbox" name="shuffle_questions" id="shuffle" checked>
+                        <label for="shuffle">随机打乱题目顺序</label>
+                    </div>
+                    <div class="form-group checkbox">
+                        <input type="checkbox" name="immediate_feedback" id="feedback" checked>
+                        <label for="feedback">答题后立即显示答案</label>
+                    </div>
+                    <div class="form-group checkbox">
+                        <input type="checkbox" name="allow_retry" id="retry">
+                        <label for="retry">允许答错后重试</label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <h3><i class="fas fa-magic"></i> AI智能预设</h3>
+                <div class="preset-list">
+                    <div class="preset-item" onclick="applyPreset('quick')">
+                        <h4><i class="fas fa-bolt"></i> 快速练习</h4>
+                        <p>10题 · 15分钟 · 混合难度</p>
+                    </div>
+                    <div class="preset-item" onclick="applyPreset('deep')">
+                        <h4><i class="fas fa-dumbbell"></i> 深度训练</h4>
+                        <p>50题 · 60分钟 · 中高难度</p>
+                    </div>
+                    <div class="preset-item" onclick="applyPreset('wrong')">
+                        <h4><i class="fas fa-circle-xmark"></i> 错题专项</h4>
+                        <p>20题 · 30分钟 · 包含错题</p>
+                    </div>
+                    <div class="preset-item" onclick="applyPreset('exam')">
+                        <h4><i class="fas fa-file-pen"></i> 模拟考试</h4>
+                        <p>100题 · 120分钟 · 正式模式</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="btn-group">
+                <button type="button" class="btn btn-outline" onclick="resetForm()">
+                    <i class="fas fa-rotate-right"></i> 重置
+                </button>
+                <button type="submit" class="btn">
+                    <i class="fas fa-play"></i> 开始测试
+                </button>
+            </div>
+        </form>
+    </div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+function applyPreset(preset) {
+    const form = document.getElementById('customTestForm');
+    const subjects = form.querySelectorAll('input[name="subjects"]');
+    const questionTypes = form.querySelectorAll('input[name="question_types"]');
+    
+    subjects.forEach(s => s.checked = false);
+    questionTypes.forEach(q => q.checked = false);
+    
+    switch(preset) {
+        case 'quick':
+            form.title.value = '快速练习';
+            form.description.value = '短时间内快速练习';
+            subjects[0].checked = true;
+            form.question_count.value = '10';
+            form.duration.value = '15';
+            form.difficulty.value = 'mixed';
+            questionTypes[0].checked = true;
+            form.include_wrong_questions.checked = false;
+            break;
+        case 'deep':
+            form.title.value = '深度训练';
+            form.description.value = '高强度深度训练';
+            subjects[0].checked = true;
+            subjects[3].checked = true;
+            form.question_count.value = '50';
+            form.duration.value = '60';
+            form.difficulty.value = 'hard';
+            questionTypes[0].checked = true;
+            questionTypes[1].checked = true;
+            questionTypes[4].checked = true;
+            form.include_wrong_questions.checked = true;
+            break;
+        case 'wrong':
+            form.title.value = '错题专项练习';
+            form.description.value = '针对错题进行专项复习';
+            subjects.forEach(s => s.checked = true);
+            form.question_count.value = '20';
+            form.duration.value = '30';
+            form.difficulty.value = 'medium';
+            questionTypes.forEach(q => q.checked = true);
+            form.include_wrong_questions.checked = true;
+            form.allow_retry.checked = true;
+            break;
+        case 'exam':
+            form.title.value = '模拟考试';
+            form.description.value = '模拟正式考试环境';
+            subjects[0].checked = true;
+            subjects[1].checked = true;
+            subjects[2].checked = true;
+            form.question_count.value = '100';
+            form.duration.value = '120';
+            form.difficulty.value = 'mixed';
+            questionTypes.forEach(q => q.checked = true);
+            form.include_wrong_questions.checked = false;
+            form.immediate_feedback.checked = false;
+            break;
+    }
+}
+
+function resetForm() {
+    document.getElementById('customTestForm').reset();
+    const subjects = document.querySelectorAll('.subject-item');
+    subjects[0].classList.add('selected');
+    
+    const difficulties = document.querySelectorAll('.difficulty-option');
+    difficulties[0].classList.add('selected');
+    difficulties.forEach((d, i) => { if (i > 0) d.classList.remove('selected'); });
+}
+
+document.querySelectorAll('.subject-item').forEach(item => {
+    item.addEventListener('click', function() {
+        this.classList.toggle('selected');
+    });
+});
+
+document.querySelectorAll('.difficulty-option').forEach(item => {
+    item.addEventListener('click', function() {
+        document.querySelectorAll('.difficulty-option').forEach(d => d.classList.remove('selected'));
+        this.classList.add('selected');
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,123 @@
+{% extends 'super_admin_base.html' %}
+
+{% block title %}课程管理 - MTSCOS AI{% endblock %}
+
+{% block header_icon %}<i class="fas fa-book-open"></i>{% endblock %}
+{% block header_title %}课程管理{% endblock %}
+
+{% block breadcrumb %}
+    <i class="fas fa-chevron-right"></i>
+    <span>课程管理</span>
+{% endblock %}
+
+{% block header_actions %}
+<button class="action-btn action-btn-secondary" onclick="window.location.href='/'">
+    <i class="fas fa-home action-btn-icon"></i>
+    <span>返回首页</span>
+</button>
+<button class="action-btn action-btn-primary" onclick="window.location.href='/admin_app/exams'">
+    <i class="fas fa-file-alt action-btn-icon"></i>
+    <span>考试管理</span>
+</button>
+{% endblock %}
+
+{% block content %}
+<div class="stats-grid">
+    <div class="stat-card courses">
+        <div class="stat-icon courses"><i class="fas fa-book"></i></div>
+        <div class="stat-info">
+            <div class="stat-value">{{ course_stats.total_courses or 0 }}</div>
+            <div class="stat-label">课程总数</div>
+        </div>
+    </div>
+    <div class="stat-card users">
+        <div class="stat-icon users"><i class="fas fa-users"></i></div>
+        <div class="stat-info">
+            <div class="stat-value">{{ course_stats.total_students or 0 }}</div>
+            <div class="stat-label">选课学生</div>
+        </div>
+    </div>
+    <div class="stat-card exams">
+        <div class="stat-icon exams"><i class="fas fa-video"></i></div>
+        <div class="stat-info">
+            <div class="stat-value">{{ course_stats.total_lessons or 0 }}</div>
+            <div class="stat-label">课时总数</div>
+        </div>
+    </div>
+    <div class="stat-card questions">
+        <div class="stat-icon questions"><i class="fas fa-chart-line"></i></div>
+        <div class="stat-info">
+            <div class="stat-value">{{ course_stats.completion_rate or 0 }}%</div>
+            <div class="stat-label">完成率</div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <div class="card-title">
+            <div class="icon"><i class="fas fa-list"></i></div>
+            <span>课程列表</span>
+        </div>
+        <div class="search-bar">
+            <input type="text" placeholder="搜索课程名称..." id="course-search">
+            <button class="action-btn action-btn-primary btn-sm" onclick="searchCourses()">
+                <i class="fas fa-search"></i> 搜索
+            </button>
+        </div>
+    </div>
+    <div class="card-body">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>课程名称</th>
+                    <th>讲师</th>
+                    <th>难度</th>
+                    <th>状态</th>
+                    <th>创建时间</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for course in courses %}
+                <tr>
+                    <td>{{ course.id }}</td>
+                    <td>{{ course.name }}</td>
+                    <td>{{ course.instructor or '-' }}</td>
+                    <td>{{ course.difficulty or '-' }}</td>
+                    <td>
+                        {% if course.status == 'published' %}<span class="status-tag status-published">已发布</span>
+                        {% elif course.status == 'active' %}<span class="status-tag status-active">进行中</span>
+                        {% else %}<span class="status-tag status-draft">{{ course.status or '草稿' }}</span>{% endif %}
+                    </td>
+                    <td>{{ course.created_at[:10] if course.created_at else '-' }}</td>
+                    <td>
+                        <div class="btn-group">
+                            <button class="action-btn action-btn-secondary btn-sm">编辑</button>
+                            <button class="action-btn action-btn-secondary btn-sm">查看</button>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+                {% if not courses %}
+                <tr><td colspan="7" class="empty-state">暂无课程数据</td></tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function searchCourses() {
+    const keyword = document.getElementById('course-search').value.toLowerCase();
+    const rows = document.querySelectorAll('.data-table tbody tr');
+    rows.forEach(row => {
+        const name = row.querySelector('td:nth-child(2)').textContent.toLowerCase();
+        row.style.display = name.includes(keyword) ? '' : 'none';
+    });
+}
+</script>
+{% endblock %}

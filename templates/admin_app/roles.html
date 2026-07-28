@@ -1,0 +1,113 @@
+{% extends 'super_admin_base.html' %}
+
+{% block title %}角色权限管理 - MTSCOS AI{% endblock %}
+
+{% block header_icon %}<i class="fas fa-key"></i>{% endblock %}
+{% block header_title %}角色权限管理{% endblock %}
+
+{% block breadcrumb %}
+    <i class="fas fa-chevron-right"></i>
+    <span>角色权限</span>
+{% endblock %}
+
+{% block header_actions %}
+<button class="action-btn action-btn-secondary" onclick="window.location.href='/admin_app/dashboard'">
+    <i class="fas fa-arrow-left action-btn-icon"></i>
+    <span>返回管理首页</span>
+</button>
+<button class="action-btn action-btn-primary" onclick="window.location.href='/admin_app/users'">
+    <i class="fas fa-users action-btn-icon"></i>
+    <span>用户管理</span>
+</button>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <div class="card-title">
+            <div class="icon"><i class="fas fa-users"></i></div>
+            <span>角色列表</span>
+        </div>
+        <span style="color: var(--text-secondary); font-size: 13px;">共 {{ roles|length }} 个角色</span>
+    </div>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px;">
+        {% for role in roles %}
+        <div style="border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 20px; transition: all var(--transition-normal);">
+            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+                <div style="width: 40px; height: 40px; border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; font-size: 18px; color: white;" 
+                     class="role-icon-{{ role.role or role.role_name }}">
+                    {% if (role.role or role.role_name) == 'admin' %}<i class="fas fa-shield-alt"></i>{% endif %}
+                    {% if (role.role or role.role_name) == 'teacher' %}<i class="fas fa-chalkboard-teacher"></i>{% endif %}
+                    {% if (role.role or role.role_name) == 'student' %}<i class="fas fa-graduation-cap"></i>{% endif %}
+                    {% if (role.role or role.role_name) == 'user' %}<i class="fas fa-user"></i>{% endif %}
+                    {% if (role.role or role.role_name) == 'guest' %}<i class="fas fa-user-circle"></i>{% endif %}
+                    {% if (role.role or role.role_name) == 'hardware_admin' %}<i class="fas fa-server"></i>{% endif %}
+                </div>
+                <div style="flex: 1;">
+                    <div style="font-size: 16px; font-weight: 600; color: var(--text-primary);">{{ role.name or role.role_name }}</div>
+                    <div style="font-size: 13px; color: var(--text-secondary);">{{ role.description or '暂无描述' }}</div>
+                </div>
+                <span style="background: var(--primary-color); color: white; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600;">{{ role.user_count or 0 }}人</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-secondary); margin-bottom: 16px;">
+                <span>权限等级</span>
+                <div style="flex: 1; height: 6px; background: var(--bg-secondary); border-radius: 3px; overflow: hidden;">
+                    <div style="height: 100%; background: var(--primary-color); border-radius: 3px; width: {{ (role.level or 1) * 10 }}%;"></div>
+                </div>
+                <span style="font-weight: 600; color: var(--primary-color);">{{ role.level or 1 }}</span>
+            </div>
+            <div style="padding-top: 16px; border-top: 1px solid var(--border-color);">
+                <div style="font-size: 13px; font-weight: 600; color: var(--text-primary); margin-bottom: 10px;">权限范围</div>
+                <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+                    {% if (role.level or 1) >= 8 %}
+                    <span style="padding: 4px 10px; background: rgba(99, 102, 241, 0.1); color: var(--primary-color); border-radius: 20px; font-size: 11px; font-weight: 500;">用户管理</span>
+                    <span style="padding: 4px 10px; background: rgba(99, 102, 241, 0.1); color: var(--primary-color); border-radius: 20px; font-size: 11px; font-weight: 500;">角色管理</span>
+                    <span style="padding: 4px 10px; background: rgba(99, 102, 241, 0.1); color: var(--primary-color); border-radius: 20px; font-size: 11px; font-weight: 500;">系统设置</span>
+                    <span style="padding: 4px 10px; background: rgba(99, 102, 241, 0.1); color: var(--primary-color); border-radius: 20px; font-size: 11px; font-weight: 500;">数据管理</span>
+                    {% endif %}
+                    {% if (role.level or 1) >= 5 %}
+                    <span style="padding: 4px 10px; background: rgba(99, 102, 241, 0.1); color: var(--primary-color); border-radius: 20px; font-size: 11px; font-weight: 500;">课程管理</span>
+                    <span style="padding: 4px 10px; background: rgba(99, 102, 241, 0.1); color: var(--primary-color); border-radius: 20px; font-size: 11px; font-weight: 500;">考试管理</span>
+                    {% endif %}
+                    {% if (role.level or 1) >= 3 %}
+                    <span style="padding: 4px 10px; background: rgba(99, 102, 241, 0.1); color: var(--primary-color); border-radius: 20px; font-size: 11px; font-weight: 500;">在线学习</span>
+                    <span style="padding: 4px 10px; background: rgba(99, 102, 241, 0.1); color: var(--primary-color); border-radius: 20px; font-size: 11px; font-weight: 500;">考试作答</span>
+                    {% endif %}
+                    {% if (role.level or 1) >= 1 %}
+                    <span style="padding: 4px 10px; background: rgba(99, 102, 241, 0.1); color: var(--primary-color); border-radius: 20px; font-size: 11px; font-weight: 500;">查看内容</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <div class="card-title">
+            <div class="icon"><i class="fas fa-info-circle"></i></div>
+            <span>权限说明</span>
+        </div>
+    </div>
+    <div style="font-size: 14px; color: var(--text-secondary); line-height: 1.8;">
+        <p><strong style="color: var(--text-primary);">管理员 (等级8):</strong> 可以管理用户、课程、考试等内容，但无法修改系统核心设置。</p>
+        <p><strong style="color: var(--text-primary);">硬件管理员 (等级7):</strong> 专注于硬件设备管理和监控功能。</p>
+        <p><strong style="color: var(--text-primary);">教师 (等级5):</strong> 可以创建课程、发布作业、批改学生作业等教学相关功能。</p>
+        <p><strong style="color: var(--text-primary);">学生 (等级3):</strong> 可以浏览课程、参加考试、查看学习进度等学习功能。</p>
+        <p><strong style="color: var(--text-primary);">普通用户 (等级2):</strong> 基础访问权限，可以查看公开内容。</p>
+        <p><strong style="color: var(--text-primary);">访客 (等级1):</strong> 只读权限，只能浏览公开内容。</p>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.role-icon-admin { background: linear-gradient(135deg, #7c3aed, #6366f1); }
+.role-icon-teacher { background: linear-gradient(135deg, #22c55e, #16a34a); }
+.role-icon-student { background: linear-gradient(135deg, #3b82f6, #0ea5e9); }
+.role-icon-user { background: linear-gradient(135deg, #64748b, #94a3b8); }
+.role-icon-guest { background: linear-gradient(135deg, #94a3b8, #cbd5e1); }
+.role-icon-hardware_admin { background: linear-gradient(135deg, #0ea5e9, #0284c7); }
+</style>
+{% endblock %}

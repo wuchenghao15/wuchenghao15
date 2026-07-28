@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+  <meta name="theme-color" content="#4f46e5">
+  <title>登录 · MTSCOS AI</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+    html,body{height:100%;}
+    body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Segoe UI",Roboto,sans-serif;background:linear-gradient(160deg,#6366f1 0%,#8b5cf6 55%,#06b6d4 100%);color:#111827;min-height:100%;padding:env(safe-area-inset-top) 18px env(safe-area-inset-bottom);display:flex;flex-direction:column;}
+    .m-top{padding:36px 4px 18px;color:#fff;}
+    .m-top .logo{width:56px;height:56px;border-radius:16px;background:rgba(255,255,255,0.16);backdrop-filter:blur(10px);display:flex;align-items:center;justify-content:center;font-size:28px;color:#fff;margin-bottom:14px;}
+    .m-top h1{font-size:24px;font-weight:800;margin-bottom:4px;}
+    .m-top p{opacity:0.86;font-size:13px;}
+    .m-card{flex:1;background:#fff;border-radius:22px 22px 0 0;margin:0 -18px -env(safe-area-inset-bottom);padding:24px 22px 30px;box-shadow:0 -10px 40px rgba(0,0,0,0.18);}
+    .m-row{margin-bottom:16px;}
+    .m-row label{font-size:12px;color:#6b7280;font-weight:600;margin-bottom:6px;display:block;}
+    .m-input{display:flex;align-items:center;gap:10px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:12px;padding:12px 14px;position:relative;}
+    .m-input i{color:#6366f1;}
+    .m-input input{flex:1;border:none;background:transparent;outline:none;font-size:15px;color:#111827;}
+    .m-input.pw input{padding-right:36px;}
+    .m-input.input-error{border-color:#ef4444;box-shadow:0 0 0 3px rgba(239,68,68,0.1);animation:shake 0.3s ease-in-out;}
+    .m-input.input-ok{border-color:#22c55e;}
+    .m-row .hint-text{font-size:12px;color:#6b7280;margin-top:6px;min-height:16px;line-height:16px;}
+    .m-row .hint-text.err{color:#b91c1c;font-weight:500;}
+    .m-row .hint-text.ok{color:#15803d;}
+    .toggle-pw{position:absolute;right:6px;top:50%;transform:translateY(-50%);width:34px;height:34px;border-radius:8px;background:transparent;border:none;cursor:pointer;color:#6b7280;font-size:15px;}
+    .toggle-pw:hover{color:#6366f1;}
+    @keyframes shake{0%,100%{transform:translateX(0);}25%{transform:translateX(-5px);}75%{transform:translateX(5px);}}
+    .m-row-2{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:#6b7280;margin:4px 0 18px;}
+    .m-row-2 a{color:#6366f1;text-decoration:none;}
+    .m-btn{display:block;width:100%;padding:14px;border:none;border-radius:12px;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;font-size:15px;font-weight:800;box-shadow:0 10px 26px rgba(99,102,241,0.35);}
+    .m-btn:active{transform:scale(0.99);}
+    .m-btn.fingerprint-btn{margin-top:12px;background:linear-gradient(135deg,#10b981,#059669);box-shadow:0 10px 26px rgba(16,185,129,0.35);display:flex;align-items:center;justify-content:center;gap:10px;}
+    .m-btn.fingerprint-btn:active{transform:scale(0.99);}
+    .m-or{display:flex;align-items:center;gap:10px;color:#9ca3af;font-size:12px;margin:20px 0 14px;}
+    .m-or:before,.m-or:after{content:"";flex:1;height:1px;background:#e5e7eb;}
+    .m-social{display:flex;gap:12px;justify-content:center;}
+    .m-social button{flex:1;padding:10px;border:1px solid #e5e7eb;border-radius:12px;background:#fff;font-size:13px;color:#374151;}
+    .m-msg{padding:10px 12px;border-radius:10px;font-size:13px;margin-bottom:14px;}
+    .m-err{background:#fef2f2;color:#b91c1c;}
+    .m-ok{background:#f0fdf4;color:#15803d;}
+    .m-foot{text-align:center;font-size:12px;color:#6b7280;margin-top:18px;}
+    .m-foot a{color:#6366f1;text-decoration:none;font-weight:600;}
+    .fingerprint-required{background:#fffbeb;border:1px solid #fbbf24;border-radius:10px;padding:12px;margin-bottom:14px;display:flex;align-items:center;gap:10px;}
+    .fingerprint-required i{color:#f59e0b;font-size:18px;}
+    .fingerprint-required .fr-content{flex:1;}
+    .fingerprint-required .fr-title{font-size:13px;font-weight:700;color:#92400e;margin-bottom:2px;}
+    .fingerprint-required .fr-desc{font-size:12px;color:#b45309;}
+    .fingerprint-required .fr-btn{background:#f59e0b;color:#fff;border:none;border-radius:6px;padding:6px 12px;font-size:12px;font-weight:600;}
+    .fingerprint-scanning{position:relative;}
+    .fingerprint-scanning::after{content:"";position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,#10b981,transparent);animation:scan 1.5s ease-in-out infinite;}
+    @keyframes scan{0%{top:0;opacity:1;}100%{top:100%;opacity:0;}}
+  </style>
+</head>
+<body>
+  <form method="post" action="/mobile/login" novalidate id="ml-form">
+    <input type="hidden" name="fingerprint_data" id="ml-fingerprint-data" value="">
+    <div class="m-top">
+      <div class="logo"><i class="fas fa-brain"></i></div>
+      <h1>欢迎回来</h1>
+      <p>登录 MTSCOS AI 移动版 · 智能学习评估平台</p>
+    </div>
+    <div class="m-card">
+      {% if error %}<div class="m-msg m-err"><i class="fas fa-exclamation-circle"></i> {{ error }}</div>{% endif %}
+      {% if msg %}<div class="m-msg m-ok"><i class="fas fa-check-circle"></i> {{ msg }}</div>{% endif %}
+      <div class="m-row">
+        <label>用户名</label>
+        <div class="m-input" id="ml-ui-wrap"><i class="fas fa-user"></i><input id="ml-username" name="username" required placeholder="请输入用户名" minlength="3" maxlength="20" autocomplete="username" value="{{ request.form.username or '' }}"></div>
+        <div class="hint-text" id="ml-username-hint">用户名长度 3-20 字符</div>
+      </div>
+      <div class="m-row">
+        <label>密码</label>
+        <div class="m-input pw" id="ml-pw-wrap"><i class="fas fa-lock"></i><input id="ml-password" name="password" required placeholder="请输入密码（8-64位）" type="password" minlength="8" maxlength="64" autocomplete="current-password">
+          <button type="button" class="toggle-pw" data-target="ml-password" title="显示/隐藏密码">👁️</button></div>
+        <div class="hint-text" id="ml-password-hint">建议使用 8-64 位，包含多类字符</div>
+      </div>
+      <div id="fingerprint-required-box" style="display:none;">
+        <div class="fingerprint-required">
+          <i class="fas fa-fingerprint"></i>
+          <div class="fr-content">
+            <div class="fr-title">超级管理员登录需要指纹认证</div>
+            <div class="fr-desc">请先在网页版设置中注册指纹信息</div>
+          </div>
+          <button type="button" class="fr-btn" onclick="window.location.href='/settings'">去设置</button>
+        </div>
+      </div>
+      <div class="m-row-2">
+        <label style="margin:0;"><input type="checkbox" name="remember" value="1" style="vertical-align:middle;margin-right:4px;"> 记住我</label>
+        <a href="/auth/forgot_password">忘记密码？</a>
+      </div>
+      <button type="submit" class="m-btn" id="ml-login-btn"><i class="fas fa-right-to-bracket"></i> 登 录</button>
+      <button type="button" class="m-btn fingerprint-btn" id="ml-fingerprint-btn" style="display:none;" onclick="handleFingerprintLogin()">
+        <i class="fas fa-fingerprint"></i> 指纹登录
+      </button>
+      <div class="m-or">或使用以下方式</div>
+      <div class="m-social">
+        <button type="button"><i class="fab fa-weixin" style="color:#07c160;"></i> 微信</button>
+        <button type="button"><i class="fab fa-github"></i> GitHub</button>
+      </div>
+      <div class="m-foot">没有账户？<a href="/auth/register">立即注册</a> · <a href="/">返回电脑版</a></div>
+    </div>
+  </form>
+<script>
+(function(){
+  function $(id){ return document.getElementById(id); }
+  function toggleError(wrapId, inputId, ok, msg){
+      var wrap = document.getElementById(wrapId);
+      var hint = document.getElementById(inputId + '-hint');
+      if (wrap) { wrap.classList.remove('input-error','input-ok'); if (ok===false) wrap.classList.add('input-error'); if (ok===true) wrap.classList.add('input-ok'); }
+      if (!hint) return;
+      if (!hint.dataset.def) hint.dataset.def = hint.textContent;
+      if (ok === null || ok === undefined) { hint.className = 'hint-text'; hint.textContent = hint.dataset.def; return; }
+      if (ok) { hint.className = 'hint-text ok'; hint.textContent = msg || '校验通过'; }
+      else { hint.className = 'hint-text err'; hint.textContent = msg || '格式不正确'; }
+  }
+  function validateU(){
+      var el = $('ml-username'); if (!el) return false;
+      var v = (el.value || '').trim();
+      if (!v) { toggleError('ml-ui-wrap','ml-username', null); return false; }
+      if (v.length < 3) { toggleError('ml-ui-wrap','ml-username', false, '用户名至少 3 个字符'); return false; }
+      if (v.length > 20) { toggleError('ml-ui-wrap','ml-username', false, '用户名至多 20 个字符'); return false; }
+      toggleError('ml-ui-wrap','ml-username', true, v.length + ' 字符');
+      return true;
+  }
+  function validateP(){
+      var el = $('ml-password'); if (!el) return false;
+      var v = el.value || '';
+      if (!v) { toggleError('ml-pw-wrap','ml-password', null); return false; }
+      if (v.length < 8) { toggleError('ml-pw-wrap','ml-password', false, '密码长度不足 8 位（当前 ' + v.length + '）'); return false; }
+      if (v.length > 64) { toggleError('ml-pw-wrap','ml-password', false, '密码长度超过 64 位'); return false; }
+      var cc = (/[a-z]/.test(v)?1:0)+(/[A-Z]/.test(v)?1:0)+(/\d/.test(v)?1:0)+(/[^A-Za-z0-9]/.test(v)?1:0);
+      toggleError('ml-pw-wrap','ml-password', true, '长度符合（' + cc + ' 类字符）');
+      return true;
+  }
+  document.addEventListener('click', function(e){
+      var btn = e.target.closest && e.target.closest('.toggle-pw');
+      if (!btn) return;
+      var t = document.getElementById(btn.getAttribute('data-target')); if (!t) return;
+      var pw = t.type === 'password'; t.type = pw ? 'text' : 'password'; btn.textContent = pw ? '🔒' : '👁️';
+  });
+  ['input','blur','change'].forEach(function(evt){
+      if ($('ml-username')) $('ml-username').addEventListener(evt, validateU);
+      if ($('ml-password')) $('ml-password').addEventListener(evt, validateP);
+  });
+  [['ml-username-hint','用户名长度 3-20 字符'],['ml-password-hint','建议使用 8-64 位，包含多类字符']].forEach(function(p){
+      var el = $(p[0]); if (el && !el.dataset.def) el.dataset.def = p[1];
+  });
+
+  var _fingerprintRequired = false;
+  var _fingerprintRegistered = false;
+
+  async function checkSuperAdminFingerprint() {
+      var uEl = $('ml-username');
+      var username = (uEl.value || '').trim().toLowerCase();
+      if (username !== 'wuchenghao15') {
+          $('fingerprint-required-box').style.display = 'none';
+          $('ml-fingerprint-btn').style.display = 'none';
+          _fingerprintRequired = false;
+          return;
+      }
+      _fingerprintRequired = true;
+      try {
+          var r = await fetch('/api/fingerprint/check', { credentials: 'include' });
+          var d = await r.json();
+          if (d.success && d.data) {
+              _fingerprintRegistered = d.data.fingerprint_registered && d.data.fingerprint_enabled;
+              if (!_fingerprintRegistered) {
+                  $('fingerprint-required-box').style.display = 'block';
+                  $('ml-fingerprint-btn').style.display = 'none';
+              } else {
+                  $('fingerprint-required-box').style.display = 'none';
+                  $('ml-fingerprint-btn').style.display = 'block';
+              }
+          }
+      } catch (e) {
+          console.warn('check fingerprint failed:', e);
+      }
+  }
+
+  $('ml-username').addEventListener('change', checkSuperAdminFingerprint);
+  $('ml-username').addEventListener('blur', checkSuperAdminFingerprint);
+
+  async function handleFingerprintLogin() {
+      var btn = $('ml-fingerprint-btn');
+      if (!btn) return;
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 指纹验证中...';
+      btn.disabled = true;
+
+      try {
+          var fingerprintData = await captureFingerprint();
+          if (!fingerprintData) {
+              btn.innerHTML = '<i class="fas fa-fingerprint"></i> 指纹登录';
+              btn.disabled = false;
+              return;
+          }
+
+          var username = ($('ml-username').value || '').trim();
+          var r = await fetch('/api/fingerprint/verify', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ username: username, fingerprint_data: fingerprintData })
+          });
+          var d = await r.json();
+
+          if (d.success) {
+              $('ml-fingerprint-data').value = fingerprintData;
+              document.getElementById('ml-form').submit();
+          } else {
+              alert(d.message || '指纹验证失败');
+          }
+      } catch (e) {
+          console.error('fingerprint login error:', e);
+          alert('指纹验证出错，请重试');
+      } finally {
+          btn.innerHTML = '<i class="fas fa-fingerprint"></i> 指纹登录';
+          btn.disabled = false;
+      }
+  }
+
+  async function captureFingerprint() {
+      if (!window.PublicKeyCredential) {
+          alert('您的浏览器不支持WebAuthn指纹认证');
+          return null;
+      }
+      try {
+          var challenge = new Uint8Array(32);
+          crypto.getRandomValues(challenge);
+
+          var options = {
+              publicKey: {
+                  challenge: challenge,
+                  rp: { name: 'MTSCOS AI' },
+                  user: {
+                      id: new Uint8Array(16),
+                      name: 'wuchenghao15',
+                      displayName: '超级管理员'
+                  },
+                  pubKeyCredParams: [
+                      { type: 'public-key', alg: -7 },
+                      { type: 'public-key', alg: -257 }
+                  ],
+                  timeout: 60000,
+                  attestation: 'none'
+              }
+          };
+
+          var credential = await navigator.credentials.create(options);
+          var result = btoa(String.fromCharCode(...new Uint8Array(credential.response.attestationObject)));
+          return result;
+      } catch (e) {
+          console.warn('fingerprint capture failed:', e);
+          if (e.name === 'NotAllowedError') {
+              alert('用户取消了指纹认证');
+          } else if (e.name === 'NotSupportedError') {
+              alert('设备不支持指纹认证');
+          } else {
+              alert('指纹认证失败: ' + e.message);
+          }
+          return null;
+      }
+  }
+
+  var f = $('ml-form'); if (f) f.addEventListener('submit', async function(e){
+      var uEl = $('ml-username');
+      var username = (uEl.value || '').trim().toLowerCase();
+
+      if (username === 'wuchenghao15') {
+          var ok = true;
+          if (!validateU()) ok = false;
+          if (!validateP()) ok = false;
+          if (!ok) { e.preventDefault(); return false; }
+
+          try {
+              var r = await fetch('/api/fingerprint/check', { credentials: 'include' });
+              var d = await r.json();
+              if (d.success && d.data && d.data.fingerprint_registered && d.data.fingerprint_enabled) {
+                  var fingerprintData = await captureFingerprint();
+                  if (!fingerprintData) {
+                      e.preventDefault();
+                      return false;
+                  }
+
+                  var vR = await fetch('/api/fingerprint/verify', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ username: username, fingerprint_data: fingerprintData })
+                  });
+                  var vD = await vR.json();
+                  if (!vD.success) {
+                      alert(vD.message || '指纹验证失败');
+                      e.preventDefault();
+                      return false;
+                  }
+
+                  $('ml-fingerprint-data').value = fingerprintData;
+              }
+          } catch (err) {
+              console.error('fingerprint check error:', err);
+          }
+      } else {
+          var ok = true;
+          if (!validateU()) ok = false;
+          if (!validateP()) ok = false;
+          if (!ok) { e.preventDefault(); return false; }
+      }
+  });
+})();
+</script>
+</body>
+</html>

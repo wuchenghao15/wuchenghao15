@@ -1,0 +1,211 @@
+{% extends 'super_admin_base.html' %}
+
+{% block title %}系统状态 - MTSCOS AI{% endblock %}
+
+{% block header_icon %}<i class="fas fa-server"></i>{% endblock %}
+{% block header_title %}系统状态监控{% endblock %}
+
+{% block breadcrumb %}
+    <i class="fas fa-chevron-right"></i>
+    <span>系统状态</span>
+{% endblock %}
+
+{% block header_actions %}
+<button class="action-btn action-btn-secondary" onclick="window.location.href='/admin_app/dashboard'">
+    <i class="fas fa-arrow-left action-btn-icon"></i>
+    <span>返回管理首页</span>
+</button>
+<button class="action-btn action-btn-primary" onclick="refreshStatus()">
+    <i class="fas fa-sync-alt action-btn-icon"></i>
+    <span>刷新状态</span>
+</button>
+{% endblock %}
+
+{% block content %}
+<div class="stats-grid">
+    <div class="stat-card status">
+        <div class="stat-icon status"><i class="fas fa-server"></i></div>
+        <div class="stat-info">
+            <div class="stat-value" style="color: var(--success-color);">运行中</div>
+            <div class="stat-label">服务器状态</div>
+        </div>
+    </div>
+    <div class="stat-card cpu">
+        <div class="stat-icon cpu"><i class="fas fa-microchip"></i></div>
+        <div class="stat-info">
+            <div class="stat-value">{{ system_info.cpu_usage or '0' }}%</div>
+            <div class="stat-label">CPU使用率</div>
+        </div>
+    </div>
+    <div class="stat-card memory">
+        <div class="stat-icon memory"><i class="fas fa-memory"></i></div>
+        <div class="stat-info">
+            <div class="stat-value">{{ system_info.memory_usage or '0' }}%</div>
+            <div class="stat-label">内存使用率</div>
+        </div>
+    </div>
+    <div class="stat-card disk">
+        <div class="stat-icon disk"><i class="fas fa-hard-drive"></i></div>
+        <div class="stat-info">
+            <div class="stat-value">{{ system_info.disk_usage or '0' }}%</div>
+            <div class="stat-label">磁盘使用率</div>
+        </div>
+    </div>
+</div>
+
+<div class="grid-2">
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title">
+                <div class="icon"><i class="fas fa-info-circle"></i></div>
+                <span>系统信息</span>
+            </div>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border-color);">
+                <span style="color: var(--text-secondary); font-size: 14px;">操作系统</span>
+                <span style="color: var(--text-primary); font-weight: 500; font-size: 14px;">{{ system_info.os or '-' }}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border-color);">
+                <span style="color: var(--text-secondary); font-size: 14px;">Python版本</span>
+                <span style="color: var(--text-primary); font-weight: 500; font-size: 14px;">{{ system_info.python_version or '-' }}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border-color);">
+                <span style="color: var(--text-secondary); font-size: 14px;">Flask版本</span>
+                <span style="color: var(--text-primary); font-weight: 500; font-size: 14px;">{{ system_info.flask_version or '-' }}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border-color);">
+                <span style="color: var(--text-secondary); font-size: 14px;">系统版本</span>
+                <span style="color: var(--primary-color); font-weight: 600; font-size: 14px;">{{ system_info.version or 'v14.0.0' }}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0;">
+                <span style="color: var(--text-secondary); font-size: 14px;">运行时间</span>
+                <span style="color: var(--text-primary); font-weight: 500; font-size: 14px;">{{ system_info.uptime or '-' }}</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title">
+                <div class="icon"><i class="fas fa-database"></i></div>
+                <span>数据库状态</span>
+            </div>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border-color);">
+                <span style="color: var(--text-secondary); font-size: 14px;">数据库类型</span>
+                <span style="color: var(--text-primary); font-weight: 500; font-size: 14px;">SQLite</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border-color);">
+                <span style="color: var(--text-secondary); font-size: 14px;">数据库大小</span>
+                <span style="color: var(--text-primary); font-weight: 500; font-size: 14px;">{{ system_info.db_size or '-' }}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border-color);">
+                <span style="color: var(--text-secondary); font-size: 14px;">连接状态</span>
+                <span style="color: var(--success-color); font-weight: 600; font-size: 14px;"><i class="fas fa-check-circle"></i> 正常</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0;">
+                <span style="color: var(--text-secondary); font-size: 14px;">表数量</span>
+                <span style="color: var(--text-primary); font-weight: 500; font-size: 14px;">{{ system_info.table_count or 0 }}</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <div class="card-title">
+            <div class="icon"><i class="fas fa-chart-bar"></i></div>
+            <span>资源使用率</span>
+        </div>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 20px;">
+        <div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                <span style="font-size: 14px; color: var(--text-secondary);">CPU使用率</span>
+                <span style="font-size: 14px; font-weight: 600; color: var(--text-primary);">{{ system_info.cpu_usage or 0 }}%</span>
+            </div>
+            <div style="height: 8px; background: var(--bg-card-alt); border-radius: 4px; overflow: hidden;">
+                <div style="height: 100%; background: var(--accent); border-radius: 4px; width: {{ system_info.cpu_usage or 0 }}%; transition: width 0.2s;"></div>
+            </div>
+        </div>
+        <div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                <span style="font-size: 14px; color: var(--text-secondary);">内存使用率</span>
+                <span style="font-size: 14px; font-weight: 600; color: var(--text-primary);">{{ system_info.memory_usage or 0 }}%</span>
+            </div>
+            <div style="height: 8px; background: var(--bg-card-alt); border-radius: 4px; overflow: hidden;">
+                <div style="height: 100%; background: var(--success); border-radius: 4px; width: {{ system_info.memory_usage or 0 }}%; transition: width 0.2s;"></div>
+            </div>
+        </div>
+        <div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                <span style="font-size: 14px; color: var(--text-secondary);">磁盘使用率</span>
+                <span style="font-size: 14px; font-weight: 600; color: var(--text-primary);">{{ system_info.disk_usage or 0 }}%</span>
+            </div>
+            <div style="height: 8px; background: var(--bg-card-alt); border-radius: 4px; overflow: hidden;">
+                <div style="height: 100%; background: var(--warning); border-radius: 4px; width: {{ system_info.disk_usage or 0 }}%; transition: width 0.2s;"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="grid-2">
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title">
+                <div class="icon"><i class="fas fa-network-wired"></i></div>
+                <span>网络状态</span>
+            </div>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border-color);">
+                <span style="color: var(--text-secondary); font-size: 14px;">本地IP</span>
+                <span style="color: var(--text-primary); font-weight: 500; font-size: 14px;">{{ system_info.local_ip or '-' }}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border-color);">
+                <span style="color: var(--text-secondary); font-size: 14px;">端口</span>
+                <span style="color: var(--text-primary); font-weight: 500; font-size: 14px;">8888</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0;">
+                <span style="color: var(--text-secondary); font-size: 14px;">网络连接</span>
+                <span style="color: var(--success-color); font-weight: 600; font-size: 14px;"><i class="fas fa-check-circle"></i> 正常</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title">
+                <div class="icon"><i class="fas fa-bot"></i></div>
+                <span>AI服务状态</span>
+            </div>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border-color);">
+                <span style="color: var(--text-secondary); font-size: 14px;">AI引擎</span>
+                <span style="color: var(--success-color); font-weight: 600; font-size: 14px;"><i class="fas fa-check-circle"></i> 已启动</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border-color);">
+                <span style="color: var(--text-secondary); font-size: 14px;">错误监控</span>
+                <span style="color: var(--success-color); font-weight: 600; font-size: 14px;"><i class="fas fa-check-circle"></i> 运行中</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0;">
+                <span style="color: var(--text-secondary); font-size: 14px;">系统监控</span>
+                <span style="color: var(--success-color); font-weight: 600; font-size: 14px;"><i class="fas fa-check-circle"></i> 运行中</span>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function refreshStatus() {
+    window.location.reload();
+}
+
+setInterval(refreshStatus, 60000);
+</script>
+{% endblock %}

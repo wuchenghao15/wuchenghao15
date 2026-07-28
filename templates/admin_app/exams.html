@@ -1,0 +1,127 @@
+{% extends 'super_admin_base.html' %}
+
+{% block title %}考试管理 - MTSCOS AI{% endblock %}
+
+{% block header_icon %}<i class="fas fa-file-alt"></i>{% endblock %}
+{% block header_title %}考试管理{% endblock %}
+
+{% block breadcrumb %}
+    <i class="fas fa-chevron-right"></i>
+    <span>考试管理</span>
+{% endblock %}
+
+{% block header_actions %}
+<button class="action-btn action-btn-secondary" onclick="window.location.href='/'">
+    <i class="fas fa-home action-btn-icon"></i>
+    <span>返回首页</span>
+</button>
+<button class="action-btn action-btn-primary" onclick="window.location.href='/admin_app/questions'">
+    <i class="fas fa-question-circle action-btn-icon"></i>
+    <span>题目管理</span>
+</button>
+{% endblock %}
+
+{% block content %}
+<div class="stats-grid">
+    <div class="stat-card exams">
+        <div class="stat-icon exams"><i class="fas fa-file-alt"></i></div>
+        <div class="stat-info">
+            <div class="stat-value">{{ exam_stats.total_exams or 0 }}</div>
+            <div class="stat-label">考试总数</div>
+        </div>
+    </div>
+    <div class="stat-card questions">
+        <div class="stat-icon questions"><i class="fas fa-play"></i></div>
+        <div class="stat-info">
+            <div class="stat-value">{{ exam_stats.active_exams or 0 }}</div>
+            <div class="stat-label">进行中</div>
+        </div>
+    </div>
+    <div class="stat-card courses">
+        <div class="stat-icon courses"><i class="fas fa-check-circle"></i></div>
+        <div class="stat-info">
+            <div class="stat-value">{{ exam_stats.completed_exams or 0 }}</div>
+            <div class="stat-label">已完成</div>
+        </div>
+    </div>
+    <div class="stat-card users">
+        <div class="stat-icon users"><i class="fas fa-file-question"></i></div>
+        <div class="stat-info">
+            <div class="stat-value">{{ exam_stats.total_questions or 0 }}</div>
+            <div class="stat-label">题目总数</div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <div class="card-title">
+            <div class="icon"><i class="fas fa-list"></i></div>
+            <span>考试列表</span>
+        </div>
+        <div class="search-bar">
+            <input type="text" placeholder="搜索考试名称..." id="exam-search">
+            <button class="action-btn action-btn-primary btn-sm" onclick="searchExams()">
+                <i class="fas fa-search"></i> 搜索
+            </button>
+        </div>
+    </div>
+    <div class="card-body">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>考试名称</th>
+                    <th>类型</th>
+                    <th>时长</th>
+                    <th>总分</th>
+                    <th>状态</th>
+                    <th>创建时间</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for exam in exams %}
+                <tr>
+                    <td>{{ exam.id }}</td>
+                    <td>{{ exam.exam_name }}</td>
+                    <td>{{ exam.exam_type or '-' }}</td>
+                    <td>{{ exam.duration or 0 }}分钟</td>
+                    <td>{{ exam.total_score or 0 }}分</td>
+                    <td>
+                        {% if exam.status == 'active' %}<span class="status-tag status-active">进行中</span>
+                        {% elif exam.status == 'published' %}<span class="status-tag status-published">已发布</span>
+                        {% elif exam.status == 'completed' %}<span class="status-tag status-completed">已完成</span>
+                        {% else %}<span class="status-tag status-draft">{{ exam.status or '草稿' }}</span>{% endif %}
+                    </td>
+                    <td>{{ exam.created_at[:10] if exam.created_at else '-' }}</td>
+                    <td>
+                        <div class="btn-group">
+                            <button class="action-btn action-btn-secondary btn-sm">编辑</button>
+                            <button class="action-btn action-btn-secondary btn-sm">查看</button>
+                            <button class="action-btn action-btn-primary btn-sm">发布</button>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+                {% if not exams %}
+                <tr><td colspan="8" class="empty-state">暂无考试数据</td></tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function searchExams() {
+    const keyword = document.getElementById('exam-search').value.toLowerCase();
+    const rows = document.querySelectorAll('.data-table tbody tr');
+    rows.forEach(row => {
+        const name = row.querySelector('td:nth-child(2)').textContent.toLowerCase();
+        row.style.display = name.includes(keyword) ? '' : 'none';
+    });
+}
+</script>
+{% endblock %}

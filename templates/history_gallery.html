@@ -1,0 +1,375 @@
+{% extends "base.html" %}
+
+{% block title %}项目历史馆 - MTSCOS AI{% endblock %}
+
+{% block head %}
+<style>
+    :root {
+        --dark-bg: #0c0c1e;
+        --dark-card: rgba(20, 20, 40, 0.9);
+        --dark-border: rgba(99, 102, 241, 0.2);
+        --dark-primary: #6366f1;
+        --dark-success: #22c55e;
+        --dark-warning: #f59e0b;
+        --dark-info: #3b82f6;
+        --dark-danger: #ef4444;
+    }
+    
+    body { background: linear-gradient(135deg, var(--dark-bg) 0%, #1a1a3e 50%, var(--dark-bg) 100%); min-height: 100vh; }
+    
+    .gallery-header { display: flex; align-items: center; gap: 16px; margin-bottom: 28px; }
+    .gallery-header h1 { font-size: 28px; color: #fff; margin: 0; }
+    .gallery-subtitle { font-size: 14px; color: #94a3b8; margin-top: 4px; }
+    
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 28px; }
+    .stat-card { background: var(--dark-card); border: 1px solid var(--dark-border); border-radius: 12px; padding: 20px; text-align: center; }
+    .stat-value { font-size: 32px; font-weight: 700; color: var(--dark-primary); }
+    .stat-label { font-size: 12px; color: #94a3b8; margin-top: 4px; }
+    .stat-icon { font-size: 20px; margin-bottom: 8px; }
+    
+    .tabs-container { display: flex; gap: 8px; background: var(--dark-card); border: 1px solid var(--dark-border); border-radius: 12px; padding: 6px; margin-bottom: 24px; overflow-x: auto; }
+    .tab-item { padding: 10px 20px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 600; color: #94a3b8; transition: all 0.3s; white-space: nowrap; }
+    .tab-item:hover { color: #fff; background: rgba(0,0,0,0.2); }
+    .tab-item.active { background: linear-gradient(135deg, var(--dark-primary), #8b5cf6); color: #fff; }
+    
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+    
+    .timeline-container { position: relative; padding-left: 32px; }
+    .timeline-container::before { content: ''; position: absolute; left: 8px; top: 0; bottom: 0; width: 2px; background: var(--dark-border); }
+    .timeline-item { position: relative; margin-bottom: 24px; }
+    .timeline-dot { position: absolute; left: -28px; top: 8px; width: 12px; height: 12px; border-radius: 50%; background: var(--dark-primary); border: 2px solid #fff; }
+    .timeline-dot.success { background: var(--dark-success); }
+    .timeline-dot.warning { background: var(--dark-warning); }
+    .timeline-dot.danger { background: var(--dark-danger); }
+    .timeline-card { background: var(--dark-card); border: 1px solid var(--dark-border); border-radius: 12px; padding: 20px; }
+    .timeline-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
+    .timeline-title { font-size: 16px; font-weight: 600; color: #fff; }
+    .timeline-date { font-size: 12px; color: #64748b; }
+    .timeline-version { display: inline-block; padding: 4px 10px; background: rgba(99,102,241,0.15); color: var(--dark-primary); border-radius: 20px; font-size: 12px; margin-left: 8px; }
+    .timeline-description { font-size: 13px; color: #94a3b8; line-height: 1.6; margin-bottom: 12px; }
+    .timeline-features { display: flex; flex-wrap: wrap; gap: 6px; }
+    .feature-tag { padding: 4px 10px; background: rgba(0,0,0,0.3); color: #94a3b8; border-radius: 6px; font-size: 12px; }
+    .feature-tag.new { background: rgba(34,197,94,0.15); color: var(--dark-success); }
+    .feature-tag.improve { background: rgba(59,130,246,0.15); color: var(--dark-info); }
+    .feature-tag.fix { background: rgba(245,158,11,0.15); color: var(--dark-warning); }
+    
+    .table-container { overflow-x: auto; }
+    .history-table { width: 100%; border-collapse: collapse; }
+    .history-table th, .history-table td { padding: 12px; text-align: left; border-bottom: 1px solid var(--dark-border); }
+    .history-table th { background: rgba(0,0,0,0.3); color: #94a3b8; font-size: 12px; font-weight: 600; text-transform: uppercase; }
+    .history-table td { color: #fff; font-size: 13px; }
+    .history-table tr:hover { background: rgba(0,0,0,0.2); }
+    
+    .status-badge { padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 500; }
+    .status-completed { background: rgba(34,197,94,0.15); color: var(--dark-success); }
+    .status-pending { background: rgba(245,158,11,0.15); color: var(--dark-warning); }
+    .status-running { background: rgba(59,130,246,0.15); color: var(--dark-info); }
+    
+    .knowledge-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+    .knowledge-card { background: var(--dark-card); border: 1px solid var(--dark-border); border-radius: 12px; padding: 16px; }
+    .knowledge-category { display: inline-block; padding: 4px 8px; background: rgba(168,85,247,0.15); color: #a855f7; border-radius: 6px; font-size: 11px; margin-bottom: 8px; }
+    .knowledge-title { font-size: 14px; font-weight: 600; color: #fff; margin-bottom: 6px; }
+    .knowledge-content { font-size: 12px; color: #94a3b8; line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+    
+    .empty-state { text-align: center; padding: 60px 20px; color: #64748b; }
+    .empty-state i { font-size: 48px; margin-bottom: 16px; opacity: 0.3; }
+    .empty-state p { font-size: 14px; }
+    
+    .pagination { display: flex; justify-content: center; gap: 8px; margin-top: 24px; }
+    .page-btn { padding: 8px 16px; border: 1px solid var(--dark-border); border-radius: 8px; background: var(--dark-card); color: #94a3b8; cursor: pointer; transition: all 0.3s; }
+    .page-btn:hover { color: #fff; border-color: var(--dark-primary); }
+    .page-btn.active { background: var(--dark-primary); color: #fff; border-color: var(--dark-primary); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="settings-wrap">
+    <div class="gallery-header">
+        <div class="card-icon blue"><i class="fas fa-history"></i></div>
+        <div>
+            <h1>项目历史馆</h1>
+            <p class="gallery-subtitle">记录系统发展历程，传承技术演进脉络</p>
+        </div>
+    </div>
+
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-icon"><i class="fas fa-tag"></i></div>
+            <div class="stat-value" id="stat-versions">0</div>
+            <div class="stat-label">版本总数</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon"><i class="fas fa-arrow-up"></i></div>
+            <div class="stat-value" id="stat-upgrades">0</div>
+            <div class="stat-label">升级次数</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon"><i class="fas fa-brain"></i></div>
+            <div class="stat-value" id="stat-knowledge">0</div>
+            <div class="stat-label">知识条目</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon"><i class="fas fa-robot"></i></div>
+            <div class="stat-value" id="stat-learning">0</div>
+            <div class="stat-label">学习任务</div>
+        </div>
+    </div>
+
+    <div class="tabs-container">
+        <div class="tab-item active" onclick="switchTab('timeline')"><i class="fas fa-stream"></i> 版本时间线</div>
+        <div class="tab-item" onclick="switchTab('upgrades')"><i class="fas fa-arrow-circle-up"></i> 升级记录</div>
+        <div class="tab-item" onclick="switchTab('learning')"><i class="fas fa-graduation-cap"></i> 学习任务</div>
+        <div class="tab-item" onclick="switchTab('knowledge')"><i class="fas fa-book-open"></i> 知识脑库</div>
+        <div class="tab-item" onclick="switchTab('rules')"><i class="fas fa-file-alt"></i> 系统规则</div>
+    </div>
+
+    <div class="tab-content active" id="tab-timeline">
+        <div class="timeline-container" id="timeline-content">
+            <div class="empty-state">
+                <i class="fas fa-clock"></i>
+                <p>正在加载版本历史...</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="tab-content" id="tab-upgrades">
+        <div class="table-container">
+            <table class="history-table">
+                <thead>
+                    <tr>
+                        <th>版本</th>
+                        <th>升级类型</th>
+                        <th>描述</th>
+                        <th>AI员工数</th>
+                        <th>功能数</th>
+                        <th>状态</th>
+                        <th>时间</th>
+                    </tr>
+                </thead>
+                <tbody id="upgrades-content">
+                    <tr><td colspan="7" class="empty-state"><i class="fas fa-refresh"></i> 加载中...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="tab-content" id="tab-learning">
+        <div class="table-container">
+            <table class="history-table">
+                <thead>
+                    <tr>
+                        <th>任务名称</th>
+                        <th>描述</th>
+                        <th>类型</th>
+                        <th>版本</th>
+                        <th>状态</th>
+                        <th>创建时间</th>
+                    </tr>
+                </thead>
+                <tbody id="learning-content">
+                    <tr><td colspan="6" class="empty-state"><i class="fas fa-refresh"></i> 加载中...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="tab-content" id="tab-knowledge">
+        <div class="knowledge-grid" id="knowledge-content">
+            <div class="empty-state">
+                <i class="fas fa-book"></i>
+                <p>正在加载知识脑库...</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="tab-content" id="tab-rules">
+        <div class="table-container">
+            <table class="history-table">
+                <thead>
+                    <tr>
+                        <th>规则ID</th>
+                        <th>规则名称</th>
+                        <th>类型</th>
+                        <th>描述</th>
+                        <th>状态</th>
+                        <th>创建时间</th>
+                    </tr>
+                </thead>
+                <tbody id="rules-content">
+                    <tr><td colspan="6" class="empty-state"><i class="fas fa-refresh"></i> 加载中...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+function switchTab(tabId) {
+    document.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    event.currentTarget.classList.add('active');
+    document.getElementById('tab-' + tabId).classList.add('active');
+    loadTabData(tabId);
+}
+
+function loadStats() {
+    fetch('/api/history/stats')
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                document.getElementById('stat-versions').textContent = data.data.versions || 0;
+                document.getElementById('stat-upgrades').textContent = data.data.upgrades || 0;
+                document.getElementById('stat-knowledge').textContent = data.data.knowledge || 0;
+                document.getElementById('stat-learning').textContent = data.data.learning || 0;
+            }
+        });
+}
+
+function loadTabData(tabId) {
+    const url = '/api/history/' + tabId;
+    fetch(url)
+        .then(r => r.json())
+        .then(data => {
+            if (!data.success) return;
+            renderTab(tabId, data.data);
+        });
+}
+
+function renderTab(tabId, data) {
+    switch(tabId) {
+        case 'timeline':
+            renderTimeline(data);
+            break;
+        case 'upgrades':
+            renderUpgrades(data);
+            break;
+        case 'learning':
+            renderLearning(data);
+            break;
+        case 'knowledge':
+            renderKnowledge(data);
+            break;
+        case 'rules':
+            renderRules(data);
+            break;
+    }
+}
+
+function renderTimeline(data) {
+    const container = document.getElementById('timeline-content');
+    if (!data || data.length === 0) {
+        container.innerHTML = '<div class="empty-state"><i class="fas fa-clock"></i><p>暂无版本记录</p></div>';
+        return;
+    }
+    
+    container.innerHTML = data.map(item => `
+        <div class="timeline-item">
+            <div class="timeline-dot ${getDotClass(item.status)}"></div>
+            <div class="timeline-card">
+                <div class="timeline-header">
+                    <div>
+                        <span class="timeline-title">${item.codename || item.description}</span>
+                        <span class="timeline-version">v${item.version}</span>
+                    </div>
+                    <span class="timeline-date">${item.build_date || item.created_at}</span>
+                </div>
+                <div class="timeline-description">${item.description}</div>
+                ${item.features && item.features.length > 0 ? `
+                    <div class="timeline-features">
+                        ${item.features.slice(0, 6).map(f => `<span class="feature-tag new">${f}</span>`).join('')}
+                        ${item.features.length > 6 ? `<span class="feature-tag">+${item.features.length - 6}项</span>` : ''}
+                    </div>
+                ` : ''}
+            </div>
+        </div>
+    `).join('');
+}
+
+function getDotClass(status) {
+    if (status === 'completed') return 'success';
+    if (status === 'pending') return 'warning';
+    return '';
+}
+
+function renderUpgrades(data) {
+    const tbody = document.getElementById('upgrades-content');
+    if (!data || data.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" class="empty-state"><i class="fas fa-clock"></i><p>暂无升级记录</p></td></tr>';
+        return;
+    }
+    
+    tbody.innerHTML = data.map(item => `
+        <tr>
+            <td><span class="timeline-version">v${item.version}</span></td>
+            <td><span class="feature-tag ${item.upgrade_type === 'major' ? 'danger' : item.upgrade_type === 'minor' ? 'info' : 'warning'}">${item.upgrade_type}</span></td>
+            <td>${item.description}</td>
+            <td>${item.ai_employees_count || '-'}</td>
+            <td>${item.features_count || '-'}</td>
+            <td><span class="status-badge status-${item.status}">${item.status}</span></td>
+            <td>${item.created_at}</td>
+        </tr>
+    `).join('');
+}
+
+function renderLearning(data) {
+    const tbody = document.getElementById('learning-content');
+    if (!data || data.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="empty-state"><i class="fas fa-graduation-cap"></i><p>暂无学习任务</p></td></tr>';
+        return;
+    }
+    
+    tbody.innerHTML = data.map(item => `
+        <tr>
+            <td>${item.task_name}</td>
+            <td>${item.task_desc}</td>
+            <td><span class="feature-tag">${item.task_type}</span></td>
+            <td><span class="timeline-version">v${item.version}</span></td>
+            <td><span class="status-badge status-${item.status}">${item.status}</span></td>
+            <td>${item.created_at}</td>
+        </tr>
+    `).join('');
+}
+
+function renderKnowledge(data) {
+    const container = document.getElementById('knowledge-content');
+    if (!data || data.length === 0) {
+        container.innerHTML = '<div class="empty-state"><i class="fas fa-book"></i><p>暂无知识条目</p></div>';
+        return;
+    }
+    
+    container.innerHTML = data.map(item => `
+        <div class="knowledge-card">
+            <span class="knowledge-category">${item.category}</span>
+            <div class="knowledge-title">${item.title}</div>
+            <div class="knowledge-content">${item.content}</div>
+            ${item.tags ? `<div class="timeline-features" style="margin-top:8px">${item.tags.split(',').map(t => `<span class="feature-tag">${t}</span>`).join('')}</div>` : ''}
+        </div>
+    `).join('');
+}
+
+function renderRules(data) {
+    const tbody = document.getElementById('rules-content');
+    if (!data || data.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="empty-state"><i class="fas fa-file-alt"></i><p>暂无系统规则</p></td></tr>';
+        return;
+    }
+    
+    tbody.innerHTML = data.map(item => `
+        <tr>
+            <td>${item.rule_id}</td>
+            <td>${item.rule_name}</td>
+            <td><span class="feature-tag">${item.rule_type}</span></td>
+            <td>${item.description}</td>
+            <td><span class="status-badge ${item.enabled ? 'status-completed' : 'status-pending'}">${item.enabled ? '启用' : '禁用'}</span></td>
+            <td>${item.created_at}</td>
+        </tr>
+    `).join('');
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    loadStats();
+    loadTabData('timeline');
+});
+</script>
+{% endblock %}

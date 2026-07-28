@@ -1,0 +1,285 @@
+{% extends 'student_base.html' %}
+
+{% block title %}每日练习 - MTSCOS AI{% endblock %}
+{% block page_title %}
+每日练习
+{% if education_type %}
+    · 
+    {%- if education_type == 'nine_year' %}九年制义务教育 (数学、语文、英语、物理、化学、政治)
+    {%- elif education_type == 'adult' %}成人教育 (数学、语文、英语、日语)
+    {%- else %}通用学习 (数学、语文、英语、物理、化学、政治、日语){% endif %}
+{% endif %}
+{% endblock %}
+
+{% block extra_styles %}
+<style>
+    .stats-grid {
+        display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px;
+    }
+    .stat-card {
+        background: rgba(20, 20, 40, 0.9); border: 1px solid var(--dark-border);
+        border-radius: var(--radius-lg); padding: 20px;
+        box-shadow: 0 0 20px rgba(99, 102, 241, 0.08);
+    }
+    .stat-header { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+    .stat-icon {
+        width: 36px; height: 36px; border-radius: var(--radius-md);
+        display: flex; align-items: center; justify-content: center; font-size: 16px;
+    }
+    .stat-icon.orange { background: rgba(249,115,22,0.15); color: var(--dark-warning); }
+    .stat-icon.green { background: rgba(34,197,94,0.15); color: var(--dark-success); }
+    .stat-icon.blue { background: rgba(59,130,246,0.15); color: var(--dark-info); }
+    .stat-icon.purple { background: rgba(168,85,247,0.15); color: var(--dark-primary-light); }
+    .stat-value { font-size: 24px; font-weight: 700; color: var(--dark-text-primary); }
+    .stat-label { font-size: 12px; color: var(--dark-text-secondary); }
+
+    .progress-section {
+        background: rgba(20, 20, 40, 0.9); border: 1px solid var(--dark-border);
+        border-radius: var(--radius-lg); padding: 20px;
+        margin-bottom: 24px;
+        box-shadow: 0 0 20px rgba(99, 102, 241, 0.08);
+    }
+    .progress-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+    .progress-header h3 { font-size: 16px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+    .progress-bar { height: 12px; background: rgba(30, 30, 60, 0.6); border-radius: 999px; overflow: hidden; }
+    .progress-fill { height: 100%; background: linear-gradient(90deg, var(--dark-primary-color), var(--dark-primary-light)); border-radius: 999px; transition: width 0.5s ease; }
+    .progress-info { display: flex; justify-content: space-between; margin-top: 8px; font-size: 13px; }
+    .progress-info span:first-child { color: var(--dark-text-secondary); }
+    .progress-info span:last-child { color: var(--dark-primary-color); font-weight: 600; }
+
+    .practice-grid {
+        display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 24px;
+    }
+    .practice-card {
+        background: rgba(20, 20, 40, 0.9); border: 1px solid var(--dark-border);
+        border-radius: var(--radius-lg); padding: 20px;
+        box-shadow: 0 0 20px rgba(99, 102, 241, 0.08);
+        transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+    }
+    .practice-card:hover { transform: translateY(-3px); box-shadow: 0 0 30px rgba(99, 102, 241, 0.15); border-color: rgba(99, 102, 241, 0.4); }
+    .practice-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
+    .practice-icon {
+        width: 44px; height: 44px; border-radius: var(--radius-md);
+        display: flex; align-items: center; justify-content: center; font-size: 18px;
+    }
+    .practice-icon.math { background: rgba(59,130,246,0.15); color: var(--dark-info); }
+    .practice-icon.chinese { background: rgba(239,68,68,0.15); color: var(--dark-danger); }
+    .practice-icon.english { background: rgba(34,197,94,0.15); color: var(--dark-success); }
+    .practice-icon.physics { background: rgba(249,115,22,0.15); color: var(--dark-warning); }
+    .practice-icon.chemistry { background: rgba(168,85,247,0.15); color: var(--dark-primary-light); }
+    .practice-icon.biology { background: rgba(16,185,129,0.15); color: #10b981; }
+    .practice-icon.geography { background: rgba(99,102,241,0.15); color: var(--dark-primary-color); }
+    .practice-icon.history { background: rgba(236,72,153,0.15); color: #ec4899; }
+    .practice-icon.politics { background: rgba(20,184,166,0.15); color: #14b8a6; }
+    .practice-title { font-size: 15px; font-weight: 600; margin-bottom: 4px; }
+    .practice-subject { font-size: 12px; color: var(--dark-text-secondary); }
+    .practice-meta { display: flex; gap: 12px; margin-bottom: 14px; }
+    .meta-item { font-size: 12px; color: var(--dark-text-secondary); display: flex; align-items: center; gap: 4px; }
+    .meta-item i { color: var(--dark-primary-color); }
+    .practice-desc { font-size: 12px; color: var(--dark-text-secondary); line-height: 1.5; margin-bottom: 14px; }
+    .practice-btn {
+        display: inline-flex; align-items: center; gap: 6px;
+        padding: 8px 16px; border-radius: var(--radius-md);
+        text-decoration: none; font-weight: 600; font-size: 13px;
+        background: linear-gradient(135deg, var(--dark-primary-color), var(--dark-primary-light)); color: #fff;
+        transition: all 0.2s;
+    }
+    .practice-btn:hover { transform: translateY(-1px); box-shadow: 0 5px 15px rgba(99, 102, 241, 0.3); }
+
+    .filter-bar {
+        display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+    }
+    .search-box {
+        position: relative; flex: 1; max-width: 300px;
+    }
+    .search-box input {
+        width: 100%; padding: 9px 14px 9px 36px;
+        border: 1px solid var(--dark-border); border-radius: var(--radius-md);
+        background: rgba(30, 30, 60, 0.6); color: var(--dark-text-primary);
+        font-size: 13px; outline: none; transition: all .2s;
+    }
+    .search-box input:focus { border-color: var(--dark-warning); background: rgba(30, 30, 60, 0.8); }
+    .search-box input::placeholder { color: var(--dark-text-secondary); }
+    .search-box i {
+        position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
+        color: var(--dark-text-secondary); font-size: 14px;
+    }
+
+    .tips-section {
+        background: rgba(20, 20, 40, 0.9); border: 1px solid var(--dark-border);
+        border-radius: var(--radius-lg); padding: 20px;
+        box-shadow: 0 0 20px rgba(99, 102, 241, 0.08);
+    }
+    .tips-header { display: flex; align-items: center; gap: 8px; margin-bottom: 16px; }
+    .tips-header h3 { font-size: 16px; font-weight: 600; }
+    .tips-icon {
+        width: 32px; height: 32px; border-radius: var(--radius-md);
+        background: rgba(249,115,22,0.15); color: var(--dark-warning);
+        display: flex; align-items: center; justify-content: center;
+    }
+    .tips-list { display: grid; gap: 12px; }
+    .tip-item {
+        display: flex; gap: 12px; padding: 12px 16px;
+        background: rgba(30, 30, 60, 0.4); border-radius: var(--radius-md);
+    }
+    .tip-number {
+        width: 24px; height: 24px; border-radius: 50%;
+        background: rgba(249,115,22,0.15); color: var(--dark-warning);
+        display: flex; align-items: center; justify-content: center;
+        font-size: 12px; font-weight: 600; flex-shrink: 0;
+    }
+    .tip-text { font-size: 13px; color: var(--dark-text-secondary); line-height: 1.5; }
+
+    .empty-state {
+        text-align: center; padding: 60px 20px;
+        background: rgba(20, 20, 40, 0.9); border: 1px solid var(--dark-border);
+        border-radius: var(--radius-lg);
+    }
+    .empty-state i { font-size: 48px; margin-bottom: 16px; color: var(--dark-border); }
+    .empty-state h3 { font-size: 18px; margin-bottom: 8px; }
+    .empty-state p { font-size: 14px; color: var(--dark-text-secondary); }
+
+    @media (max-width: 900px) {
+        .practice-grid { grid-template-columns: repeat(2, 1fr); }
+        .stats-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 600px) {
+        .practice-grid { grid-template-columns: 1fr; }
+        .stats-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-header">
+                <div class="stat-icon orange"><i class="fas fa-trophy"></i></div>
+            </div>
+            <div class="stat-value">{{ streak_days|default(0) }}</div>
+            <div class="stat-label">连续学习(天)</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-header">
+                <div class="stat-icon green"><i class="fas fa-check-circle"></i></div>
+            </div>
+            <div class="stat-value">{{ daily_completed|default(0) }}</div>
+            <div class="stat-label">今日完成</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-header">
+                <div class="stat-icon blue"><i class="fas fa-clock"></i></div>
+            </div>
+            <div class="stat-value">{{ daily_time|default(0) }}<span style="font-size:14px">分钟</span></div>
+            <div class="stat-label">学习时长</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-header">
+                <div class="stat-icon purple"><i class="fas fa-target"></i></div>
+            </div>
+            <div class="stat-value">{{ daily_target|default(10) }}</div>
+            <div class="stat-label">每日目标</div>
+        </div>
+    </div>
+
+    <div class="progress-section">
+        <div class="progress-header">
+            <h3><i class="fas fa-chart-line" style="color:var(--dark-warning)"></i> 今日学习进度</h3>
+            <span style="font-size:13px;color:var(--dark-text-secondary)">目标: {{ daily_target|default(10) }} 题</span>
+        </div>
+        <div class="progress-bar">
+            <div class="progress-fill" style="width: {{ daily_progress|default(0) }}%"></div>
+        </div>
+        <div class="progress-info">
+            <span>已完成 {{ daily_completed|default(0) }} 题</span>
+            <span>{{ daily_progress|default(0) }}%</span>
+        </div>
+    </div>
+
+    {% if practice_plans %}
+    <div style="margin-bottom: 16px;">
+        <h3 style="font-size:18px;font-weight:600;margin-bottom:4px;">练习计划</h3>
+        <p style="font-size:13px;color:var(--dark-text-secondary)">选择一个练习计划开始今日学习</p>
+    </div>
+
+    <div class="filter-bar" style="margin-bottom: 16px;">
+        <div class="search-box">
+            <i class="fas fa-search"></i>
+            <input type="text" id="searchInput" placeholder="搜索练习计划名称、科目..." oninput="filterPractice()">
+        </div>
+    </div>
+
+    <div class="practice-grid">
+        {% for plan in practice_plans %}
+        <div class="practice-card">
+            <div class="practice-header">
+                <div class="practice-icon {{ plan.subject_class or 'math' }}">
+                    <i class="fas {{ plan.icon or 'fa-book-open' }}"></i>
+                </div>
+                <span style="font-size:11px;padding:3px 8px;border-radius:999px;background:rgba(99,102,241,0.15);color:var(--dark-primary-color);">
+                    {{ plan.type_label or '练习' }}
+                </span>
+            </div>
+            <div class="practice-title">{{ plan.title }}</div>
+            <div class="practice-subject">{{ plan.subject or '综合' }}</div>
+            <div class="practice-meta">
+                <div class="meta-item"><i class="fas fa-list-ol"></i> {{ plan.question_count|default(10) }}题</div>
+                <div class="meta-item"><i class="fas fa-clock"></i> {{ plan.duration|default(20) }}分钟</div>
+            </div>
+            {% if plan.description %}
+            <div class="practice-desc">{{ plan.description }}</div>
+            {% endif %}
+            <a href="/exam_system/daily_practice/start?type={{ plan.type or 'daily' }}&plan={{ plan.id or '' }}&subject={{ plan.subject or '' }}" 
+               class="practice-btn">
+                <i class="fas fa-play"></i> 开始练习
+            </a>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <i class="fas fa-calendar"></i>
+        <h3>暂无练习计划</h3>
+        <p>当前没有可用的练习计划，请稍后再来查看</p>
+    </div>
+    {% endif %}
+
+    {% if learning_tips %}
+    <div class="tips-section">
+        <div class="tips-header">
+            <div class="tips-icon"><i class="fas fa-lightbulb"></i></div>
+            <h3>学习小贴士</h3>
+        </div>
+        <div class="tips-list">
+            {% for tip in learning_tips %}
+            <div class="tip-item">
+                <div class="tip-number">{{ loop.index }}</div>
+                <div class="tip-text">{{ tip }}</div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+function filterPractice() {
+    const searchInput = document.getElementById('searchInput');
+    const searchTerm = searchInput ? searchInput.value.toLowerCase().trim() : '';
+    const practiceCards = document.querySelectorAll('.practice-card');
+
+    practiceCards.forEach(card => {
+        const title = card.querySelector('.practice-title')?.textContent.toLowerCase() || '';
+        const subject = card.querySelector('.practice-subject')?.textContent.toLowerCase() || '';
+        const desc = card.querySelector('.practice-desc')?.textContent.toLowerCase() || '';
+        
+        if (searchTerm && !title.includes(searchTerm) && !subject.includes(searchTerm) && !desc.includes(searchTerm)) {
+            card.style.display = 'none';
+        } else {
+            card.style.display = '';
+        }
+    });
+}
+</script>
+{% endblock %}

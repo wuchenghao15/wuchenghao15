@@ -1,0 +1,2832 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow">
+    <meta name="description" content="MTSCOS AI System">
+    <meta name="keywords" content="AI, education, exam system">
+    <title>{% block title %}MTSCOS AI{% endblock %}</title>
+    <link rel="stylesheet" href="/assets/css/mtscos-design-system.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/assets/tailwind.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}">
+    {% if csrf_token %}
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    {% endif %}
+    {% block head %}{% endblock %}
+    <style>
+        /* ========== DESIGN TOKENS 设计令牌系统 ========== */
+        :root {
+            /* 主色系统 - 深靛蓝 */
+            --accent: var(--theme-primary, #4f46e5);
+            --accent-soft: var(--theme-primary-soft, rgba(79, 70, 229, 0.12));
+            --accent-hover: var(--theme-primary-hover, rgba(79, 70, 229, 0.22));
+            --accent-text: var(--theme-primary-text, #6366f1);
+            --accent-text-bright: var(--theme-primary-text-bright, #818cf8);
+
+            /* 辅色 - 青 */
+            --accent-secondary: var(--theme-secondary, #06b6d4);
+            --accent-secondary-soft: var(--theme-secondary-soft, rgba(6, 182, 212, 0.12));
+            --accent-secondary-text: var(--theme-secondary-text, #0891b2);
+
+            /* 功能色 */
+            --success: var(--theme-success, #22c55e);
+            --success-soft: var(--theme-success-soft, rgba(34, 197, 94, 0.12));
+            --warning: var(--theme-warning, #f59e0b);
+            --warning-soft: var(--theme-warning-soft, rgba(245, 158, 11, 0.12));
+            --danger: var(--theme-danger, #ef4444);
+            --danger-soft: var(--theme-danger-soft, rgba(239, 68, 68, 0.12));
+            --danger-text: var(--theme-danger-text, #f87171);
+
+            /* 间距体系 4/8/12/16/24/32 */
+            --space-1: var(--theme-space-1, 4px);
+            --space-2: var(--theme-space-2, 8px);
+            --space-3: var(--theme-space-3, 12px);
+            --space-4: var(--theme-space-4, 16px);
+            --space-6: var(--theme-space-6, 24px);
+            --space-8: var(--theme-space-8, 32px);
+
+            /* 圆角体系 - 克制 */
+            --radius-sm: var(--theme-radius-sm, 8px);
+            --radius-md: var(--theme-radius-md, 12px);
+            --radius-full: var(--theme-radius-full, 9999px);
+
+            /* 阴影体系 - 柔和无发光 */
+            --shadow-sm: var(--theme-shadow-sm, 0 1px 3px rgba(0, 0, 0, 0.08));
+            --shadow-md: var(--theme-shadow-md, 0 4px 12px rgba(0, 0, 0, 0.1));
+            --shadow-lg: var(--theme-shadow-lg, 0 8px 24px rgba(0, 0, 0, 0.12));
+
+            /* 玻璃拟态 - 适度模糊 12-16px */
+            --glass-blur: var(--theme-glass-blur, 12px);
+            --glass-blur-strong: var(--theme-glass-blur-strong, 16px);
+            --glass-bg: var(--theme-bg-glass, rgba(15, 23, 42, 0.8));
+            --glass-bg-strong: var(--theme-bg-glass-strong, rgba(15, 23, 42, 0.9));
+            --glass-border: var(--theme-border-glass, rgba(255, 255, 255, 0.08));
+            --glass-border-strong: var(--theme-border-glass-strong, rgba(255, 255, 255, 0.12));
+            --glass-shadow: var(--shadow-md);
+
+            /* 文本色 */
+            --text-primary: var(--theme-text-primary, #f8fafc);
+            --text-secondary: var(--theme-text-secondary, #cbd5e1);
+            --text-muted: var(--theme-text-muted, #94a3b8);
+            --text-faint: var(--theme-text-faint, #64748b);
+
+            /* 背景 */
+            --bg-page: var(--theme-bg-page, linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%));
+            --bg-sidebar: var(--theme-bg-sidebar, rgba(15, 23, 42, 0.85));
+            --bg-card: var(--theme-bg-card, rgba(15, 23, 42, 0.7));
+            --bg-card-alt: var(--theme-bg-card-alt, rgba(15, 23, 42, 0.6));
+
+            /* 边框 */
+            --border-subtle: var(--theme-border-subtle, rgba(79, 70, 229, 0.1));
+            --border-strong: var(--theme-border-strong, rgba(79, 70, 229, 0.18));
+
+            /* Logo 渐变 - 收敛 */
+            --logo-accent: var(--theme-logo-gradient, linear-gradient(135deg, #4f46e5, #06b6d4));
+
+            /* 字体 - 系统字体栈 */
+            --font-sans: var(--theme-font-sans, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif);
+            --font-mono: var(--theme-font-mono, "SF Mono", Monaco, Menlo, Consolas, "Courier New", monospace);
+        }
+
+        /* ========== BASE STYLES ========== */
+        * {
+            box-sizing: border-box;
+        }
+        html, body {
+            margin: 0 !important;
+            padding: 0 !important;
+            font-family: var(--font-sans);
+        }
+        body {
+            user-select: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            background: var(--bg-page);
+            background-attachment: fixed;
+            min-height: 100vh;
+            color: var(--text-primary);
+            overflow: hidden;
+        }
+        body::before,
+        body.with-global-header::before {
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+        body.with-global-header {
+            padding-top: 0;
+            margin: 0;
+        }
+
+        /* ========== GLOBAL HEADER ========== */
+        .mtscos-global-header {
+            height: 40px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(var(--glass-blur-strong));
+            -webkit-backdrop-filter: blur(var(--glass-blur-strong));
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 var(--space-4, 16px);
+            border-bottom: 1px solid var(--glass-border);
+            box-shadow: var(--shadow-sm);
+            flex-shrink: 0;
+            position: sticky;
+            top: 0 !important;
+            left: 0;
+            right: 0;
+            width: 100%;
+            z-index: 999;
+            margin: 0 !important;
+        }
+        .mtscos-header-left {
+            display: flex;
+            align-items: center;
+            gap: var(--space-3);
+        }
+        .mtscos-header-title {
+            color: var(--text-primary);
+            font-size: 13px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: var(--space-1);
+        }
+        .mtscos-header-title i {
+            color: var(--accent);
+            font-size: 12px;
+        }
+        .mtscos-header-center {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: var(--space-3);
+        }
+        .mtscos-system-logo-container {
+            display: flex;
+            align-items: center;
+            gap: var(--space-1);
+        }
+        .mtscos-system-logo-img {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            object-fit: cover;
+            display: none;
+        }
+        .mtscos-system-logo-text {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--accent);
+        }
+        .mtscos-system-time {
+            color: var(--text-muted);
+            font-size: 11px;
+            font-family: var(--font-mono);
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .mtscos-system-time i {
+            color: var(--success);
+            font-size: 9px;
+        }
+        .mtscos-lunar-calendar {
+            color: var(--accent-text);
+            font-size: 11px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            padding: 2px 8px;
+            background: var(--accent-soft);
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border-subtle);
+            white-space: nowrap;
+        }
+        .mtscos-lunar-calendar i {
+            color: var(--warning);
+            font-size: 10px;
+        }
+        .mtscos-lunar-calendar.special-day {
+            background: var(--warning-soft);
+            border-color: var(--warning);
+            animation: pulse-glow 2s infinite;
+        }
+        @keyframes pulse-glow {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        .mtscos-vikey-status {
+            position: relative;
+            display: inline-flex; align-items: center; gap: 4px;
+            font-size: 11px;
+            padding: 3px 8px;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border-subtle);
+            white-space: nowrap;
+            background: var(--danger-soft);
+            color: var(--danger);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .mtscos-vikey-status:hover {
+            background: rgba(239, 68, 68, 0.15);
+            border-color: rgba(239, 68, 68, 0.35);
+        }
+        .mtscos-vikey-status i {
+            font-size: 10px;
+        }
+        .mtscos-vikey-status.vikey-present {
+            background: var(--success-soft);
+            color: var(--success);
+            border-color: var(--success);
+        }
+        .mtscos-vikey-status.vikey-present:hover {
+            background: rgba(34, 197, 94, 0.18);
+            border-color: rgba(34, 197, 94, 0.4);
+        }
+        .mtscos-vikey-status.vikey-super-admin {
+            background: var(--accent-soft);
+            color: var(--accent-text);
+            border-color: var(--accent);
+            animation: vikey-pulse 3s infinite;
+        }
+        .mtscos-vikey-status.vikey-warning {
+            background: var(--warning-soft);
+            color: var(--warning);
+            border-color: var(--warning);
+        }
+        @keyframes vikey-pulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.4); }
+            50% { box-shadow: 0 0 0 4px rgba(99, 102, 241, 0); }
+        }
+        .mtscos-vikey-status .vikey-pulse-dot {
+            width: 5px; height: 5px; border-radius: 50%;
+            background: currentColor;
+            animation: vikey-dot-pulse 2s ease-in-out infinite;
+        }
+        @keyframes vikey-dot-pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.4; transform: scale(0.8); }
+        }
+        .vikey-tooltip {
+            position: absolute;
+            top: calc(100% + 8px);
+            right: 0;
+            width: 320px;
+            background: rgba(12, 12, 32, 0.98);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-md);
+            padding: 16px;
+            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-8px);
+            transition: all 0.2s ease;
+            z-index: 100;
+            backdrop-filter: blur(var(--glass-blur));
+            -webkit-backdrop-filter: blur(var(--glass-blur));
+        }
+        .mtscos-vikey-status:hover .vikey-tooltip,
+        .mtscos-vikey-status:focus-within .vikey-tooltip {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+        .vikey-tooltip-header {
+            display: flex; align-items: center; gap: 8px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--border-subtle);
+            margin-bottom: 12px;
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+        .vikey-tooltip-header i { color: var(--accent-text-bright); font-size: 14px; }
+        .vikey-tooltip-content { display: flex; flex-direction: column; gap: 8px; }
+        .vikey-info-row {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 6px 0;
+            font-size: 12px;
+        }
+        .vikey-info-label { color: var(--text-muted); font-weight: 600; }
+        .vikey-info-value { color: var(--text-primary); font-weight: 500; }
+        .vikey-info-value.vikey-success { color: var(--success); }
+        .vikey-info-value.vikey-error { color: var(--danger-text); }
+        .vikey-info-value.vikey-warning { color: var(--warning); }
+        .vikey-tooltip-actions {
+            display: flex; gap: 8px;
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid var(--border-subtle);
+        }
+        .vikey-action-btn {
+            flex: 1;
+            padding: 8px 12px;
+            border: none;
+            border-radius: var(--radius-sm);
+            background: var(--accent-soft);
+            color: var(--accent-text-bright);
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            display: flex; align-items: center; justify-content: center; gap: 4px;
+        }
+        .vikey-action-btn:hover {
+            background: var(--accent-hover);
+            color: var(--text-primary);
+        }
+        .mtscos-header-right {
+            display: flex;
+            align-items: center;
+            gap: var(--space-3);
+        }
+        .mtscos-user-info {
+            display: flex;
+            align-items: center;
+            gap: var(--space-2);
+            color: var(--text-primary);
+            font-size: 13px;
+            padding: 6px var(--space-3);
+            background: var(--accent-soft);
+            backdrop-filter: blur(var(--glass-blur));
+            -webkit-backdrop-filter: blur(var(--glass-blur));
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-sm);
+        }
+        .mtscos-user-avatar {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: var(--logo-accent);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+            font-weight: 600;
+            color: white;
+            object-fit: cover;
+        }
+
+        /* ========== BUTTONS ========== */
+        .mtscos-logout-btn {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 14px;
+            background: var(--danger-soft);
+            color: var(--danger-text);
+            border: none;
+            border-radius: var(--radius-sm);
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.2s;
+            font-family: var(--font-sans);
+        }
+        .mtscos-logout-btn:hover {
+            background: rgba(239, 68, 68, 0.22);
+            color: var(--danger);
+        }
+        .mtscos-back-btn {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 14px;
+            background: var(--accent-soft);
+            color: var(--accent-text);
+            border: none;
+            border-radius: var(--radius-sm);
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.2s;
+            text-decoration: none;
+            font-family: var(--font-sans);
+        }
+        .mtscos-back-btn:hover {
+            background: var(--accent-hover);
+            color: var(--accent-text-bright);
+        }
+        .mtscos-sidebar-toggle {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            padding: 6px 12px;
+            background: var(--accent-soft);
+            color: var(--accent-text);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-sm);
+            font-size: 13px;
+            cursor: pointer;
+            transition: background 0.2s;
+            font-family: var(--font-sans);
+        }
+        .mtscos-sidebar-toggle:hover {
+            background: var(--accent-hover);
+        }
+        .mtscos-theme-mourning-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            background: rgba(113, 113, 122, 0.18);
+            color: #a1a1aa;
+            border: 1px solid rgba(113, 113, 122, 0.35);
+            border-radius: var(--radius-full);
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        /* ========== GLASS CARDS - 统一毛玻璃样式 ========== */
+        .mtscos-glass-card,
+        .glass-effect,
+        .card,
+        .panel,
+        .dashboard-card,
+        .content-box,
+        .section-card,
+        .info-card,
+        .data-card,
+        .form-container,
+        .modal-content,
+        .dialog-box,
+        .popup-content,
+        .list-container,
+        .table-container {
+            background: var(--bg-card);
+            backdrop-filter: blur(var(--glass-blur));
+            -webkit-backdrop-filter: blur(var(--glass-blur));
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-md);
+            color: var(--text-primary);
+        }
+
+        /* ========== LOCK OVERLAY ========== */
+        .mtscos-lock-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(var(--glass-blur));
+            -webkit-backdrop-filter: blur(var(--glass-blur));
+            z-index: 9999;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-primary);
+            font-size: 18px;
+        }
+        .mtscos-lock-overlay.show {
+            display: flex;
+        }
+        .lock-container {
+            text-align: center;
+            background: var(--glass-bg-strong);
+            backdrop-filter: blur(var(--glass-blur-strong));
+            -webkit-backdrop-filter: blur(var(--glass-blur-strong));
+            border: 1px solid var(--border-strong);
+            border-radius: var(--radius-md);
+            padding: var(--space-8);
+            max-width: 400px;
+            width: 90%;
+            box-shadow: var(--shadow-lg);
+            color: var(--text-primary);
+        }
+        .lock-icon {
+            font-size: 48px;
+            margin-bottom: var(--space-4);
+            color: var(--accent);
+            animation: pulse 2s ease-in-out infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.05); opacity: 0.85; }
+        }
+        .lock-title {
+            font-size: 22px;
+            font-weight: 700;
+            margin-bottom: var(--space-2);
+            color: var(--text-primary);
+        }
+        .lock-desc {
+            font-size: 14px;
+            color: var(--text-muted);
+            margin-bottom: var(--space-6);
+            line-height: 1.5;
+        }
+        .lock-countdown {
+            font-size: 18px;
+            color: var(--accent-text);
+            margin-bottom: var(--space-4);
+            font-weight: 600;
+        }
+        .lock-divider {
+            display: flex;
+            align-items: center;
+            gap: var(--space-3);
+            margin: var(--space-4) 0;
+            color: var(--text-faint);
+            font-size: 12px;
+        }
+        .lock-divider::before,
+        .lock-divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--border-strong);
+        }
+        .lock-input-group {
+            margin-bottom: var(--space-3);
+        }
+        .lock-input {
+            width: 100%;
+            padding: var(--space-3) var(--space-4);
+            border: 1px solid var(--border-strong);
+            border-radius: var(--radius-sm);
+            background: var(--bg-card-alt);
+            color: var(--text-primary);
+            font-size: 14px;
+            transition: border-color 0.2s;
+            box-sizing: border-box;
+            font-family: var(--font-sans);
+        }
+        .lock-input:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+        .lock-input::placeholder {
+            color: var(--text-faint);
+        }
+        .lock-btn {
+            width: 100%;
+            padding: var(--space-3);
+            border: none;
+            border-radius: var(--radius-sm);
+            background: var(--accent);
+            color: white;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+            font-family: var(--font-sans);
+        }
+        .lock-btn:hover {
+            background: #4338ca;
+        }
+        .lock-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .lock-error {
+            color: var(--danger-text);
+            font-size: 12px;
+            margin-top: var(--space-2);
+            min-height: 16px;
+        }
+        .lock-smart-tip {
+            font-size: 12px;
+            color: var(--success);
+            margin-top: var(--space-3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+        }
+        .lock-user-info {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: var(--space-2);
+            margin-bottom: var(--space-3);
+            padding: var(--space-2);
+            background: var(--accent-soft);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-sm);
+        }
+        .lock-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: var(--logo-accent);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            font-weight: 600;
+            color: white;
+        }
+        .lock-username {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        .lock-role {
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        /* ========== TIMEOUT WARNING ========== */
+        .mtscos-timeout-warning {
+            position: fixed;
+            top: var(--space-4);
+            right: var(--space-4);
+            background: var(--warning);
+            color: white;
+            padding: var(--space-3) var(--space-4);
+            border-radius: var(--radius-sm);
+            z-index: 9998;
+            display: none;
+            font-size: 14px;
+            box-shadow: var(--shadow-md);
+            animation: slideIn 0.3s ease;
+        }
+        .mtscos-timeout-warning i {
+            margin-right: 6px;
+        }
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        .mtscos-permission-denied {
+            display: none;
+        }
+
+        /* ========== LAYOUT ========== */
+        .mtscos-layout {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* ========== SIDEBAR - 20% / 10% 布局 ========== */
+        [data-theme] .mtscos-sidebar,
+        .mtscos-sidebar {
+            width: 20%;
+            background: var(--bg-sidebar);
+            backdrop-filter: blur(var(--glass-blur-strong));
+            -webkit-backdrop-filter: blur(var(--glass-blur-strong));
+            border-right: 1px solid var(--border-strong);
+            display: flex;
+            flex-direction: column;
+            position: fixed;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            z-index: 9998;
+            overflow: hidden;
+            box-shadow: var(--shadow-sm);
+            transition: width .28s cubic-bezier(.4, 0, .2, 1);
+            will-change: width;
+        }
+        [data-theme] .mtscos-main,
+        .mtscos-main {
+            flex: 1;
+            margin-left: 20%;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            overflow: hidden;
+            transition: margin-left .28s cubic-bezier(.4, 0, .2, 1);
+            will-change: margin-left;
+        }
+
+        /* Mini 态：10% 宽度 */
+        [data-theme] body.sidebar-mini .mtscos-sidebar,
+        body.sidebar-mini .mtscos-sidebar { width: 10% !important; }
+        [data-theme] body.sidebar-mini .mtscos-main,
+        body.sidebar-mini .mtscos-main { margin-left: 10% !important; }
+        [data-theme] body.sidebar-mini.sidebar-hovered .mtscos-sidebar,
+        body.sidebar-mini.sidebar-hovered .mtscos-sidebar { width: 20% !important; }
+        [data-theme] body.sidebar-mini.sidebar-hovered .mtscos-main,
+        body.sidebar-mini.sidebar-hovered .mtscos-main { margin-left: 20% !important; }
+
+        /* Mini 态：文字隐藏（只保留图标） */
+        [data-theme] body.sidebar-mini .mtscos-sidebar-logo-text,
+        [data-theme] body.sidebar-mini .mtscos-nav-item > span,
+        [data-theme] body.sidebar-mini .mtscos-sidebar-user-info,
+        [data-theme] body.sidebar-mini .mtscos-sidebar-logout > span,
+        body.sidebar-mini .mtscos-sidebar-logo-text,
+        body.sidebar-mini .mtscos-nav-item > span,
+        body.sidebar-mini .mtscos-sidebar-user-info,
+        body.sidebar-mini .mtscos-sidebar-logout > span {
+            opacity: 0 !important;
+            height: 0 !important;
+            overflow: hidden !important;
+            visibility: hidden !important;
+            pointer-events: none !important;
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+        /* Mini + Hover：文字回放 */
+        [data-theme] body.sidebar-mini.sidebar-hovered .mtscos-sidebar-logo-text,
+        [data-theme] body.sidebar-mini.sidebar-hovered .mtscos-nav-item > span,
+        [data-theme] body.sidebar-mini.sidebar-hovered .mtscos-sidebar-user-info,
+        [data-theme] body.sidebar-mini.sidebar-hovered .mtscos-sidebar-logout > span,
+        body.sidebar-mini.sidebar-hovered .mtscos-sidebar-logo-text,
+        body.sidebar-mini.sidebar-hovered .mtscos-nav-item > span,
+        body.sidebar-mini.sidebar-hovered .mtscos-sidebar-user-info,
+        body.sidebar-mini.sidebar-hovered .mtscos-sidebar-logout > span {
+            opacity: 1 !important;
+            height: auto !important;
+            visibility: visible !important;
+            pointer-events: auto !important;
+            margin: unset !important;
+            padding: unset !important;
+            transition: opacity .16s ease-out .12s !important;
+        }
+        /* Mini 态图标居中 / Hover 左对齐 */
+        [data-theme] body.sidebar-mini .mtscos-sidebar-logo,
+        body.sidebar-mini .mtscos-sidebar-logo { justify-content: center !important; }
+        [data-theme] body.sidebar-mini .mtscos-nav-item,
+        body.sidebar-mini .mtscos-nav-item { justify-content: center !important; padding: 12px 8px !important; }
+        [data-theme] body.sidebar-mini .mtscos-sidebar-user,
+        body.sidebar-mini .mtscos-sidebar-user { justify-content: center !important; }
+        [data-theme] body.sidebar-mini .mtscos-sidebar-logout,
+        body.sidebar-mini .mtscos-sidebar-logout { justify-content: center !important; }
+        [data-theme] body.sidebar-mini.sidebar-hovered .mtscos-sidebar-logo,
+        body.sidebar-mini.sidebar-hovered .mtscos-sidebar-logo { justify-content: flex-start !important; }
+        [data-theme] body.sidebar-mini.sidebar-hovered .mtscos-nav-item,
+        body.sidebar-mini.sidebar-hovered .mtscos-nav-item { justify-content: flex-start !important; padding: 10px 14px !important; }
+        [data-theme] body.sidebar-mini.sidebar-hovered .mtscos-sidebar-user,
+        body.sidebar-mini.sidebar-hovered .mtscos-sidebar-user { justify-content: flex-start !important; }
+        [data-theme] body.sidebar-mini.sidebar-hovered .mtscos-sidebar-logout,
+        body.sidebar-mini.sidebar-hovered .mtscos-sidebar-logout { justify-content: center !important; }
+
+        /* ========== SIDEBAR CONTENT ========== */
+        .mtscos-sidebar-header {
+            padding: var(--space-4);
+            border-bottom: 1px solid var(--border-strong);
+        }
+        .mtscos-sidebar-logo {
+            display: flex;
+            align-items: center;
+            gap: var(--space-2);
+        }
+        .mtscos-sidebar-logo-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: var(--radius-sm);
+            background: var(--logo-accent);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 18px;
+        }
+        .mtscos-sidebar-logo-text {
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--text-primary);
+            letter-spacing: 0.3px;
+        }
+        .mtscos-sidebar-nav {
+            flex: 1;
+            padding: var(--space-3) var(--space-2);
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-1);
+        }
+        .mtscos-nav-item {
+            display: flex;
+            align-items: center;
+            gap: var(--space-2);
+            padding: 10px 14px;
+            border-radius: var(--radius-sm);
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: 500;
+            transition: background 0.2s, color 0.2s;
+        }
+        .mtscos-nav-item:hover {
+            background: var(--accent-soft);
+            color: var(--text-secondary);
+        }
+        .mtscos-nav-item.active {
+            background: var(--accent-hover);
+            color: var(--accent-text);
+        }
+        .mtscos-nav-item i {
+            width: 18px;
+            text-align: center;
+            font-size: 15px;
+        }
+        .mtscos-sidebar-footer {
+            padding: var(--space-4);
+            border-top: 1px solid var(--border-strong);
+        }
+        .mtscos-sidebar-user {
+            display: flex;
+            align-items: center;
+            gap: var(--space-2);
+            padding: 10px 12px;
+            background: var(--accent-soft);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-sm);
+            margin-bottom: var(--space-2);
+        }
+        .mtscos-sidebar-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: var(--logo-accent);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 13px;
+            font-weight: 600;
+        }
+        .mtscos-sidebar-user-info {
+            flex: 1;
+            min-width: 0;
+        }
+        .mtscos-sidebar-username {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-primary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .mtscos-sidebar-role {
+            font-size: 11px;
+            color: var(--text-faint);
+        }
+        .mtscos-sidebar-logout {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: var(--space-2);
+            padding: 10px;
+            border: none;
+            border-radius: var(--radius-sm);
+            background: var(--danger-soft);
+            color: var(--danger-text);
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.2s;
+            font-family: var(--font-sans);
+        }
+        .mtscos-sidebar-logout:hover {
+            background: rgba(239, 68, 68, 0.22);
+            color: var(--danger);
+        }
+
+        /* ========== CONTENT ========== */
+        .mtscos-content-scroll {
+            flex: 1;
+            overflow-y: auto;
+            overflow-x: hidden;
+            padding: var(--space-5, 20px);
+            padding-top: var(--space-6);
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
+        .mtscos-content-scroll::-webkit-scrollbar {
+            display: none;
+        }
+        body.no-sidebar .mtscos-sidebar {
+            display: none;
+        }
+        body.no-sidebar .mtscos-main {
+            margin-left: 0;
+        }
+
+        /* ========== THEMES 主题变量 ========== */
+        [data-theme="deep_blue"] {
+            --accent: #4f46e5;
+            --accent-soft: rgba(79, 70, 229, 0.12);
+            --accent-hover: rgba(79, 70, 229, 0.22);
+            --accent-text: #6366f1;
+            --accent-text-bright: #818cf8;
+            --accent-secondary: #06b6d4;
+            --bg-page: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+            --bg-sidebar: rgba(15, 23, 42, 0.85);
+            --bg-card: rgba(15, 23, 42, 0.7);
+            --bg-card-alt: rgba(15, 23, 42, 0.6);
+            --text-primary: #f8fafc;
+            --text-secondary: #cbd5e1;
+            --text-muted: #94a3b8;
+            --text-faint: #64748b;
+            --border-subtle: rgba(79, 70, 229, 0.1);
+            --border-strong: rgba(79, 70, 229, 0.18);
+            --glass-bg: rgba(15, 23, 42, 0.8);
+            --glass-bg-strong: rgba(15, 23, 42, 0.9);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --glass-border-strong: rgba(255, 255, 255, 0.12);
+            --logo-accent: linear-gradient(135deg, #4f46e5, #06b6d4);
+        }
+        [data-theme="light_blue_tech"] {
+            --accent: #0284c7;
+            --accent-soft: rgba(14, 165, 233, 0.12);
+            --accent-hover: rgba(14, 165, 233, 0.22);
+            --accent-text: #0369a1;
+            --accent-text-bright: #0ea5e9;
+            --accent-secondary: #06b6d4;
+            --bg-page: linear-gradient(135deg, #f0f9ff 0%, #ecfeff 100%);
+            --bg-sidebar: rgba(255, 255, 255, 0.9);
+            --bg-card: rgba(255, 255, 255, 0.8);
+            --bg-card-alt: rgba(248, 250, 252, 0.75);
+            --text-primary: #0f172a;
+            --text-secondary: #334155;
+            --text-muted: #475569;
+            --text-faint: #64748b;
+            --border-subtle: rgba(14, 165, 233, 0.12);
+            --border-strong: rgba(14, 165, 233, 0.22);
+            --glass-bg: rgba(255, 255, 255, 0.85);
+            --glass-bg-strong: rgba(255, 255, 255, 0.92);
+            --glass-border: rgba(148, 163, 184, 0.15);
+            --glass-border-strong: rgba(148, 163, 184, 0.25);
+            --logo-accent: linear-gradient(135deg, #0ea5e9, #06b6d4);
+        }
+        [data-theme="light"] {
+            --accent: #4f46e5;
+            --accent-soft: rgba(79, 70, 229, 0.1);
+            --accent-hover: rgba(79, 70, 229, 0.18);
+            --accent-text: #4338ca;
+            --accent-text-bright: #6366f1;
+            --accent-secondary: #06b6d4;
+            --bg-page: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            --bg-sidebar: rgba(255, 255, 255, 0.92);
+            --bg-card: rgba(255, 255, 255, 0.85);
+            --bg-card-alt: rgba(248, 250, 252, 0.82);
+            --text-primary: #0f172a;
+            --text-secondary: #334155;
+            --text-muted: #475569;
+            --text-faint: #64748b;
+            --border-subtle: rgba(148, 163, 184, 0.15);
+            --border-strong: rgba(79, 70, 229, 0.2);
+            --glass-bg: rgba(255, 255, 255, 0.85);
+            --glass-bg-strong: rgba(255, 255, 255, 0.92);
+            --glass-border: rgba(148, 163, 184, 0.12);
+            --glass-border-strong: rgba(148, 163, 184, 0.2);
+            --logo-accent: linear-gradient(135deg, #4f46e5, #06b6d4);
+        }
+        [data-theme="mourning"] {
+            --accent: #52525b;
+            --accent-soft: rgba(82, 82, 91, 0.18);
+            --accent-hover: rgba(113, 113, 122, 0.28);
+            --accent-text: #71717a;
+            --accent-text-bright: #a1a1aa;
+            --accent-secondary: #71717a;
+            --bg-page: linear-gradient(135deg, #0a0a0a 0%, #18181b 100%);
+            --bg-sidebar: rgba(10, 10, 10, 0.92);
+            --bg-card: rgba(24, 24, 27, 0.8);
+            --bg-card-alt: rgba(24, 24, 27, 0.72);
+            --text-primary: #d4d4d8;
+            --text-secondary: #a1a1aa;
+            --text-muted: #71717a;
+            --text-faint: #52525b;
+            --border-subtle: rgba(82, 82, 91, 0.15);
+            --border-strong: rgba(113, 113, 122, 0.25);
+            --glass-bg: rgba(24, 24, 27, 0.85);
+            --glass-bg-strong: rgba(24, 24, 27, 0.92);
+            --glass-border: rgba(113, 113, 122, 0.15);
+            --glass-border-strong: rgba(113, 113, 122, 0.25);
+            --logo-accent: linear-gradient(135deg, #52525b, #71717a);
+        }
+
+        /* ========== THEME OVERRIDES ========== */
+        [data-theme] body,
+        body[data-theme] {
+            background: var(--bg-page);
+            background-attachment: fixed;
+        }
+        [data-theme] .mtscos-sidebar {
+            background: var(--bg-sidebar);
+            border-right: 1px solid var(--border-strong);
+        }
+        [data-theme] .mtscos-sidebar-logo-icon,
+        [data-theme] .mtscos-sidebar-avatar,
+        [data-theme] .mtscos-user-avatar,
+        [data-theme] .lock-avatar {
+            background: var(--logo-accent);
+        }
+        [data-theme] .mtscos-glass-card,
+        [data-theme] .glass-effect,
+        [data-theme] .card,
+        [data-theme] .panel,
+        [data-theme] .dashboard-card,
+        [data-theme] .content-box,
+        [data-theme] .section-card,
+        [data-theme] .info-card,
+        [data-theme] .data-card,
+        [data-theme] .form-container,
+        [data-theme] .modal-content,
+        [data-theme] .dialog-box,
+        [data-theme] .popup-content,
+        [data-theme] .list-container,
+        [data-theme] .table-container {
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            color: var(--text-primary);
+            box-shadow: var(--shadow-md);
+        }
+        [data-theme] .mtscos-global-header,
+        [data-theme] .lock-container {
+            background: var(--glass-bg);
+            border: 1px solid var(--border-strong);
+            box-shadow: var(--shadow-md);
+            color: var(--text-primary);
+        }
+        [data-theme] .mtscos-header-title,
+        [data-theme] .mtscos-sidebar-logo-text,
+        [data-theme] .mtscos-sidebar-username,
+        [data-theme] .lock-title,
+        [data-theme] .lock-username,
+        [data-theme] .mtscos-user-info {
+            color: var(--text-primary);
+        }
+        [data-theme] .mtscos-header-title i,
+        [data-theme] .mtscos-system-logo-text {
+            color: var(--accent);
+        }
+        [data-theme] .mtscos-nav-item {
+            color: var(--text-muted);
+        }
+        [data-theme] .mtscos-nav-item:hover {
+            background: var(--accent-soft);
+            color: var(--text-secondary);
+        }
+        [data-theme] .mtscos-nav-item.active {
+            background: var(--accent-hover);
+            color: var(--accent-text);
+        }
+        [data-theme] .mtscos-user-info,
+        [data-theme] .mtscos-sidebar-user,
+        [data-theme] .lock-user-info {
+            background: var(--accent-soft);
+            border: 1px solid var(--border-subtle);
+            color: var(--text-primary);
+        }
+        [data-theme] .mtscos-back-btn,
+        [data-theme] .mtscos-back-btn:visited {
+            background: var(--accent-soft);
+            color: var(--accent-text);
+        }
+        [data-theme] .mtscos-back-btn:hover {
+            background: var(--accent-hover);
+            color: var(--accent-text-bright);
+        }
+        [data-theme] .mtscos-logout-btn,
+        [data-theme] .mtscos-sidebar-logout {
+            background: var(--danger-soft);
+            color: var(--danger-text);
+        }
+        [data-theme] .mtscos-logout-btn:hover,
+        [data-theme] .mtscos-sidebar-logout:hover {
+            filter: brightness(1.1);
+        }
+        [data-theme] .mtscos-sidebar-footer,
+        [data-theme] .mtscos-sidebar-header {
+            border-color: var(--border-strong);
+        }
+        [data-theme] .mtscos-sidebar-role,
+        [data-theme] .lock-role,
+        [data-theme] .lock-desc,
+        [data-theme] .lock-smart-tip {
+            color: var(--text-muted);
+        }
+        [data-theme] .lock-divider::before,
+        [data-theme] .lock-divider::after {
+            background: var(--border-strong);
+        }
+        [data-theme] .lock-input {
+            background: var(--bg-card-alt);
+            border: 1px solid var(--border-strong);
+            color: var(--text-primary);
+        }
+        [data-theme] .lock-btn,
+        [data-theme-mourning] .lock-btn {
+            background: var(--accent) !important;
+            color: white;
+        }
+        [data-theme] .mtscos-system-time {
+            color: var(--text-muted);
+        }
+        [data-theme] .mtscos-system-time i {
+            color: var(--success);
+        }
+        body[data-theme="mourning"] * {
+            color-adjust: exact !important;
+        }
+        body[data-theme="mourning"] img,
+        body[data-theme="mourning"] .lock-icon {
+            filter: grayscale(100%);
+        }
+    </style>
+</head>
+<body class="with-global-header" data-theme="{{ theme_key }}"
+      data-forced-mourning="{{ 'true' if theme_forced_mourning else 'false' }}"
+      data-is-admin="{{ 'true' if is_admin else 'false' }}"
+      data-is-super-admin="{{ 'true' if is_super_admin else 'false' }}">
+    <div class="mtscos-layout">
+        <aside class="mtscos-sidebar">
+            <div class="mtscos-sidebar-header">
+                <div class="mtscos-sidebar-logo">
+                    <div class="mtscos-sidebar-logo-icon"><i class="fas fa-shield-alt"></i></div>
+                    <div class="mtscos-sidebar-logo-text">MTSCOS AI</div>
+                </div>
+            </div>
+            
+            <nav class="mtscos-sidebar-nav">
+                {% block sidebar_nav %}
+                <a href="/" class="mtscos-nav-item">
+                    <i class="fas fa-home"></i>
+                    <span>首页</span>
+                </a>
+                {% endblock %}
+            </nav>
+            
+            <div class="mtscos-sidebar-footer">
+                <div class="mtscos-sidebar-user">
+                    <div class="mtscos-sidebar-avatar" id="mtscos-sidebar-avatar">U</div>
+                    <div class="mtscos-sidebar-user-info">
+                        <div class="mtscos-sidebar-username" id="mtscos-sidebar-username">用户</div>
+                        <div class="mtscos-sidebar-role" id="mtscos-sidebar-role">普通用户</div>
+                    </div>
+                </div>
+                <button class="mtscos-sidebar-logout" onclick="MTSCOS.logout()">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>退出</span>
+                </button>
+            </div>
+        </aside>
+        
+        <div class="mtscos-main">
+            <header class="mtscos-global-header">
+                <div class="mtscos-header-left">
+                    <button class="mtscos-sidebar-toggle" id="mtscos-sidebar-toggle" type="button" title="切换侧边栏比例（2:8 ↔ 1:9）">
+                        <i class="fas fa-bars"></i>
+                        <span>侧边栏</span>
+                    </button>
+                    <div class="mtscos-header-title">
+                        <i class="fas fa-shield-alt"></i>
+                        <span>{% block page_title %}MTSCOS AI{% endblock %}</span>
+                    </div>
+                    <a href="/" class="mtscos-back-btn" onclick="event.preventDefault(); MTSCOS.navigateBack();">
+                        <i class="fas fa-arrow-left"></i>
+                        <span>返回</span>
+                    </a>
+                </div>
+                <div class="mtscos-header-center">
+                    <div class="mtscos-system-logo-container">
+                        <img id="mtscos-system-logo" src="" alt="MTSCOS AI" class="mtscos-system-logo-img">
+                        <div class="mtscos-system-logo-text">MTSCOS AI</div>
+                    </div>
+                    {% if theme_forced_mourning %}
+                    <span class="mtscos-theme-mourning-tag"><i class="fas fa-ribbon"></i>国家公祭日 · 追思主题</span>
+                    {% endif %}
+                    {% if lunar_display %}
+                    <div class="mtscos-lunar-calendar{% if is_special_day %} special-day{% endif %}">
+                        <i class="fas fa-moon"></i>
+                        <span>{{ lunar_display }}</span>
+                    </div>
+                    {% endif %}
+                    <div class="mtscos-vikey-status" id="mtscos-vikey-status"
+                         data-present="{{ 'true' if vikey_present else 'false' }}"
+                         data-super-admin="{{ 'true' if vikey_has_super_admin else 'false' }}"
+                         title="VIKEY设备状态">
+                        <i class="fas fa-key"></i>
+                        <span class="vikey-status-text">{% if vikey_present %}{% if vikey_has_super_admin %}加密狗正常{% else %}检测到设备{% endif %}{% else %}未检测到加密狗{% endif %}</span>
+                        <span class="vikey-pulse-dot"></span>
+                        <div class="vikey-tooltip" id="vikey-tooltip">
+                            <div class="vikey-tooltip-header">
+                                <i class="fas fa-key"></i>
+                                <span>VIKEY USB密钥状态</span>
+                            </div>
+                            <div class="vikey-tooltip-content">
+                                <div class="vikey-info-row">
+                                    <span class="vikey-info-label">设备状态</span>
+                                    <span class="vikey-info-value" id="vikey-tooltip-status">检测中...</span>
+                                </div>
+                                <div class="vikey-info-row">
+                                    <span class="vikey-info-label">在线设备</span>
+                                    <span class="vikey-info-value" id="vikey-tooltip-count">0</span>
+                                </div>
+                                <div class="vikey-info-row">
+                                    <span class="vikey-info-label">超级管理员密钥</span>
+                                    <span class="vikey-info-value" id="vikey-tooltip-admin">未检测</span>
+                                </div>
+                                <div class="vikey-info-row">
+                                    <span class="vikey-info-label">安全状态</span>
+                                    <span class="vikey-info-value" id="vikey-tooltip-security">评估中</span>
+                                </div>
+                                <div class="vikey-info-row">
+                                    <span class="vikey-info-label">驱动版本</span>
+                                    <span class="vikey-info-value" id="vikey-tooltip-version">--</span>
+                                </div>
+                                <div class="vikey-info-row">
+                                    <span class="vikey-info-label">最后同步</span>
+                                    <span class="vikey-info-value" id="vikey-tooltip-sync">--</span>
+                                </div>
+                            </div>
+                            <div class="vikey-tooltip-actions">
+                                <button class="vikey-action-btn" onclick="MTSCOS.refreshVikey();">
+                                    <i class="fas fa-sync-alt"></i> 刷新
+                                </button>
+                                <button class="vikey-action-btn" onclick="window.location.href='/vikey_status.html';">
+                                    <i class="fas fa-external-link-alt"></i> 详情
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mtscos-system-time" id="mtscos-system-time">
+                        <i class="fas fa-clock"></i>
+                        <span>加载中...</span>
+                    </div>
+                </div>
+                <div class="mtscos-header-right" id="mtscos-header-right">
+                    <div id="mtscos-user-info" style="display: none;" class="mtscos-user-info">
+                        <div class="mtscos-user-avatar" id="mtscos-user-avatar">U</div>
+                        <span id="mtscos-username">用户</span>
+                    </div>
+                    <button class="mtscos-logout-btn" id="mtscos-logout-btn" onclick="MTSCOS.logout()" style="display: none;">
+                        <i class="fas fa-sign-out-alt"></i>
+                        <span>退出</span>
+                    </button>
+                </div>
+            </header>
+            
+            <div class="mtscos-content-scroll">
+                {% block content %}{% endblock %}
+            </div>
+        </div>
+        
+        <div id="mtscos-lock-overlay" class="mtscos-lock-overlay">
+            <div class="lock-container">
+                <div class="lock-icon"><i class="fas fa-lock"></i></div>
+                <div class="lock-title">系统已锁定</div>
+                <div class="lock-desc">由于长时间未操作，系统已自动锁定</div>
+                
+                <div id="lock-user-info" class="lock-user-info" style="display:none">
+                    <div class="lock-avatar" id="lock-avatar">U</div>
+                    <div style="text-align:left">
+                        <div class="lock-username" id="lock-username">用户</div>
+                        <div class="lock-role" id="lock-role">普通用户</div>
+                    </div>
+                </div>
+                
+                <div class="lock-countdown" id="lock-countdown">60秒后自动解锁</div>
+                
+                <div class="lock-divider">或使用密码立即解锁</div>
+                
+                <div class="lock-input-group">
+                    <input type="password" class="lock-input" id="lock-password" placeholder="请输入登录密码" autocomplete="off">
+                </div>
+                <button class="lock-btn" id="lock-unlock-btn" onclick="MTSCOS.unlockWithPassword()">
+                    <i class="fas fa-unlock"></i> 密码解锁
+                </button>
+                <div class="lock-error" id="lock-error"></div>
+                
+                <div class="lock-smart-tip">
+                    <i class="fas fa-magic"></i>
+                    <span>智能解锁中，检测到活动将自动延长</span>
+                </div>
+            </div>
+        </div>
+    <div id="mtscos-timeout-warning" class="mtscos-timeout-warning">
+        <i class="fas fa-exclamation-triangle"></i> 会话即将超时，请点击任意位置继续
+    </div>
+
+    <script src="/assets/layout_adapter.js"></script>
+    <script>
+        (function() {
+            var MTSCOS = {
+                sessionTimeout: 1800,
+                warningTimeout: 300,
+                lastActivity: Date.now(),
+                timeoutTimer: null,
+                warningTimer: null,
+                isLocked: false,
+                lockDuration: 60,
+                lockTimer: null,
+                lockCountdown: 60,
+                maxRetries: 5,
+                retryCount: 0,
+                currentUser: null,
+                smartUnlockEnabled: true,
+                maxPasswordAttempts: 5,
+                passwordAttempts: 0,
+                
+                init: function() {
+                    this.bindSecurityEvents();
+                    this.bindNavigationEvents();
+                    this.startTimeoutMonitor();
+                    this.startActivityMonitor();
+                    this.validateUserContainer();
+                    this.bindPermissionEvents();
+                    this.startGlobalListener();
+                    this.loadUserInfo();
+                    this.bindLockEvents();
+                    this.startSystemTime();
+                    this.loadSystemLogo();
+                    this.initSidebarSmart();
+                    this.initThemeRuntime();
+                    this.startVikeyMonitor();
+                },
+
+                /* ---- Sidebar 智能收缩 / 回放 / 恢复（单一入口） ----
+                   1) 读取 localStorage → applySidebarState → 立即生效（避免首屏"手动点击后才正常"）
+                   2) 按钮 click：toggle → 写入 localStorage → apply
+                   3) hover：mini 态下鼠标进入侧栏 120ms 自动展开（回放），移出 500ms 延迟自动收起（智能收缩）
+                   4) init 后强制 reflow，保证所有 layout 与变量同步（修复 Exp 632240 首屏错位）
+                */
+                initSidebarSmart: function() {
+                    var self = this;
+                    var body = document.body;
+                    var sidebar = document.querySelector('.mtscos-sidebar');
+                    var btn = document.getElementById('mtscos-sidebar-toggle');
+                    var LS_KEY = 'mtscos_sidebar_mini';
+
+                    function applySidebarState(isMini) {
+                        if (isMini) body.classList.add('sidebar-mini');
+                        else        body.classList.remove('sidebar-mini');
+                        // 强制同步布局计算，避免"首屏不生效、需点击切换才正常"
+                        try { void (body.offsetHeight); } catch(e){}
+                    }
+
+                    // 1) localStorage 恢复（读取失败则默认展开）
+                    var isMiniStored = false;
+                    try { isMiniStored = (localStorage.getItem(LS_KEY) === 'true'); } catch(e){}
+                    applySidebarState(isMiniStored);
+
+                    // 2) 点击按钮：用户手动切换
+                    if (btn) {
+                        btn.addEventListener('click', function() {
+                            var nowMini = !body.classList.contains('sidebar-mini');
+                            try { localStorage.setItem(LS_KEY, nowMini ? 'true' : 'false'); } catch(e){}
+                            applySidebarState(nowMini);
+                        });
+                    }
+
+                    // 3) mini 态下 hover 智能回放 / 智能收缩（防抖）
+                    if (sidebar) {
+                        var hoverEnterTimer = null;
+                        var hoverLeaveTimer = null;
+                        var HOVER_ENTER_DELAY = 120; // 120ms 再展开，避免抖动
+                        var HOVER_LEAVE_DELAY = 500; // 500ms 再收起，允许用户"点到边缘"
+
+                        function isMiniMode() {
+                            return body.classList.contains('sidebar-mini');
+                        }
+
+                        sidebar.addEventListener('mouseenter', function() {
+                            if (!isMiniMode()) return;
+                            if (hoverLeaveTimer) { clearTimeout(hoverLeaveTimer); hoverLeaveTimer = null; }
+                            hoverEnterTimer = setTimeout(function() {
+                                body.classList.add('sidebar-hovered');
+                            }, HOVER_ENTER_DELAY);
+                        });
+
+                        sidebar.addEventListener('mouseleave', function() {
+                            if (hoverEnterTimer) { clearTimeout(hoverEnterTimer); hoverEnterTimer = null; }
+                            if (!isMiniMode()) { body.classList.remove('sidebar-hovered'); return; }
+                            hoverLeaveTimer = setTimeout(function() {
+                                body.classList.remove('sidebar-hovered');
+                            }, HOVER_LEAVE_DELAY);
+                        });
+                    }
+                },
+
+                getThemeMeta: function() {
+                    return {
+                        current: document.body.getAttribute('data-theme') || 'deep_blue',
+                        forcedMourning: document.body.getAttribute('data-forced-mourning') === 'true',
+                        isAdmin: document.body.getAttribute('data-is-admin') === 'true',
+                        isSuperAdmin: document.body.getAttribute('data-is-super-admin') === 'true',
+                    };
+                },
+
+                setTheme: function(theme, cb) {
+                    var xhr = new XMLHttpRequest();
+                    xhr.open('POST', '/api/theme/set', true);
+                    xhr.setRequestHeader('Content-Type', 'application/json');
+                    xhr.onreadystatechange = function() {
+                        if (xhr.readyState === 4) {
+                            var data = null;
+                            try { data = JSON.parse(xhr.responseText); } catch(e) {}
+                            if (xhr.status === 200 && data && data.success && data.theme) {
+                                document.body.setAttribute('data-theme', data.theme);
+                            }
+                            if (typeof cb === 'function') cb(data, xhr.status);
+                            else window.location.reload();
+                        }
+                    };
+                    xhr.send(JSON.stringify({ theme: theme }));
+                },
+
+                resetTheme: function(cb) {
+                    var xhr = new XMLHttpRequest();
+                    xhr.open('POST', '/api/theme/reset', true);
+                    xhr.setRequestHeader('Content-Type', 'application/json');
+                    xhr.onreadystatechange = function() {
+                        if (xhr.readyState === 4) {
+                            var data = null;
+                            try { data = JSON.parse(xhr.responseText); } catch(e) {}
+                            if (xhr.status === 200 && data && data.theme) {
+                                document.body.setAttribute('data-theme', data.theme);
+                            }
+                            if (typeof cb === 'function') cb(data, xhr.status);
+                            else window.location.reload();
+                        }
+                    };
+                    xhr.send('{}');
+                },
+
+                initThemeRuntime: function() {
+                    // placeholder for future hooks
+                },
+                
+                loadUserInfo: function() {
+                    var xhr = new XMLHttpRequest();
+                    xhr.open('GET', '/api/user/info', true);
+                    xhr.onreadystatechange = function() {
+                        if (xhr.readyState === 4 && xhr.status === 200) {
+                            try {
+                                var data = JSON.parse(xhr.responseText);
+                                if (data.user) {
+                                    MTSCOS.currentUser = data.user;
+                                    MTSCOS.updateLockUserInfo();
+                                    MTSCOS.updateGlobalHeaderUserInfo();
+                                }
+                            } catch(e) {}
+                        }
+                    };
+                    xhr.send();
+                },
+                
+                updateLockUserInfo: function() {
+                    if (!this.currentUser) return;
+                    var userInfoEl = document.getElementById('lock-user-info');
+                    var avatarEl = document.getElementById('lock-avatar');
+                    var usernameEl = document.getElementById('lock-username');
+                    var roleEl = document.getElementById('lock-role');
+                    
+                    if (userInfoEl && avatarEl && usernameEl && roleEl) {
+                        userInfoEl.style.display = 'flex';
+                        var username = this.currentUser.username || '用户';
+                        avatarEl.textContent = username.charAt(0).toUpperCase();
+                        usernameEl.textContent = username;
+                        var roleMap = {
+                            'admin': '管理员',
+                            'super_admin': '管理员',
+                            'teacher': '教师',
+                            'student': '学生',
+                            'user': '普通用户',
+                            'designer': '设计师'
+                        };
+                        roleEl.textContent = roleMap[this.currentUser.role] || this.currentUser.role || '用户';
+                    }
+                },
+                
+                updateGlobalHeaderUserInfo: function() {
+                    if (!this.currentUser) return;
+                    var userInfoEl = document.getElementById('mtscos-user-info');
+                    var avatarEl = document.getElementById('mtscos-user-avatar');
+                    var usernameEl = document.getElementById('mtscos-username');
+                    var logoutBtn = document.getElementById('mtscos-logout-btn');
+                    
+                    if (userInfoEl && avatarEl && usernameEl) {
+                        userInfoEl.style.display = 'flex';
+                        var username = this.currentUser.username || '用户';
+                        var shouldHideAdmin = localStorage.getItem('mtscos_super_admin_hidden') === 'true';
+                        var displayUsername = (username === 'wuchenghao15' || shouldHideAdmin) ? '管理员' : username;
+                        
+                        if (this.currentUser.avatar) {
+                            avatarEl.textContent = '';
+                            avatarEl.style.background = 'none';
+                            avatarEl.innerHTML = '<img src="' + this.currentUser.avatar + '" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">';
+                        } else {
+                            avatarEl.textContent = displayUsername.charAt(0).toUpperCase();
+                            avatarEl.style.background = 'linear-gradient(135deg, #4f46e5, #06b6d4)';
+                            avatarEl.innerHTML = '';
+                        }
+                        usernameEl.textContent = displayUsername;
+                    }
+                    if (logoutBtn) {
+                        logoutBtn.style.display = 'flex';
+                    }
+                    this.updateSidebarUserInfo();
+                },
+                
+                updateSidebarUserInfo: function() {
+                    if (!this.currentUser) return;
+                    var avatarEl = document.getElementById('mtscos-sidebar-avatar');
+                    var usernameEl = document.getElementById('mtscos-sidebar-username');
+                    var roleEl = document.getElementById('mtscos-sidebar-role');
+                    
+                    if (avatarEl && usernameEl && roleEl) {
+                        var username = this.currentUser.username || '用户';
+                        var shouldHideAdmin = localStorage.getItem('mtscos_super_admin_hidden') === 'true';
+                        var displayUsername = (username === 'wuchenghao15' || shouldHideAdmin) ? '管理员' : username;
+                        
+                        if (this.currentUser.avatar) {
+                            avatarEl.textContent = '';
+                            avatarEl.style.background = 'none';
+                            avatarEl.innerHTML = '<img src="' + this.currentUser.avatar + '" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">';
+                        } else {
+                            avatarEl.textContent = displayUsername.charAt(0).toUpperCase();
+                            avatarEl.style.background = 'linear-gradient(135deg, #4f46e5, #06b6d4)';
+                            avatarEl.innerHTML = '';
+                        }
+                        usernameEl.textContent = displayUsername;
+                        
+                        var roleMap = {
+                            'admin': '管理员',
+                            'super_admin': '超级管理员',
+                            'teacher': '教师',
+                            'student': '学生',
+                            'user': '普通用户',
+                            'designer': '设计师'
+                        };
+                        roleEl.textContent = roleMap[this.currentUser.role] || this.currentUser.role || '用户';
+                    }
+                },
+                
+                logout: function() {
+                    if (window._mtscos_confirmHandler && typeof window._mtscos_confirmHandler === 'function') {
+                        var result = window._mtscos_confirmHandler('logout');
+                        if (result === false) return;
+                        if (typeof result === 'string' && !confirm(result)) return;
+                    }
+                    if (confirm('确定要退出系统吗？')) {
+                        window.location.href = '/auth/logout';
+                    }
+                },
+                
+                navigateBack: function() {
+                    if (window._mtscos_confirmHandler && typeof window._mtscos_confirmHandler === 'function') {
+                        var result = window._mtscos_confirmHandler('back');
+                        if (result === false) return;
+                        if (typeof result === 'string' && !confirm(result)) return;
+                    }
+                    window.history.back();
+                },
+                
+                startSystemTime: function() {
+                    this.updateSystemTime();
+                    this.systemTimeTimer = setInterval(function() {
+                        MTSCOS.updateSystemTime();
+                    }, 1000);
+                },
+                
+                startVikeyMonitor: function() {
+                    var self = this;
+                    this.vikeyMonitorTimer = setInterval(function() {
+                        self.checkVikeyStatus();
+                    }, 2000);
+                    this.checkVikeyStatus();
+                    this.loadVikeyVersion();
+                },
+
+                loadVikeyVersion: function() {
+                    fetch('/api/vikey/version', { credentials: 'include' })
+                        .then(function(r) { return r.json(); })
+                        .then(function(d) {
+                            if (d && d.success) {
+                                var v = d.data.driver_version || '--';
+                                var el = document.getElementById('vikey-tooltip-version');
+                                if (el) el.textContent = v;
+                            }
+                        })
+                        .catch(function() {});
+                },
+
+                refreshVikey: function() {
+                    this.checkVikeyStatus();
+                    this.loadVikeyVersion();
+                    var syncEl = document.getElementById('vikey-tooltip-sync');
+                    if (syncEl) {
+                        var now = new Date();
+                        syncEl.textContent = now.toLocaleTimeString();
+                    }
+                },
+
+                checkVikeyStatus: function() {
+                    var el = document.getElementById('mtscos-vikey-status');
+                    if (!el) return;
+                    var statusText = el.querySelector('.vikey-status-text');
+
+                    fetch('/api/vikey/status', { credentials: 'include' })
+                        .then(function(response) { return response.json(); })
+                        .then(function(data) {
+                            if (data && data.success) {
+                                var d = data.data || data;
+                                var present = d.present || false;
+                                var hasSuperAdmin = d.has_super_admin_key || false;
+                                var count = d.count || 0;
+
+                                el.setAttribute('data-present', present ? 'true' : 'false');
+                                el.setAttribute('data-super-admin', hasSuperAdmin ? 'true' : 'false');
+                                el.classList.remove('vikey-present', 'vikey-super-admin', 'vikey-warning');
+
+                                if (hasSuperAdmin) {
+                                    el.classList.add('vikey-super-admin');
+                                    if (statusText) statusText.textContent = '超级密钥';
+                                } else if (present) {
+                                    el.classList.add('vikey-warning');
+                                    if (statusText) statusText.textContent = count + '设备';
+                                } else {
+                                    if (statusText) statusText.textContent = '未检测';
+                                }
+
+                                // 更新 tooltip
+                                var sEl = document.getElementById('vikey-tooltip-status');
+                                var cEl = document.getElementById('vikey-tooltip-count');
+                                var aEl = document.getElementById('vikey-tooltip-admin');
+                                var secEl = document.getElementById('vikey-tooltip-security');
+                                var syncEl = document.getElementById('vikey-tooltip-sync');
+
+                                if (sEl) {
+                                    sEl.textContent = present ? '✓ 在线' : '✗ 离线';
+                                    sEl.className = 'vikey-info-value ' + (present ? 'vikey-success' : 'vikey-error');
+                                }
+                                if (cEl) {
+                                    cEl.textContent = count;
+                                    cEl.className = 'vikey-info-value ' + (count > 0 ? 'vikey-success' : 'vikey-warning');
+                                }
+                                if (aEl) {
+                                    aEl.textContent = hasSuperAdmin ? '✓ 已插入' : '✗ 未插入';
+                                    aEl.className = 'vikey-info-value ' + (hasSuperAdmin ? 'vikey-success' : 'vikey-error');
+                                }
+                                if (secEl) {
+                                    if (present && hasSuperAdmin) {
+                                        secEl.textContent = '✓ 安全';
+                                        secEl.className = 'vikey-info-value vikey-success';
+                                    } else if (present && !hasSuperAdmin) {
+                                        secEl.textContent = '⚠ 警告';
+                                        secEl.className = 'vikey-info-value vikey-warning';
+                                    } else {
+                                        secEl.textContent = '✗ 未保护';
+                                        secEl.className = 'vikey-info-value vikey-error';
+                                    }
+                                }
+                                if (syncEl) {
+                                    var now = new Date();
+                                    syncEl.textContent = now.toLocaleTimeString();
+                                }
+                            }
+                        })
+                        .catch(function() {});
+                },
+                
+                loadSystemLogo: function() {
+                    var self = this;
+                    fetch('/api/system/logo')
+                        .then(function(response) { return response.json(); })
+                        .then(function(data) {
+                            if (data.success && data.logo) {
+                                var logoImg = document.getElementById('mtscos-system-logo');
+                                if (logoImg) {
+                                    logoImg.src = data.logo;
+                                    logoImg.onload = function() {
+                                        logoImg.style.display = 'block';
+                                    };
+                                }
+                            }
+                        })
+                        .catch(function(error) {
+                            console.log('加载系统LOGO失败');
+                        });
+                },
+                
+                updateSystemTime: function() {
+                    var now = new Date();
+                    var year = now.getFullYear();
+                    var month = String(now.getMonth() + 1).padStart(2, '0');
+                    var day = String(now.getDate()).padStart(2, '0');
+                    var hours = String(now.getHours()).padStart(2, '0');
+                    var minutes = String(now.getMinutes()).padStart(2, '0');
+                    var seconds = String(now.getSeconds()).padStart(2, '0');
+                    var timeStr = year + '-' + month + '-' + day + ' ' + hours + ':' + minutes + ':' + seconds;
+                    var timeEl = document.getElementById('mtscos-system-time');
+                    if (timeEl) {
+                        timeEl.innerHTML = '<i class="fas fa-clock"></i><span>' + timeStr + '</span>';
+                    }
+                },
+                
+                bindLockEvents: function() {
+                    var passwordInput = document.getElementById('lock-password');
+                    if (passwordInput) {
+                        passwordInput.addEventListener('keypress', function(e) {
+                            if (e.key === 'Enter') {
+                                MTSCOS.unlockWithPassword();
+                            }
+                        });
+                    }
+                },
+                
+                bindSecurityEvents: function() {
+                    document.addEventListener('contextmenu', function(e) {
+                        e.preventDefault();
+                    });
+                    
+                    document.addEventListener('keydown', function(e) {
+                        if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && e.key === 'I') || 
+                            (e.ctrlKey && e.key === 'U') || (e.ctrlKey && e.key === 'S') ||
+                            (e.metaKey && e.key === 'S')) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                        }
+                        if (e.key === 'F5' || (e.ctrlKey && e.key === 'R') || (e.metaKey && e.key === 'R')) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                        }
+                    });
+                    
+                    document.addEventListener('keypress', function(e) {
+                        if (e.key === 'F12') {
+                            e.preventDefault();
+                        }
+                    });
+                },
+                
+                bindNavigationEvents: function() {
+                    window.history.pushState(null, null, window.location.href);
+                    window.addEventListener('popstate', function() {
+                        window.history.pushState(null, null, window.location.href);
+                    });
+                },
+                
+                startActivityMonitor: function() {
+                    var events = ['mousedown', 'mousemove', 'keydown', 'scroll', 'touchstart'];
+                    events.forEach(function(evt) {
+                        document.addEventListener(evt, function() {
+                            MTSCOS.resetTimeout();
+                        });
+                    });
+                },
+                
+                startTimeoutMonitor: function() {
+                    this.stopTimeoutMonitor();
+                    this.timeoutTimer = setTimeout(function() {
+                        MTSCOS.showTimeoutWarning();
+                    }, (this.sessionTimeout - this.warningTimeout) * 1000);
+                },
+                
+                stopTimeoutMonitor: function() {
+                    if (this.timeoutTimer) {
+                        clearTimeout(this.timeoutTimer);
+                        this.timeoutTimer = null;
+                    }
+                    if (this.warningTimer) {
+                        clearTimeout(this.warningTimer);
+                        this.warningTimer = null;
+                    }
+                },
+                
+                resetTimeout: function() {
+                    this.lastActivity = Date.now();
+                    this.hideTimeoutWarning();
+                    this.startTimeoutMonitor();
+                },
+                
+                showTimeoutWarning: function() {
+                    document.getElementById('mtscos-timeout-warning').style.display = 'block';
+                    this.warningTimer = setTimeout(function() {
+                        MTSCOS.lockSystem();
+                    }, this.warningTimeout * 1000);
+                },
+                
+                hideTimeoutWarning: function() {
+                    document.getElementById('mtscos-timeout-warning').style.display = 'none';
+                },
+                
+                lockSystem: function() {
+                    if (this.isLocked) return;
+                    this.isLocked = true;
+                    this.passwordAttempts = 0;
+                    
+                    var overlay = document.getElementById('mtscos-lock-overlay');
+                    if (overlay) {
+                        overlay.classList.add('show');
+                    }
+                    
+                    this.lockCountdown = this.lockDuration;
+                    this.updateLockCountdown();
+                    
+                    this.lockTimer = setInterval(function() {
+                        MTSCOS.lockCountdown--;
+                        MTSCOS.updateLockCountdown();
+                        if (MTSCOS.lockCountdown <= 0) {
+                            MTSCOS.unlockSystem();
+                        }
+                    }, 1000);
+                    
+                    this.startSmartUnlockMonitor();
+                    
+                    var passwordInput = document.getElementById('lock-password');
+                    if (passwordInput) {
+                        setTimeout(function() {
+                            passwordInput.focus();
+                        }, 100);
+                    }
+                },
+                
+                updateLockCountdown: function() {
+                    var countdownEl = document.getElementById('lock-countdown');
+                    if (countdownEl) {
+                        if (this.lockCountdown > 0) {
+                            var minutes = Math.floor(this.lockCountdown / 60);
+                            var seconds = this.lockCountdown % 60;
+                            var timeStr = minutes > 0 
+                                ? minutes + '分' + seconds + '秒后自动解锁'
+                                : seconds + '秒后自动解锁';
+                            countdownEl.textContent = timeStr;
+                        } else {
+                            countdownEl.textContent = '正在解锁...';
+                        }
+                    }
+                },
+                
+                startSmartUnlockMonitor: function() {
+                    if (!this.smartUnlockEnabled) return;
+                    
+                    var activityEvents = ['mousemove', 'keydown', 'touchstart', 'scroll'];
+                    var activityThreshold = 3;
+                    var activityCount = 0;
+                    var lastActivityTime = 0;
+                    
+                    this.smartUnlockHandler = function() {
+                        var now = Date.now();
+                        if (now - lastActivityTime > 1000) {
+                            activityCount = 0;
+                        }
+                        lastActivityTime = now;
+                        activityCount++;
+                        
+                        if (activityCount >= activityThreshold) {
+                            MTSCOS.extendLockDuration(30);
+                            activityCount = 0;
+                        }
+                    };
+                    
+                    activityEvents.forEach(function(evt) {
+                        document.addEventListener(evt, MTSCOS.smartUnlockHandler, true);
+                    });
+                    
+                    this.smartUnlockEvents = activityEvents;
+                },
+                
+                extendLockDuration: function(seconds) {
+                    if (this.lockCountdown + seconds > this.lockDuration * 2) {
+                        seconds = this.lockDuration * 2 - this.lockCountdown;
+                    }
+                    if (seconds > 0) {
+                        this.lockCountdown += seconds;
+                        this.updateLockCountdown();
+                    }
+                },
+                
+                stopSmartUnlockMonitor: function() {
+                    if (this.smartUnlockEvents && this.smartUnlockHandler) {
+                        var self = this;
+                        this.smartUnlockEvents.forEach(function(evt) {
+                            document.removeEventListener(evt, self.smartUnlockHandler, true);
+                        });
+                        this.smartUnlockEvents = null;
+                        this.smartUnlockHandler = null;
+                    }
+                },
+                
+                unlockWithPassword: function() {
+                    var passwordInput = document.getElementById('lock-password');
+                    var errorEl = document.getElementById('lock-error');
+                    var unlockBtn = document.getElementById('lock-unlock-btn');
+                    
+                    if (!passwordInput) return;
+                    
+                    var password = passwordInput.value;
+                    if (!password || password.length < 3) {
+                        if (errorEl) {
+                            errorEl.textContent = '请输入有效的密码';
+                        }
+                        return;
+                    }
+                    
+                    if (this.passwordAttempts >= this.maxPasswordAttempts) {
+                        if (errorEl) {
+                            errorEl.textContent = '密码错误次数过多，请等待自动解锁';
+                        }
+                        return;
+                    }
+                    
+                    if (unlockBtn) {
+                        unlockBtn.disabled = true;
+                        unlockBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 验证中...';
+                    }
+                    
+                    var xhr = new XMLHttpRequest();
+                    xhr.open('POST', '/api/auth/verify_password', true);
+                    xhr.setRequestHeader('Content-Type', 'application/json');
+                    xhr.onreadystatechange = function() {
+                        if (xhr.readyState === 4) {
+                            if (unlockBtn) {
+                                unlockBtn.disabled = false;
+                                unlockBtn.innerHTML = '<i class="fas fa-unlock"></i> 密码解锁';
+                            }
+                            
+                            if (xhr.status === 200) {
+                                try {
+                                    var data = JSON.parse(xhr.responseText);
+                                    if (data.success) {
+                                        if (errorEl) {
+                                            errorEl.textContent = '';
+                                        }
+                                        MTSCOS.unlockSystem();
+                                    } else {
+                                        MTSCOS.passwordAttempts++;
+                                        var remaining = MTSCOS.maxPasswordAttempts - MTSCOS.passwordAttempts;
+                                        if (errorEl) {
+                                            errorEl.textContent = '密码错误，还剩' + remaining + '次尝试机会';
+                                        }
+                                        if (passwordInput) {
+                                            passwordInput.value = '';
+                                            passwordInput.focus();
+                                        }
+                                    }
+                                } catch(e) {
+                                    if (errorEl) {
+                                        errorEl.textContent = '验证失败，请重试';
+                                    }
+                                }
+                            } else {
+                                if (errorEl) {
+                                    errorEl.textContent = '网络错误，请重试';
+                                }
+                            }
+                        }
+                    };
+                    xhr.send(JSON.stringify({ password: password }));
+                },
+                
+                unlockSystem: function() {
+                    this.isLocked = false;
+                    
+                    var overlay = document.getElementById('mtscos-lock-overlay');
+                    if (overlay) {
+                        overlay.classList.remove('show');
+                    }
+                    
+                    if (this.lockTimer) {
+                        clearInterval(this.lockTimer);
+                        this.lockTimer = null;
+                    }
+                    
+                    this.stopSmartUnlockMonitor();
+                    
+                    var passwordInput = document.getElementById('lock-password');
+                    if (passwordInput) {
+                        passwordInput.value = '';
+                    }
+                    var errorEl = document.getElementById('lock-error');
+                    if (errorEl) {
+                        errorEl.textContent = '';
+                    }
+                    
+                    this.resetTimeout();
+                },
+                
+                validateUserContainer: function() {
+                    var xhr = new XMLHttpRequest();
+                    xhr.open('GET', '/api/user/info', true);
+                    xhr.onreadystatechange = function() {
+                        if (xhr.readyState === 4) {
+                            if (xhr.status === 401) {
+                                if (!window.location.pathname.includes('/login') && !window.location.pathname.includes('/register')) {
+                                    window.location.href = '/auth/login';
+                                }
+                            }
+                        }
+                    };
+                    xhr.send();
+                },
+                
+                bindPermissionEvents: function() {
+                    document.querySelectorAll('[data-role]').forEach(function(el) {
+                        var requiredRole = el.getAttribute('data-role');
+                        MTSCOS.checkPermission(el, requiredRole);
+                    });
+                },
+                
+                checkPermission: function(element, requiredRole) {
+                    var xhr = new XMLHttpRequest();
+                    xhr.open('GET', '/api/user/info', true);
+                    xhr.onreadystatechange = function() {
+                        if (xhr.readyState === 4 && xhr.status === 200) {
+                            try {
+                                var data = JSON.parse(xhr.responseText);
+                                var userRole = data.user ? data.user.role : 'guest';
+                                if (requiredRole && userRole !== requiredRole && userRole !== 'super_admin') {
+                                    element.style.display = 'none';
+                                }
+                            } catch(e) {}
+                        }
+                    };
+                    xhr.send();
+                },
+                
+                startGlobalListener: function() {
+                    var errorHandler = window.onerror;
+                    window.onerror = function(msg, url, line, col, error) {
+                        MTSCOS.reportError(msg, url, line, col, error);
+                        if (errorHandler) {
+                            return errorHandler(msg, url, line, col, error);
+                        }
+                        return false;
+                    };
+                    
+                    var rejectionHandler = window.onunhandledrejection;
+                    window.onunhandledrejection = function(event) {
+                        MTSCOS.reportError('Promise rejection: ' + event.reason);
+                        if (rejectionHandler) {
+                            rejectionHandler(event);
+                        }
+                    };
+                },
+                
+                reportError: function(msg, url, line, col, error) {
+                    var errorData = {
+                        message: msg,
+                        url: url || window.location.href,
+                        line: line || 0,
+                        column: col || 0,
+                        error: error ? error.stack : '',
+                        timestamp: Date.now(),
+                        userAgent: navigator.userAgent,
+                        page: window.location.pathname,
+                        referrer: document.referrer,
+                        memoryUsage: this.getMemoryUsage(),
+                        networkStatus: this.getNetworkStatus(),
+                        userRole: this.currentUser ? this.currentUser.role : 'unknown',
+                        userId: this.currentUser ? this.currentUser.id : null,
+                        suggestedFix: this.generateFixSuggestion(msg, error)
+                    };
+                    try {
+                        var xhr = new XMLHttpRequest();
+                        xhr.open('POST', '/api/error/report', true);
+                        xhr.setRequestHeader('Content-Type', 'application/json');
+                        xhr.send(JSON.stringify(errorData));
+                    } catch(e) {}
+                    
+                    this.showErrorNotification(msg);
+                },
+                
+                getMemoryUsage: function() {
+                    if (window.performance && window.performance.memory) {
+                        return {
+                            usedJSHeapSize: window.performance.memory.usedJSHeapSize,
+                            totalJSHeapSize: window.performance.memory.totalJSHeapSize,
+                            jsHeapSizeLimit: window.performance.memory.jsHeapSizeLimit
+                        };
+                    }
+                    return null;
+                },
+                
+                getNetworkStatus: function() {
+                    if (navigator.connection) {
+                        return {
+                            effectiveType: navigator.connection.effectiveType,
+                            downlink: navigator.connection.downlink,
+                            rtt: navigator.connection.rtt,
+                            saveData: navigator.connection.saveData
+                        };
+                    }
+                    return null;
+                },
+                
+                generateFixSuggestion: function(msg, error) {
+                    var suggestions = [];
+                    
+                    if (msg.includes('Cannot read property')) {
+                        suggestions.push('可能存在空值引用，请检查变量是否已正确初始化');
+                        suggestions.push('建议使用可选链操作符 (?.) 防止空指针异常');
+                    }
+                    if (msg.includes('is not a function')) {
+                        suggestions.push('调用了不存在的函数，请检查函数名称拼写和作用域');
+                        suggestions.push('确保在调用前函数已定义');
+                    }
+                    if (msg.includes('ReferenceError')) {
+                        suggestions.push('变量未定义，请检查变量声明和作用域');
+                        suggestions.push('确保所有变量在使用前已声明');
+                    }
+                    if (msg.includes('TypeError')) {
+                        suggestions.push('类型错误，可能是对错误类型的对象执行了操作');
+                        suggestions.push('建议使用 typeof 或 instanceof 进行类型检查');
+                    }
+                    if (msg.includes('SyntaxError')) {
+                        suggestions.push('语法错误，请检查代码语法');
+                        suggestions.push('使用浏览器开发者工具检查具体错误位置');
+                    }
+                    if (msg.includes('RangeError')) {
+                        suggestions.push('数组索引或参数超出范围');
+                        suggestions.push('检查数组长度和参数边界');
+                    }
+                    if (msg.includes('fetch') || msg.includes('XHR') || msg.includes('Network')) {
+                        suggestions.push('网络请求失败，请检查网络连接');
+                        suggestions.push('确保 API 端点正确且服务正常运行');
+                    }
+                    if (msg.includes('localStorage') || msg.includes('sessionStorage')) {
+                        suggestions.push('存储操作失败，可能是存储空间已满');
+                        suggestions.push('检查浏览器存储限制');
+                    }
+                    if (msg.includes('DOMException')) {
+                        suggestions.push('DOM 操作异常，可能是元素不存在或已被移除');
+                        suggestions.push('在操作前检查元素是否存在');
+                    }
+                    
+                    if (suggestions.length === 0) {
+                        suggestions.push('无法自动生成修复建议，请查看详细错误信息');
+                    }
+                    
+                    return suggestions;
+                },
+                
+                showErrorNotification: function(msg) {
+                    if (this.errorNotificationTimeout) {
+                        clearTimeout(this.errorNotificationTimeout);
+                    }
+                    
+                    var existing = document.querySelector('.mtscos-error-notification');
+                    if (existing) existing.remove();
+                    
+                    var notification = document.createElement('div');
+                    notification.className = 'mtscos-error-notification';
+                    notification.style.cssText = `
+                        position: fixed; bottom: 20px; right: 20px; padding: 16px 24px; 
+                        background: rgba(239,68,68,0.95); color: white; border-radius: 8px;
+                        font-size: 13px; z-index: 10000; max-width: 400px;
+                        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+                        border: 1px solid rgba(255,255,255,0.1);
+                        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+                    `;
+                    notification.innerHTML = `
+                        <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+                            <i class="fas fa-exclamation-triangle" style="font-size:18px;"></i>
+                            <span style="font-weight:600;font-size:14px;">系统检测到异常</span>
+                        </div>
+                        <div style="opacity:0.9;line-height:1.5;">${msg.substring(0, 150)}${msg.length > 150 ? '...' : ''}</div>
+                        <div style="margin-top:10px;font-size:11px;color:rgba(255,255,255,0.6);">
+                            已自动上报并尝试修复
+                        </div>
+                    `;
+                    document.body.appendChild(notification);
+                    
+                    this.errorNotificationTimeout = setTimeout(function() {
+                        notification.remove();
+                    }, 8000);
+                },
+                
+                apiCall: function(url, method, data, callback) {
+                    this.retryCount = 0;
+                    this._apiCall(url, method, data, callback);
+                },
+                
+                getCsrfToken: function() {
+                    var meta = document.querySelector('meta[name="csrf-token"]');
+                    return meta ? meta.getAttribute('content') : '';
+                },
+                
+                _apiCall: function(url, method, data, callback) {
+                    var xhr = new XMLHttpRequest();
+                    xhr.open(method, url, true);
+                    xhr.setRequestHeader('Content-Type', 'application/json');
+                    var csrfToken = this.getCsrfToken();
+                    if (csrfToken) {
+                        xhr.setRequestHeader('X-CSRFToken', csrfToken);
+                    }
+                    xhr.onreadystatechange = function() {
+                        if (xhr.readyState === 4) {
+                            if (xhr.status === 200) {
+                                try {
+                                    var response = JSON.parse(xhr.responseText);
+                                    callback(null, response);
+                                } catch(e) {
+                                    callback(e, null);
+                                }
+                            } else if (xhr.status === 401) {
+                                window.location.href = '/auth/login';
+                            } else if (xhr.status === 500 && MTSCOS.retryCount < MTSCOS.maxRetries) {
+                                MTSCOS.retryCount++;
+                                setTimeout(function() {
+                                    MTSCOS._apiCall(url, method, data, callback);
+                                }, Math.pow(2, MTSCOS.retryCount) * 1000);
+                            } else {
+                                callback(new Error('API Error: ' + xhr.status), null);
+                            }
+                        }
+                    };
+                    xhr.send(data ? JSON.stringify(data) : null);
+                }
+            };
+            
+            document.addEventListener('DOMContentLoaded', function() {
+                MTSCOS.init();
+                window.MTSCOS = MTSCOS;
+            });
+        })();
+        
+        (function() {
+            var originalFetch = window.fetch;
+            window.fetch = function(url, options) {
+                options = options || {};
+                options.headers = options.headers || {};
+                
+                var csrfMeta = document.querySelector('meta[name="csrf-token"]');
+                if (csrfMeta) {
+                    options.headers['X-CSRFToken'] = csrfMeta.getAttribute('content');
+                }
+                
+                return originalFetch(url, options);
+            };
+        })();
+    </script>
+    <script src="/assets/js/utils/apiRequest.js"></script>
+    {% block scripts %}{% endblock %}
+
+    <!-- FORCE 最后强制层：毛玻璃强化 + Sidebar 2:8 / 1:9 / Hover 智能回放 -->
+    <style id="force-glass-and-sidebar">
+      [data-theme] .mtscos-sidebar, .mtscos-sidebar {
+        width: 20% !important;
+        background: var(--bg-sidebar, rgba(15, 23, 42, 0.85)) !important;
+        backdrop-filter: blur(16px) !important;
+        -webkit-backdrop-filter: blur(16px) !important;
+        border-right: 1px solid var(--border-strong, rgba(255,255,255,0.12)) !important;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.08) !important;
+        transition: width .28s cubic-bezier(.4,0,.2,1) !important;
+        will-change: width;
+      }
+      [data-theme] .mtscos-main, .mtscos-main {
+        margin-left: 20% !important;
+        transition: margin-left .28s cubic-bezier(.4,0,.2,1) !important;
+        will-change: margin-left;
+      }
+      [data-theme] body.sidebar-mini .mtscos-sidebar,
+      body.sidebar-mini .mtscos-sidebar { width: 10% !important; }
+      [data-theme] body.sidebar-mini .mtscos-main,
+      body.sidebar-mini .mtscos-main { margin-left: 10% !important; }
+      [data-theme] body.sidebar-mini.sidebar-hovered .mtscos-sidebar,
+      body.sidebar-mini.sidebar-hovered .mtscos-sidebar { width: 20% !important; }
+      [data-theme] body.sidebar-mini.sidebar-hovered .mtscos-main,
+      body.sidebar-mini.sidebar-hovered .mtscos-main { margin-left: 20% !important; }
+      [data-theme] body.sidebar-mini .mtscos-sidebar-logo-text,
+      [data-theme] body.sidebar-mini .mtscos-nav-item > span,
+      [data-theme] body.sidebar-mini .mtscos-sidebar-user-info,
+      [data-theme] body.sidebar-mini .mtscos-sidebar-logout > span,
+      body.sidebar-mini .mtscos-sidebar-logo-text,
+      body.sidebar-mini .mtscos-nav-item > span,
+      body.sidebar-mini .mtscos-sidebar-user-info,
+      body.sidebar-mini .mtscos-sidebar-logout > span {
+        opacity: 0 !important; height: 0 !important; overflow: hidden !important;
+        visibility: hidden !important; pointer-events: none !important;
+        margin: 0 !important; padding: 0 !important;
+      }
+      [data-theme] body.sidebar-mini.sidebar-hovered .mtscos-sidebar-logo-text,
+      [data-theme] body.sidebar-mini.sidebar-hovered .mtscos-nav-item > span,
+      [data-theme] body.sidebar-mini.sidebar-hovered .mtscos-sidebar-user-info,
+      [data-theme] body.sidebar-mini.sidebar-hovered .mtscos-sidebar-logout > span,
+      body.sidebar-mini.sidebar-hovered .mtscos-sidebar-logo-text,
+      body.sidebar-mini.sidebar-hovered .mtscos-nav-item > span,
+      body.sidebar-mini.sidebar-hovered .mtscos-sidebar-user-info,
+      body.sidebar-mini.sidebar-hovered .mtscos-sidebar-logout > span {
+        opacity: 1 !important; height: auto !important; visibility: visible !important;
+        pointer-events: auto !important; margin: unset !important; padding: unset !important;
+        transition: opacity .16s ease-out .12s !important;
+      }
+      [data-theme] body.sidebar-mini .mtscos-sidebar-logo,
+      body.sidebar-mini .mtscos-sidebar-logo { justify-content: center !important; }
+      [data-theme] body.sidebar-mini .mtscos-nav-item,
+      body.sidebar-mini .mtscos-nav-item { justify-content: center !important; padding: 12px 8px !important; }
+      [data-theme] body.sidebar-mini .mtscos-sidebar-user,
+      body.sidebar-mini .mtscos-sidebar-user { justify-content: center !important; }
+      [data-theme] body.sidebar-mini .mtscos-sidebar-logout,
+      body.sidebar-mini .mtscos-sidebar-logout { justify-content: center !important; }
+      [data-theme] body.sidebar-mini.sidebar-hovered .mtscos-sidebar-logo,
+      body.sidebar-mini.sidebar-hovered .mtscos-sidebar-logo { justify-content: flex-start !important; }
+      [data-theme] body.sidebar-mini.sidebar-hovered .mtscos-nav-item,
+      body.sidebar-mini.sidebar-hovered .mtscos-nav-item { justify-content: flex-start !important; padding: 10px 14px !important; }
+      [data-theme] body.sidebar-mini.sidebar-hovered .mtscos-sidebar-user,
+      body.sidebar-mini.sidebar-hovered .mtscos-sidebar-user { justify-content: flex-start !important; }
+      [data-theme] body.sidebar-mini.sidebar-hovered .mtscos-sidebar-logout,
+      body.sidebar-mini.sidebar-hovered .mtscos-sidebar-logout { justify-content: center !important; }
+      [data-theme] .site-header, [data-theme] .mtscos-header, .site-header, .mtscos-header {
+        backdrop-filter: blur(16px) !important;
+        -webkit-backdrop-filter: blur(16px) !important;
+        background: var(--glass-bg, rgba(15, 23, 42, 0.8)) !important;
+        border-bottom: 1px solid var(--glass-border, rgba(255,255,255,0.08)) !important;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.08) !important;
+      }
+      [data-theme] .site-footer, [data-theme] .mtscos-footer, .site-footer, .mtscos-footer {
+        backdrop-filter: blur(12px) !important;
+        -webkit-backdrop-filter: blur(12px) !important;
+        background: var(--bg-card, rgba(15, 23, 42, 0.7)) !important;
+        border-top: 1px solid var(--border-subtle, rgba(255,255,255,0.08)) !important;
+      }
+      [data-theme] .card, [data-theme] [class*="-card"], [data-theme] [class*="Card"],
+      [data-theme] [class*="panel"], [data-theme] [class*="home-section"], [data-theme] [class*="spec"],
+      [data-theme] [class*="hero"], [data-theme] [class*="changelog"], [data-theme] [class*="engine-card"],
+      [data-theme] [class*="matrix-"], [data-theme] [class*="ai-card"], [data-theme] [class*="comp-"],
+      [data-theme] [class*="stat-card"], [data-theme] [class*="db-card"], [data-theme] [class*="lane"],
+      [data-theme] [class*="chip"], [data-theme] .version-tag, [data-theme] .version-item,
+      [data-theme] [class*="banner"], [data-theme] [class*="dialog"], [data-theme] [class*="modal-content"],
+      .card, [class*="-card"], [class*="Card"], [class*="panel"], [class*="home-section"], [class*="spec"],
+      [class*="hero"], [class*="changelog"], [class*="engine-card"], [class*="matrix-"], [class*="ai-card"],
+      [class*="comp-"], [class*="stat-card"], [class*="db-card"], [class*="lane"], [class*="chip"],
+      .version-tag, .version-item, [class*="banner"], [class*="dialog"], [class*="modal-content"] {
+        backdrop-filter: blur(12px) !important;
+        -webkit-backdrop-filter: blur(12px) !important;
+        background: var(--bg-card, rgba(15, 23, 42, 0.7)) !important;
+        border: 1px solid var(--border-subtle, rgba(255,255,255,0.08)) !important;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1) !important;
+      }
+      [data-theme] .login-card, [data-theme] .login-guard, [data-theme] [class*="login-"],
+      .login-card, .login-guard, [class*="login-"] {
+        backdrop-filter: blur(16px) !important;
+        -webkit-backdrop-filter: blur(16px) !important;
+        background: var(--glass-bg-strong, rgba(15, 23, 42, 0.9)) !important;
+        border: 1px solid var(--border-strong, rgba(255,255,255,0.12)) !important;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.12) !important;
+      }
+    </style>
+
+    <!-- 布局AI：动态CSS修复注入点（优先级最高，放最后） -->
+    <style id="mtscos-layout-ai-fix" data-snapshot="" data-count="0">
+      /* AI员工动态注入的布局修复，由 LayoutAdjusterAIEmployee 下发 */
+    </style>
+
+    <!-- 布局AI：前端探针 + 20条规则前端检测 + 上报快照 + 接收修复CSS -->
+    <script>
+    (function () {
+      'use strict';
+      var LAYOUT_AI = {
+        API_SNAPSHOT: '/api/layout_ai/snapshot',
+        API_ACK: '/api/layout_ai/ack',
+        DEBOUNCE_MS: 900,
+        RERPORT_DELAY_INITIAL: 1200,
+        RERPORT_DELAY_RESIZE: 500,
+        MAX_ELEMENTS_SAMPLE: 60,
+        lastSentAt: 0,
+        pendingTimer: null,
+        pendingPayload: null,
+        currentSnapshotUuid: null,
+        appliedFixCount: 0,
+        disabled: false,
+
+        init: function () {
+          var self = this;
+          try {
+            var dis = localStorage.getItem('mtscos_layout_ai_disabled');
+            if (dis === '1') this.disabled = true;
+          } catch (e) {}
+          if (this.disabled) return;
+          // 首次上报：等首屏layout稳定
+          setTimeout(function () { self.reportOnce('initial'); }, this.RERPORT_DELAY_INITIAL);
+          // resize/scroll：节流上报
+          var resizeTimer = null;
+          window.addEventListener('resize', function () {
+            if (resizeTimer) clearTimeout(resizeTimer);
+            resizeTimer = setTimeout(function () { self.reportOnce('resize'); }, self.RERPORT_DELAY_RESIZE);
+          }, { passive: true });
+          // 主题切换后重新评估
+          var bodyObserver = new MutationObserver(function (muts) {
+            muts.forEach(function (m) {
+              if (m.type === 'attributes' && (m.attributeName === 'data-theme' || m.attributeName === 'class')) {
+                self.scheduleReport('theme_or_class', 400);
+              }
+            });
+          });
+          try { bodyObserver.observe(document.body, { attributes: true, attributeFilter: ['data-theme', 'class'] }); } catch (e) {}
+          // 点击侧边栏切换按钮后立即检测
+          var tbtn = document.getElementById('mtscos-sidebar-toggle');
+          if (tbtn) tbtn.addEventListener('click', function () { self.scheduleReport('sidebar_toggle', 360); });
+          // MTSCOS.init完成后，额外做一次（避免DOM尚未就绪）
+          if (document.readyState === 'complete') self.reportOnce('dom_ready');
+          else window.addEventListener('load', function () { setTimeout(function () { self.reportOnce('load'); }, 800); });
+        },
+
+        scheduleReport: function (reason, ms) {
+          var self = this;
+          if (this.disabled) return;
+          if (this.pendingTimer) clearTimeout(this.pendingTimer);
+          this.pendingTimer = setTimeout(function () { self.reportOnce(reason || 'schedule'); }, ms || this.DEBOUNCE_MS);
+        },
+
+        reportOnce: function (reason) {
+          if (this.disabled) return;
+          var now = Date.now();
+          if (now - this.lastSentAt < 600) return; // 硬性节流：最短600ms
+          this.lastSentAt = now;
+          var payload = this.captureSnapshot(reason || 'report');
+          this.pendingPayload = payload;
+          this.sendSnapshot(payload);
+        },
+
+        captureSnapshot: function (reason) {
+          var viewport = { w: window.innerWidth || 0, h: window.innerHeight || 0, dpr: window.devicePixelRatio || 1 };
+          var sidebar = document.querySelector('.mtscos-sidebar');
+          var mainEl = document.querySelector('.mtscos-main');
+          var contentScroll = document.querySelector('.mtscos-content-scroll');
+          var sb = { w: 0, h: 0 };
+          if (sidebar) { var r = sidebar.getBoundingClientRect(); sb.w = Math.round(r.width); sb.h = Math.round(r.height); }
+          var mn = { w: 0, h: 0 };
+          if (mainEl) { var r2 = mainEl.getBoundingClientRect(); mn.w = Math.round(r2.width); mn.h = Math.round(r2.height); }
+          var body = document.body;
+          var sidebar_mini = body.classList.contains('sidebar-mini');
+          var theme = body.getAttribute('data-theme') || '';
+          var scroll = {
+            x: window.scrollX || document.documentElement.scrollLeft || 0,
+            y: window.scrollY || document.documentElement.scrollTop || 0,
+            body_scroll_height: Math.max(document.documentElement.scrollHeight, document.body.scrollHeight || 0),
+            body_client_height: document.documentElement.clientHeight || 0,
+            content_scroll_top: contentScroll ? contentScroll.scrollTop : 0,
+            content_scroll_height: contentScroll ? contentScroll.scrollHeight : 0,
+            content_client_height: contentScroll ? contentScroll.clientHeight : 0,
+          };
+          // 首页1:7:2检测（简单取header/main/footer，若存在）
+          var home_sections = null;
+          if (location.pathname === '/' || location.pathname === '') {
+            var hh = document.querySelector('.home-header, header.site-header');
+            var mh = document.querySelector('.home-main, main, section.main');
+            var fh = document.querySelector('.home-footer, footer.site-footer, footer');
+            home_sections = {
+              header_h: hh ? Math.round(hh.getBoundingClientRect().height) : 0,
+              main_h: mh ? Math.round(mh.getBoundingClientRect().height) : 0,
+              footer_h: fh ? Math.round(fh.getBoundingClientRect().height) : 0,
+            };
+          }
+          // computed: 主题变量
+          var computed = { theme_vars: {} };
+          try {
+            var cs = getComputedStyle(document.body);
+            ['--accent', '--bg-page', '--text-primary', '--border-subtle'].forEach(function (v) {
+              computed.theme_vars[v] = (cs.getPropertyValue(v) || '').trim();
+            });
+          } catch (e) {}
+          // 前端20条规则检测（轻量：关键规则直接前端评估）
+          var detected = this._frontendDetect(viewport, sb, mn, scroll, sidebar_mini, home_sections, computed, mainEl, contentScroll);
+          // 关键元素采样（避免太多）
+          var elements = this._sampleKeyElements();
+          return {
+            url: location.pathname + location.search,
+            title: document.title || '',
+            viewport: viewport,
+            sidebar: sb,
+            main: mn,
+            theme: theme,
+            sidebar_mini: !!sidebar_mini,
+            scroll: scroll,
+            computed: computed,
+            elements: elements,
+            home_sections: home_sections,
+            detected_issues: detected,
+            trigger: reason || 'capture',
+            ts: Date.now(),
+          };
+        },
+
+        _sampleKeyElements: function () {
+          var sel = [
+            '.mtscos-global-header', '.mtscos-sidebar', '.mtscos-main', '.mtscos-content-scroll',
+            '.card, .glass-effect, .dashboard-card, .section-card, .info-card, .data-card',
+            'table, .table-container',
+            '.mtscos-nav-item',
+            'form .form-container, form input, form button, form select',
+            'img, video',
+          ];
+          var set = [];
+          var all = [];
+          try { all = document.querySelectorAll(sel.join(',')); } catch (e) { return []; }
+          var limit = this.MAX_ELEMENTS_SAMPLE;
+          var n = all.length;
+          var step = Math.max(1, Math.ceil(n / limit));
+          for (var i = 0; i < n && set.length < limit; i += step) {
+            var el = all[i];
+            if (!el) continue;
+            try {
+              var r = el.getBoundingClientRect();
+              var cs = getComputedStyle(el);
+              set.push({
+                tag: el.tagName,
+                cls: (el.className && typeof el.className === 'string') ? el.className.slice(0, 120) : '',
+                id: el.id || '',
+                w: Math.round(r.width), h: Math.round(r.height),
+                x: Math.round(r.left), y: Math.round(r.top),
+                fontSize: parseInt(cs.fontSize) || 0,
+                lineHeight: cs.lineHeight || '',
+                display: cs.display || '',
+                pos: cs.position || '',
+                overflow_x: cs.overflowX || '',
+                overflow_y: cs.overflowY || '',
+              });
+            } catch (e) {}
+          }
+          return set;
+        },
+
+        _frontendDetect: function (vp, sb, mn, sc, mini, home, computed, mainEl, contentEl) {
+          var issues = [];
+          function push(rule_id, confidence, summary, selector, vars, before) {
+            issues.push({ rule_id: rule_id, confidence: confidence, summary: summary, selector: selector || '', vars: vars || {}, before: before || {} });
+          }
+          // LF001 主内容水平溢出
+          try {
+            if (contentEl && contentEl.scrollWidth > vp.w * 0.82 + 6) {
+              push('LF001', 0.88,
+                'content-scroll 宽度超过视图82%(' + contentEl.scrollWidth + ' vs ' + Math.round(vp.w*0.82) + ')',
+                '.mtscos-main, .mtscos-content-scroll',
+                { selector: '.mtscos-main, .mtscos-content-scroll' },
+                { sw: contentEl.scrollWidth, vp_w: vp.w });
+            } else if (mainEl && mainEl.scrollWidth - mainEl.clientWidth > 4) {
+              push('LF001', 0.8, 'main.scrollWidth>' + (mainEl.scrollWidth - mainEl.clientWidth) + 'px overflow-x',
+                '.mtscos-main', { selector: '.mtscos-main' },
+                { diff: mainEl.scrollWidth - mainEl.clientWidth });
+            }
+          } catch (e) {}
+          // LF003 侧边栏内容纵向溢出
+          try {
+            var nav = document.querySelector('.mtscos-sidebar-nav');
+            var sbb = document.querySelector('.mtscos-sidebar');
+            if (nav && sbb && nav.scrollHeight > sbb.clientHeight - 180) {
+              push('LF003', 0.8,
+                '侧边栏菜单溢出(nav.scrollHeight=' + nav.scrollHeight + ')',
+                '.mtscos-sidebar-nav', {},
+                { nav_sh: nav.scrollHeight, sb_ch: sbb.clientHeight });
+            }
+          } catch (e) {}
+          // LF004 元素重叠（抽样：header/sidebar/main/footer 重叠检测）
+          try {
+            var header = document.querySelector('.mtscos-global-header');
+            var sidebar = document.querySelector('.mtscos-sidebar');
+            var main2 = document.querySelector('.mtscos-main');
+            var items = [header, sidebar, main2].filter(Boolean);
+            for (var a = 0; a < items.length; a++) {
+              for (var b = a + 1; b < items.length; b++) {
+                var ra = items[a].getBoundingClientRect();
+                var rb = items[b].getBoundingClientRect();
+                var iw = Math.max(0, Math.min(ra.right, rb.right) - Math.max(ra.left, rb.left));
+                var ih = Math.max(0, Math.min(ra.bottom, rb.bottom) - Math.max(ra.top, rb.top));
+                if (iw * ih > 400) {
+                  push('LF004', 0.75,
+                    '元素重叠面积=' + (iw*ih) + ' ' + items[a].className + ' vs ' + items[b].className,
+                    '', { z: 10 }, { area: iw * ih });
+                }
+              }
+            }
+          } catch (e) {}
+          // LF005 / LF006
+          if (vp.w && sb.w) {
+            var ratio = sb.w / vp.w;
+            if (!mini && Math.abs(ratio - 0.20) > 0.03) {
+              push('LF005', Math.min(1, Math.abs(ratio-0.20)*25), '侧边栏比例 ' + ratio.toFixed(3),
+                '.mtscos-sidebar', { expected: 0.20, actual: ratio }, { sb_w: sb.w, vp_w: vp.w });
+            }
+            if (mini && Math.abs(ratio - 0.10) > 0.03) {
+              push('LF006', Math.min(1, Math.abs(ratio-0.10)*25), 'mini侧边栏比例 ' + ratio.toFixed(3),
+                'body.sidebar-mini .mtscos-sidebar', { expected: 0.10, actual: ratio }, { sb_w: sb.w, vp_w: vp.w });
+            }
+          }
+          // LF007 首页
+          if (home && home.main_h) {
+            var hh = home.header_h, mh = home.main_h, fh = home.footer_h;
+            if (mh && Math.abs((hh / mh) - 1/7) > 0.18) {
+              push('LF007', 0.7, '首页Header/Main比例 ' + (hh/mh).toFixed(3) + ' 偏离1:7',
+                '.home-header, .home-main, .home-footer', { parent_h: fh }, { hh:hh, mh:mh, fh:fh });
+            }
+          }
+          // LF008 字体过小（抽样）
+          try {
+            var allText = document.querySelectorAll('p, span, a, button, li, td, th, label, h1, h2, h3, h4, h5, h6');
+            var foundSmall = null;
+            var lim = Math.min(allText.length, 120);
+            for (var i = 0; i < lim; i += 3) {
+              var tEl = allText[i];
+              if (!tEl) continue;
+              var tcs = getComputedStyle(tEl);
+              var fs = parseInt(tcs.fontSize);
+              if (fs && fs < 11 && tEl.offsetParent !== null && (tEl.textContent || '').trim().length > 2) {
+                foundSmall = { el: tEl, fs: fs }; break;
+              }
+            }
+            if (foundSmall) {
+              var cls = foundSmall.el.className || '';
+              if (typeof cls !== 'string') cls = '';
+              push('LF008', 0.8, '小字体 ' + foundSmall.fs + 'px',
+                (foundSmall.el.tagName || '') + (cls ? '.' + cls.split(/\s+/)[0] : ''),
+                {}, { fs: foundSmall.fs });
+            }
+          } catch (e) {}
+          // LF015 图片未缩放
+          try {
+            var imgs = document.querySelectorAll('img');
+            for (var j = 0; j < Math.min(imgs.length, 30); j++) {
+              var im = imgs[j];
+              if (im.naturalWidth && im.parentElement) {
+                var pr = im.parentElement.getBoundingClientRect();
+                if (pr.width > 0 && im.naturalWidth > pr.width * 1.25) {
+                  push('LF015', 0.82,
+                    'img(' + im.naturalWidth + ') 大于父容器(' + Math.round(pr.width) + ')',
+                    'img', { selector: 'img' }, { nw: im.naturalWidth, pw: Math.round(pr.width) });
+                  break;
+                }
+              }
+            }
+          } catch (e) {}
+          // LF016 body/html 纵向滚动条
+          if (sc.body_scroll_height && sc.body_client_height && sc.body_scroll_height > sc.body_client_height + 10) {
+            push('LF016', 0.85, 'body SH=' + sc.body_scroll_height + ' CH=' + sc.body_client_height,
+              'html, body', {}, { sh: sc.body_scroll_height, ch: sc.body_client_height });
+          }
+          // LF017 主题变量缺失
+          var tv = computed.theme_vars || {};
+          var miss = ['--accent','--bg-page','--text-primary'].filter(function (k) { return !(tv[k]||'').trim(); });
+          if (miss.length) {
+            push('LF017', 0.8, '主题缺变量 ' + miss.join(','),
+              'body[data-theme="' + (computed.theme||'') + '"]',
+              { current_theme: computed.theme || 'deep_blue' }, { missing: miss });
+          }
+          // LF019 侧边栏菜单项间距
+          try {
+            var navItems = document.querySelectorAll('.mtscos-nav-item');
+            if (navItems.length >= 2) {
+              var r0 = navItems[0].getBoundingClientRect();
+              var r1 = navItems[1].getBoundingClientRect();
+              var gap = r1.top - r0.bottom;
+              if (gap < 4) {
+                push('LF019', 0.7, '菜单项间距=' + gap + 'px', '.mtscos-sidebar-nav', {}, { gap: gap });
+              }
+            }
+          } catch (e) {}
+          return issues;
+        },
+
+        sendSnapshot: function (payload) {
+          var self = this;
+          try {
+            var xhr = new XMLHttpRequest();
+            xhr.open('POST', this.API_SNAPSHOT, true);
+            xhr.setRequestHeader('Content-Type', 'application/json');
+            xhr.timeout = 6000;
+            xhr.onreadystatechange = function () {
+              if (xhr.readyState !== 4) return;
+              if (xhr.status === 200) {
+                try {
+                  var data = JSON.parse(xhr.responseText);
+                  if (data && data.success) self.applyFixes(data);
+                } catch (e) {}
+              }
+            };
+            try { xhr.send(JSON.stringify(payload)); } catch (e) {}
+          } catch (e) {}
+        },
+
+        applyFixes: function (data) {
+          var css = (data && data.fix_css) || '';
+          if (!css) return;
+          var tag = document.getElementById('mtscos-layout-ai-fix');
+          if (!tag) {
+            tag = document.createElement('style');
+            tag.id = 'mtscos-layout-ai-fix';
+            document.head.appendChild(tag);
+          }
+          try {
+            tag.textContent = '/* LayoutAI ' + (new Date().toISOString().slice(11,19)) + ' snap=' + (data.snapshot_uuid||'') + ' */\n' + css;
+            tag.setAttribute('data-snapshot', data.snapshot_uuid || '');
+            this.appliedFixCount = (this.appliedFixCount || 0) + (data.fix_count || 0);
+            tag.setAttribute('data-count', String(this.appliedFixCount));
+            this.currentSnapshotUuid = data.snapshot_uuid || null;
+            // ack 通知后端已应用
+            var ruleIds = [];
+            if (Array.isArray(data.issues)) data.issues.forEach(function (i) { if (i.rule_id) ruleIds.push(i.rule_id); });
+            this.sendAck(data.snapshot_uuid, ruleIds);
+          } catch (e) {}
+        },
+
+        sendAck: function (snapId, ruleIds) {
+          if (!snapId) return;
+          try {
+            var xhr = new XMLHttpRequest();
+            xhr.open('POST', this.API_ACK, true);
+            xhr.setRequestHeader('Content-Type', 'application/json');
+            var after = { w: window.innerWidth, h: window.innerHeight, t: Date.now() };
+            try { xhr.send(JSON.stringify({ snapshot_uuid: snapId, rule_ids: ruleIds || [], after_measure: after })); } catch (e) {}
+          } catch (e) {}
+        }
+      };
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', function () { LAYOUT_AI.init(); });
+      } else {
+        LAYOUT_AI.init();
+      }
+      window.MTSCOS_LAYOUT_AI = LAYOUT_AI;
+    })();
+    </script>
+    <script>
+    (function() {
+      var _errBuffer = [];
+      var _errFlushTimer = null;
+      var _MAX_ERRORS = 50;
+      var _FLUSH_INTERVAL = 5000;
+
+      function _flushErrors() {
+        if (_errBuffer.length === 0) return;
+        var errors = _errBuffer.slice(0, _MAX_ERRORS);
+        _errBuffer = [];
+        
+        try {
+          var xhr = new XMLHttpRequest();
+          xhr.open('POST', '/api/ai_inspection/console_error', true);
+          xhr.setRequestHeader('Content-Type', 'application/json');
+          xhr.send(JSON.stringify(errors[0]));
+        } catch (e) {}
+      }
+
+      function _reportError(errData) {
+        if (_errBuffer.length < _MAX_ERRORS) {
+          _errBuffer.push(errData);
+        }
+        if (!_errFlushTimer) {
+          _errFlushTimer = setTimeout(function() {
+            _errFlushTimer = null;
+            _flushErrors();
+          }, _FLUSH_INTERVAL);
+        }
+      }
+
+      window.addEventListener('error', function(e) {
+        _reportError({
+          source: 'window_error',
+          type: e.type || 'error',
+          message: e.message || '',
+          filename: e.filename || '',
+          lineno: e.lineno || 0,
+          colno: e.colno || 0,
+          stack: e.error && e.error.stack ? e.error.stack : '',
+          url: window.location.href,
+          userAgent: navigator.userAgent,
+          timestamp: Date.now()
+        });
+      }, true);
+
+      window.addEventListener('unhandledrejection', function(e) {
+        var reason = '';
+        if (e.reason) {
+          if (typeof e.reason === 'string') reason = e.reason;
+          else if (e.reason.message) reason = e.reason.message;
+          else if (e.reason.stack) reason = e.reason.stack.toString().substring(0, 200);
+        }
+        _reportError({
+          source: 'unhandled_promise',
+          type: 'unhandledrejection',
+          message: reason,
+          filename: '',
+          lineno: 0,
+          colno: 0,
+          stack: e.reason && e.reason.stack ? e.reason.stack : '',
+          url: window.location.href,
+          userAgent: navigator.userAgent,
+          timestamp: Date.now()
+        });
+      }, true);
+
+      var _origConsoleError = console.error;
+      console.error = function() {
+        _origConsoleError.apply(console, arguments);
+        try {
+          var msg = Array.prototype.slice.call(arguments).map(function(a) {
+            return typeof a === 'object' ? JSON.stringify(a).substring(0, 200) : String(a);
+          }).join(' ');
+          _reportError({
+            source: 'console_error',
+            type: 'console.error',
+            message: msg.substring(0, 500),
+            filename: '',
+            lineno: 0,
+            colno: 0,
+            stack: '',
+            url: window.location.href,
+            userAgent: navigator.userAgent,
+            timestamp: Date.now()
+          });
+        } catch (e) {}
+      };
+
+      window.MTSCOS_ERROR_REPORTER = {
+        report: _reportError,
+        flush: _flushErrors
+      };
+    })();
+    </script>
+</body>
+</html>

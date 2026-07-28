@@ -1,0 +1,940 @@
+{% extends "base.html" %}
+
+{% block title %}访客设置 - MTSCOS AI{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+    .aurora, .grain-overlay { display: none !important; }
+
+    @keyframes fade-up { from { opacity: 0; transform: translateY(8px);} to {opacity:1; transform:none;} }
+    @keyframes toastSlideIn { from { transform: translateX(120%); opacity: 0;} to { transform: translateX(0); opacity: 1;} }
+    @keyframes pulse-save { 0%,100%{opacity:1;} 50%{opacity:.5;} }
+
+    .page-wrap { position: relative; z-index: 1; width: 100%; }
+    .settings-wrap {
+        max-width: 1080px;
+        margin: 0 auto;
+        padding: var(--space-6) clamp(16px, 5vw, 40px) var(--space-8);
+        animation: fade-up 0.3s ease both;
+    }
+    .page-header { display: flex; align-items: center; gap: var(--space-3); margin-bottom: var(--space-6); }
+    .back-btn {
+        width: 40px; height: 40px; border-radius: var(--radius-sm);
+        display: inline-flex; align-items: center; justify-content: center;
+        background: var(--accent-soft);
+        border: 1px solid var(--border-subtle);
+        color: var(--text-secondary); text-decoration: none;
+        transition: all 0.2s;
+    }
+    .back-btn:hover {
+        color: var(--text-primary);
+        background: var(--accent-hover);
+        border-color: var(--border-strong);
+    }
+    .page-title-group { display: flex; flex-direction: column; gap: var(--space-1); }
+    .page-eyebrow {
+        display: inline-flex; align-items: center; gap: var(--space-2);
+        font-size: 11px; font-weight: 600; letter-spacing: 0.06em;
+        text-transform: uppercase; color: var(--accent-text);
+    }
+    .page-eyebrow::before { content:''; width:6px; height:6px; border-radius:50%; background: currentColor; }
+    .page-title {
+        font-size: clamp(22px, 2.6vw, 28px);
+        font-weight: 700; letter-spacing: -0.01em;
+        color: var(--text-primary);
+        line-height: 1.2;
+    }
+
+    .settings-quick-actions {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: var(--space-3);
+        margin-bottom: var(--space-6);
+    }
+    .qa-item {
+        display: flex; align-items: center; gap: var(--space-3);
+        padding: var(--space-3) var(--space-4);
+        background: var(--bg-card);
+        border: 1px solid var(--border-subtle);
+        border-radius: var(--radius-md);
+        backdrop-filter: blur(var(--glass-blur));
+        -webkit-backdrop-filter: blur(var(--glass-blur));
+        box-shadow: var(--shadow-md);
+        transition: border-color 0.2s;
+        cursor: pointer;
+        text-decoration: none;
+        color: var(--text-primary);
+    }
+    .qa-item:hover {
+        border-color: var(--border-strong);
+    }
+    .qa-icon {
+        width: 40px; height: 40px; border-radius: var(--radius-sm);
+        display: flex; align-items: center; justify-content: center;
+        font-size: 17px; color: #fff; flex-shrink: 0;
+    }
+    .qa-icon.dashboard { background: var(--accent); }
+    .qa-icon.settings  { background: var(--accent-secondary); }
+    .qa-icon.logout    { background: var(--danger); }
+    .qa-text { flex: 1 1 auto; min-width: 0; }
+    .qa-text .qa-title { font-weight: 600; font-size: 14px; }
+    .qa-text .qa-desc { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+    .qa-arrow { color: var(--text-muted); transition: color 0.2s; }
+    .qa-item:hover .qa-arrow { color: var(--accent-text); }
+    .qa-item.current { cursor: default; background: var(--accent-soft); }
+    @media (max-width: 640px) {
+        .settings-quick-actions { grid-template-columns: 1fr 1fr; }
+        .qa-item { padding: var(--space-3); }
+        .qa-text .qa-desc { display: none; }
+    }
+
+    .tabs-wrap {
+        position: relative;
+        background: var(--bg-card);
+        border: 1px solid var(--border-subtle);
+        border-radius: var(--radius-md);
+        padding: var(--space-1); margin-bottom: var(--space-6);
+        backdrop-filter: blur(var(--glass-blur));
+        -webkit-backdrop-filter: blur(var(--glass-blur));
+        box-shadow: var(--shadow-md);
+        overflow-x: auto; overflow-y: hidden;
+        scrollbar-width: none; -ms-overflow-style: none;
+    }
+    .tabs-wrap::-webkit-scrollbar { display: none; }
+    .tabs-inner { display: flex; gap: var(--space-1); min-width: max-content; }
+    .tab-btn {
+        display: inline-flex; align-items: center; gap: var(--space-2);
+        padding: 8px var(--space-4); border-radius: var(--radius-sm);
+        font-size: 13px; font-weight: 500;
+        color: var(--text-secondary); background: transparent; border: none; cursor: pointer;
+        white-space: nowrap; transition: background 0.2s, color 0.2s;
+        font-family: var(--font-sans);
+    }
+    .tab-btn:hover { color: var(--text-primary); background: var(--accent-soft); }
+    .tab-btn i { font-size: 13px; opacity: 0.85; }
+    .tab-btn.active {
+        background: var(--accent); color: #fff;
+    }
+    .tab-panel { display: none; animation: fade-up 0.3s ease-out both; }
+    .tab-panel.active { display: block; }
+
+    .settings-card {
+        background: var(--bg-card);
+        border: 1px solid var(--border-subtle);
+        border-radius: var(--radius-md);
+        margin-bottom: var(--space-4); overflow: hidden;
+        backdrop-filter: blur(var(--glass-blur));
+        -webkit-backdrop-filter: blur(var(--glass-blur));
+        box-shadow: var(--shadow-md);
+    }
+    .card-head {
+        display: flex; align-items: center; gap: var(--space-3);
+        padding: var(--space-4) var(--space-5);
+        border-bottom: 1px solid var(--border-subtle);
+    }
+    .card-icon {
+        width: 36px; height: 36px; flex-shrink: 0; border-radius: var(--radius-sm);
+        display: inline-flex; align-items: center; justify-content: center; font-size: 15px;
+    }
+    .icon-blue { background: var(--accent-soft); color: var(--accent-text); border: 1px solid var(--border-subtle); }
+    .icon-green { background: var(--success-soft); color: var(--success); border: 1px solid rgba(34, 197, 94, 0.2); }
+    .icon-orange { background: var(--warning-soft); color: var(--warning); border: 1px solid rgba(245, 158, 11, 0.2); }
+    .icon-purple { background: var(--accent-secondary-soft); color: var(--accent-secondary); border: 1px solid rgba(6, 182, 212, 0.2); }
+    .icon-red { background: var(--danger-soft); color: var(--danger-text); border: 1px solid rgba(239, 68, 68, 0.2); }
+    .icon-cyan { background: var(--accent-secondary-soft); color: var(--accent-secondary); border: 1px solid rgba(6, 182, 212, 0.2); }
+    .icon-pink { background: rgba(236, 72, 153, 0.12); color: #ec4899; border: 1px solid rgba(236, 72, 153, 0.2); }
+    .card-head h2 { font-size: 15px; font-weight: 600; color: var(--text-primary); margin: 0; }
+    .card-head-right {
+        margin-left: auto;
+        font-size: 12px; font-weight: 500; color: var(--text-muted);
+        padding: 4px 10px; border-radius: var(--radius-full);
+        background: var(--accent-soft);
+        border: 1px solid var(--border-subtle);
+    }
+    .card-head .btn-head { margin-left: auto; padding: 6px 14px; font-size: 12px; }
+    .card-body { padding: var(--space-5); }
+
+    .form-group { margin-bottom: var(--space-4); }
+    .form-group:last-child { margin-bottom: 0; }
+    .form-label {
+        display: block; margin-bottom: 6px;
+        font-size: 13px; font-weight: 500;
+        color: var(--text-secondary);
+    }
+    .form-input, .form-select, .form-textarea {
+        width: 100%; padding: 10px 14px;
+        border-radius: var(--radius-sm);
+        border: 1px solid var(--border-subtle);
+        background: var(--bg-card-alt);
+        color: var(--text-primary);
+        font-size: 14px; font-weight: 400;
+        font-family: var(--font-sans);
+        transition: border-color 0.2s;
+        outline: none;
+    }
+    .form-input::placeholder, .form-textarea::placeholder { color: var(--text-faint); }
+    .form-input:focus, .form-select:focus, .form-textarea:focus {
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px var(--accent-soft);
+    }
+    .form-input:disabled, .form-input[readonly],
+    .form-select:disabled, .form-textarea:disabled {
+        background: var(--bg-card);
+        color: var(--text-muted); cursor: not-allowed; opacity: 0.7;
+    }
+    .form-textarea { resize: vertical; min-height: 90px; line-height: 1.6; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4); }
+    .form-row-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-4); }
+    @media (max-width: 720px) { .form-row, .form-row-3 { grid-template-columns: 1fr; } }
+    .field-hint { margin-top: 6px; font-size: 12px; font-weight: 400; color: var(--text-muted); line-height: 1.5; }
+    .field-hint i { margin-right: 4px; color: var(--accent-text); }
+
+    .btn-group { display: flex; gap: var(--space-3); justify-content: flex-end; margin-top: var(--space-4); flex-wrap: wrap; }
+    .btn {
+        display: inline-flex; align-items: center; justify-content: center; gap: var(--space-2);
+        padding: 10px 20px; border: none; border-radius: var(--radius-sm);
+        font-family: var(--font-sans); font-size: 14px; font-weight: 500;
+        cursor: pointer; text-decoration: none;
+        transition: background 0.2s;
+        user-select: none;
+    }
+    .btn-primary {
+        background: var(--accent); color: #fff;
+    }
+    .btn-primary:hover { background: #4338ca; }
+    .btn-secondary {
+        background: var(--accent-soft);
+        color: var(--text-primary);
+        border: 1px solid var(--border-subtle);
+    }
+    .btn-secondary:hover {
+        background: var(--accent-hover);
+        border-color: var(--border-strong);
+    }
+    .btn-block { width: 100%; }
+    .btn-sm { padding: 6px 12px; font-size: 12px; }
+
+    .toast {
+        position: fixed; top: 88px; right: 20px;
+        padding: 12px 18px; border-radius: var(--radius-sm);
+        color: #fff; font-size: 13px; font-weight: 500; z-index: 9999;
+        transform: translateX(140%);
+        transition: transform 0.3s ease-out;
+        box-shadow: var(--shadow-md);
+        display: flex; align-items: center; gap: 10px;
+        max-width: calc(100vw - 40px);
+    }
+    .toast.show { transform: translateX(0); }
+    .toast i { font-size: 15px; flex-shrink: 0; }
+    .toast-success { background: var(--success); }
+    .toast-error { background: var(--danger); }
+    .toast-info { background: var(--accent); }
+    .toast-warning { background: var(--warning); }
+    @media (max-width: 560px) { .toast { top: auto; bottom: var(--space-6); right: var(--space-4); left: var(--space-4); max-width: none; } }
+
+    .auto-save-hint { display: none; align-items: center; gap: 6px; margin-top: var(--space-2); font-size: 12px; font-weight: 500; color: var(--success); }
+    .auto-save-hint.show { display: inline-flex; }
+    .auto-save-hint i { animation: pulse-save 1.4s ease-in-out infinite; }
+
+    .toggle-row {
+        display: flex; align-items: center; justify-content: space-between; gap: var(--space-4);
+        padding: 14px 0;
+        border-bottom: 1px solid var(--border-subtle);
+    }
+    .toggle-row:last-child { border-bottom: none; padding-bottom: 0; }
+    .toggle-row:first-child { padding-top: 0; }
+    .toggle-info { flex: 1; min-width: 0; }
+    .toggle-title { font-size: 14px; font-weight: 500; color: var(--text-primary); margin-bottom: 3px; }
+    .toggle-desc { font-size: 12px; color: var(--text-muted); line-height: 1.5; }
+    .toggle-switch {
+        position: relative; width: 44px; height: 24px; flex-shrink: 0;
+        border-radius: 999px;
+        background: rgba(100, 116, 139, 0.3);
+        border: 1px solid rgba(100, 116, 139, 0.2);
+        cursor: pointer; transition: background 0.2s;
+    }
+    .toggle-switch::after {
+        content: ''; position: absolute; top: 2px; left: 2px;
+        width: 18px; height: 18px; border-radius: 50%;
+        background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+        transition: transform 0.2s;
+    }
+    .toggle-switch.on {
+        background: var(--accent); border-color: var(--accent);
+    }
+    .toggle-switch.on::after { transform: translateX(20px); }
+
+    /* 升级引导 */
+    .guest-hero {
+        padding: var(--space-4); border-radius: var(--radius-md);
+        background: var(--accent-soft);
+        border: 1px solid var(--border-subtle);
+        margin-bottom: var(--space-4);
+    }
+    .guest-hero-title {
+        font-size: 20px; font-weight: 700;
+        color: var(--text-primary); margin-bottom: 8px;
+    }
+    .guest-hero-title i { color: var(--accent-text); margin-right: 10px; }
+    .guest-hero-desc { font-size: 14px; color: var(--text-secondary); margin-bottom: var(--space-4); line-height: 1.7; }
+    .guest-hero-actions { display: flex; gap: var(--space-3); flex-wrap: wrap; }
+    @media (max-width: 520px) { .guest-hero-actions .btn { flex: 1; } }
+
+    .plan-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: var(--space-4); }
+    .plan-card {
+        padding: var(--space-4) var(--space-3); border-radius: var(--radius-md);
+        background: var(--bg-card);
+        border: 1px solid var(--border-subtle);
+        text-align: center; cursor: pointer;
+        transition: border-color 0.2s;
+        position: relative;
+        backdrop-filter: blur(var(--glass-blur));
+        -webkit-backdrop-filter: blur(var(--glass-blur));
+    }
+    .plan-card:hover { border-color: var(--border-strong); }
+    .plan-card.recommend { border: 1px solid rgba(6, 182, 212, 0.4); }
+    .plan-card.recommend::before {
+        content: '推荐'; position: absolute; top: 12px; right: -28px;
+        background: var(--accent-secondary);
+        color: #fff; font-size: 10px; font-weight: 600; letter-spacing: 0.06em;
+        padding: 4px 32px; transform: rotate(45deg);
+    }
+    .plan-icon {
+        width: 52px; height: 52px; margin: 0 auto var(--space-3);
+        border-radius: var(--radius-md);
+        display: flex; align-items: center; justify-content: center;
+        font-size: 20px; color: #fff;
+    }
+    .pi-basic { background: #64748b; }
+    .pi-student { background: var(--accent); }
+    .pi-parent { background: #8b5cf6; }
+    .pi-teacher { background: var(--success); }
+    .plan-name { font-size: 15px; font-weight: 600; color: var(--text-primary); margin-bottom: 4px; }
+    .plan-price {
+        font-size: 26px; font-weight: 600;
+        color: var(--accent-text);
+        margin-bottom: 4px;
+    }
+    .plan-price small { font-size: 13px; font-weight: 500; color: var(--text-muted); }
+    .plan-desc { font-size: 12px; color: var(--text-muted); margin-bottom: 12px; line-height: 1.5; }
+    .plan-features { list-style: none; padding: 0; margin: 0 0 14px; text-align: left; }
+    .plan-features li { font-size: 12px; color: var(--text-secondary); padding: 3px 0; }
+    .plan-features li::before { content: '\f00c'; font-family: 'Font Awesome 6 Free'; font-weight: 900; color: var(--success); margin-right: 8px; }
+
+    .feature-table {
+        width: 100%; border-collapse: collapse; margin-top: var(--space-2);
+    }
+    .feature-table th, .feature-table td {
+        padding: 12px 10px; font-size: 13px; text-align: center;
+        border-bottom: 1px solid var(--border-subtle);
+    }
+    .feature-table th {
+        font-weight: 600; letter-spacing: 0.02em;
+        color: var(--text-secondary); font-size: 12px; text-transform: uppercase;
+    }
+    .feature-table th:first-child { text-align: left; color: var(--text-muted); }
+    .feature-table td:first-child { text-align: left; color: var(--text-secondary); font-weight: 500; }
+    .ft-yes { color: var(--success); font-weight: 600; }
+    .ft-no { color: var(--text-muted); opacity: 0.5; }
+    @media (max-width: 720px) { .feature-table th, .feature-table td { padding: 10px 6px; font-size: 11px; } }
+
+    /* 浏览历史 */
+    .history-list { display: flex; flex-direction: column; gap: 10px; }
+    .history-item {
+        padding: 12px 14px; border-radius: var(--radius-sm);
+        background: var(--bg-card-alt);
+        border: 1px solid var(--border-subtle);
+        display: flex; align-items: center; gap: var(--space-4);
+        transition: border-color 0.2s; cursor: pointer;
+    }
+    .history-item:hover { border-color: var(--border-strong); }
+    .history-icon {
+        width: 40px; height: 40px; border-radius: var(--radius-sm); flex-shrink: 0;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 16px;
+    }
+    .hi-exam { background: var(--accent-soft); color: var(--accent-text); }
+    .hi-learn { background: var(--success-soft); color: var(--success); }
+    .hi-ai { background: var(--accent-secondary-soft); color: var(--accent-secondary); }
+    .hi-video { background: rgba(236, 72, 153, 0.12); color: #ec4899; }
+    .hi-article { background: rgba(59, 130, 246, 0.12); color: #3b82f6; }
+    .history-content { flex: 1; min-width: 0; }
+    .history-title { font-size: 14px; font-weight: 500; color: var(--text-primary); margin-bottom: 3px; }
+    .history-meta { font-size: 11px; color: var(--text-muted); display: flex; gap: 12px; flex-wrap: wrap; }
+    .history-time { font-size: 11px; color: var(--text-muted); flex-shrink: 0; }
+
+    .history-filter {
+        display: flex; gap: var(--space-2); flex-wrap: wrap; margin-bottom: var(--space-4);
+    }
+    .hf-chip {
+        padding: 6px 12px; border-radius: var(--radius-full);
+        font-size: 12px; font-weight: 500; cursor: pointer;
+        background: var(--accent-soft);
+        color: var(--text-secondary);
+        border: 1px solid var(--border-subtle);
+        transition: all 0.2s;
+    }
+    .hf-chip:hover { color: var(--text-primary); }
+    .hf-chip.active { background: var(--accent); color: #fff; border-color: transparent; }
+
+    .history-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-3); margin-bottom: var(--space-4); }
+    .hs-item {
+        padding: var(--space-4) var(--space-3); border-radius: var(--radius-sm);
+        background: var(--accent-soft);
+        border: 1px solid var(--border-subtle);
+        text-align: center;
+    }
+    .hs-v { font-size: 20px; font-weight: 600; color: var(--text-primary); }
+    .hs-l { font-size: 10px; font-weight: 400; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-muted); margin-top: 4px; }
+    @media (max-width: 640px) { .history-stats { grid-template-columns: repeat(2, 1fr); } }
+
+    /* 试用 */
+    .trial-hero {
+        padding: var(--space-4); border-radius: var(--radius-md);
+        background: var(--success-soft);
+        border: 1px solid rgba(34, 197, 94, 0.2);
+        margin-bottom: var(--space-4);
+    }
+    .trial-head { display: flex; align-items: center; gap: var(--space-3); margin-bottom: var(--space-3); }
+    .trial-icon {
+        width: 48px; height: 48px; border-radius: var(--radius-md); flex-shrink: 0;
+        background: var(--success);
+        color: #fff; display: flex; align-items: center; justify-content: center;
+        font-size: 20px;
+    }
+    .trial-title { font-size: 17px; font-weight: 600; color: var(--text-primary); }
+    .trial-time { font-size: 12px; color: var(--success); font-weight: 500; }
+    .trial-progress {
+        margin-top: var(--space-4);
+    }
+    .trial-bar-top { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 12px; font-weight: 500; }
+    .trial-bar-top span:first-child { color: var(--text-secondary); }
+    .trial-bar-top span:last-child { color: var(--accent-text); }
+    .trial-bar { height: 6px; border-radius: 999px; background: var(--accent-soft); overflow: hidden; }
+    .trial-bar-fill { height: 100%; background: var(--accent); border-radius: 999px; transition: width 0.4s ease-out; }
+
+    .trial-feature-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: var(--space-3); }
+    .trial-feature {
+        padding: var(--space-4) var(--space-3); border-radius: var(--radius-sm);
+        background: var(--bg-card-alt);
+        border: 1px solid var(--border-subtle);
+        transition: border-color 0.2s;
+    }
+    .trial-feature:hover { border-color: var(--border-strong); }
+    .trial-feature-icon {
+        width: 36px; height: 36px; border-radius: var(--radius-sm); margin-bottom: 10px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 16px;
+    }
+    .tfi-green { background: var(--success-soft); color: var(--success); }
+    .tfi-purple { background: var(--accent-secondary-soft); color: var(--accent-secondary); }
+    .tfi-blue { background: rgba(59, 130, 246, 0.12); color: #3b82f6; }
+    .tfi-orange { background: var(--warning-soft); color: var(--warning); }
+    .tfi-pink { background: rgba(236, 72, 153, 0.12); color: #ec4899; }
+    .tfi-cyan { background: var(--accent-secondary-soft); color: var(--accent-secondary); }
+    .tf-title { font-size: 14px; font-weight: 600; color: var(--text-primary); margin-bottom: 3px; }
+    .tf-desc { font-size: 12px; color: var(--text-muted); line-height: 1.6; margin-bottom: 10px; }
+    .tf-status {
+        display: inline-flex; align-items: center; gap: 6px;
+        font-size: 11px; font-weight: 500; padding: 3px 10px; border-radius: var(--radius-full);
+    }
+    .ts-done { background: var(--success-soft); color: var(--success); }
+    .ts-avail { background: var(--accent-soft); color: var(--accent-text); }
+    .ts-limited { background: var(--warning-soft); color: var(--warning); }
+
+    .trial-register-card {
+        padding: var(--space-4); border-radius: var(--radius-md);
+        background: var(--accent-soft);
+        border: 1px solid var(--border-subtle);
+        text-align: center;
+    }
+    .trial-register-title { font-size: 17px; font-weight: 600; color: var(--text-primary); margin-bottom: 6px; }
+    .trial-register-desc { font-size: 13px; color: var(--text-secondary); margin-bottom: var(--space-4); line-height: 1.7; }
+
+    @media (max-width: 640px) {
+        .card-body { padding: var(--space-4); }
+        .card-head { padding: var(--space-4); }
+        .btn-group { justify-content: stretch; }
+        .btn-group .btn { flex: 1; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="aurora"></div>
+<div class="grain-overlay"></div>
+<div class="page-wrap">
+<div class="settings-wrap">
+    <div class="page-header">
+        <a href="/" class="back-btn" title="返回首页"><i class="fas fa-arrow-left"></i></a>
+        <div class="page-title-group">
+            <span class="page-eyebrow">MTSCOS AI · Guest Mode</span>
+            <h1 class="page-title"><i class="fas fa-user-secret"></i> 访客体验中心</h1>
+        </div>
+    </div>
+
+    <div class="settings-quick-actions" aria-label="首页功能快捷入口">
+        <a class="qa-item" href="/dashboard" title="进入控制台仪表盘">
+            <div class="qa-icon dashboard"><i class="fas fa-gauge-high"></i></div>
+            <div class="qa-text">
+                <div class="qa-title">进入控制台</div>
+                <div class="qa-desc">仪表盘 · AI工作台 · 考试中心</div>
+            </div>
+            <i class="fas fa-chevron-right qa-arrow"></i>
+        </a>
+        <div class="qa-item current" title="个人设置中心（当前页面）">
+            <div class="qa-icon settings"><i class="fas fa-sliders"></i></div>
+            <div class="qa-text">
+                <div class="qa-title">
+                    {% if '学生' in self.title() %}学生门户设置
+                    {% elif '教师' in self.title() %}教师工作台设置
+                    {% elif '家长' in self.title() %}家长门户设置
+                    {% elif '访客' in self.title() %}访客门户设置
+                    {% else %}个人设置中心{% endif %}</div>
+                <div class="qa-desc">个性化 · 账户 · 安全</div>
+            </div>
+            <i class="fas fa-location-dot qa-arrow" style="color:var(--primary-accent,#a855f7);"></i>
+        </div>
+        <a class="qa-item" href="/auth/logout" title="退出当前账户">
+            <div class="qa-icon logout"><i class="fas fa-right-from-bracket"></i></div>
+            <div class="qa-text">
+                <div class="qa-title">退出登录</div>
+                <div class="qa-desc">安全注销 · 返回首页</div>
+            </div>
+            <i class="fas fa-chevron-right qa-arrow"></i>
+        </a>
+    </div>
+
+    <div class="tabs-wrap">
+        <div class="tabs-inner">
+            <button class="tab-btn active" data-panel="upgrade" onclick="switchPanel('upgrade')"><i class="fas fa-rocket"></i>升级账号</button>
+            <button class="tab-btn" data-panel="history" onclick="switchPanel('history')"><i class="fas fa-clock-rotate-left"></i>浏览历史</button>
+            <button class="tab-btn" data-panel="trial" onclick="switchPanel('trial')"><i class="fas fa-flask"></i>试用中心</button>
+            <button class="tab-btn" data-panel="pref" onclick="switchPanel('pref')"><i class="fas fa-sliders"></i>体验偏好</button>
+        </div>
+    </div>
+
+    <div class="tab-panel active" id="panel-upgrade">
+        <div class="guest-hero">
+            <div class="guest-hero-title"><i class="fas fa-crown"></i>解锁完整 AI 学习能力</div>
+            <div class="guest-hero-desc">您当前以访客身份浏览，可体验平台 70% 公开功能。注册账号后立即获得 7 天高级会员体验，包含 AI 个性化学习路径、错题本、1对1答疑等完整功能。</div>
+            <div class="guest-hero-actions">
+                <button class="btn btn-primary" onclick="goRegister()"><i class="fas fa-user-plus"></i> 免费注册 · 领 7 天会员</button>
+                <button class="btn btn-secondary" onclick="goLogin()"><i class="fas fa-right-to-bracket"></i> 登录已有账号</button>
+            </div>
+        </div>
+
+        <div class="settings-card">
+            <div class="card-head">
+                <div class="card-icon icon-purple"><i class="fas fa-layer-group"></i></div>
+                <h2>选择适合您的方案</h2>
+            </div>
+            <div class="card-body">
+                <div class="plan-grid">
+                    <div class="plan-card" onclick="showToast('了解基础版详情...', 'info')">
+                        <div class="plan-icon pi-basic"><i class="fas fa-feather"></i></div>
+                        <div class="plan-name">免费版</div>
+                        <div class="plan-price"><small>¥</small>0<small>/永久</small></div>
+                        <div class="plan-desc">当前体验</div>
+                        <ul class="plan-features">
+                            <li>公开题库浏览</li>
+                            <li>每日 3 次 AI 问答</li>
+                            <li>基础学习资料</li>
+                            <li>社群讨论区访问</li>
+                        </ul>
+                        <button class="btn btn-secondary btn-sm btn-block">当前方案</button>
+                    </div>
+                    <div class="plan-card recommend" onclick="goRegister()">
+                        <div class="plan-icon pi-student"><i class="fas fa-user-graduate"></i></div>
+                        <div class="plan-name">学生版</div>
+                        <div class="plan-price"><small>¥</small>29<small>/月</small></div>
+                        <div class="plan-desc">K12 学生首选</div>
+                        <ul class="plan-features">
+                            <li>AI 个性化学习路径</li>
+                            <li>智能错题本 + 复习</li>
+                            <li>每月 100 次 AI 答疑</li>
+                            <li>周/月学习报告</li>
+                            <li>全学科题库练习</li>
+                        </ul>
+                        <button class="btn btn-primary btn-sm btn-block">立即升级</button>
+                    </div>
+                    <div class="plan-card" onclick="showToast('了解家庭版详情...', 'info')">
+                        <div class="plan-icon pi-parent"><i class="fas fa-users"></i></div>
+                        <div class="plan-name">家庭版</div>
+                        <div class="plan-price"><small>¥</small>99<small>/月</small></div>
+                        <div class="plan-desc">最多 3 名孩子</div>
+                        <ul class="plan-features">
+                            <li>含全部学生版功能</li>
+                            <li>家长实时监控报告</li>
+                            <li>家校消息互通</li>
+                            <li>3 个孩子账号</li>
+                            <li>老师沟通绿色通道</li>
+                        </ul>
+                        <button class="btn btn-secondary btn-sm btn-block">选择方案</button>
+                    </div>
+                    <div class="plan-card" onclick="showToast('了解教师版详情...', 'info')">
+                        <div class="plan-icon pi-teacher"><i class="fas fa-chalkboard-user"></i></div>
+                        <div class="plan-name">教师版</div>
+                        <div class="plan-price"><small>¥</small>199<small>/月</small></div>
+                        <div class="plan-desc">老师/机构使用</div>
+                        <ul class="plan-features">
+                            <li>智能组卷 + 自动批改</li>
+                            <li>班级学情分析看板</li>
+                            <li>无限学生接入</li>
+                            <li>教学资源中心</li>
+                            <li>批量错题统计</li>
+                        </ul>
+                        <button class="btn btn-secondary btn-sm btn-block">选择方案</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="settings-card">
+            <div class="card-head"><div class="card-icon icon-cyan"><i class="fas fa-table"></i></div><h2>功能对比</h2></div>
+            <div class="card-body">
+                <table class="feature-table">
+                    <thead>
+                        <tr>
+                            <th>功能</th>
+                            <th>免费</th>
+                            <th>学生版</th>
+                            <th>家庭版</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>AI 学习路径</td>
+                            <td class="ft-no"><i class="fas fa-xmark"></i></td>
+                            <td class="ft-yes"><i class="fas fa-check"></i></td>
+                            <td class="ft-yes"><i class="fas fa-check"></i></td>
+                        </tr>
+                        <tr>
+                            <td>智能错题本</td>
+                            <td class="ft-no"><i class="fas fa-xmark"></i></td>
+                            <td class="ft-yes"><i class="fas fa-check"></i></td>
+                            <td class="ft-yes"><i class="fas fa-check"></i></td>
+                        </tr>
+                        <tr>
+                            <td>AI 答疑（次/月）</td>
+                            <td>30</td>
+                            <td>100</td>
+                            <td>300</td>
+                        </tr>
+                        <tr>
+                            <td>学习报告</td>
+                            <td class="ft-no"><i class="fas fa-xmark"></i></td>
+                            <td class="ft-yes"><i class="fas fa-check"></i></td>
+                            <td class="ft-yes"><i class="fas fa-check"></i></td>
+                        </tr>
+                        <tr>
+                            <td>家长监控</td>
+                            <td class="ft-no"><i class="fas fa-xmark"></i></td>
+                            <td class="ft-no"><i class="fas fa-xmark"></i></td>
+                            <td class="ft-yes"><i class="fas fa-check"></i></td>
+                        </tr>
+                        <tr>
+                            <td>绑定孩子数</td>
+                            <td>-</td>
+                            <td>1</td>
+                            <td>3</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="tab-panel" id="panel-history">
+        <div class="settings-card">
+            <div class="card-head">
+                <div class="card-icon icon-blue"><i class="fas fa-chart-simple"></i></div>
+                <h2>浏览数据</h2>
+            </div>
+            <div class="card-body">
+                <div class="history-stats">
+                    <div class="hs-item"><div class="hs-v">18</div><div class="hs-l">今日访问</div></div>
+                    <div class="hs-item"><div class="hs-v">2h</div><div class="hs-l">累计时长</div></div>
+                    <div class="hs-item"><div class="hs-v">6</div><div class="hs-l">收藏数</div></div>
+                    <div class="hs-item"><div class="hs-v">4</div><div class="hs-l">分享数</div></div>
+                </div>
+
+                <div class="history-filter">
+                    <div class="hf-chip active" onclick="filterHistory('all', this)">全部</div>
+                    <div class="hf-chip" onclick="filterHistory('exam', this)"><i class="fas fa-file-pen"></i> 考试</div>
+                    <div class="hf-chip" onclick="filterHistory('learn', this)"><i class="fas fa-book"></i> 学习</div>
+                    <div class="hf-chip" onclick="filterHistory('ai', this)"><i class="fas fa-robot"></i> AI</div>
+                    <div class="hf-chip" onclick="filterHistory('video', this)"><i class="fas fa-play"></i> 视频</div>
+                    <div class="hf-chip" onclick="filterHistory('article', this)"><i class="fas fa-newspaper"></i> 文章</div>
+                </div>
+
+                <div class="history-list">
+                    <div class="history-item" onclick="openHistory('/exam/demo')">
+                        <div class="history-icon hi-exam"><i class="fas fa-file-pen"></i></div>
+                        <div class="history-content">
+                            <div class="history-title">初二数学 · 二次函数单元测试（免费体验卷）</div>
+                            <div class="history-meta"><span><i class="fas fa-book"></i> 数学</span><span><i class="fas fa-tag"></i> 体验公开</span></div>
+                        </div>
+                        <div class="history-time">今天 14:32</div>
+                    </div>
+                    <div class="history-item" onclick="openHistory('/ai/chat')">
+                        <div class="history-icon hi-ai"><i class="fas fa-robot"></i></div>
+                        <div class="history-content">
+                            <div class="history-title">AI 学习助手：一元二次方程解题步骤讲解</div>
+                            <div class="history-meta"><span><i class="fas fa-message"></i> 12 轮对话</span><span><i class="fas fa-clock"></i> 约 6 分钟</span></div>
+                        </div>
+                        <div class="history-time">今天 11:08</div>
+                    </div>
+                    <div class="history-item" onclick="openHistory('/learn/chapter')">
+                        <div class="history-icon hi-learn"><i class="fas fa-book-open"></i></div>
+                        <div class="history-content">
+                            <div class="history-title">语文八年级下 · 《桃花源记》知识点精讲</div>
+                            <div class="history-meta"><span><i class="fas fa-book"></i> 语文</span><span><i class="fas fa-star"></i> 已收藏</span></div>
+                        </div>
+                        <div class="history-time">今天 09:45</div>
+                    </div>
+                    <div class="history-item" onclick="openHistory('/video/demo')">
+                        <div class="history-icon hi-video"><i class="fas fa-play"></i></div>
+                        <div class="history-content">
+                            <div class="history-title">【公开课】物理力学：浮力原理 25 分钟入门</div>
+                            <div class="history-meta"><span><i class="fas fa-physics"></i> 物理</span><span><i class="fas fa-clock"></i> 已看 12:08 / 25:30</span></div>
+                        </div>
+                        <div class="history-time">昨天 20:12</div>
+                    </div>
+                    <div class="history-item" onclick="openHistory('/article/guide')">
+                        <div class="history-icon hi-article"><i class="fas fa-newspaper"></i></div>
+                        <div class="history-content">
+                            <div class="history-title">中考数学复习规划：如何高效利用最后 100 天</div>
+                            <div class="history-meta"><span><i class="fas fa-tag"></i> 学习方法</span><span><i class="fas fa-share-nodes"></i> 已分享</span></div>
+                        </div>
+                        <div class="history-time">昨天 16:33</div>
+                    </div>
+                    <div class="history-item" onclick="openHistory('/exam/english')">
+                        <div class="history-icon hi-exam"><i class="fas fa-file-pen"></i></div>
+                        <div class="history-content">
+                            <div class="history-title">英语八年级 · Unit 5 单词检测（体验版）</div>
+                            <div class="history-meta"><span><i class="fas fa-language"></i> 英语</span><span><i class="fas fa-check-circle"></i> 得分 84/100</span></div>
+                        </div>
+                        <div class="history-time">昨天 10:20</div>
+                    </div>
+                </div>
+
+                <div style="margin-top: 16px; display: flex; gap: 10px; flex-wrap: wrap;">
+                    <button class="btn btn-secondary btn-sm" onclick="clearHistory()"><i class="fas fa-trash-can"></i> 清空浏览历史</button>
+                    <button class="btn btn-secondary btn-sm" onclick="showToast('历史记录已导出为 CSV', 'success')"><i class="fas fa-download"></i> 导出记录</button>
+                    <button class="btn btn-secondary btn-sm" style="margin-left: auto;" onclick="showToast('加载更多记录...', 'info')"><i class="fas fa-angle-down"></i> 加载更多</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="tab-panel" id="panel-trial">
+        <div class="settings-card">
+            <div class="card-head">
+                <div class="card-icon icon-green"><i class="fas fa-hourglass-half"></i></div>
+                <h2>我的试用进度</h2>
+                <span class="card-head-right" style="color: var(--success); border-color: color-mix(in srgb, var(--success) 20%, transparent); background: color-mix(in srgb, var(--success) 8%, transparent);"><i class="fas fa-bolt"></i> 访客体验中</span>
+            </div>
+            <div class="card-body">
+                <div class="trial-hero">
+                    <div class="trial-head">
+                        <div class="trial-icon"><i class="fas fa-gift"></i></div>
+                        <div>
+                            <div class="trial-title">高级会员 · 免费体验资格已就绪</div>
+                            <div class="trial-time"><i class="fas fa-clock"></i> 注册即得 7 天完整会员体验</div>
+                        </div>
+                    </div>
+                    <div class="trial-progress">
+                        <div class="trial-bar-top"><span>访客体验完成度</span><span>62%</span></div>
+                        <div class="trial-bar"><div class="trial-bar-fill" style="width: 62%;"></div></div>
+                    </div>
+                </div>
+
+                <h3 style="font-size: 13px; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-secondary); margin: 0 0 14px 2px;">
+                    <i class="fas fa-list-check" style="color: var(--primary-light); margin-right: 6px;"></i> 体验项目清单
+                </h3>
+                <div class="trial-feature-grid">
+                    <div class="trial-feature">
+                        <div class="trial-feature-icon tfi-green"><i class="fas fa-file-pen"></i></div>
+                        <div class="tf-title">公开模拟考试</div>
+                        <div class="tf-desc">体验平台公开题库的完整答题流程</div>
+                        <div class="tf-status ts-done"><i class="fas fa-check"></i> 已试用</div>
+                    </div>
+                    <div class="trial-feature">
+                        <div class="trial-feature-icon tfi-purple"><i class="fas fa-robot"></i></div>
+                        <div class="tf-title">AI 答疑对话</div>
+                        <div class="tf-desc">与 AI 学习助手进行学习问题咨询，每日限 3 次</div>
+                        <div class="tf-status ts-done"><i class="fas fa-check"></i> 已试用 · 2/3 次</div>
+                    </div>
+                    <div class="trial-feature">
+                        <div class="trial-feature-icon tfi-blue"><i class="fas fa-wand-magic-sparkles"></i></div>
+                        <div class="tf-title">AI 学习路径</div>
+                        <div class="tf-desc">体验基于能力模型的个性化路径预览</div>
+                        <div class="tf-status ts-avail"><i class="fas fa-play"></i> 立即可体验</div>
+                    </div>
+                    <div class="trial-feature">
+                        <div class="trial-feature-icon tfi-orange"><i class="fas fa-book"></i></div>
+                        <div class="tf-title">智能错题本</div>
+                        <div class="tf-desc">查看错题自动收录 + 艾宾浩斯复习提醒效果</div>
+                        <div class="tf-status ts-avail"><i class="fas fa-play"></i> 立即可体验</div>
+                    </div>
+                    <div class="trial-feature">
+                        <div class="trial-feature-icon tfi-pink"><i class="fas fa-chart-line"></i></div>
+                        <div class="tf-title">学习报告生成</div>
+                        <div class="tf-desc">注册后查看首次能力测评报告和提升建议</div>
+                        <div class="tf-status ts-limited"><i class="fas fa-lock"></i> 注册解锁</div>
+                    </div>
+                    <div class="trial-feature">
+                        <div class="trial-feature-icon tfi-cyan"><i class="fas fa-chalkboard-user"></i></div>
+                        <div class="tf-title">1对1 真人答疑</div>
+                        <div class="tf-desc">赠送 1 次 20 分钟老师真人辅导（限学生版）</div>
+                        <div class="tf-status ts-limited"><i class="fas fa-lock"></i> 升级解锁</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="trial-register-card">
+            <div class="trial-register-title"><i class="fas fa-gift" style="color: var(--primary-light);"></i> 立即注册 · 免费解锁更多试用</div>
+            <div class="trial-register-desc">注册后立即获得 7 天完整高级会员体验 + 100 次 AI 问答 + 首次能力测评报告，无需填写信用卡，到期自动降级为免费版。</div>
+            <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
+                <button class="btn btn-primary" onclick="goRegister()"><i class="fas fa-user-plus"></i> 免费注册</button>
+                <button class="btn btn-secondary" onclick="showToast('下载 APP 体验更多功能', 'info')"><i class="fas fa-mobile-screen-button"></i> 下载 APP</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="tab-panel" id="panel-pref">
+        <div class="settings-card">
+            <div class="card-head"><div class="card-icon icon-cyan"><i class="fas fa-language"></i></div><h2>界面与显示</h2></div>
+            <div class="card-body">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">界面语言</label>
+                        <select class="form-select" onchange="scheduleAutoSave('pref')">
+                            <option value="zh-CN" selected>中文 (简体)</option>
+                            <option value="zh-TW">中文 (繁体)</option>
+                            <option value="en-US">English</option>
+                            <option value="ja-JP">日本語</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">默认教育阶段</label>
+                        <select class="form-select" onchange="scheduleAutoSave('pref')">
+                            <option value="">自动识别</option>
+                            <option value="primary">小学</option>
+                            <option value="junior" selected>初中</option>
+                            <option value="senior">高中</option>
+                            <option value="adult">成人教育</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">字号</label>
+                        <select class="form-select" onchange="scheduleAutoSave('pref')">
+                            <option value="sm">较小</option>
+                            <option value="md" selected>标准</option>
+                            <option value="lg">较大</option>
+                            <option value="xl">特大</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">动画效果</label>
+                        <select class="form-select" onchange="scheduleAutoSave('pref')">
+                            <option value="full" selected>全部开启</option>
+                            <option value="minimal">简洁模式</option>
+                            <option value="off">关闭</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="auto-save-hint" id="pref-save-hint"><i class="fas fa-spinner fa-spin"></i> 自动保存中...</div>
+            </div>
+        </div>
+
+        <div class="settings-card">
+            <div class="card-head"><div class="card-icon icon-orange"><i class="fas fa-bell"></i></div><h2>通知与提醒</h2></div>
+            <div class="card-body">
+                <div class="toggle-row">
+                    <div class="toggle-info"><div class="toggle-title">浏览器通知</div><div class="toggle-desc">允许网页推送更新和学习提醒</div></div>
+                    <div class="toggle-switch" onclick="toggleOption(this, 'web_push', 'pref')"></div>
+                </div>
+                <div class="toggle-row">
+                    <div class="toggle-info"><div class="toggle-title">营销消息</div><div class="toggle-desc">接收活动优惠、课程推荐</div></div>
+                    <div class="toggle-switch on" onclick="toggleOption(this, 'marketing', 'pref')"></div>
+                </div>
+                <div class="toggle-row">
+                    <div class="toggle-info"><div class="toggle-title">内容更新提醒</div><div class="toggle-desc">收藏的题目/文章更新时通知</div></div>
+                    <div class="toggle-switch on" onclick="toggleOption(this, 'content_update', 'pref')"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="settings-card">
+            <div class="card-head"><div class="card-icon icon-purple"><i class="fas fa-shield-halved"></i></div><h2>隐私与 Cookie</h2></div>
+            <div class="card-body">
+                <div class="toggle-row">
+                    <div class="toggle-info"><div class="toggle-title">必要 Cookie</div><div class="toggle-desc">保证站点功能运行的必要存储（必选）</div></div>
+                    <div class="toggle-switch on" style="pointer-events: none; opacity: 0.85;"></div>
+                </div>
+                <div class="toggle-row">
+                    <div class="toggle-info"><div class="toggle-title">分析型 Cookie</div><div class="toggle-desc">帮助我们改进体验的匿名使用统计</div></div>
+                    <div class="toggle-switch on" onclick="toggleOption(this, 'analytics_cookie', 'pref')"></div>
+                </div>
+                <div class="toggle-row">
+                    <div class="toggle-info"><div class="toggle-title">个性化推荐</div><div class="toggle-desc">基于浏览行为推荐更匹配的内容</div></div>
+                    <div class="toggle-switch on" onclick="toggleOption(this, 'personalized', 'pref')"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+</div>
+
+<script>
+    var saveTimers = {};
+    function switchPanel(panelId) {
+        document.querySelectorAll('.tab-btn').forEach(function(t) { t.classList.remove('active'); });
+        document.querySelectorAll('.tab-panel').forEach(function(p) { p.classList.remove('active'); });
+        var btn = document.querySelector('.tab-btn[data-panel="' + panelId + '"]');
+        if (btn) btn.classList.add('active');
+        var panel = document.getElementById('panel-' + panelId);
+        if (panel) panel.classList.add('active');
+    }
+    function showToast(message, type) {
+        type = type || 'info';
+        var old = document.querySelector('.toast');
+        if (old) old.remove();
+        var toast = document.createElement('div');
+        var iconClass = type === 'success' ? 'check-circle' : type === 'error' ? 'circle-exclamation' : type === 'warning' ? 'triangle-exclamation' : 'circle-info';
+        toast.className = 'toast toast-' + type;
+        toast.innerHTML = '<i class="fas fa-' + iconClass + '"></i><span>' + message + '</span>';
+        document.body.appendChild(toast);
+        requestAnimationFrame(function() { toast.classList.add('show'); });
+        setTimeout(function() { toast.classList.remove('show'); setTimeout(function() { if (toast.parentNode) toast.remove(); }, 500); }, 3200);
+    }
+    function scheduleAutoSave(type) {
+        var hint = document.getElementById(type + '-save-hint');
+        if (hint) hint.classList.add('show');
+        if (saveTimers[type]) clearTimeout(saveTimers[type]);
+        saveTimers[type] = setTimeout(function() {
+            if (hint) setTimeout(function() { hint.classList.remove('show'); }, 600);
+            showToast('已自动保存', 'success');
+        }, 1500);
+    }
+    function toggleOption(el, key, section) { el.classList.toggle('on'); scheduleAutoSave(section); }
+    function goRegister() { window.location.href = '/register'; }
+    function goLogin() { window.location.href = '/auth/login'; }
+    function openHistory(url) { showToast('跳转: ' + url + '（登录后可恢复）', 'info'); }
+    function filterHistory(type, el) {
+        document.querySelectorAll('.hf-chip').forEach(c => c.classList.remove('active'));
+        el.classList.add('active');
+        showToast('筛选: ' + type, 'info');
+    }
+    function clearHistory() {
+        if (confirm('确认清空浏览历史？（访客模式仅清空本地）')) showToast('本地浏览历史已清除', 'success');
+    }
+</script>
+{% endblock %}

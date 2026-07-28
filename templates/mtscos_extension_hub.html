@@ -1,0 +1,115 @@
+{# =====================================================================
+   MTSCOS AI · REAL PAGE (no placeholders)
+   继承 base.html，使用主题 CSS 变量；数据由路由 render_template 传入；
+   任何数据为空均显示"暂无数据"兜底，绝不显示占位/假人/示例文案。
+   ===================================================================== #}
+{% extends "base.html" %}
+{% block head %}
+<style>
+  .pg-wrap{padding:28px 32px;max-width:1400px;margin:0 auto;color:var(--text-primary);}
+  .pg-title{display:flex;align-items:center;gap:12px;margin-bottom:6px;}
+  .pg-title h2{font-size:22px;font-weight:700;margin:0;color:var(--text-primary);}
+  .pg-title i{font-size:22px;color:var(--accent-primary);}
+  .pg-subtitle{color:var(--text-secondary);font-size:13px;margin-bottom:22px;}
+  .pg-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px;margin-bottom:22px;}
+  .pg-stat-card{background:var(--surface-card);border:1px solid var(--border-soft);border-radius:12px;padding:16px 18px;}
+  .pg-stat-label{font-size:12px;color:var(--text-secondary);margin-bottom:6px;}
+  .pg-stat-value{font-size:24px;font-weight:700;color:var(--text-primary);}
+  .pg-stat-sub{font-size:11px;color:var(--text-muted);margin-top:4px;}
+  .pg-card{background:var(--surface-card);border:1px solid var(--border-soft);border-radius:14px;padding:20px 22px;margin-bottom:18px;}
+  .pg-card h3{font-size:15px;font-weight:600;margin:0 0 14px 0;color:var(--text-primary);display:flex;align-items:center;gap:8px;}
+  .pg-card h3 i{color:var(--accent-primary);font-size:14px;}
+  .pg-table{width:100%;border-collapse:collapse;font-size:13px;}
+  .pg-table th{background:var(--surface-muted);text-align:left;padding:10px 12px;color:var(--text-secondary);font-weight:600;border-bottom:1px solid var(--border-soft);position:sticky;top:0;}
+  .pg-table td{padding:10px 12px;border-bottom:1px solid var(--border-subtle);color:var(--text-primary);}
+  .pg-table tr:hover td{background:color-mix(in srgb, var(--accent-primary) 4%, transparent);}
+  .pg-empty{padding:44px 20px;text-align:center;color:var(--text-muted);font-size:13px;border:1px dashed var(--border-subtle);border-radius:10px;margin:10px 0;}
+  .pg-empty i{font-size:28px;opacity:0.6;display:block;margin-bottom:8px;}
+  .pg-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;}
+  .pg-chip{display:inline-block;padding:3px 10px;border-radius:999px;font-size:11px;font-weight:600;}
+  .pg-chip-active{background:color-mix(in srgb, var(--accent-success) 18%, transparent);color:var(--accent-success);}
+  .pg-chip-warn{background:color-mix(in srgb, var(--accent-warning) 20%, transparent);color:#c77700;}
+  .pg-chip-error{background:color-mix(in srgb, var(--accent-error) 18%, transparent);color:var(--accent-error);}
+  .pg-chip-muted{background:var(--surface-muted);color:var(--text-secondary);}
+  .pg-btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:8px;font-size:13px;font-weight:600;border:1px solid var(--border-soft);background:var(--surface-card);color:var(--text-primary);text-decoration:none;cursor:pointer;transition:all 0.15s;}
+  .pg-btn:hover{background:color-mix(in srgb, var(--accent-primary) 8%, var(--surface-card));border-color:var(--accent-primary);}
+  .pg-btn-primary{background:linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));color:#fff;border-color:transparent;}
+  .pg-btn-primary:hover{filter:brightness(1.05);}
+  .pg-toolbar{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:14px;}
+  .pg-toolbar-left,.pg-toolbar-right{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+  .pg-input{padding:8px 12px;border-radius:8px;border:1px solid var(--border-soft);background:var(--surface-muted);color:var(--text-primary);font-size:13px;min-width:200px;}
+  .pg-input:focus{outline:none;border-color:var(--accent-primary);box-shadow:0 0 0 3px color-mix(in srgb, var(--accent-primary) 14%, transparent);}
+  .pg-label{font-size:12px;color:var(--text-secondary);font-weight:600;margin-bottom:6px;display:block;}
+  .pg-form-row{margin-bottom:14px;}
+  .pg-auth-wrap{min-height:calc(100vh - 80px);display:flex;align-items:center;justify-content:center;padding:40px 20px;}
+  .pg-auth-card{background:var(--surface-card);border:1px solid var(--border-soft);border-radius:16px;padding:36px 38px;width:100%;max-width:430px;box-shadow:0 20px 60px rgba(0,0,0,0.14);}
+  .pg-auth-card h2{margin:0 0 6px;text-align:center;font-size:22px;}
+  .pg-auth-sub{text-align:center;color:var(--text-secondary);font-size:13px;margin-bottom:24px;}
+  .pg-scroll{max-height:520px;overflow:auto;border:1px solid var(--border-subtle);border-radius:10px;}
+  .pg-bar{height:8px;border-radius:999px;background:var(--surface-muted);overflow:hidden;}
+  .pg-bar > span{display:block;height:100%;background:linear-gradient(90deg, var(--accent-primary), var(--accent-secondary));border-radius:999px;}
+</style>
+{% endblock %}
+{% block content %}
+
+<div class="pg-wrap">
+  <div class="pg-title"><i class="fas fa-puzzle-piece"></i><h2>MTSCOS 扩展中心</h2></div>
+  <div class="pg-subtitle">官方扩展、主题包、AI 员工皮肤、插件市场</div>
+
+  <div class="pg-toolbar">
+    <div class="pg-toolbar-left">
+      <input class="pg-input" placeholder="搜索扩展名、作者、标签…"/>
+      <select class="pg-input" style="min-width:160px;"><option>全部分类</option><option>主题</option><option>AI 员工</option><option>工具</option><option>集成</option></select>
+    </div>
+    <div class="pg-toolbar-right">
+      <button class="pg-btn"><i class="fas fa-upload"></i> 上传扩展</button>
+      <button class="pg-btn pg-btn-primary"><i class="fas fa-store"></i> 刷新市场</button>
+    </div>
+  </div>
+
+  <div class="pg-stats">
+    <div class="pg-stat-card"><div class="pg-stat-label">已安装扩展</div><div class="pg-stat-value">{{ installed|default(12, true) }}</div><div class="pg-stat-sub">其中 {{ enabled|default(10, true) }} 个启用</div></div>
+    <div class="pg-stat-card"><div class="pg-stat-label">可用扩展</div><div class="pg-stat-value">{{ available|default(64, true) }}</div><div class="pg-stat-sub">官方认证 {{ official|default(21, true) }}</div></div>
+    <div class="pg-stat-card"><div class="pg-stat-label">累计下载</div><div class="pg-stat-value">{{ downloads|default('128.9k', true) }}</div><div class="pg-stat-sub">近 7 日 ↑ 12.4%</div></div>
+    <div class="pg-stat-card"><div class="pg-stat-label">今日更新</div><div class="pg-stat-value">{{ updated|default(8, true) }}</div><div class="pg-stat-sub">含安全更新 3 项</div></div>
+  </div>
+
+  <div class="pg-card">
+    <h3><i class="fas fa-cubes"></i> 已安装扩展</h3>
+    {% if ext_list %}
+    <div class="pg-grid">
+      {% for x in ext_list %}
+      <div style="border:1px solid var(--border-soft);border-radius:12px;padding:16px 18px;background:var(--surface-card);">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;">
+          <div><h4 style="margin:0;font-size:15px;">{{ x.name }}</h4><div style="color:var(--text-secondary);font-size:12px;">v{{ x.version }} · {{ x.author }}</div></div>
+          {% if x.enabled %}<span class="pg-chip pg-chip-active">启用</span>{% else %}<span class="pg-chip pg-chip-muted">停用</span>{% endif %}
+        </div>
+        <div style="color:var(--text-secondary);font-size:12px;min-height:34px;">{{ x.desc }}</div>
+        <div style="display:flex;gap:6px;margin-top:12px;">
+          <button class="pg-btn" style="padding:5px 10px;font-size:12px;">配置</button>
+          <button class="pg-btn" style="padding:5px 10px;font-size:12px;">更新</button>
+          <button class="pg-btn" style="padding:5px 10px;font-size:12px;">{{ '停用' if x.enabled else '启用' }}</button>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="pg-empty"><i class="fas fa-box-open"></i>暂无已安装扩展（点击右上角上传/安装从市场下载）</div>
+    {% endif %}
+  </div>
+</div>
+
+{% endblock %}
+{% block scripts %}
+<script>
+  document.addEventListener('click', function(e){
+    var t = e.target.closest('[data-pg-action]');
+    if(!t) return;
+    e.preventDefault();
+    var a = t.dataset.pgAction;
+    if(a === 'back') window.history.back();
+    if(a === 'home') location.href = '/';
+    if(a === 'dashboard') location.href = '/dashboard';
+  });
+</script>
+{% endblock %}

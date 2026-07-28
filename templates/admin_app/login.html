@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>管理员登录 · MTSCOS AI</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box;}
+    body{min-height:100vh;font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Segoe UI",Roboto,sans-serif;background:
+      radial-gradient(1200px 600px at 10% -10%, rgba(99,102,241,0.25), transparent 60%),
+      radial-gradient(900px 500px at 110% 10%, rgba(6,182,212,0.22), transparent 60%),
+      linear-gradient(160deg, #0b1020 0%, #111827 100%);
+      color:#e5e7eb;display:flex;align-items:center;justify-content:center;padding:40px 20px;}
+    .aa-wrap{width:100%;max-width:1000px;display:grid;grid-template-columns:1.1fr 1fr;gap:0;border-radius:20px;overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,0.55);min-height:560px;}
+    .aa-left{background:linear-gradient(135deg,#4338ca 0%,#6366f1 40%,#0891b2 100%);padding:48px 44px;color:#fff;position:relative;overflow:hidden;}
+    .aa-left:before{content:"";position:absolute;right:-80px;top:-80px;width:320px;height:320px;border-radius:50%;background:rgba(255,255,255,0.08);}
+    .aa-left:after{content:"";position:absolute;left:-60px;bottom:-100px;width:260px;height:260px;border-radius:50%;background:rgba(255,255,255,0.06);}
+    .aa-logo{display:inline-flex;align-items:center;gap:10px;margin-bottom:40px;}
+    .aa-logo-icon{width:44px;height:44px;border-radius:12px;background:rgba(255,255,255,0.2);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;font-size:22px;}
+    .aa-logo-name{font-weight:800;font-size:18px;letter-spacing:0.3px;}
+    .aa-left h1{font-size:30px;line-height:1.35;margin-bottom:14px;max-width:380px;}
+    .aa-left p{opacity:0.88;line-height:1.7;font-size:14px;max-width:380px;margin-bottom:26px;}
+    .aa-features{display:flex;flex-direction:column;gap:14px;position:relative;}
+    .aa-ft{display:flex;align-items:flex-start;gap:12px;}
+    .aa-ft i{width:30px;height:30px;border-radius:8px;background:rgba(255,255,255,0.18);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;}
+    .aa-ft div{font-size:13px;opacity:0.92;}
+    .aa-ft b{display:block;opacity:1;margin-bottom:2px;font-size:14px;}
+    .aa-right{background:#0f172a;padding:48px 44px;}
+    .aa-right h2{font-size:22px;margin-bottom:4px;color:#f9fafb;}
+    .aa-sub{color:#94a3b8;font-size:13px;margin-bottom:26px;}
+    .aa-msg{padding:10px 12px;border-radius:10px;font-size:13px;margin-bottom:14px;}
+    .aa-err{background:rgba(239,68,68,0.12);color:#fca5a5;border:1px solid rgba(239,68,68,0.22);}
+    .aa-ok{background:rgba(34,197,94,0.12);color:#86efac;border:1px solid rgba(34,197,94,0.22);}
+    .aa-row{margin-bottom:16px;}
+    .aa-row label{font-size:12px;color:#94a3b8;font-weight:600;margin-bottom:6px;display:block;}
+    .aa-in{display:flex;align-items:center;gap:10px;background:#111827;border:1px solid #1f2937;border-radius:10px;padding:11px 14px;position:relative;}
+    .aa-in:focus-within{border-color:#6366f1;box-shadow:0 0 0 3px rgba(99,102,241,0.18);}
+    .aa-in i{color:#818cf8;}
+    .aa-in input{flex:1;background:transparent;border:none;outline:none;color:#f9fafb;font-size:14px;}
+    .aa-in.pw input{padding-right:36px;}
+    .aa-row input.input-error{background:rgba(239,68,68,0.08);}
+    .aa-in.input-error{border-color:#ef4444;box-shadow:0 0 0 3px rgba(239,68,68,0.14);animation:shake 0.3s ease-in-out;}
+    .aa-in.input-ok{border-color:#22c55e;}
+    .aa-row .hint-text{font-size:12px;color:#64748b;margin-top:6px;min-height:16px;line-height:16px;}
+    .aa-row .hint-text.err{color:#fca5a5;font-weight:500;}
+    .aa-row .hint-text.ok{color:#86efac;}
+    .toggle-pw{position:absolute;right:6px;top:50%;transform:translateY(-50%);width:34px;height:34px;border-radius:8px;background:transparent;border:none;cursor:pointer;color:#94a3b8;font-size:15px;}
+    .toggle-pw:hover{color:#818cf8;}
+    @keyframes shake{0%,100%{transform:translateX(0);}25%{transform:translateX(-5px);}75%{transform:translateX(5px);}}
+    .aa-r2{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:#94a3b8;margin:2px 0 18px;}
+    .aa-r2 a{color:#818cf8;text-decoration:none;}
+    .aa-btn{display:block;width:100%;padding:12px;border:none;border-radius:10px;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;font-size:14px;font-weight:800;cursor:pointer;box-shadow:0 10px 26px rgba(99,102,241,0.28);}
+    .aa-btn:hover{filter:brightness(1.06);}
+    .aa-foot{display:flex;justify-content:space-between;align-items:center;margin-top:18px;font-size:12px;color:#64748b;}
+    .aa-foot a{color:#818cf8;text-decoration:none;}
+    @media (max-width: 880px){
+      .aa-wrap{grid-template-columns:1fr;}
+      .aa-left{padding:36px 28px;min-height:auto;}
+    }
+  </style>
+</head>
+<body>
+  <form method="post" action="/auth/login" novalidate id="aal-form">
+    <input type="hidden" name="admin_app" value="1">
+    <div class="aa-wrap">
+      <div class="aa-left">
+        <div class="aa-logo"><div class="aa-logo-icon"><i class="fas fa-shield-halved"></i></div><div class="aa-logo-name">MTSCOS AI · 管理中心</div></div>
+        <h1>集中管控，全局洞察</h1>
+        <p>面向超管/管理员的一体化后台：权限审计、题库治理、学情画像、AI 员工调度、系统升级、日志回溯一站式完成。</p>
+        <div class="aa-features">
+          <div class="aa-ft"><i class="fas fa-user-shield"></i><div><b>权限与审计</b>五阶角色 · 操作全程可追溯 · 敏感行为双因子验证</div></div>
+          <div class="aa-ft"><i class="fas fa-database"></i><div><b>数据治理</b>多库（auth/exam/question/ai/…）一屏总览 · 备份回滚</div></div>
+          <div class="aa-ft"><i class="fas fa-robot"></i><div><b>AI 员工矩阵</b>14 集群 · 一万余员工 · 任务绩效 · 异常自动修复</div></div>
+          <div class="aa-ft"><i class="fas fa-flag"></i><div><b>公祭日自动切换</b>按日期强制主题 · 仅超管可覆盖</div></div>
+        </div>
+      </div>
+      <div class="aa-right">
+        <h2><i class="fas fa-lock" style="color:#818cf8;"></i> 管理员登录</h2>
+        <div class="aa-sub">请输入管理员账户 · 仅 admin / 校管理员 / 超管可进入</div>
+        {% if error %}<div class="aa-msg aa-err"><i class="fas fa-exclamation-circle"></i> {{ error }}</div>{% endif %}
+        {% if msg %}<div class="aa-msg aa-ok"><i class="fas fa-check-circle"></i> {{ msg }}</div>{% endif %}
+        <div class="aa-row"><label>管理员账户</label>
+          <div class="aa-in" id="aal-ui-wrap"><i class="fas fa-user"></i><input id="aal-username" name="username" required placeholder="admin / 您的管理员账号" autocomplete="username" minlength="3" maxlength="20" value="{{ request.form.username or '' }}"></div>
+          <div class="hint-text" id="aal-username-hint">用户名长度 3-20 字符</div>
+        </div>
+        <div class="aa-row"><label>密码</label>
+          <div class="aa-in pw" id="aal-pw-wrap"><i class="fas fa-key"></i><input id="aal-password" name="password" required placeholder="请输入密码（8-64 位）" type="password" minlength="8" maxlength="64" autocomplete="current-password">
+            <button type="button" class="toggle-pw" data-target="aal-password" title="显示/隐藏密码">👁️</button></div>
+          <div class="hint-text" id="aal-password-hint">建议使用 8-64 位，包含多类字符</div>
+        </div>
+        <div class="aa-row"><label>安全令牌（可选）</label>
+          <div class="aa-in"><i class="fas fa-shield"></i><input name="token" placeholder="如已启用 TOTP 请填 6 位动态码"></div></div>
+        <div class="aa-r2">
+          <label style="margin:0;"><input type="checkbox" name="remember" value="1" style="vertical-align:middle;margin-right:4px;"> 受信任设备 7 天</label>
+          <a href="/auth/forgot_password">忘记密码？</a>
+        </div>
+        <button type="submit" class="aa-btn"><i class="fas fa-right-to-bracket"></i> 进入管理中心</button>
+        <div class="aa-foot">
+          <a href="/"><i class="fas fa-house"></i> 返回首页</a>
+          <a href="/auth/login">普通用户登录 →</a>
+        </div>
+      </div>
+    </div>
+  </form>
+<script>
+(function(){
+  function $(id){ return document.getElementById(id); }
+  function toggleError(wrapId, inputId, ok, msg){
+      var wrap = document.getElementById(wrapId);
+      var input = document.getElementById(inputId);
+      var hint = document.getElementById(inputId + '-hint');
+      if (wrap) { wrap.classList.remove('input-error','input-ok'); if (ok===false) wrap.classList.add('input-error'); if (ok===true) wrap.classList.add('input-ok'); }
+      if (input) { input.classList.remove('input-error','input-ok'); if (ok===false) input.classList.add('input-error'); }
+      if (!hint) return;
+      if (!hint.dataset.def) hint.dataset.def = hint.textContent;
+      if (ok === null || ok === undefined) { hint.className = 'hint-text'; hint.textContent = hint.dataset.def; return; }
+      if (ok) { hint.className = 'hint-text ok'; hint.textContent = msg || '校验通过'; }
+      else { hint.className = 'hint-text err'; hint.textContent = msg || '格式不正确'; }
+  }
+  function validateU(){
+      var el = $('aal-username'); if (!el) return false;
+      var v = (el.value || '').trim();
+      if (!v) { toggleError('aal-ui-wrap','aal-username', null); return false; }
+      if (v.length < 3) { toggleError('aal-ui-wrap','aal-username', false, '用户名至少 3 个字符'); return false; }
+      if (v.length > 20) { toggleError('aal-ui-wrap','aal-username', false, '用户名至多 20 个字符'); return false; }
+      toggleError('aal-ui-wrap','aal-username', true, v.length + ' 字符');
+      return true;
+  }
+  function validateP(){
+      var el = $('aal-password'); if (!el) return false;
+      var v = el.value || '';
+      if (!v) { toggleError('aal-pw-wrap','aal-password', null); return false; }
+      if (v.length < 8) { toggleError('aal-pw-wrap','aal-password', false, '密码长度不足 8 位（当前 ' + v.length + '）'); return false; }
+      if (v.length > 64) { toggleError('aal-pw-wrap','aal-password', false, '密码长度超过 64 位'); return false; }
+      var cc = (/[a-z]/.test(v)?1:0)+(/[A-Z]/.test(v)?1:0)+(/\d/.test(v)?1:0)+(/[^A-Za-z0-9]/.test(v)?1:0);
+      toggleError('aal-pw-wrap','aal-password', true, '长度符合（' + cc + ' 类字符）');
+      return true;
+  }
+  document.addEventListener('click', function(e){
+      var btn = e.target.closest && e.target.closest('.toggle-pw');
+      if (!btn) return;
+      var t = document.getElementById(btn.getAttribute('data-target')); if (!t) return;
+      var pw = t.type === 'password'; t.type = pw ? 'text' : 'password'; btn.textContent = pw ? '🔒' : '👁️';
+  });
+  ['input','blur','change'].forEach(function(evt){
+      if ($('aal-username')) $('aal-username').addEventListener(evt, validateU);
+      if ($('aal-password')) $('aal-password').addEventListener(evt, validateP);
+  });
+  [['aal-username-hint','用户名长度 3-20 字符'],['aal-password-hint','建议使用 8-64 位，包含多类字符']].forEach(function(p){
+      var el = $(p[0]); if (el && !el.dataset.def) el.dataset.def = p[1];
+  });
+  var f = $('aal-form'); if (f) f.addEventListener('submit', function(e){
+      var ok = true;
+      if (!validateU()) ok = false;
+      if (!validateP()) ok = false;
+      if (!ok) { e.preventDefault(); return false; }
+  });
+})();
+</script>
+</body>
+</html>

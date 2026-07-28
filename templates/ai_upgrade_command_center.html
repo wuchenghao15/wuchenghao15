@@ -1,0 +1,1008 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1.0" />
+<title>MTSCOS · AI 智能升级指挥中心 · {{ container.version if container else 'v2026.3' }}</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --accent: #4f46e5;
+  --accent-soft: rgba(79, 70, 229, 0.12);
+  --accent-hover: rgba(79, 70, 229, 0.22);
+  --accent-text: #6366f1;
+  --accent-text-bright: #818cf8;
+  --accent-secondary: #06b6d4;
+  --accent-secondary-soft: rgba(6, 182, 212, 0.12);
+  --success: #22c55e;
+  --success-soft: rgba(34, 197, 94, 0.12);
+  --warning: #f59e0b;
+  --warning-soft: rgba(245, 158, 11, 0.12);
+  --danger: #ef4444;
+  --danger-soft: rgba(239, 68, 68, 0.12);
+  --danger-text: #f87171;
+  --text-primary: #f8fafc;
+  --text-secondary: #cbd5e1;
+  --text-muted: #94a3b8;
+  --text-faint: #64748b;
+  --bg-page: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+  --bg-card: rgba(15, 23, 42, 0.7);
+  --bg-card-alt: rgba(15, 23, 42, 0.6);
+  --glass-blur: 12px;
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --border-subtle: rgba(79, 70, 229, 0.1);
+  --border-strong: rgba(79, 70, 229, 0.18);
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-full: 9999px;
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.12);
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: "SF Mono", Monaco, Menlo, Consolas, "Courier New", monospace;
+}
+html,body{height:100%;width:100%;overflow:hidden}
+body{
+  font-family:var(--font-sans);
+  background:var(--bg-page);
+  background-attachment:fixed;
+  color:var(--text-primary);
+}
+.app{display:grid;grid-template-columns:300px 1fr 380px;grid-template-rows:60px 1fr 40px;height:100vh;gap:12px;padding:12px}
+.header{grid-column:1 / -1;display:flex;align-items:center;gap:18px;padding:0 20px;
+  background:var(--bg-card);backdrop-filter:blur(var(--glass-blur));-webkit-backdrop-filter:blur(var(--glass-blur));
+  border:1px solid var(--glass-border);border-radius:var(--radius-md);box-shadow:var(--shadow-md)}
+.brand{display:flex;align-items:center;gap:14px}
+.brand-logo{width:36px;height:36px;border-radius:var(--radius-sm);
+  background:var(--accent);display:flex;align-items:center;justify-content:center;
+  color:white;font-size:16px;font-weight:700}
+.brand-title{font-size:16px;font-weight:700;color:var(--text-primary)}
+.brand-sub{font-size:12px;color:var(--text-muted);margin-top:2px}
+.header-status{display:flex;gap:10px;flex:1;justify-content:center;flex-wrap:wrap}
+.pill{display:inline-flex;align-items:center;gap:8px;padding:6px 12px;border-radius:var(--radius-full);
+  background:var(--accent-soft);border:1px solid var(--border-subtle);font-size:12px;color:var(--text-secondary)}
+.pill b{color:var(--text-primary);font-weight:600}
+.pill.ok{background:var(--success-soft);border-color:var(--success-soft);color:var(--success)}
+.pill.warn{background:var(--warning-soft);border-color:var(--warning-soft);color:var(--warning)}
+.pill.danger{background:var(--danger-soft);border-color:var(--danger-soft);color:var(--danger-text)}
+.pill .dot{width:8px;height:8px;border-radius:50%;background:var(--text-faint)}
+.pill .dot.on{background:var(--success)}
+.pill .dot.warn{background:var(--warning)}
+.pill .dot.bad{background:var(--danger)}
+.header-actions{display:flex;gap:10px}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:8px 14px;border-radius:var(--radius-sm);
+  border:1px solid var(--border-subtle);background:var(--accent-soft);color:var(--accent-text);
+  font-size:12px;cursor:pointer;transition:background 0.2s;font-weight:500;font-family:var(--font-sans)}
+.btn:hover{background:var(--accent-hover);border-color:var(--border-strong)}
+.btn.primary{background:var(--accent);color:white;border-color:transparent}
+.btn.primary:hover{background:#4338ca}
+.btn.ok{background:var(--success);color:white;border-color:transparent}
+.btn.ok:hover{background:#16a34a}
+.btn.danger{background:var(--danger);color:white;border-color:transparent}
+.btn.danger:hover{background:#dc2626}
+.btn.warn{background:var(--warning);color:white;border-color:transparent}
+.btn.warn:hover{background:#d97706}
+.btn.ghost{background:transparent;border-color:var(--border-subtle);color:var(--text-secondary)}
+.btn.ghost:hover{background:var(--accent-soft);color:var(--accent-text)}
+.btn.small{padding:6px 10px;font-size:11px;border-radius:var(--radius-sm)}
+.panel{display:flex;flex-direction:column;min-height:0;background:var(--bg-card);
+  backdrop-filter:blur(var(--glass-blur));-webkit-backdrop-filter:blur(var(--glass-blur));
+  border:1px solid var(--glass-border);border-radius:var(--radius-md);box-shadow:var(--shadow-md)}
+.panel-head{padding:12px 16px;border-bottom:1px solid var(--border-subtle);
+  display:flex;align-items:center;justify-content:space-between}
+.panel-head h3{font-size:12px;font-weight:600;color:var(--text-primary);text-transform:uppercase;letter-spacing:0.5px;display:flex;align-items:center;gap:8px;margin:0}
+.panel-body{padding:12px;overflow:auto;scrollbar-width:thin;scrollbar-color:var(--border-strong) transparent;flex:1;min-height:0}
+.panel-body::-webkit-scrollbar{width:6px;height:6px}
+.panel-body::-webkit-scrollbar-thumb{background:var(--border-strong);border-radius:3px}
+.team-list{display:flex;flex-direction:column;gap:8px}
+.agent-card{position:relative;padding:12px;border-radius:var(--radius-sm);border:1px solid var(--border-subtle);
+  background:var(--bg-card-alt);cursor:pointer;transition:background 0.2s}
+.agent-card:hover{background:var(--accent-soft);border-color:var(--border-strong)}
+.agent-card.active{border-color:var(--accent)}
+.agent-top{display:flex;align-items:center;gap:10px}
+.agent-avatar{width:36px;height:36px;border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;
+  background:var(--accent-soft);border:1px solid var(--border-subtle);color:var(--accent-text)}
+.agent-meta{flex:1;min-width:0}
+.agent-name{font-size:13px;font-weight:600;color:var(--text-primary);display:flex;align-items:center;gap:8px}
+.agent-role{font-size:11px;color:var(--text-muted);margin-top:2px}
+.agent-lv{display:inline-flex;padding:2px 6px;border-radius:var(--radius-sm);background:var(--warning-soft);color:var(--warning);font-size:10px;font-weight:600}
+.agent-badge{margin-left:auto;padding:3px 7px;border-radius:var(--radius-sm);font-size:10px;font-weight:600;white-space:nowrap}
+.score-ring{width:40px;height:40px;border-radius:50%;background:conic-gradient(var(--success) calc(var(--p)*1%),var(--bg-card-alt) 0);display:flex;align-items:center;justify-content:center;position:relative}
+.score-ring::after{content:"";position:absolute;inset:3px;border-radius:50%;background:var(--bg-card)}
+.score-ring span{position:relative;z-index:1;font-size:11px;font-weight:700;color:var(--text-primary)}
+.agent-msg{margin-top:10px;padding:8px 10px;border-radius:var(--radius-sm);background:var(--accent-secondary-soft);border-left:2px solid var(--accent-secondary);font-size:11px;color:var(--text-secondary);line-height:1.5;display:none}
+.agent-card.expanded .agent-msg{display:block}
+.agent-sug{margin-top:6px;font-size:11px;color:var(--text-muted);display:none;line-height:1.5}
+.agent-card.expanded .agent-sug{display:block}
+.agent-card.expanded .agent-sug b{color:var(--accent-secondary)}
+.st-tag{display:inline-flex;padding:2px 7px;border-radius:var(--radius-sm);font-size:10px;font-weight:600;margin-right:4px}
+.st-tag.idle{background:var(--bg-card-alt);color:var(--text-muted)}
+.st-tag.working{background:var(--accent-secondary-soft);color:var(--accent-secondary)}
+.st-tag.warning{background:var(--warning-soft);color:var(--warning)}
+.st-tag.critical{background:var(--danger-soft);color:var(--danger-text)}
+.tabs{display:flex;gap:4px;padding:4px;border-radius:var(--radius-sm);background:var(--bg-card-alt);border:1px solid var(--border-subtle)}
+.tab{padding:6px 12px;border-radius:6px;font-size:12px;color:var(--text-muted);cursor:pointer;transition:background 0.2s;display:inline-flex;align-items:center;gap:6px;font-weight:500}
+.tab:hover{color:var(--text-secondary);background:var(--accent-soft)}
+.tab.active{color:var(--accent-text);background:var(--accent-soft);border:1px solid var(--border-subtle)}
+.tab .count{padding:2px 7px;border-radius:var(--radius-sm);background:var(--bg-card-alt);font-size:10px;font-weight:600;color:var(--text-secondary)}
+.tab-panes{flex:1;min-height:0;display:flex;flex-direction:column}
+.tab-pane{display:none;flex:1;min-height:0;padding:16px;overflow:auto;scrollbar-width:thin;scrollbar-color:var(--border-strong) transparent}
+.tab-pane.active{display:block}
+.tab-pane::-webkit-scrollbar{width:6px;height:6px}
+.tab-pane::-webkit-scrollbar-thumb{background:var(--border-strong);border-radius:3px}
+.grid{display:grid;gap:12px}
+.grid.t8{grid-template-columns:repeat(4,1fr)}
+.grid.sub9{grid-template-columns:repeat(3,1fr)}
+.grid.risks{grid-template-columns:1fr}
+.card{padding:14px;border-radius:var(--radius-sm);border:1px solid var(--border-subtle);
+  background:var(--bg-card-alt);transition:background 0.2s;cursor:pointer}
+.card:hover{background:var(--accent-soft)}
+.card.triggered{border-color:var(--danger)}
+.card-head{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.card-icon{width:32px;height:32px;border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;font-size:14px;
+  background:var(--accent-soft);border:1px solid var(--border-subtle);color:var(--accent-text)}
+.card-title{font-size:13px;font-weight:600;flex:1;color:var(--text-primary)}
+.card-code{font-size:10px;color:var(--text-faint);font-weight:600}
+.card-status{display:inline-flex;padding:3px 8px;border-radius:var(--radius-sm);font-size:10px;font-weight:600}
+.card-status.ok{background:var(--success-soft);color:var(--success)}
+.card-status.trig{background:var(--danger-soft);color:var(--danger-text)}
+.card-metrics{display:flex;flex-direction:column;gap:6px;margin-top:6px}
+.m-row{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--text-secondary)}
+.m-row .lbl{color:var(--text-muted);width:62px;flex-shrink:0}
+.m-row .bar{flex:1;height:6px;border-radius:3px;background:var(--bg-card-alt);overflow:hidden}
+.m-row .fill{height:100%;border-radius:3px;background:var(--accent);transition:width 0.2s}
+.m-row .fill.warn{background:var(--warning)}
+.m-row .fill.bad{background:var(--danger)}
+.m-row .val{font-variant-numeric:tabular-nums;color:var(--text-primary);width:80px;text-align:right;flex-shrink:0;font-weight:600}
+.card-detail{margin-top:10px;padding-top:10px;border-top:1px dashed var(--border-subtle);font-size:11px;color:var(--text-muted);display:none}
+.card.expanded .card-detail{display:block}
+.card-detail .kv{display:flex;gap:6px;margin-top:4px}
+.card-detail .kv b{color:var(--text-secondary);font-weight:500}
+.sub.card.ok{border-color:var(--success)}
+.sub.card.triggered{border-color:var(--danger)}
+.sub.card.disabled{opacity:.55}
+.sub-thumb{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.sub-tag{padding:3px 8px;border-radius:var(--radius-sm);background:var(--accent-secondary-soft);font-size:10px;color:var(--accent-secondary)}
+.section-title{font-size:11px;color:var(--text-muted);font-weight:600;margin:18px 2px 10px;text-transform:uppercase;letter-spacing:0.5px;display:flex;align-items:center;gap:10px}
+.section-title::after{content:"";height:1px;background:var(--border-subtle);flex:1}
+.risk-card{padding:12px 14px;border-radius:var(--radius-sm);border-left:4px solid var(--warning);background:var(--warning-soft);
+  display:flex;align-items:center;gap:12px;font-size:12px;margin-bottom:10px}
+.risk-card.high{border-left-color:var(--warning);background:var(--warning-soft)}
+.risk-card.critical{border-left-color:var(--danger);background:var(--danger-soft)}
+.risk-card .lvl{padding:3px 8px;border-radius:var(--radius-sm);font-size:10px;font-weight:700;color:var(--text-primary);background:var(--bg-card-alt)}
+.risk-card.critical .lvl{background:var(--danger);color:white}
+.risk-card.high .lvl{background:var(--warning);color:white}
+.risk-card.warning .lvl{background:var(--warning);color:white}
+.roadmap{padding:4px 6px 24px 6px}
+.r-step{display:grid;grid-template-columns:48px 1fr auto;gap:12px;align-items:flex-start;padding:10px 6px 16px 6px;position:relative}
+.r-step:not(:last-child)::after{content:"";position:absolute;left:23px;top:48px;bottom:-8px;width:2px;background:var(--border-subtle)}
+.r-node{width:44px;height:44px;border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;flex-direction:column;padding:6px 0;
+  background:var(--bg-card-alt);border:1px solid var(--border-subtle);font-weight:700;font-size:13px;gap:2px;flex-shrink:0;color:var(--text-primary)}
+.r-node .lbl{font-size:9px;color:var(--text-muted);font-weight:500}
+.r-step.done .r-node{background:var(--success);border-color:transparent;color:white}
+.r-step.ready .r-node{background:var(--accent);border-color:transparent;color:white}
+.r-step.doing .r-node{background:var(--warning);border-color:transparent;color:white}
+.r-content h4{font-size:13px;font-weight:600;margin-bottom:4px;color:var(--text-primary)}
+.r-content p{font-size:11px;color:var(--text-muted);line-height:1.6}
+.r-actions{display:flex;gap:6px;align-items:center}
+.stepper{display:flex;gap:6px;flex-wrap:wrap;margin:12px 0 16px}
+.stepper-step{padding:6px 10px;border-radius:var(--radius-sm);background:var(--accent-soft);border:1px solid var(--border-subtle);font-size:11px;font-weight:600;color:var(--accent-text);display:inline-flex;align-items:center;gap:6px}
+.stepper-step.cur{background:var(--accent);border-color:transparent;color:white}
+.stepper-step.done{background:var(--success-soft);color:var(--success);border-color:var(--success-soft)}
+.checklist{display:flex;flex-direction:column;gap:8px;margin-top:10px}
+.check-row{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:var(--radius-sm);background:var(--bg-card-alt);border:1px solid var(--border-subtle);cursor:pointer;transition:background 0.2s}
+.check-row:hover{background:var(--accent-soft)}
+.check-row.done{background:var(--success-soft);border-color:var(--success-soft)}
+.check{width:18px;height:18px;border-radius:4px;border:2px solid var(--border-strong);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background 0.2s;font-size:11px;color:transparent;font-weight:700}
+.check-row.done .check{background:var(--success);border-color:var(--success);color:white}
+.check-row .cl-label{flex:1;font-size:12px;color:var(--text-primary);font-weight:500}
+.check-row.done .cl-label{color:var(--text-secondary);text-decoration:line-through}
+.check-row .cl-action{opacity:0;transition:opacity 0.2s}
+.check-row:hover .cl-action{opacity:1}
+.approval{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap}
+.ap-node{flex:1;min-width:130px;padding:12px;border-radius:var(--radius-sm);border:1px dashed var(--border-strong);background:var(--bg-card-alt);text-align:center;position:relative}
+.ap-node h5{font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+.ap-avatar{width:36px;height:36px;border-radius:50%;margin:0 auto 8px;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;
+  background:var(--accent-soft);border:2px solid var(--border-strong);color:var(--accent-text)}
+.ap-node.ok .ap-avatar{background:var(--success);border-color:transparent;color:white}
+.ap-node.pending .ap-avatar{background:var(--bg-card-alt);border:2px dashed var(--border-subtle);color:var(--text-faint)}
+.ap-role{font-size:11px;color:var(--text-secondary);font-weight:500}
+.ap-node::after{content:"";position:absolute;right:-15px;top:40px;width:20px;height:2px;background:var(--border-subtle)}
+.ap-node:last-child::after{display:none}
+.events{display:flex;flex-direction:column;gap:8px}
+.ev{display:grid;grid-template-columns:92px 1fr auto;gap:12px;padding:10px 12px;border-radius:var(--radius-sm);background:var(--bg-card-alt);border:1px solid var(--border-subtle)}
+.ev-time{font-size:11px;color:var(--text-muted);font-variant-numeric:tabular-nums;line-height:1.6}
+.ev-time b{display:block;color:var(--text-secondary);font-size:10px}
+.ev-body .ev-title{font-size:12px;font-weight:600;color:var(--text-primary);margin-bottom:4px}
+.ev-body .ev-desc{font-size:11px;color:var(--text-muted);line-height:1.55}
+.ev-body .chips{margin-top:6px;display:flex;gap:4px;flex-wrap:wrap}
+.chip{display:inline-flex;padding:2px 7px;border-radius:var(--radius-sm);font-size:10px;font-weight:600;background:var(--accent-soft);color:var(--accent-text);border:1px solid var(--border-subtle)}
+.chip.scope{background:var(--accent-secondary-soft);color:var(--accent-secondary);border-color:var(--accent-secondary-soft)}
+.chip.cr{background:var(--danger-soft);color:var(--danger-text);border-color:var(--danger-soft)}
+.chip.ok{background:var(--success-soft);color:var(--success);border-color:var(--success-soft)}
+.chip.wa{background:var(--warning-soft);color:var(--warning);border-color:var(--warning-soft)}
+.ev-actions{display:flex;align-items:center;gap:4px;flex-direction:column;justify-content:flex-start}
+.ev-actions .btn{padding:5px 9px;font-size:10px;border-radius:var(--radius-sm)}
+.chat-head{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+.chat-avatar{width:30px;height:30px;border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;font-size:14px;
+  background:var(--accent);color:white}
+.chat-title{font-size:13px;font-weight:600;color:var(--text-primary)}
+.chat-sub{font-size:10px;color:var(--text-muted)}
+.chat-msgs{flex:1;min-height:0;overflow:auto;padding:8px 4px 12px;scrollbar-width:thin;scrollbar-color:var(--border-strong) transparent}
+.chat-msgs::-webkit-scrollbar{width:5px}
+.chat-msgs::-webkit-scrollbar-thumb{background:var(--border-strong);border-radius:3px}
+.msg{margin:8px 0;max-width:100%;display:flex;gap:8px;align-items:flex-start}
+.msg .av{width:26px;height:26px;border-radius:6px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:12px;
+  background:var(--accent-soft);color:var(--accent-text)}
+.msg.me{justify-content:flex-end}
+.msg.me .av{order:2;background:var(--success);color:white}
+.bubble{padding:8px 12px;border-radius:var(--radius-sm);font-size:12px;line-height:1.6;color:var(--text-secondary);
+  background:var(--bg-card-alt);border:1px solid var(--border-subtle);max-width:calc(100% - 36px)}
+.msg.me .bubble{background:var(--accent-soft);border-color:var(--border-subtle);color:var(--text-primary)}
+.bubble h6{font-size:11px;color:var(--accent-secondary);font-weight:600;margin:4px 0 4px}
+.bubble ul{padding-left:14px;margin:4px 0}
+.bubble li{margin:2px 0;font-size:11px}
+.bubble .btns{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.chat-input{border-top:1px solid var(--border-subtle);padding:10px;display:flex;gap:8px;align-items:center;background:var(--bg-card-alt);border-radius:0 0 var(--radius-md) var(--radius-md)}
+.chat-input input{flex:1;padding:8px 12px;border-radius:var(--radius-sm);border:1px solid var(--border-strong);background:var(--bg-card);color:var(--text-primary);font-size:12px;outline:none;font-family:var(--font-sans)}
+.chat-input input:focus{border-color:var(--accent)}
+.footer{grid-column:1 / -1;display:flex;align-items:center;justify-content:space-between;padding:0 18px;
+  background:var(--bg-card);backdrop-filter:blur(var(--glass-blur));-webkit-backdrop-filter:blur(var(--glass-blur));
+  border:1px solid var(--glass-border);border-radius:var(--radius-md);font-size:11px;color:var(--text-muted);box-shadow:var(--shadow-md)}
+.footer-stats{display:flex;gap:16px;align-items:center}
+.footer-stat b{color:var(--text-primary);font-weight:600;font-variant-numeric:tabular-nums;margin-left:4px}
+.footer-switch{display:flex;gap:6px;align-items:center}
+.switch{display:inline-flex;align-items:center;gap:6px;cursor:pointer;padding:4px 8px;border-radius:var(--radius-sm);background:var(--bg-card-alt);border:1px solid var(--border-subtle)}
+.switch .swbox{width:26px;height:14px;border-radius:999px;background:var(--text-faint);position:relative;transition:background 0.2s}
+.switch .swbox::after{content:"";position:absolute;left:2px;top:2px;width:10px;height:10px;border-radius:50%;background:var(--text-primary);transition:left 0.2s}
+.switch.on .swbox{background:var(--accent)}
+.switch.on .swbox::after{left:14px}
+#toasts{position:fixed;right:20px;top:80px;z-index:9999;display:flex;flex-direction:column;gap:8px}
+.toast{padding:10px 14px;border-radius:var(--radius-sm);font-size:12px;color:var(--text-primary);background:var(--bg-card);
+  border:1px solid var(--glass-border);box-shadow:var(--shadow-lg);min-width:240px;backdrop-filter:blur(var(--glass-blur));-webkit-backdrop-filter:blur(var(--glass-blur))}
+.toast.ok{border-color:var(--success)}
+.toast.err{border-color:var(--danger)}
+.toast.warn{border-color:var(--warning)}
+
+@media(max-width:1400px){.app{grid-template-columns:260px 1fr 340px}}
+@media(max-width:1100px){
+  .app{grid-template-columns:1fr;grid-template-rows:60px auto auto auto 40px;height:auto;overflow:auto;min-height:100vh}
+  html,body{overflow:auto}
+  .grid.t8{grid-template-columns:repeat(2,1fr)}
+  .grid.sub9{grid-template-columns:repeat(2,1fr)}
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ========== HEADER ========== -->
+  <header class="header">
+    <div class="brand">
+      <div class="brand-logo"><span>升</span></div>
+      <div>
+        <div class="brand-title">AI 智能升级指挥中心</div>
+        <div class="brand-sub">MTSCOS Upgrade Command · Multi-Agent Coordination</div>
+      </div>
+    </div>
+    <div class="header-status">
+      <div class="pill" id="pill-score"><span class="dot on"></span>团队健康分 <b id="score-val">--</b></div>
+      <div class="pill ok" id="pill-idle"><span class="dot"></span>空闲 <b id="cnt-idle">--</b></div>
+      <div class="pill warn" id="pill-work"><span class="dot warn"></span>分析中 <b id="cnt-work">--</b></div>
+      <div class="pill danger" id="pill-crit"><span class="dot bad"></span>告警 <b id="cnt-crit">--</b></div>
+      <div class="pill" id="pill-main"><span class="dot"></span>主系统 <b id="main-state">--</b></div>
+      <div class="pill" id="pill-subs"><span class="dot"></span>子系统 <b id="subs-state">0/9 触发</b></div>
+    </div>
+    <div class="header-actions">
+      <button class="btn ghost small" id="btn-refresh" onclick="refreshAll()">↻ 立即刷新</button>
+      <button class="btn small warn" onclick="chatQuick('手动触发主系统升级（minor）')">🚀 手动升级</button>
+      <button class="btn small primary" onclick="runAIRecommend()"><i class="fas fa-sparkles"></i> AI 智能分析</button>
+    </div>
+  </header>
+
+  <!-- ========== LEFT: AI TEAM ========== -->
+  <aside class="panel">
+    <div class="panel-head">
+      <h3>AI 升级团队 · 9 Agents</h3>
+      <span class="st-tag idle" id="team-st">loading</span>
+    </div>
+    <div class="panel-body">
+      <div class="team-list" id="team-list"></div>
+    </div>
+  </aside>
+
+  <!-- ========== CENTER: TABS ========== -->
+  <section class="panel">
+    <div class="panel-head" style="padding-bottom:10px">
+      <div class="tabs">
+        <div class="tab active" data-tab="trigger" onclick="switchTab(this,'trigger')"><i class="fas fa-target"></i> 触发中心<span class="count" id="cnt-trig">0</span></div>
+        <div class="tab" data-tab="roadmap" onclick="switchTab(this,'roadmap')">🛤 审批·灰度·路线图<span class="count" id="cnt-road">0</span></div>
+        <div class="tab" data-tab="events" onclick="switchTab(this,'events')">📜 事件时间线<span class="count" id="cnt-ev">0</span></div>
+      </div>
+      <div class="header-actions" style="gap:8px">
+        <button class="btn ghost small" onclick="getEvents()">↺ 刷新事件</button>
+        <button class="btn ghost small" onclick="chatQuick('建议的最佳升级窗口期')">❔ 最佳窗口期</button>
+      </div>
+    </div>
+    <div class="tab-panes">
+      <!-- TAB 1: TRIGGER -->
+      <div class="tab-pane active" data-pane="trigger">
+        <div class="section-title">主系统触发维度 · 8 大维度</div>
+        <div class="grid t8" id="main-dims"></div>
+
+        <div class="section-title">子系统触发状态 · 9 类子系统</div>
+        <div class="grid sub9" id="subs-grid"></div>
+
+        <div class="section-title">风险预警清单</div>
+        <div class="grid risks" id="risks-grid"></div>
+      </div>
+
+      <!-- TAB 2: ROADMAP -->
+      <div class="tab-pane" data-pane="roadmap">
+        <div class="section-title">升级路线图 · Roadmap</div>
+        <div class="stepper" id="stepper"></div>
+        <div class="roadmap" id="roadmap"></div>
+
+        <div class="section-title">审批链要求</div>
+        <div class="approval" id="approval-chain"></div>
+
+        <div class="section-title">一键执行清单</div>
+        <div class="checklist" id="checklist"></div>
+      </div>
+
+      <!-- TAB 3: EVENTS -->
+      <div class="tab-pane" data-pane="events">
+        <div style="display:flex;gap:8px;margin-bottom:12px;align-items:center;flex-wrap:wrap">
+          <select id="f-scope" class="btn small ghost" style="padding:6px 10px;border-radius:8px;appearance:none;outline:none" onchange="getEvents()">
+            <option value="">📌 全部范围</option>
+            <option value="main"><i class="fas fa-target"></i> 主系统 (main)</option>
+            <option value="ai_engine"><i class="fas fa-robot"></i> ai_engine</option>
+            <option value="exam_system"><i class="fas fa-book-open"></i> exam_system</option>
+            <option value="settings_portal"><i class="fas fa-cog"></i> settings_portal</option>
+            <option value="vikey_manager">🔑 vikey_manager</option>
+            <option value="shadow_system"><i class="fas fa-users"></i> shadow_system</option>
+            <option value="knowledge_brain">🧠 knowledge_brain</option>
+            <option value="container_monitor">📦 container_monitor</option>
+            <option value="user_portal">👤 user_portal</option>
+            <option value="file_center"><i class="fas fa-folder"></i> file_center</option>
+          </select>
+          <select id="f-status" class="btn small ghost" style="padding:6px 10px;border-radius:8px;appearance:none;outline:none" onchange="getEvents()">
+            <option value="">🔎 全部状态</option>
+            <option value="open">⏳ open</option>
+            <option value="approved">✅ approved</option>
+            <option value="rejected">⛔ rejected</option>
+            <option value="executing"><i class="fas fa-cog"></i> executing</option>
+            <option value="done">✅ done</option>
+            <option value="cancelled">❌ cancelled</option>
+          </select>
+          <div style="flex:1"></div>
+          <input type="number" id="f-limit" value="20" min="5" max="500" class="btn small ghost" style="width:80px;padding:6px 10px;border-radius:8px;text-align:center" />
+        </div>
+        <div class="events" id="events-list"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== RIGHT: AI CHAT ========== -->
+  <aside class="panel">
+    <div class="panel-head">
+      <div class="chat-head" style="margin:0">
+        <div class="chat-avatar"><i class="fas fa-robot"></i></div>
+        <div>
+          <div class="chat-title">升级建议官 AI</div>
+          <div class="chat-sub">9-Agent 共识输出 · 动态推荐</div>
+        </div>
+      </div>
+      <span class="st-tag working" id="ai-st">在线</span>
+    </div>
+    <div class="panel-body" style="display:flex;flex-direction:column;min-height:0;padding:0">
+      <div class="chat-msgs" id="chat-msgs"></div>
+      <div class="chat-input">
+        <input type="text" id="chat-input" placeholder="问点什么？如：什么时候适合升级？" onkeydown="if(event.key==='Enter')chatSend()" />
+        <button class="btn small primary" onclick="chatSend()">发送</button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ========== FOOTER ========== -->
+  <footer class="footer">
+    <div class="footer-stats">
+      <div class="footer-stat">🚦 AUTO-REFRESH <label class="switch on" onclick="this.classList.toggle('on');toggleAuto(this.classList.contains('on'))">
+        <span class="swbox"></span></label></div>
+      <div class="footer-stat">⏱ 间隔 <select id="auto-sec" onchange="resetAuto()" class="btn small ghost" style="padding:2px 8px;border-radius:6px">
+        <option value="10">10s</option><option value="15">15s</option><option value="30" selected>30s</option><option value="60">1min</option>
+      </select></div>
+      <div class="footer-stat">🔄 下次刷新<b id="next-in">--</b></div>
+      <div class="footer-stat">🗓 服务器时间<b id="ts">--</b></div>
+    </div>
+    <div class="footer-stats">
+      <div class="footer-stat"><i class="fas fa-palette"></i> Build · {{ version if version else '' }} <b>{{ container.version if container else '2026.3' }}</b></div>
+      <div class="footer-stat">🐍 <b id="api-status">API OK</b></div>
+    </div>
+  </footer>
+</div>
+<div id="toasts"></div>
+
+<script>
+/* ============== UTIL ============== */
+const $=(s,el=document)=>el.querySelector(s);
+const $$=(s,el=document)=>[...el.querySelectorAll(s)];
+const T_META={
+  t1:{icon:'🕒',name:'时间/周期/维护窗口',code:'T1',desc:'按时间间隔或维护窗口触发升级检查'},
+  t2:{icon:'⚠️',name:'错误率阈值',code:'T2',desc:'HTTP/DB/业务异常率阈值触发'},
+  t3:{icon:'<i class="fas fa-bolt"></i>',name:'性能退化',code:'T3',desc:'响应时间/内存占用/积压触发'},
+  t4:{icon:'🧠',name:'AI 知识积累',code:'T4',desc:'脑库/规则/洞察增长触发'},
+  t5:{icon:'🛡️',name:'安全事件',code:'T5',desc:'高危拦截/CVE/异常入侵触发'},
+  t6:{icon:'👆',name:'管理员手动',code:'T6',desc:'管理员主动发起 T6 触发'},
+  t7:{icon:'📦',name:'Git/文件变更',code:'T7',desc:'代码MD5/仓库变更率触发'},
+  t8:{icon:'💾',name:'容量/资源',code:'T8',desc:'磁盘/会话/备份新鲜度触发'}
+};
+const SUB_META={
+  ai_engine:{icon:'<i class="fas fa-robot"></i>',name:'AI 引擎子系统'},
+  exam_system:{icon:'<i class="fas fa-book-open"></i>',name:'考试中心子系统'},
+  settings_portal:{icon:'<i class="fas fa-cog"></i>',name:'设置/权限子系统'},
+  vikey_manager:{icon:'🔑',name:'Vikey 加密子系统'},
+  shadow_system:{icon:'<i class="fas fa-users"></i>',name:'影子系统子系统'},
+  knowledge_brain:{icon:'🧠',name:'知识/脑库子系统'},
+  container_monitor:{icon:'📦',name:'容器监控子系统'},
+  user_portal:{icon:'👤',name:'用户门户子系统'},
+  file_center:{icon:'<i class="fas fa-folder"></i>',name:'文件中心子系统'}
+};
+const STATUS_NAME={'open':'⏳ 待处理','approved':'✅ 已审批','rejected':'⛔ 已拒绝','executing':'<i class="fas fa-cog"></i> 执行中','done':'✅ 完成','cancelled':'❌ 已取消'};
+function toast(msg,lvl='ok'){
+  const d=document.createElement('div');d.className='toast '+lvl;d.textContent=msg;
+  $('#toasts').appendChild(d);setTimeout(()=>d.remove(),3500);
+}
+function fmtTs(ts){
+  if(!ts) return '--';
+  const d=new Date(ts*1000);
+  const pad=n=>String(n).padStart(2,'0');
+  return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+}
+function fmtDt(str){
+  if(!str) return '--';
+  return str.replace('T',' ').slice(5,16);
+}
+function pctBar(v,max){
+  if(max==null) max=100;
+  return Math.min(100,Math.max(0,(v/max)*100));
+}
+/* ============== TAB ============== */
+function switchTab(el,name){
+  $$('.tab').forEach(t=>t.classList.toggle('active',t===el));
+  $$('.tab-pane').forEach(p=>p.classList.toggle('active',p.dataset.pane===name));
+  if(name==='events') getEvents();
+}
+/* ============== AI TEAM (LEFT) ============== */
+function renderTeam(team,summary){
+  const el=$('#team-list');el.innerHTML='';
+  team.forEach(a=>{
+    const pct=a.score;
+    const ringColor=pct>=85?'var(--ok)':pct>=60?'var(--warn)':'var(--danger)';
+    const stC={'idle':'#8692c3','working':'#6ee0ff','warning':'#ffbe66','critical':'#ff8ea0'}[a.status]||'#8692c3';
+    const card=document.createElement('div');
+    card.className='agent-card'+(a.status!=='idle'?' active':'');
+    card.onclick=()=>card.classList.toggle('expanded');
+    card.innerHTML=`
+      <div class="status-ring"></div>
+      <div class="agent-top">
+        <div class="agent-avatar">${a.icon}</div>
+        <div class="agent-meta">
+          <div class="agent-name">${a.name}
+            <span class="st-tag ${a.status}">${a.status}</span>
+            ${a.badge?`<span class="agent-badge" style="background:${a.badge.color}30;color:${a.badge.color};border:1px solid ${a.badge.color}66">${a.badge.text}</span>`:''}
+          </div>
+          <div class="agent-role">${a.desc} <span class="agent-lv">Lv.${a.level}</span></div>
+        </div>
+        <div class="score-ring" style="--p:${pct};background:conic-gradient(${ringColor} calc(${pct}*1%),rgba(75,88,128,0.2) 0)">
+          <span style="color:${stC}">${pct}</span>
+        </div>
+      </div>
+      <div class="agent-msg">💬 ${a.message||'暂无消息'}</div>
+      <div class="agent-sug"><i class="fas fa-target"></i> <b>建议：</b>${a.suggestion||'保持监控即可'}</div>
+    `;
+    el.appendChild(card);
+  });
+  $('#score-val').textContent=summary.overall_score||'--';
+  $('#cnt-idle').textContent=summary.idle_count||0;
+  $('#cnt-work').textContent=summary.working_count||0;
+  $('#cnt-crit').textContent=summary.critical_count||0;
+  $('#team-st').textContent = summary.critical_count>0?'告警':summary.working_count>0?'分析中':'待命';
+  $('#team-st').className = 'st-tag '+(summary.critical_count>0?'critical':summary.working_count>0?'working':'idle');
+  const stEl=$('#pill-score .dot');
+  stEl.className='dot '+(summary.critical_count>0?'bad':summary.working_count>0?'warn':'on');
+  $('#pill-idle .dot').className='dot '+((summary.idle_count||0)>0?'on':'');
+  $('#pill-work .dot').className='dot '+((summary.working_count||0)>0?'warn':'');
+  $('#pill-crit .dot').className='dot '+((summary.critical_count||0)>0?'bad':'');
+}
+/* ============== MAIN TRIGGER 8 DIMS ============== */
+function renderMainDims(summary,triggeredCount){
+  const el=$('#main-dims');el.innerHTML='';
+  let triCount=0;
+  Object.entries(T_META).forEach(([k,m])=>{
+    const d=summary[k]||{triggered:false};
+    const trig=!!d.triggered;
+    if(trig) triCount++;
+    const card=document.createElement('div');
+    card.className='card'+(trig?' triggered':'')+' dimension-card';
+    card.onclick=()=>card.classList.toggle('expanded');
+
+    let metricsHTML='';
+    if(k==='t1'){
+      metricsHTML=metricRow('距上次(小时)', Math.round((d.since_last_s||0)/3600),Math.round((d.interval_s||86400)/3600),d.triggered);
+      metricsHTML+=metricRow('当前小时', d.hour||0, 24, false, false);
+      metricsHTML+=metricRow('命中维护窗', (d.hour>=2&&d.hour<=4)?'是':'否', '是', false, true);
+    } else if(k==='t2'){
+      metricsHTML=metricRow('错误率(%)', d.err_rate_pct||0, 5, d.triggered);
+      metricsHTML+=metricRow('错误数', d.err_cnt||0, 50, d.triggered, false, true);
+      metricsHTML+=metricRow('总请求', d.total||0, 20, false, false, true);
+    } else if(k==='t3'){
+      metricsHTML=metricRow('Avg RT (ms)', d.avg_rt_ms||0, 800, d.triggered);
+      metricsHTML+=metricRow('相比基线增长(%)',d.growth_pct||0,50,d.triggered);
+      metricsHTML=metricRow('内存占用(%)', d.memory_pct||0,85,d.triggered);
+    } else if(k==='t4'){
+      metricsHTML=metricRow('新增脑库条目',d.brain_est||0,200,d.triggered,false,true);
+      metricsHTML+=metricRow('新增规则',d.new_rules||0,10,d.triggered,false,true);
+      metricsHTML+=metricRow('高置信洞察',d.high_conf_insights||0,20,d.triggered,false,true);
+    } else if(k==='t5'){
+      metricsHTML=metricRow('1h高危拦截',d.high_blocks_1h||0,5,d.triggered,false,true);
+      metricsHTML+=metricRow('自动升级建议',d.triggered?'安全补丁':'无需','无需',d.triggered,false,false,true);
+    } else if(k==='t6'){
+      metricsHTML=`<div class="m-row"><div class="lbl">说明</div><div style="flex:1;font-size:11px;color:#aee5ff">${d.note||'管理员从页面或API手动发起升级'}</div></div>`;
+    } else if(k==='t7'){
+      metricsHTML=metricRow('Git变更率(%)',d.changed_pct||0,5,d.triggered);
+    } else if(k==='t8'){
+      metricsHTML=metricRow('磁盘占用(%)',d.disk_pct||0,80,d.triggered);
+      metricsHTML+=metricRow('在线会话',d.sessions||0,500,d.triggered,false,true);
+      metricsHTML=metricRow('备份过期(h)',d.backup_stale_h||0,25,d.triggered,false,true);
+    }
+    card.innerHTML=`
+      <div class="card-head">
+        <div class="card-icon">${m.icon}</div>
+        <div class="card-title">${m.name}<div style="font-size:10px;color:#8290c7;font-weight:500;margin-top:2px">${m.desc}</div></div>
+        <div style="text-align:right">
+          <div class="card-code">${m.code}</div>
+          <div class="card-status ${trig?'trig':'ok'}">${trig?'<i class="fas fa-bolt"></i> 触发':'✅ 正常'}</div>
+        </div>
+      </div>
+      <div class="card-metrics">${metricsHTML}</div>
+      <div class="card-detail">
+        <div class="kv"><b>维度ID:</b>${m.code} · ${m.name}</div>
+        <div class="kv"><b>触发状态:</b>${trig?'已达到阈值':'未达到'}</div>
+        <div class="kv"><b>维度说明:</b>${m.desc}</div>
+        <div class="kv"><b>建议操作:</b>${trig?'立即进入审批流程（见路线图 Tab）':'保持监控即可，30s 后自动再检查'}</div>
+      </div>
+    `;
+    el.appendChild(card);
+  });
+  $('#cnt-trig').textContent=triCount;
+  $('#main-state').textContent=triCount>0?`<i class="fas fa-bolt"></i> ${triCount} 触发`:'✅ 正常';
+  $('#pill-main').classList.toggle('danger',triCount>2);
+  $('#pill-main').classList.toggle('warn',triCount>0&&triCount<=2);
+  $('#pill-main').classList.toggle('ok',triCount===0);
+  $('#pill-main .dot').className='dot '+ (triCount>2?'bad':triCount>0?'warn':'on');
+}
+function metricRow(lbl,val,threshold,trig,usePct=true,isCount=false,isText=false){
+  let fillPct=0;
+  let valueTxt=val;
+  let extraCls='';
+  if(isText){
+    return `<div class="m-row"><div class="lbl">${lbl}</div>
+      <div class="bar" style="height:auto;background:transparent"><span style="color:var(--text-0);font-size:11px">${val}</span></div>
+      <div class="val" style="font-size:11px">阈值 ${threshold}</div></div>`;
+  }
+  if(usePct){
+    fillPct=threshold>0?Math.min(100,(Number(val)||0)/Number(threshold)*100):0;
+    extraCls = fillPct>=100?(trig?'bad':'warn'):fillPct>=70?'warn':'';
+    valueTxt=Number(val).toFixed(typeof val==='number' && val%1!==0?1:0);
+  } else {
+    fillPct=pctBar(Math.min(100,Number(val)||0),Number(threshold)||100);
+    extraCls= fillPct>=100?(trig?'bad':'warn'):'';
+    valueTxt=val;
+  }
+  return `<div class="m-row">
+    <div class="lbl">${lbl}</div>
+    <div class="bar"><div class="fill ${extraCls}" style="width:${fillPct}%"></div></div>
+    <div class="val">${valueTxt} / ${threshold}</div>
+  </div>`;
+}
+/* ============== SUBSYSTEMS ============== */
+function renderSubs(subs){
+  const el=$('#subs-grid');el.innerHTML='';
+  const details=(subs.details||{});
+  const trig=subs.triggered_count||0;
+  Object.entries(SUB_META).forEach(([sid,m])=>{
+    const d=details[sid]||{enabled:1,triggered:false,summary:{}};
+    const on=!!(+d.enabled);
+    const trigged=!!d.triggered;
+    const s=d.summary||{};
+    const card=document.createElement('div');
+    card.className='card sub'+(trigged?' triggered':' ok')+(on?'':' disabled');
+    const minsAgo=Math.max(0,Math.round((s.since_last_seconds||0)/60));
+    const minInterval=Math.max(0,Math.round((s.min_interval||0)/60));
+    let metricHTML='';
+    if(sid==='ai_engine') metricHTML=metricRow('新增AI员工',s.new_ai_employees_24h||0,2,trigged,false,true);
+    else if(sid==='exam_system') metricHTML=metricRow('1h 错误',s.exam_errors_1h_est||0,5,trigged,false,true);
+    else if(sid==='settings_portal') metricHTML=metricRow('待审批设置',s.pending_approvals||0,5,trigged,false,true);
+    else if(sid==='vikey_manager') metricHTML=`
+        ${metricRow('1h鉴权失败',s.auth_failures_1h||0,5,trigged,false,true)}
+        ${metricRow('未知设备',s.unknown_devices_1h||0,1,trigged,false,true)}`;
+    else if(sid==='shadow_system') metricHTML=`
+        ${metricRow('同步滞后(s)',s.sync_lag_s||0,600,trigged)}
+        ${metricRow('冷数据过期(h)',s.cold_stale_h||0,24,trigged,false,true)}`;
+    else if(sid==='knowledge_brain') metricHTML=metricRow('12h新增条目',s.new_entries_12h||0,100,trigged,false,true);
+    else if(sid==='container_monitor') metricHTML=`
+        ${metricRow('1m高危事件',s.errors_1m||0,10,trigged,false,true)}
+        ${metricRow('心跳丢失(%)',s.heartbeat_miss_pct_est||0,5,trigged)}`;
+    else if(sid==='user_portal') metricHTML=`
+        ${metricRow('登录失败率(%)',s.login_fail_rate_pct_est||0,8,trigged)}
+        ${metricRow('会话掉线(%)',s.session_drop_rate_pct_est||0,5,trigged)}`;
+    else if(sid==='file_center') metricHTML=`
+        ${metricRow('孤儿文件',s.orphan_files||0,50,trigged,false,true)}
+        ${metricRow('存储(%)',s.storage_pct||0,85,trigged)}`;
+    card.innerHTML=`
+      <div class="card-head">
+        <div class="card-icon">${m.icon}</div>
+        <div class="card-title">${m.name}<div style="font-size:10px;color:#8290c7;font-weight:500;margin-top:2px">sid: ${sid}</div></div>
+        <div style="text-align:right">
+          <div class="card-status ${!on?'':trigged?'trig':'ok'}">${!on?'🚫 关闭':trigged?'<i class="fas fa-bolt"></i> 触发':'✅ OK'}</div>
+        </div>
+      </div>
+      ${metricHTML}
+      <div class="sub-thumb">
+        <span class="sub-tag">距上次升级 ${minsAgo}min</span>
+        <span class="sub-tag">检查周期 ${minInterval}min</span>
+        ${(d.event_ids||[]).length?`<span class="sub-tag">事件 ${(d.event_ids||[]).length}</span>`:''}
+      </div>
+    `;
+    el.appendChild(card);
+  });
+  const tot=subs.total_subsystems||Object.keys(SUB_META).length;
+  $('#subs-state').textContent=`${trig}/${tot} 触发`;
+  $('#pill-subs').classList.toggle('danger',trig>=3);
+  $('#pill-subs').classList.toggle('warn',trig>0&&trig<3);
+  $('#pill-subs').classList.toggle('ok',trig===0);
+  $('#pill-subs .dot').className='dot '+(trig>=3?'bad':trig>0?'warn':'on');
+}
+/* ============== RISKS ============== */
+function renderRisks(risks){
+  const el=$('#risks-grid');el.innerHTML='';
+  if(!risks||!risks.length){
+    const r=document.createElement('div');r.className='risk-card warning';
+    r.innerHTML=`<span class="lvl">OK</span><div style="flex:1;font-size:12px;color:#ffcf8a"><i class="fas fa-target"></i> 暂无高/严重风险。若维度持续触发，建议定时监控；可手动发起升级（见顶部按钮）</div>
+      <button class="btn small ok" onclick="runAIRecommend()">AI 再分析</button>`;
+    el.appendChild(r);return;
+  }
+  risks.forEach(r=>{
+    const lv=r.level||'warning';
+    const card=document.createElement('div');card.className='risk-card '+lv;
+    const lvlTxt={warning:'⚠ WARN',high:'<i class="fas fa-flame"></i> HIGH',critical:'🛑 CRITICAL'}[lv]||lv;
+    card.innerHTML=`<span class="lvl">${lvlTxt}</span>
+      <div style="flex:1">${r.msg}</div>
+      <button class="btn small ${lv==='critical'?'danger':lv==='high'?'warn':'ghost'}" onclick="chatQuick('请给出解决：${r.msg}')">AI 方案</button>`;
+    el.appendChild(card);
+  });
+}
+/* ============== ROADMAP ============== */
+let ROAD=[];let CHAIN={};let CHECKLIST=[];let SUG_TYPE='patch';
+function renderRoadmap(steps,chain,checklist,sugType){
+  ROAD=steps;CHAIN=chain||{};CHECKLIST=checklist||[];SUG_TYPE=sugType||'patch';
+  $('#cnt-road').textContent=(steps||[]).length;
+  const stEl=$('#stepper');stEl.innerHTML='';
+  const grays=(chain.gray_stages_pct||[]);
+  grays.forEach((pct,i)=>{
+    const sp=document.createElement('div');
+    const done=i<=getCurGrayIndex(steps);
+    sp.className='stepper-step '+(done?'done':'')+(getCurGrayIndex(steps)===i?'cur':'');
+    sp.innerHTML=`${done?'✅':i<getCurGrayIndex(steps)?'⌛':'🚦'} 灰度 ${pct}%<span style="color:#8290c7">${(chain.stage_minutes||[])[i]||0}min</span>`;
+    stEl.appendChild(sp);
+  });
+  const el=$('#roadmap');el.innerHTML='';
+  (steps||[]).forEach(s=>{
+    const wrap=document.createElement('div');
+    wrap.className='r-step '+s.status;
+    const stTxt={done:'完成',ready:'就绪',pending:'待办',executing:'执行中'}[s.status]||s.status;
+    wrap.innerHTML=`
+      <div class="r-node"><div>${s.step}</div><div class="lbl">${stTxt}</div></div>
+      <div class="r-content"><h4>${s.title}</h4><p>${s.detail||''}</p></div>
+      <div class="r-actions">
+        ${s.status==='ready'?`<button class="btn small primary" onclick="stepExecute(${s.step})">▶ 执行</button>`:''}
+        ${s.status==='done'?`<span class="st-tag ok">DONE</span>`:''}
+        ${s.status==='pending'?`<span class="st-tag idle">PENDING</span>`:''}
+      </div>
+    `;
+    el.appendChild(wrap);
+  });
+  // Approval chain
+  const ac=$('#approval-chain');ac.innerHTML='';
+  const needAd=chain.need_admin_approval||0;
+  const needSa=!!chain.need_super_approval;
+  const nodes=[
+    {id:'trig',title:'①触发',role:'AI Analyst Agent',ok:true},
+    {id:'adm',title:'②管理员审批',role:`需 ${needAd} 位管理员`,ok:needAd===0},
+    {id:'sa',title:'③超级管理员',role:'需 Vikey 双鉴',ok:!needSa},
+    {id:'shadow',title:'④切 Shadow',role:(chain.shadow_first?'必须 Shadow 先行':'可直推 Live'),ok:!chain.shadow_first},
+    {id:'gray',title:'⑤灰度发布',role:(grays.length)+' 阶段递进',ok:false},
+    {id:'done',title:'⑥完成上线',role:'留 24h 回滚窗口',ok:false},
+  ];
+  nodes.forEach(n=>{
+    const x=document.createElement('div');
+    x.className='ap-node '+(n.ok?'ok':'pending');
+    x.innerHTML=`<h5>${n.title}</h5><div class="ap-avatar">${n.ok?'✅':'⏳'}</div><div class="ap-role">${n.role}</div>`;
+    ac.appendChild(x);
+  });
+  // Checklist
+  const ckl=$('#checklist');ckl.innerHTML='';
+  (checklist||[]).forEach((ch,i)=>{
+    const r=document.createElement('div');
+    r.className='check-row'+(ch.done?' done':'');
+    r.innerHTML=`<div class="check" onclick="toggleCheck(${i},this)">✓</div>
+      <div class="cl-label">${ch.label}</div>
+      <div class="cl-action">
+        ${ch.payload?`<button class="btn small ghost" onclick="runChecklist(${i})">▶ 执行</button>`:''}
+      </div>`;
+    ckl.appendChild(r);
+  });
+}
+function getCurGrayIndex(steps){
+  const s=steps||[];const started=s.findIndex(x=>x.status!=='pending'&&String(x.title||'').startsWith('灰度'));
+  return started>=0?started:s.findIndex(x=>String(x.title||'').startsWith('灰度'));
+}
+function stepExecute(step){
+  toast(`步骤 ${step} 已提交执行（演示：实际会调用审批/灰度/升级接口）`,'ok');
+  if(step===2) chatQuick('一键执行管理员审批：当前升级类型 '+SUG_TYPE);
+  if(step===3) chatQuick('一键切换到 Shadow 模式');
+  if(String(step||'').startsWith('4')) chatQuick('推进到下一个灰度阶段');
+}
+function toggleCheck(i,el){
+  const r=el.parentElement;r.classList.toggle('done');
+  CHECKLIST[i].done=!CHECKLIST[i].done;
+  toast((CHECKLIST[i].done?'✅ ':'⏳ ')+CHECKLIST[i].label,'ok');
+}
+async function runChecklist(i){
+  const ch=CHECKLIST[i];
+  if(!ch||!ch.payload)return;
+  const p=ch.payload;
+  try{
+    const r=await http(p.method||'GET',p.path,p.body||{});
+    toast(`执行 ${ch.label} 结果: ${r.success?'成功':'失败'} · ${(r.message||'').slice(0,60)}`,r.success?'ok':'err');
+    if(r.success){CHECKLIST[i].done=true;refreshAll();}
+  }catch(e){
+    toast('执行失败: '+e.message,'err');
+  }
+}
+/* ============== EVENTS ============== */
+async function getEvents(){
+  const scope=$('#f-scope').value;const st=$('#f-status').value;const lim=$('#f-limit').value;
+  let qs='?limit='+lim;
+  if(scope)qs+='&scope='+encodeURIComponent(scope);
+  if(st)qs+='&status='+encodeURIComponent(st);
+  try{
+    const data=await http('GET','/api/upgrade/events'+qs);
+    const el=$('#events-list');el.innerHTML='';
+    $('#cnt-ev').textContent=data.count||0;
+    if(!data.count){el.innerHTML='<div style="padding:40px;text-align:center;color:#8290c7;font-size:12px">📭 没有匹配的触发事件</div>';return;}
+    (data.events||[]).forEach(e=>{
+      const row=document.createElement('div');row.className='ev';
+      const svChip={info:'ok',warning:'wa',critical:'cr'}[e.severity||'info']||'ok';
+      row.innerHTML=`
+        <div class="ev-time"><b>${fmtDt(e.created_at||'')}</b>${(e.created_at||'').slice(11,16)||''}</div>
+        <div class="ev-body">
+          <div class="ev-title">${e.trigger_name||e.trigger_type}
+            <span style="margin-left:6px;font-size:10px;color:#8290c7">#${e.id} · ${e.trigger_id||''}</span>
+          </div>
+          <div class="ev-desc">${e.actual_value||''}${e.approved_at?` — ✅ 已审批 @ ${fmtDt(e.approved_at)} · by ${e.approved_by||''}`:''}</div>
+          <div class="chips">
+            <span class="chip scope">scope: ${e.scope||''}</span>
+            <span class="chip ${svChip}">${e.severity||'info'}</span>
+            <span class="chip">建议: ${e.upgrade_type_suggested||'patch'}</span>
+            <span class="chip ${STATUS_NAME[e.status]?'ok':''}">${STATUS_NAME[e.status]||e.status}</span>
+          </div>
+        </div>
+        <div class="ev-actions">
+          ${(e.status==='open')?`<button class="btn small ok" onclick="approveEvent('${e.trigger_id}','approve')">✅批准</button>
+          <button class="btn small danger" onclick="approveEvent('${e.trigger_id}','reject')">⛔拒绝</button>`:''}
+          <button class="btn small ghost" onclick="chatQuick('对事件 ${e.trigger_id} 给出详细处置建议')">AI 建议</button>
+        </div>
+      `;
+      el.appendChild(row);
+    });
+  }catch(e){
+    $('#events-list').innerHTML='<div style="padding:40px;color:#ff8ea0;text-align:center">加载失败: '+e.message+'</div>';
+  }
+}
+async function approveEvent(tid,decision){
+  try{const r=await http('POST','/api/upgrade/approve',{trigger_id:tid,decision,comment:'从指挥中心 '+decision});toast(`事件 ${decision==='approve'?'已批准':'已拒绝'}: ${r.success?'OK':r.message}`,r.success?'ok':'err');if(r.success)getEvents();}
+  catch(e){toast('审批失败: '+e.message,'err');}
+}
+/* ============== CHAT (RIGHT) ============== */
+function chatAdd(text,who,html){
+  const el=$('#chat-msgs');
+  const m=document.createElement('div');m.className='msg'+(who==='me'?' me':'');
+  m.innerHTML=`<div class="av">${who==='me'?'👤':'<i class="fas fa-robot"></i>'}</div>
+    <div class="bubble">${html||text}</div>`;
+  el.appendChild(m);
+  el.scrollTop=el.scrollHeight;
+}
+async function chatSend(){
+  const i=$('#chat-input');const v=(i.value||'').trim();if(!v)return;
+  chatAdd(v,'me');i.value='';
+  if(v.includes('手动触发')) {
+    try{const r=await http('POST','/api/upgrade/trigger',{upgrade_type:v.includes('major')?'major':v.includes('hotfix')?'hotfix':'minor',reason:v});
+      chatAdd(``,'ai',`<h6>✅ 已生成触发事件</h6>
+        <ul><li>Trigger ID: <b>${r.trigger_id||'--'}</b></li><li>类型: <b>${r.upgrade_type||'patch'}</b></li><li>${r.message||''}</li></ul>
+        <div class="btns"><button class="btn small ok" onclick="switchTab(document.querySelector('[data-tab=roadmap]'),'roadmap')">🛤 看路线图</button>
+        <button class="btn small ghost" onclick="runAIRecommend()"><i class="fas fa-sparkles"></i> 重新分析</button></div>`);}
+    catch(e){chatAdd('失败: '+e.message,'ai');}return;
+  }
+  // 默认调用 AI recommend
+  runAIRecommend(v);
+}
+function chatQuick(pre){$('#chat-input').value=pre;chatSend();}
+async function runAIRecommend(userPrompt){
+  if(userPrompt) chatAdd(userPrompt,'me');
+  chatAdd('<span style="color:#aee5ff">9-Agent 综合分析中，请稍候 ...</span>','ai');
+  try{
+    const data=await http('GET','/api/upgrade/ai_recommend');
+    // 同时触发一次 tab 数据更新
+    updateCenterFromData(data);
+    // 更新 AI team + header
+    try{const t=await http('GET','/api/upgrade/ai_employees_status');renderTeam(t.team,t.summary);}catch(_){}
+    const main=data.main_system||{};
+    const subs=data.subsystems||{};
+    const team=data.ai_team_snapshot||[];
+    const steps=data.roadmap_steps||[];
+    const risks=data.risks||[];
+    const chain=main.approval_chain||{};
+    const triggeredDims=Object.values(main.summary||{}).filter(x=>typeof x==='object'&&x.triggered).length;
+    const triggeredSubs=subs.triggered_subsystems||[];
+    const sugType=main.suggested_upgrade_type||'patch';
+    const label=chain.label||'补丁';
+    let html=`<h6><i class="fas fa-target"></i> 综合评估结论</h6>
+      <div style="margin:4px 0 8px;padding:8px 10px;border-radius:8px;background:rgba(124,92,255,0.1);border:1px solid rgba(124,92,255,0.25)">
+        建议升级类型：<b style="color:#c4b6ff">${sugType}</b> · <b>${label}</b><br>
+        主系统触发维度：<b style="color:#ffbe66">${triggeredDims}/8</b> · 子系统：<b style="color:#ff8ea0">${triggeredSubs.length}/9</b>
+      </div>`;
+    if(risks.length){
+      html+='<h6>🚨 关键风险提醒</h6><ul>';
+      risks.forEach(r=>html+=`<li>${r.level.toUpperCase()}: ${r.msg}</li>`);
+      html+='</ul>';
+    }
+    html+='<h6><i class="fas fa-users"></i> 9-Agent 共识摘要</h6><ul>';
+    team.filter(t=>t.suggestion).forEach(t=>{
+      html+=`<li><b style="color:#9ee3ff">${t.icon} ${t.name}</b>：${t.suggestion||t.message||''}</li>`;
+    });
+    html += '</ul><h6>🛤 推荐的升级路线</h6><ul>';
+    steps.slice(0,6).forEach(s=>{
+      html += `<li>[${s.status.toUpperCase()}] ${s.title} — <span style="color:#8290c7">${s.detail||''}</span></li>`;
+    });
+    html += '</ul>';
+    html += `<div class="btns">
+      <button class="btn small primary" onclick="chatQuick('手动触发主系统升级（${sugType}）')">🚀 触发升级</button>
+      <button class="btn small ok" onclick="switchTab(document.querySelector('[data-tab=roadmap]'),'roadmap')">🛤 审批·灰度</button>
+      <button class="btn small ghost" onclick="chatQuick('对比patch/minor/major差异')">⚖️ 方案对比</button>
+    </div>`;
+    if(userPrompt&&/窗口期|适合|最佳|什么时候/i.test(userPrompt)){
+      html=`<h6>⏱ 建议窗口期</h6><ul>
+        <li>主系统配置的维护窗口：<b>凌晨 02:00~04:00</b></li>
+        <li>当前 T1 建议的间隔：<b>24h</b>，下次自动检查约 <b>${Math.round(((main.summary||{}).t1?.interval_s||86400)-((main.summary||{}).t1?.since_last_s||0))/3600}</b> 小时后</li>
+        <li>子系统待升级：${triggeredSubs.length?`<b>${triggeredSubs.join(', ')}</b> 推荐合并在主系统窗口期统一打包`:'暂无子系统触发'}</li>
+        <li>当前存储压力：${(main.summary?.t8?.disk_pct||0)}% 已接近阈值，<b>建议升级前先清理日志/备份</b></li>
+      </ul><div class="btns">
+      <button class="btn small warn" onclick="chatQuick('手动触发主系统升级（hotfix）')">🚨 立即热修复</button>
+      <button class="btn small ghost" onclick="runAIRecommend()"><i class="fas fa-sparkles"></i> 再分析</button></div>`+html;
+    } else if(userPrompt&&/对比|方案|差异/i.test(userPrompt)){
+      html=`<h6>⚖️ patch vs minor vs major</h6>
+      <div style="overflow:auto"><table style="width:100%;border-collapse:collapse;font-size:11px">
+        <thead><tr style="color:#aee5ff;text-align:left">
+          <th style="padding:6px;border-bottom:1px solid #333f6e">维度</th><th style="padding:6px;border-bottom:1px solid #333f6e">patch（当前推荐基础）</th>
+          <th style="padding:6px;border-bottom:1px solid #333f6e">minor</th><th style="padding:6px;border-bottom:1px solid #333f6e">major/release</th></tr></thead>
+        <tbody style="color:#b7c0e8">
+          <tr><td style="padding:6px;border-bottom:1px solid #1d2850">管理员审批</td><td style="padding:6px;border-bottom:1px solid #1d2850">免</td><td style="padding:6px;border-bottom:1px solid #1d2850">1 位</td><td style="padding:6px;border-bottom:1px solid #1d2850">管理员 + SA（Vikey）</td></tr>
+          <tr><td style="padding:6px;border-bottom:1px solid #1d2850">灰度阶段</td><td style="padding:6px;border-bottom:1px solid #1d2850">10%/30%/100% × 30min</td><td style="padding:6px;border-bottom:1px solid #1d2850">10%/50%/100% × 2h</td><td style="padding:6px;border-bottom:1px solid #1d2850">5%/20%/50%/100% × 6h</td></tr>
+          <tr><td style="padding:6px;border-bottom:1px solid #1d2850">影子先行</td><td style="padding:6px;border-bottom:1px solid #1d2850">✅</td><td style="padding:6px;border-bottom:1px solid #1d2850">✅</td><td style="padding:6px;border-bottom:1px solid #1d2850">✅</td></tr>
+          <tr><td style="padding:6px;border-bottom:1px solid #1d2850">本次适用</td><td style="padding:6px;border-bottom:1px solid #1d2850">T1/T3/T7/T8 单触发</td><td style="padding:6px;border-bottom:1px solid #1d2850">T4 知识积累（AI员工推荐本次）</td><td style="padding:6px;border-bottom:1px solid #1d2850">T4+多维度聚合（当前 ✅ 匹配）</td></tr>
+        </tbody></table></div>
+        <div class="btns"><button class="btn small primary" onclick="chatQuick('手动触发主系统升级（major）')">✅ 采纳 major</button>
+        <button class="btn small ghost" onclick="chatQuick('手动触发主系统升级（minor）')">🔵 尝试 minor</button>
+        <button class="btn small ghost" onclick="chatQuick('手动触发主系统升级（patch）')">🟢 保守 patch</button></div>`+html;
+    } else if(userPrompt&&/解决|处置|方案/i.test(userPrompt)){
+      html=`<h6>🧠 AI 处置建议</h6>
+      <div style="padding:8px 10px;border-radius:8px;background:rgba(36,211,154,0.1);border:1px solid rgba(36,211,154,0.3)">
+        <b style="color:#89ecc9">当前最高优先级：</b>${(risks[0]&&risks[0].msg)||'—'}
+      </div>
+      <ul>
+        <li>先清理 <code>/Logs</code>、<code>/data/backups</code> 过旧备份，将磁盘控制在 80% 以内</li>
+        <li>若 T4 脑库累计触发：将升级类型提升至 minor 以上，合并知识入库</li>
+        <li>若 T2/T5 错误/安全触发：务必用 hotfix/security 并切 Shadow 执行</li>
+        <li>升级结束后至少保留 24h 灰度/回滚窗口，并让灰度风控师 Agent 持续观察错误/性能</li>
+      </ul>
+      <div class="btns"><button class="btn small ok" onclick="chatQuick('手动触发主系统升级（minor）')">🚀 按建议升级 (minor)</button>
+      <button class="btn small ghost" onclick="refreshAll()">↻ 刷新全部数据</button></div>`+html;
+    }
+    // 替换最后一个（loading）
+    const msgs=$('#chat-msgs .msg');
+    if(msgs.length){msgs[msgs.length-1].querySelector('.bubble').innerHTML=html;}
+    else chatAdd(html,'ai');
+    // 再做 toast summary
+    toast('AI 分析完成：建议 '+sugType.toUpperCase()+'，'+triggeredDims+' 维触发','ok');
+  }catch(e){
+    const msgs=$('#chat-msgs .msg');
+    if(msgs.length){msgs[msgs.length-1].querySelector('.bubble').innerHTML='分析失败：'+e.message;}
+  }
+}
+/* ============== HTTP ============== */
+function http(method,path,body){
+  return fetch(path,{
+    method,headers:{'Content-Type':'application/json','X-Requested-With':'XMLHttpRequest'},
+    body: (method==='GET'||!body)?undefined:JSON.stringify(body),
+    credentials:'same-origin'
+  }).then(r=>{
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    return r.json();
+  }).then(d=>{if(!d.success)throw new Error(d.message||'API 失败');return d;});
+}
+/* ============== REFRESH ALL ============== */
+let STATE={recommend:null,team:null,summary:null};
+async function updateCenterFromData(d){
+  if(d.main_system)renderMainDims(d.main_system.summary||{},0);
+  if(d.subsystems)renderSubs(d.subsystems);
+  renderRisks(d.risks||[]);
+  renderRoadmap(d.roadmap_steps,d.main_system?.approval_chain,d.checklist,d.main_system?.suggested_upgrade_type||'patch');
+}
+async function refreshAll(){
+  try{
+    const [tData, rData] = await Promise.all([
+      http('GET','/api/upgrade/ai_employees_status'),
+      http('GET','/api/upgrade/ai_recommend')
+    ]);
+    STATE.team=tData.team;STATE.summary=tData.summary;
+    STATE.recommend=rData;
+    renderTeam(tData.team||[],tData.summary||{});
+    updateCenterFromData(rData);
+    $('#api-status').textContent='API OK';
+    $('#api-status').style.color='#89ecc9';
+    $('#ts').textContent=new Date().toLocaleTimeString();
+    nextTick=+($('#auto-sec').value||30);
+    nextTotal=nextTick;
+    $('#next-in').textContent=nextTick+'s';
+  }catch(e){
+    $('#api-status').textContent='ERR: '+(e.message||'').slice(0,20);
+    $('#api-status').style.color='#ff8ea0';
+  }
+}
+/* ============== AUTO ============== */
+let auto=true, nextTick=30, nextTotal=30, autoTimer=null;
+function toggleAuto(on){
+  auto=!!on;nextTick=+($('#auto-sec').value||30);nextTotal=nextTick;
+  $('#next-in').textContent=on?(nextTick+'s'):'OFF';
+}
+function resetAuto(){nextTick=+($('#auto-sec').value||30);nextTotal=nextTick;$('#next-in').textContent=nextTick+'s';}
+setInterval(()=>{
+  $('#ts').textContent=new Date().toLocaleTimeString();
+  if(!auto)return;
+  nextTick--;
+  if(nextTick<=0){refreshAll();}
+  else {$('#next-in').textContent=nextTick+'s';}
+},1000);
+/* ============== BOOT ============== */
+window.addEventListener('load',()=>{
+  chatAdd('👋 您好！我是 AI 升级建议官。点击右侧 <i class="fas fa-sparkles"></i> AI 智能分析 按钮开始，或直接发送你的问题。','ai',
+    `<h6><i class="fas fa-target"></i> 可用快捷入口</h6>
+     <ul>
+       <li><b><i class="fas fa-sparkles"></i> AI 智能分析</b>（9-Agent 全维度评估升级路线）</li>
+       <li><b>⏱ 最佳窗口期</b> — 推荐升级时机</li>
+       <li><b>⚖️ 方案对比</b> — patch/minor/major 差异</li>
+       <li><b>🚀 手动触发</b> — 发起主系统升级</li>
+     </ul>
+     <div class="btns">
+       <button class="btn small primary" onclick="runAIRecommend()">开始 AI 分析</button>
+       <button class="btn small ok" onclick="chatQuick('什么时候适合升级？')">最佳窗口期</button>
+       <button class="btn small ghost" onclick="chatQuick('对比所有方案')">方案对比</button>
+     </div>`);
+  refreshAll();
+  getEvents();
+});
+</script>
+</body>
+</html>

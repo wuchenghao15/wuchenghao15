@@ -1,0 +1,508 @@
+{% extends 'student_base.html' %}
+
+{% block title %}历年真题 - MTSCOS AI{% endblock %}
+{% block page_title %}
+历年真题
+{% if education_type %}
+    · 
+    {%- if education_type == 'nine_year' %}九年制义务教育 (数学、语文、英语、物理、化学、政治)
+    {%- elif education_type == 'adult' %}成人教育 (数学、语文、英语、日语)
+    {%- else %}通用学习 (数学、语文、英语、物理、化学、政治、日语){% endif %}
+{% endif %}
+{% endblock %}
+
+{% block extra_styles %}
+<style>
+    .ai-suggestion {
+        background: rgba(245, 158, 11, 0.1);
+        border: 1px solid rgba(245, 158, 11, 0.3);
+        border-radius: var(--radius-md);
+        padding: 16px; margin-bottom: 20px;
+        display: flex; gap: 12px;
+    }
+    .ai-suggestion i { font-size: 20px; color: var(--dark-warning); flex-shrink: 0; margin-top: 4px; }
+    .ai-suggestion-content h4 { font-size: 14px; font-weight: 600; color: var(--dark-warning); margin-bottom: 4px; }
+    .ai-suggestion-content p { font-size: 13px; color: var(--dark-text-secondary); line-height: 1.5; }
+
+    .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 20px; }
+    .stat-card {
+        background: rgba(20, 20, 40, 0.9); border: 1px solid var(--dark-border);
+        border-radius: var(--radius-lg); padding: 16px; text-align: center;
+    }
+    .stat-card .stat-value { font-size: 24px; font-weight: 700; color: var(--dark-warning); }
+    .stat-card .stat-label { font-size: 12px; color: var(--dark-text-secondary); margin-top: 4px; }
+
+    .filter-bar {
+        background: rgba(20, 20, 40, 0.9); border: 1px solid var(--dark-border);
+        border-radius: var(--radius-lg); padding: 14px 20px; margin-bottom: 20px;
+        display: flex; gap: 12px; flex-wrap: wrap; align-items: center;
+    }
+    .filter-item { display: flex; align-items: center; gap: 8px; }
+    .filter-item label { font-size: 13px; color: var(--dark-text-secondary); font-weight: 500; }
+    .filter-item select {
+        padding: 8px 12px; border-radius: var(--radius-md);
+        background: rgba(30, 30, 60, 0.6); border: 1px solid var(--dark-border);
+        color: var(--dark-text-primary); font-size: 13px;
+        outline: none; cursor: pointer;
+    }
+    .filter-item select:focus { border-color: var(--dark-warning); }
+
+    .year-tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; }
+    .year-tab {
+        padding: 8px 18px; border-radius: 999px; font-size: 13px;
+        background: rgba(30, 30, 60, 0.6); color: var(--dark-text-secondary);
+        cursor: pointer; border: 1px solid transparent; transition: all .2s;
+    }
+    .year-tab:hover { background: rgba(245,158,11,0.15); color: var(--dark-warning); }
+    .year-tab.active { background: var(--dark-warning); color: #fff; }
+
+    .exam-list { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+
+    .exam-card {
+        background: rgba(20, 20, 40, 0.9); border: 1px solid var(--dark-border);
+        border-radius: var(--radius-lg); padding: 20px;
+        box-shadow: 0 0 20px rgba(99, 102, 241, 0.08);
+        transition: transform .2s, box-shadow .2s, border-color .2s;
+        cursor: pointer;
+        display: flex; gap: 16px;
+    }
+    .exam-card:hover {
+        transform: translateX(5px);
+        box-shadow: 0 0 30px rgba(245, 158, 11, 0.15);
+        border-color: rgba(245, 158, 11, 0.4);
+    }
+
+    .exam-icon-box {
+        width: 56px; height: 56px; border-radius: var(--radius-md);
+        background: rgba(245,158,11,0.15); color: var(--dark-warning);
+        display: flex; align-items: center; justify-content: center;
+        font-size: 22px; flex-shrink: 0;
+    }
+
+    .exam-info { flex: 1; min-width: 0; }
+    .exam-header { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+    .exam-year {
+        padding: 2px 8px; border-radius: 4px; font-size: 11px;
+        background: rgba(245,158,11,0.2); color: var(--dark-warning); font-weight: 600;
+    }
+    .exam-season {
+        padding: 2px 8px; border-radius: 4px; font-size: 11px;
+        background: rgba(99,102,241,0.15); color: var(--dark-primary-light);
+    }
+
+    .exam-title { font-size: 15px; font-weight: 700; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .exam-subtitle { font-size: 12px; color: var(--dark-text-secondary); margin-bottom: 10px; }
+
+    .exam-meta { display: flex; gap: 14px; font-size: 12px; color: var(--dark-text-secondary); }
+    .exam-meta-item { display: flex; align-items: center; gap: 4px; }
+    .exam-meta-item i { color: var(--dark-warning); }
+    .exam-meta-item b { color: var(--dark-text-primary); font-weight: 600; }
+
+    .exam-actions { display: flex; flex-direction: column; gap: 8px; justify-content: center; flex-shrink: 0; }
+    .action-btn {
+        padding: 7px 14px; border-radius: var(--radius-md); font-size: 12px;
+        border: 1px solid var(--dark-border);
+        background: rgba(30, 30, 60, 0.6); color: var(--dark-text-primary);
+        cursor: pointer; transition: all .2s;
+        display: flex; align-items: center; justify-content: center; gap: 4px;
+    }
+    .action-btn:hover { background: var(--dark-warning); color: #fff; border-color: var(--dark-warning); }
+    .action-btn.secondary:hover { background: var(--dark-primary-color); border-color: var(--dark-primary-color); }
+
+    .search-box {
+        position: relative; flex: 1; max-width: 280px;
+    }
+    .search-box input {
+        width: 100%; padding: 8px 12px 8px 32px;
+        border: 1px solid var(--dark-border); border-radius: var(--radius-md);
+        background: rgba(30, 30, 60, 0.6); color: var(--dark-text-primary);
+        font-size: 12px; outline: none; transition: all .2s;
+    }
+    .search-box input:focus { border-color: var(--dark-warning); background: rgba(30, 30, 60, 0.8); }
+    .search-box input::placeholder { color: var(--dark-text-secondary); }
+    .search-box i {
+        position: absolute; left: 10px; top: 50%; transform: translateY(-50%);
+        color: var(--dark-text-secondary); font-size: 12px;
+    }
+
+    @media (max-width: 768px) {
+        .exam-list { grid-template-columns: 1fr; }
+        .exam-card { flex-direction: column; }
+        .exam-actions { flex-direction: row; }
+        .stats-row { grid-template-columns: repeat(2, 1fr); }
+        .filter-bar { flex-direction: column; align-items: flex-start; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+    <div class="ai-suggestion">
+        <i class="fas fa-lightbulb"></i>
+        <div class="ai-suggestion-content">
+            <h4>AI智能推荐</h4>
+            <p>根据您的备考目标和学习进度，建议优先练习：<strong>2024年全国卷数学真题</strong>、<strong>2023年英语四级真题</strong>。通过真题训练可以了解考试难度和命题规律，提高应试能力。</p>
+        </div>
+    </div>
+
+    <div class="stats-row">
+        <div class="stat-card"><div class="stat-value">150+</div><div class="stat-label">真题数量</div></div>
+        <div class="stat-card"><div class="stat-value">10</div><div class="stat-label">涵盖年份</div></div>
+        <div class="stat-card"><div class="stat-value">12</div><div class="stat-label">考试类型</div></div>
+        <div class="stat-card"><div class="stat-value">8</div><div class="stat-label">科目覆盖</div></div>
+    </div>
+
+    <div class="filter-bar">
+        <div class="search-box">
+            <i class="fas fa-search"></i>
+            <input type="text" id="searchInput" placeholder="搜索真题名称、科目..." oninput="filterExams()">
+        </div>
+        <div class="filter-item" style="margin-left: auto;">
+            <label><i class="fas fa-graduation-cap"></i> 考试类型</label>
+            <select id="examType">
+                <option value="all">全部考试</option>
+                {% if education_type in ['nine_year', 'adult', 'general'] %}
+                <option value="gaokao">高考</option>
+                <option value="zhongkao">中考</option>
+                {% endif %}
+                {% if education_type in ['adult', 'general'] %}
+                <option value="cet4">英语四级</option>
+                <option value="cet6">英语六级</option>
+                <option value="japanese">日语等级</option>
+                <option value="graduate">考研</option>
+                {% endif %}
+            </select>
+        </div>
+        <div class="filter-item">
+            <label><i class="fas fa-book"></i> 科目</label>
+            <select id="subject">
+                <option value="all">全部科目</option>
+                {% if education_type in ['nine_year', 'adult', 'general'] %}
+                <option value="math">数学</option>
+                <option value="chinese">语文</option>
+                <option value="english">英语</option>
+                <option value="physics">物理</option>
+                <option value="chemistry">化学</option>
+                <option value="politics">政治</option>
+                {% endif %}
+                {% if education_type in ['adult', 'general'] %}
+                <option value="japanese">日语</option>
+                {% endif %}
+            </select>
+        </div>
+        <div class="filter-item" style="margin-left: auto;">
+            <button class="action-btn" onclick="filterExams()">
+                <i class="fas fa-filter"></i> 筛选
+            </button>
+        </div>
+    </div>
+
+    <div class="year-tabs">
+        <span class="year-tab active" onclick="selectYear('all')">全部年份</span>
+        <span class="year-tab" onclick="selectYear('2024')">2024年</span>
+        <span class="year-tab" onclick="selectYear('2023')">2023年</span>
+        <span class="year-tab" onclick="selectYear('2022')">2022年</span>
+        <span class="year-tab" onclick="selectYear('2021')">2021年</span>
+        <span class="year-tab" onclick="selectYear('2020')">2020年</span>
+        <span class="year-tab" onclick="selectYear('2019')">2019年</span>
+        <span class="year-tab" onclick="selectYear('2018')">2018年</span>
+    </div>
+
+    <div class="exam-list" id="examList">
+        <div class="exam-card" onclick="startExam('gaokao-2024-math')">
+            <div class="exam-icon-box"><i class="fas fa-calculator"></i></div>
+            <div class="exam-info">
+                <div class="exam-header">
+                    <span class="exam-year">2024</span>
+                    <span class="exam-season">全国甲卷</span>
+                </div>
+                <div class="exam-title">高考数学真题</div>
+                <div class="exam-subtitle">理科数学 · 全国甲卷 · 含详细解析</div>
+                <div class="exam-meta">
+                    <div class="exam-meta-item"><i class="fas fa-list-ol"></i> <b>22</b> 题</div>
+                    <div class="exam-meta-item"><i class="fas fa-clock"></i> <b>120</b> 分钟</div>
+                    <div class="exam-meta-item"><i class="fas fa-trophy"></i> 150分</div>
+                </div>
+            </div>
+            <div class="exam-actions">
+                <button class="action-btn"><i class="fas fa-play"></i> 练习</button>
+                <button class="action-btn secondary"><i class="fas fa-file-text"></i> 解析</button>
+            </div>
+        </div>
+
+        <div class="exam-card" onclick="startExam('gaokao-2024-chinese')">
+            <div class="exam-icon-box"><i class="fas fa-book"></i></div>
+            <div class="exam-info">
+                <div class="exam-header">
+                    <span class="exam-year">2024</span>
+                    <span class="exam-season">全国乙卷</span>
+                </div>
+                <div class="exam-title">高考语文真题</div>
+                <div class="exam-subtitle">全国乙卷 · 含作文评分标准</div>
+                <div class="exam-meta">
+                    <div class="exam-meta-item"><i class="fas fa-list-ol"></i> <b>22</b> 题</div>
+                    <div class="exam-meta-item"><i class="fas fa-clock"></i> <b>150</b> 分钟</div>
+                    <div class="exam-meta-item"><i class="fas fa-trophy"></i> 150分</div>
+                </div>
+            </div>
+            <div class="exam-actions">
+                <button class="action-btn"><i class="fas fa-play"></i> 练习</button>
+                <button class="action-btn secondary"><i class="fas fa-file-text"></i> 解析</button>
+            </div>
+        </div>
+
+        <div class="exam-card" onclick="startExam('gaokao-2024-english')">
+            <div class="exam-icon-box"><i class="fas fa-language"></i></div>
+            <div class="exam-info">
+                <div class="exam-header">
+                    <span class="exam-year">2024</span>
+                    <span class="exam-season">全国甲卷</span>
+                </div>
+                <div class="exam-title">高考英语真题</div>
+                <div class="exam-subtitle">全国甲卷 · 含听力原文</div>
+                <div class="exam-meta">
+                    <div class="exam-meta-item"><i class="fas fa-list-ol"></i> <b>86</b> 题</div>
+                    <div class="exam-meta-item"><i class="fas fa-clock"></i> <b>120</b> 分钟</div>
+                    <div class="exam-meta-item"><i class="fas fa-trophy"></i> 150分</div>
+                </div>
+            </div>
+            <div class="exam-actions">
+                <button class="action-btn"><i class="fas fa-play"></i> 练习</button>
+                <button class="action-btn secondary"><i class="fas fa-file-text"></i> 解析</button>
+            </div>
+        </div>
+
+        <div class="exam-card" onclick="startExam('gaokao-2023-math')">
+            <div class="exam-icon-box"><i class="fas fa-calculator"></i></div>
+            <div class="exam-info">
+                <div class="exam-header">
+                    <span class="exam-year">2023</span>
+                    <span class="exam-season">全国卷I</span>
+                </div>
+                <div class="exam-title">高考数学真题</div>
+                <div class="exam-subtitle">理科数学 · 全国卷I · 含详细解析</div>
+                <div class="exam-meta">
+                    <div class="exam-meta-item"><i class="fas fa-list-ol"></i> <b>22</b> 题</div>
+                    <div class="exam-meta-item"><i class="fas fa-clock"></i> <b>120</b> 分钟</div>
+                    <div class="exam-meta-item"><i class="fas fa-trophy"></i> 150分</div>
+                </div>
+            </div>
+            <div class="exam-actions">
+                <button class="action-btn"><i class="fas fa-play"></i> 练习</button>
+                <button class="action-btn secondary"><i class="fas fa-file-text"></i> 解析</button>
+            </div>
+        </div>
+
+        <div class="exam-card" onclick="startExam('cet4-2024-june')">
+            <div class="exam-icon-box"><i class="fas fa-globe"></i></div>
+            <div class="exam-info">
+                <div class="exam-header">
+                    <span class="exam-year">2024</span>
+                    <span class="exam-season">6月</span>
+                </div>
+                <div class="exam-title">英语四级真题</div>
+                <div class="exam-subtitle">全国卷 · 含听力音频</div>
+                <div class="exam-meta">
+                    <div class="exam-meta-item"><i class="fas fa-list-ol"></i> <b>80</b> 题</div>
+                    <div class="exam-meta-item"><i class="fas fa-clock"></i> <b>130</b> 分钟</div>
+                    <div class="exam-meta-item"><i class="fas fa-trophy"></i> 710分</div>
+                </div>
+            </div>
+            <div class="exam-actions">
+                <button class="action-btn"><i class="fas fa-play"></i> 练习</button>
+                <button class="action-btn secondary"><i class="fas fa-file-text"></i> 解析</button>
+            </div>
+        </div>
+
+        <div class="exam-card" onclick="startExam('cet4-2023-dec')">
+            <div class="exam-icon-box"><i class="fas fa-globe"></i></div>
+            <div class="exam-info">
+                <div class="exam-header">
+                    <span class="exam-year">2023</span>
+                    <span class="exam-season">12月</span>
+                </div>
+                <div class="exam-title">英语四级真题</div>
+                <div class="exam-subtitle">全国卷 · 含听力音频</div>
+                <div class="exam-meta">
+                    <div class="exam-meta-item"><i class="fas fa-list-ol"></i> <b>80</b> 题</div>
+                    <div class="exam-meta-item"><i class="fas fa-clock"></i> <b>130</b> 分钟</div>
+                    <div class="exam-meta-item"><i class="fas fa-trophy"></i> 710分</div>
+                </div>
+            </div>
+            <div class="exam-actions">
+                <button class="action-btn"><i class="fas fa-play"></i> 练习</button>
+                <button class="action-btn secondary"><i class="fas fa-file-text"></i> 解析</button>
+            </div>
+        </div>
+
+        <div class="exam-card" onclick="startExam('cet6-2024-june')">
+            <div class="exam-icon-box"><i class="fas fa-globe"></i></div>
+            <div class="exam-info">
+                <div class="exam-header">
+                    <span class="exam-year">2024</span>
+                    <span class="exam-season">6月</span>
+                </div>
+                <div class="exam-title">英语六级真题</div>
+                <div class="exam-subtitle">全国卷 · 含听力音频</div>
+                <div class="exam-meta">
+                    <div class="exam-meta-item"><i class="fas fa-list-ol"></i> <b>80</b> 题</div>
+                    <div class="exam-meta-item"><i class="fas fa-clock"></i> <b>130</b> 分钟</div>
+                    <div class="exam-meta-item"><i class="fas fa-trophy"></i> 710分</div>
+                </div>
+            </div>
+            <div class="exam-actions">
+                <button class="action-btn"><i class="fas fa-play"></i> 练习</button>
+                <button class="action-btn secondary"><i class="fas fa-file-text"></i> 解析</button>
+            </div>
+        </div>
+
+        <div class="exam-card" onclick="startExam('japanese-n2-2024-july')">
+            <div class="exam-icon-box"><i class="fas fa-language"></i></div>
+            <div class="exam-info">
+                <div class="exam-header">
+                    <span class="exam-year">2024</span>
+                    <span class="exam-season">7月</span>
+                </div>
+                <div class="exam-title">日语N2真题</div>
+                <div class="exam-subtitle">JLPT · 含听力音频</div>
+                <div class="exam-meta">
+                    <div class="exam-meta-item"><i class="fas fa-list-ol"></i> <b>100+</b> 题</div>
+                    <div class="exam-meta-item"><i class="fas fa-clock"></i> <b>150</b> 分钟</div>
+                    <div class="exam-meta-item"><i class="fas fa-trophy"></i> 180分</div>
+                </div>
+            </div>
+            <div class="exam-actions">
+                <button class="action-btn"><i class="fas fa-play"></i> 练习</button>
+                <button class="action-btn secondary"><i class="fas fa-file-text"></i> 解析</button>
+            </div>
+        </div>
+
+        <div class="exam-card" onclick="startExam('gaokao-2023-physics')">
+            <div class="exam-icon-box"><i class="fas fa-atom"></i></div>
+            <div class="exam-info">
+                <div class="exam-header">
+                    <span class="exam-year">2023</span>
+                    <span class="exam-season">全国卷II</span>
+                </div>
+                <div class="exam-title">高考物理真题</div>
+                <div class="exam-subtitle">全国卷II · 含详细解析</div>
+                <div class="exam-meta">
+                    <div class="exam-meta-item"><i class="fas fa-list-ol"></i> <b>14</b> 题</div>
+                    <div class="exam-meta-item"><i class="fas fa-clock"></i> <b>75</b> 分钟</div>
+                    <div class="exam-meta-item"><i class="fas fa-trophy"></i> 100分</div>
+                </div>
+            </div>
+            <div class="exam-actions">
+                <button class="action-btn"><i class="fas fa-play"></i> 练习</button>
+                <button class="action-btn secondary"><i class="fas fa-file-text"></i> 解析</button>
+            </div>
+        </div>
+
+        <div class="exam-card" onclick="startExam('gaokao-2023-chemistry')">
+            <div class="exam-icon-box"><i class="fas fa-flask-vial"></i></div>
+            <div class="exam-info">
+                <div class="exam-header">
+                    <span class="exam-year">2023</span>
+                    <span class="exam-season">全国卷I</span>
+                </div>
+                <div class="exam-title">高考化学真题</div>
+                <div class="exam-subtitle">全国卷I · 含详细解析</div>
+                <div class="exam-meta">
+                    <div class="exam-meta-item"><i class="fas fa-list-ol"></i> <b>14</b> 题</div>
+                    <div class="exam-meta-item"><i class="fas fa-clock"></i> <b>75</b> 分钟</div>
+                    <div class="exam-meta-item"><i class="fas fa-trophy"></i> 100分</div>
+                </div>
+            </div>
+            <div class="exam-actions">
+                <button class="action-btn"><i class="fas fa-play"></i> 练习</button>
+                <button class="action-btn secondary"><i class="fas fa-file-text"></i> 解析</button>
+            </div>
+        </div>
+
+        <div class="exam-card" onclick="startExam('zhongkao-2024-math')">
+            <div class="exam-icon-box"><i class="fas fa-calculator"></i></div>
+            <div class="exam-info">
+                <div class="exam-header">
+                    <span class="exam-year">2024</span>
+                    <span class="exam-season">北京卷</span>
+                </div>
+                <div class="exam-title">中考数学真题</div>
+                <div class="exam-subtitle">北京卷 · 含详细解析</div>
+                <div class="exam-meta">
+                    <div class="exam-meta-item"><i class="fas fa-list-ol"></i> <b>28</b> 题</div>
+                    <div class="exam-meta-item"><i class="fas fa-clock"></i> <b>120</b> 分钟</div>
+                    <div class="exam-meta-item"><i class="fas fa-trophy"></i> 100分</div>
+                </div>
+            </div>
+            <div class="exam-actions">
+                <button class="action-btn"><i class="fas fa-play"></i> 练习</button>
+                <button class="action-btn secondary"><i class="fas fa-file-text"></i> 解析</button>
+            </div>
+        </div>
+
+        <div class="exam-card" onclick="startExam('graduate-2024-math')">
+            <div class="exam-icon-box"><i class="fas fa-graduation-cap"></i></div>
+            <div class="exam-info">
+                <div class="exam-header">
+                    <span class="exam-year">2024</span>
+                    <span class="exam-season">数学一</span>
+                </div>
+                <div class="exam-title">考研数学真题</div>
+                <div class="exam-subtitle">数学一 · 含详细解析</div>
+                <div class="exam-meta">
+                    <div class="exam-meta-item"><i class="fas fa-list-ol"></i> <b>22</b> 题</div>
+                    <div class="exam-meta-item"><i class="fas fa-clock"></i> <b>180</b> 分钟</div>
+                    <div class="exam-meta-item"><i class="fas fa-trophy"></i> 150分</div>
+                </div>
+            </div>
+            <div class="exam-actions">
+                <button class="action-btn"><i class="fas fa-play"></i> 练习</button>
+                <button class="action-btn secondary"><i class="fas fa-file-text"></i> 解析</button>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+function startExam(examId) {
+    alert('即将开始历年真题练习: ' + examId);
+}
+
+function selectYear(year) {
+    document.querySelectorAll('.year-tab').forEach(tab => tab.classList.remove('active'));
+    event.target.classList.add('active');
+    alert('筛选年份: ' + year);
+}
+
+function filterExams() {
+    const searchInput = document.getElementById('searchInput');
+    const searchTerm = searchInput ? searchInput.value.toLowerCase().trim() : '';
+    const examType = document.getElementById('examType').value;
+    const subject = document.getElementById('subject').value;
+    const examCards = document.querySelectorAll('.exam-card');
+
+    examCards.forEach(card => {
+        const title = card.querySelector('.exam-title')?.textContent.toLowerCase() || '';
+        const subtitle = card.querySelector('.exam-subtitle')?.textContent.toLowerCase() || '';
+        const year = card.querySelector('.exam-year')?.textContent || '';
+        const season = card.querySelector('.exam-season')?.textContent.toLowerCase() || '';
+        
+        let match = true;
+        
+        if (searchTerm && !title.includes(searchTerm) && !subtitle.includes(searchTerm) && !year.includes(searchTerm) && !season.includes(searchTerm)) {
+            match = false;
+        }
+        
+        if (match && examType !== 'all' && !title.includes(examType)) {
+            match = false;
+        }
+        
+        if (match && subject !== 'all' && !title.includes(subject)) {
+            match = false;
+        }
+        
+        card.style.display = match ? '' : 'none';
+    });
+}
+</script>
+{% endblock %}

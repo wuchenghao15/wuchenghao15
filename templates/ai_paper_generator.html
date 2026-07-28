@@ -1,0 +1,762 @@
+{% extends "base.html" %}
+
+{% block title %}AI智能组卷系统{% endblock %}
+
+{% block head %}
+<style>
+    .paper-container {
+        max-width: 1200px;
+        margin: 30px auto;
+        padding: 0 20px;
+    }
+    .paper-header {
+        text-align: center;
+        margin-bottom: 30px;
+    }
+    .paper-header h1 {
+        color: #333;
+        font-size: 32px;
+        margin-bottom: 10px;
+    }
+    .paper-header p {
+        color: #666;
+        font-size: 14px;
+    }
+    .tabs {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 20px;
+        border-bottom: 2px solid #eee;
+    }
+    .tab {
+        padding: 12px 24px;
+        border: none;
+        background: none;
+        color: #666;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        border-bottom: 3px solid transparent;
+        transition: all 0.3s;
+    }
+    .tab.active {
+        color: #667eea;
+        border-bottom-color: #667eea;
+    }
+    .tab:hover {
+        color: #667eea;
+    }
+    .form-section {
+        background: white;
+        border-radius: 12px;
+        padding: 25px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        margin-bottom: 20px;
+    }
+    .form-row {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 15px;
+        margin-bottom: 20px;
+    }
+    .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+    .form-group label {
+        font-size: 13px;
+        color: #555;
+        font-weight: 500;
+    }
+    .form-group select,
+    .form-group input {
+        padding: 10px 12px;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        font-size: 14px;
+        background: #fafafa;
+    }
+    .form-group select:focus,
+    .form-group input:focus {
+        outline: none;
+        border-color: #667eea;
+        background: white;
+    }
+    .btn-group {
+        display: flex;
+        gap: 12px;
+        margin-top: 20px;
+    }
+    .btn {
+        padding: 12px 24px;
+        border: none;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+    .btn-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+    }
+    .btn-secondary {
+        background: #f5f5f5;
+        color: #666;
+    }
+    .btn-secondary:hover {
+        background: #eee;
+    }
+    .result-section {
+        display: none;
+    }
+    .result-section.show {
+        display: block;
+    }
+    .paper-info-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 12px;
+        padding: 25px;
+        color: white;
+        margin-bottom: 20px;
+    }
+    .paper-info-card h2 {
+        margin-bottom: 15px;
+    }
+    .paper-info-row {
+        display: flex;
+        gap: 30px;
+        margin-top: 10px;
+    }
+    .paper-info-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .paper-info-item .label {
+        opacity: 0.9;
+        font-size: 14px;
+    }
+    .paper-info-item .value {
+        font-weight: 600;
+        font-size: 16px;
+    }
+    .distribution-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 15px;
+        margin-bottom: 20px;
+    }
+    .distribution-card {
+        background: white;
+        border-radius: 12px;
+        padding: 20px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    }
+    .distribution-card h4 {
+        color: #333;
+        margin-bottom: 15px;
+    }
+    .distribution-bar {
+        margin-bottom: 10px;
+    }
+    .distribution-bar .label {
+        font-size: 13px;
+        color: #666;
+        margin-bottom: 5px;
+    }
+    .distribution-bar .bar {
+        height: 20px;
+        background: #f0f0f0;
+        border-radius: 10px;
+        overflow: hidden;
+    }
+    .distribution-bar .bar-fill {
+        height: 100%;
+        border-radius: 10px;
+        transition: width 0.5s ease;
+    }
+    .distribution-bar .bar-fill.easy { background: #10b981; }
+    .distribution-bar .bar-fill.medium { background: #3b82f6; }
+    .distribution-bar .bar-fill.hard { background: #ef4444; }
+    .questions-section {
+        background: white;
+        border-radius: 12px;
+        padding: 25px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        margin-bottom: 20px;
+    }
+    .questions-section h3 {
+        color: #333;
+        font-size: 18px;
+        margin-bottom: 20px;
+    }
+    .question-item {
+        padding: 15px;
+        border-bottom: 1px solid #f0f0f0;
+        margin-bottom: 15px;
+    }
+    .question-item:last-child {
+        border-bottom: none;
+    }
+    .question-header {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 10px;
+    }
+    .question-type-badge {
+        padding: 4px 10px;
+        background: #f0f4ff;
+        color: #667eea;
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: 600;
+    }
+    .question-difficulty-badge {
+        padding: 4px 10px;
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: 600;
+    }
+    .question-difficulty-badge.easy { background: #d1fae5; color: #059669; }
+    .question-difficulty-badge.medium { background: #dbeafe; color: #2563eb; }
+    .question-difficulty-badge.hard { background: #fee2e2; color: #dc2626; }
+    .question-score {
+        margin-left: auto;
+        font-weight: 600;
+        color: #667eea;
+    }
+    .question-content {
+        color: #333;
+        font-size: 14px;
+        line-height: 1.6;
+    }
+    .question-options {
+        margin-top: 10px;
+        padding-left: 20px;
+    }
+    .question-options li {
+        margin-bottom: 5px;
+        color: #555;
+        font-size: 14px;
+    }
+    .question-answer {
+        margin-top: 10px;
+        padding: 10px;
+        background: #f8f9fa;
+        border-radius: 8px;
+        font-size: 14px;
+        color: #333;
+    }
+    .question-answer .label {
+        font-weight: 600;
+        color: #667eea;
+    }
+    .history-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    .history-table th, .history-table td {
+        padding: 12px;
+        text-align: left;
+        border-bottom: 1px solid #eee;
+    }
+    .history-table th {
+        background: #f8f9fa;
+        font-weight: 600;
+        color: #555;
+    }
+    .history-table tr:hover {
+        background: #f8f9fa;
+    }
+    .loading-spinner {
+        display: none;
+        text-align: center;
+        padding: 40px;
+    }
+    .loading-spinner.show {
+        display: block;
+    }
+    .spinner {
+        width: 40px;
+        height: 40px;
+        border: 4px solid #f3f3f3;
+        border-top: 4px solid #667eea;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin: 0 auto 20px;
+    }
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+    .subjects-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 15px;
+    }
+    .subject-card {
+        background: white;
+        border-radius: 12px;
+        padding: 20px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+    .subject-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(0,0,0,0.12);
+    }
+    .subject-card .subject-name {
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 10px;
+    }
+    .subject-card .topics {
+        font-size: 13px;
+        color: #666;
+    }
+    .question-types-list {
+        background: white;
+        border-radius: 12px;
+        padding: 25px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    }
+    .question-types-list h3 {
+        color: #333;
+        margin-bottom: 20px;
+    }
+    .question-type-item {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        padding: 15px;
+        border-bottom: 1px solid #f0f0f0;
+    }
+    .question-type-item:last-child {
+        border-bottom: none;
+    }
+    .question-type-item .type-name {
+        font-weight: 600;
+        color: #333;
+    }
+    .question-type-item .type-info {
+        font-size: 13px;
+        color: #666;
+    }
+    .preview-btn {
+        background: #f5f5f5;
+        color: #666;
+        padding: 8px 16px;
+        border-radius: 6px;
+        font-size: 13px;
+        cursor: pointer;
+        border: none;
+    }
+    .preview-btn:hover {
+        background: #eee;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="paper-container">
+    <div class="paper-header">
+        <h1>AI智能组卷系统</h1>
+        <p>根据教学大纲和考试要求自动生成试卷</p>
+    </div>
+
+    <div class="tabs">
+        <button class="tab active" onclick="switchTab('generate')">生成试卷</button>
+        <button class="tab" onclick="switchTab('papers')">试卷列表</button>
+        <button class="tab" onclick="switchTab('subjects')">科目管理</button>
+    </div>
+
+    <div id="generate-tab" class="tab-content">
+        <div class="form-section">
+            <h3 style="color: #333; margin-bottom: 20px;">试卷参数设置</h3>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label>试卷标题</label>
+                    <input type="text" id="title" placeholder="请输入试卷标题">
+                </div>
+                <div class="form-group">
+                    <label>科目</label>
+                    <select id="subject" onchange="loadSubjectTopics()">
+                        <option value="数学">数学</option>
+                        <option value="英语">英语</option>
+                        <option value="物理">物理</option>
+                        <option value="化学">化学</option>
+                        <option value="语文">语文</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>总分</label>
+                    <input type="number" id="total_score" value="100" min="50" max="300">
+                </div>
+                <div class="form-group">
+                    <label>时长(分钟)</label>
+                    <input type="number" id="duration" value="120" min="30" max="300">
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>难度分布</label>
+                    <select id="difficulty">
+                        <option value="balanced">均衡</option>
+                        <option value="easy">偏易</option>
+                        <option value="hard">偏难</option>
+                    </select>
+                </div>
+                <div class="form-group" style="grid-column: span 3;">
+                    <label>知识点（可选，留空则随机）</label>
+                    <input type="text" id="topics" placeholder="多个知识点用逗号分隔">
+                </div>
+            </div>
+
+            <div class="btn-group">
+                <button class="btn btn-primary" onclick="generatePaper()">生成试卷</button>
+                <button class="btn btn-secondary" onclick="clearForm()">重置</button>
+            </div>
+        </div>
+
+        <div class="loading-spinner" id="loading">
+            <div class="spinner"></div>
+            <p>AI正在生成试卷，请稍候...</p>
+        </div>
+
+        <div class="result-section" id="result">
+            <div class="paper-info-card">
+                <h2 id="paper_title">--</h2>
+                <div class="paper-info-row">
+                    <div class="paper-info-item">
+                        <span class="label">科目:</span>
+                        <span class="value" id="paper_subject">--</span>
+                    </div>
+                    <div class="paper-info-item">
+                        <span class="label">总分:</span>
+                        <span class="value" id="paper_total_score">--</span>
+                    </div>
+                    <div class="paper-info-item">
+                        <span class="label">时长:</span>
+                        <span class="value" id="paper_duration">--</span>
+                    </div>
+                    <div class="paper-info-item">
+                        <span class="label">题目数:</span>
+                        <span class="value" id="paper_question_count">--</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="distribution-grid">
+                <div class="distribution-card">
+                    <h4>难度分布</h4>
+                    <div id="difficulty_dist"></div>
+                </div>
+                <div class="distribution-card">
+                    <h4>知识点分布</h4>
+                    <div id="topic_dist"></div>
+                </div>
+            </div>
+
+            <div class="questions-section">
+                <h3>题目列表</h3>
+                <div id="questions_list"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="papers-tab" class="tab-content" style="display: none;">
+        <div class="form-section">
+            <div class="form-row" style="grid-template-columns: repeat(3, 1fr);">
+                <div class="form-group">
+                    <label>科目筛选</label>
+                    <select id="paper_subject_filter" onchange="loadPapers()">
+                        <option value="">全部科目</option>
+                        <option value="数学">数学</option>
+                        <option value="英语">英语</option>
+                        <option value="物理">物理</option>
+                        <option value="化学">化学</option>
+                        <option value="语文">语文</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>数量</label>
+                    <input type="number" id="paper_limit" value="10" min="1" max="50">
+                </div>
+                <div class="form-group" style="align-self: flex-end;">
+                    <button class="btn btn-primary" onclick="loadPapers()">查询</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-section">
+            <table class="history-table">
+                <thead>
+                    <tr>
+                        <th>试卷ID</th>
+                        <th>标题</th>
+                        <th>科目</th>
+                        <th>总分</th>
+                        <th>时长</th>
+                        <th>题目数</th>
+                        <th>使用次数</th>
+                        <th>创建时间</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody id="papers_body"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="subjects-tab" class="tab-content" style="display: none;">
+        <div class="form-section">
+            <h3>科目列表</h3>
+            <div class="subjects-grid" id="subjects_grid"></div>
+        </div>
+
+        <div class="question-types-list">
+            <h3>题型设置</h3>
+            <div id="question_types_list"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function switchTab(tabName) {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(c => c.style.display = 'none');
+        
+        event.target.classList.add('active');
+        document.getElementById(tabName + '-tab').style.display = 'block';
+        
+        if (tabName === 'papers') {
+            loadPapers();
+        } else if (tabName === 'subjects') {
+            loadSubjects();
+        }
+    }
+
+    function clearForm() {
+        document.getElementById('title').value = '';
+        document.getElementById('total_score').value = '100';
+        document.getElementById('duration').value = '120';
+        document.getElementById('topics').value = '';
+        document.getElementById('result').classList.remove('show');
+    }
+
+    async function loadSubjectTopics() {
+        const subject = document.getElementById('subject').value;
+        
+        try {
+            const response = await fetch('/api/ai/paper/subjects');
+            const data = await response.json();
+            
+            if (data.success && data.data[subject]) {
+                document.getElementById('topics').placeholder = '可选知识点: ' + data.data[subject].join(', ');
+            }
+        } catch (error) {
+            console.error('加载知识点失败');
+        }
+    }
+
+    async function generatePaper() {
+        const title = document.getElementById('title').value;
+        const subject = document.getElementById('subject').value;
+        const total_score = parseInt(document.getElementById('total_score').value);
+        const duration = parseInt(document.getElementById('duration').value);
+        const difficulty = document.getElementById('difficulty').value;
+        const topics_input = document.getElementById('topics').value;
+        
+        const topics = topics_input ? topics_input.split(',').map(t => t.trim()).filter(t => t) : null;
+
+        if (!title) {
+            alert('请输入试卷标题');
+            return;
+        }
+
+        document.getElementById('loading').classList.add('show');
+        document.getElementById('result').classList.remove('show');
+
+        try {
+            const response = await fetch('/api/ai/paper/generate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ title, subject, total_score, duration, difficulty, topics })
+            });
+
+            const data = await response.json();
+            
+            if (data.success) {
+                displayPaperResult(data.data);
+            } else {
+                alert(data.error || '生成失败');
+            }
+        } catch (error) {
+            alert('网络错误');
+        } finally {
+            document.getElementById('loading').classList.remove('show');
+        }
+    }
+
+    function displayPaperResult(data) {
+        document.getElementById('paper_title').textContent = data.title;
+        document.getElementById('paper_subject').textContent = data.subject;
+        document.getElementById('paper_total_score').textContent = data.total_score + '分';
+        document.getElementById('paper_duration').textContent = data.duration + '分钟';
+        document.getElementById('paper_question_count').textContent = data.question_count + '题';
+
+        const diffDist = data.difficulty_distribution;
+        const diffTotal = diffDist.easy + diffDist.medium + diffDist.hard;
+        
+        document.getElementById('difficulty_dist').innerHTML = `
+            <div class="distribution-bar">
+                <div class="label">简单: ${diffDist.easy}题 (${diffTotal ? ((diffDist.easy / diffTotal) * 100).toFixed(0) : 0}%)</div>
+                <div class="bar"><div class="bar-fill easy" style="width: ${diffTotal ? ((diffDist.easy / diffTotal) * 100) : 0}%"></div></div>
+            </div>
+            <div class="distribution-bar">
+                <div class="label">中等: ${diffDist.medium}题 (${diffTotal ? ((diffDist.medium / diffTotal) * 100).toFixed(0) : 0}%)</div>
+                <div class="bar"><div class="bar-fill medium" style="width: ${diffTotal ? ((diffDist.medium / diffTotal) * 100) : 0}%"></div></div>
+            </div>
+            <div class="distribution-bar">
+                <div class="label">困难: ${diffDist.hard}题 (${diffTotal ? ((diffDist.hard / diffTotal) * 100).toFixed(0) : 0}%)</div>
+                <div class="bar"><div class="bar-fill hard" style="width: ${diffTotal ? ((diffDist.hard / diffTotal) * 100) : 0}%"></div></div>
+            </div>
+        `;
+
+        const topicDist = data.topic_distribution;
+        const topicTotal = Object.values(topicDist).reduce((a, b) => a + b, 0);
+        
+        let topicHtml = '';
+        for (const [topic, count] of Object.entries(topicDist)) {
+            topicHtml += `
+                <div class="distribution-bar">
+                    <div class="label">${topic}: ${count}题 (${topicTotal ? ((count / topicTotal) * 100).toFixed(0) : 0}%)</div>
+                    <div class="bar"><div class="bar-fill medium" style="width: ${topicTotal ? ((count / topicTotal) * 100) : 0}%"></div></div>
+                </div>
+            `;
+        }
+        document.getElementById('topic_dist').innerHTML = topicHtml || '<div style="color: #999;">暂无数据</div>';
+
+        const questionsList = document.getElementById('questions_list');
+        questionsList.innerHTML = data.questions.map((q, index) => {
+            const optionsHtml = q.options && q.options.length > 0 
+                ? `<ul class="question-options">${q.options.map(o => `<li>${o.text}</li>`).join('')}</ul>` 
+                : '';
+            
+            return `
+                <div class="question-item">
+                    <div class="question-header">
+                        <span style="font-weight: 600;">${index + 1}.</span>
+                        <span class="question-type-badge">${q.question_type_name}</span>
+                        <span class="question-difficulty-badge ${q.difficulty}">${q.difficulty}</span>
+                        <span class="question-score">${q.score}分</span>
+                    </div>
+                    <div class="question-content">${q.content}</div>
+                    ${optionsHtml}
+                    <div class="question-answer">
+                        <span class="label">答案:</span> ${q.answer}
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        document.getElementById('result').classList.add('show');
+    }
+
+    async function loadPapers() {
+        const subject = document.getElementById('paper_subject_filter').value;
+        const limit = document.getElementById('paper_limit').value;
+        
+        let url = `/api/ai/paper/list?limit=${limit}`;
+        if (subject) url += `&subject=${subject}`;
+
+        try {
+            const response = await fetch(url);
+            const data = await response.json();
+            
+            if (data.success) {
+                const tbody = document.getElementById('papers_body');
+                tbody.innerHTML = data.data.map(item => `
+                    <tr>
+                        <td>${item.paper_id}</td>
+                        <td>${item.title}</td>
+                        <td>${item.subject}</td>
+                        <td>${item.total_score}</td>
+                        <td>${item.duration}分钟</td>
+                        <td>${item.question_count}</td>
+                        <td>${item.used_count}</td>
+                        <td>${item.created_at}</td>
+                        <td><button class="preview-btn" onclick="viewPaper('${item.paper_id}')">预览</button></td>
+                    </tr>
+                `).join('');
+            } else {
+                alert(data.error);
+            }
+        } catch (error) {
+            alert('网络错误');
+        }
+    }
+
+    async function viewPaper(paper_id) {
+        try {
+            const response = await fetch(`/api/ai/paper/${paper_id}`);
+            const data = await response.json();
+            
+            if (data.success) {
+                switchTab('generate');
+                displayPaperResult(data.data);
+            } else {
+                alert(data.error);
+            }
+        } catch (error) {
+            alert('网络错误');
+        }
+    }
+
+    async function loadSubjects() {
+        try {
+            const subjectsResponse = await fetch('/api/ai/paper/subjects');
+            const subjectsData = await subjectsResponse.json();
+            
+            if (subjectsData.success) {
+                const container = document.getElementById('subjects_grid');
+                container.innerHTML = Object.entries(subjectsData.data).map(([subject, topics]) => `
+                    <div class="subject-card">
+                        <div class="subject-name">${subject}</div>
+                        <div class="topics">知识点: ${topics.join(', ')}</div>
+                    </div>
+                `).join('');
+            }
+
+            const typesResponse = await fetch('/api/ai/paper/question-types');
+            const typesData = await typesResponse.json();
+            
+            if (typesData.success) {
+                const container = document.getElementById('question_types_list');
+                container.innerHTML = Object.entries(typesData.data).map(([key, value]) => `
+                    <div class="question-type-item">
+                        <div>
+                            <div class="type-name">${value.name}</div>
+                            <div class="type-info">每题${value.score_per}分</div>
+                        </div>
+                    </div>
+                `).join('');
+            }
+        } catch (error) {
+            console.error('加载科目信息失败');
+        }
+    }
+
+    loadSubjectTopics();
+</script>
+{% endblock %}

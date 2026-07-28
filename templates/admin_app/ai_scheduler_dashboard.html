@@ -1,0 +1,991 @@
+{% extends "admin_app/base.html" %}
+{% block title %}AI动态调度仪表盘 - MTSCOS AI{% endblock %}
+
+{% block content %}
+<div class="scheduler-wrap">
+    <div class="scheduler-header">
+        <div>
+            <h1><i class="fas fa-brain"></i> AI动态调度仪表盘</h1>
+            <p>AI任务调度、主动行为、系统集成统一管理平台</p>
+        </div>
+        <div class="header-actions">
+            <button class="btn-primary" onclick="loadAllData()"><i class="fas fa-sync-alt"></i> 刷新数据</button>
+            <button class="btn-success" onclick="triggerProactiveScan()"><i class="fas fa-radar"></i> 主动扫描</button>
+            <button class="btn-warning" onclick="autoDispatch()"><i class="fas fa-magic"></i> 自动调度</button>
+        </div>
+    </div>
+
+    <div class="scheduler-tabs">
+        <button class="scheduler-tab active" onclick="switchTab('overview', event)"><i class="fas fa-chart-pie"></i> 调度概览</button>
+        <button class="scheduler-tab" onclick="switchTab('tasks', event)"><i class="fas fa-tasks"></i> 任务管理</button>
+        <button class="scheduler-tab" onclick="switchTab('proactive', event)"><i class="fas fa-bolt"></i> 主动行为</button>
+        <button class="scheduler-tab" onclick="switchTab('integrations', event)"><i class="fas fa-plug"></i> 系统集成</button>
+        <button class="scheduler-tab" onclick="switchTab('logs', event)"><i class="fas fa-list-alt"></i> 执行日志</button>
+    </div>
+
+    <!-- 调度概览 -->
+    <div id="tab-overview" class="tab-content active">
+        <div class="stats-grid" id="stats-grid">
+            <div class="stat-card stat-blue">
+                <div class="stat-icon"><i class="fas fa-clock"></i></div>
+                <div class="stat-body">
+                    <div class="stat-value" id="stat-pending">--</div>
+                    <div class="stat-label">待执行任务</div>
+                </div>
+            </div>
+            <div class="stat-card stat-orange">
+                <div class="stat-icon"><i class="fas fa-spinner"></i></div>
+                <div class="stat-body">
+                    <div class="stat-value" id="stat-running">--</div>
+                    <div class="stat-label">运行中任务</div>
+                </div>
+            </div>
+            <div class="stat-card stat-green">
+                <div class="stat-icon"><i class="fas fa-check-circle"></i></div>
+                <div class="stat-body">
+                    <div class="stat-value" id="stat-today-done">--</div>
+                    <div class="stat-label">今日完成</div>
+                </div>
+            </div>
+            <div class="stat-card stat-purple">
+                <div class="stat-icon"><i class="fas fa-bolt"></i></div>
+                <div class="stat-body">
+                    <div class="stat-value" id="stat-proactive">--</div>
+                    <div class="stat-label">主动行为数</div>
+                </div>
+            </div>
+            <div class="stat-card stat-pink">
+                <div class="stat-icon"><i class="fas fa-user-astronaut"></i></div>
+                <div class="stat-body">
+                    <div class="stat-value" id="stat-active-employees">--</div>
+                    <div class="stat-label">活跃AI员工</div>
+                </div>
+            </div>
+            <div class="stat-card stat-cyan">
+                <div class="stat-icon"><i class="fas fa-network-wired"></i></div>
+                <div class="stat-body">
+                    <div class="stat-value" id="stat-integrations">--</div>
+                    <div class="stat-label">系统集成数</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="panel-row">
+            <div class="panel">
+                <div class="panel-header">
+                    <h2><i class="fas fa-fire"></i> 近期待执行任务</h2>
+                </div>
+                <div class="panel-body" id="overview-tasks">
+                    <div class="empty-state"><i class="fas fa-inbox"></i><p>加载中...</p></div>
+                </div>
+            </div>
+            <div class="panel">
+                <div class="panel-header">
+                    <h2><i class="fas fa-history"></i> 最近主动行为</h2>
+                </div>
+                <div class="panel-body" id="overview-proactive">
+                    <div class="empty-state"><i class="fas fa-inbox"></i><p>加载中...</p></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 任务管理 -->
+    <div id="tab-tasks" class="tab-content">
+        <div class="action-bar">
+            <button class="btn-primary" onclick="showCreateTaskModal()"><i class="fas fa-plus"></i> 创建任务</button>
+            <button class="btn-warning" onclick="autoDispatch()"><i class="fas fa-magic"></i> 自动调度</button>
+            <button class="btn-secondary" onclick="loadTasks()"><i class="fas fa-sync"></i> 刷新</button>
+            <select id="task-filter" onchange="loadTasks()" class="select-input">
+                <option value="">全部任务</option>
+                <option value="pending">待执行</option>
+                <option value="running">运行中</option>
+                <option value="completed">已完成</option>
+                <option value="failed">失败</option>
+            </select>
+        </div>
+        <div class="panel">
+            <div class="panel-body">
+                <table class="data-table" id="task-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>任务名称</th>
+                            <th>类型</th>
+                            <th>目标模块</th>
+                            <th>目标动作</th>
+                            <th>优先级</th>
+                            <th>触发类型</th>
+                            <th>状态</th>
+                            <th>分配员工</th>
+                            <th>创建时间</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="task-table-body">
+                        <tr><td colspan="11" class="empty-state"><i class="fas fa-inbox"></i><p>暂无任务</p></td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- 主动行为 -->
+    <div id="tab-proactive" class="tab-content">
+        <div class="action-bar">
+            <button class="btn-success" onclick="triggerProactiveScan()"><i class="fas fa-radar"></i> 触发主动扫描</button>
+            <button class="btn-secondary" onclick="loadProactiveActions()"><i class="fas fa-sync"></i> 刷新</button>
+        </div>
+        <div class="panel">
+            <div class="panel-body">
+                <table class="data-table" id="proactive-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>行为类型</th>
+                            <th>触发原因</th>
+                            <th>AI员工</th>
+                            <th>目标模块</th>
+                            <th>执行动作</th>
+                            <th>状态</th>
+                            <th>影响范围</th>
+                            <th>触发时间</th>
+                        </tr>
+                    </thead>
+                    <tbody id="proactive-table-body">
+                        <tr><td colspan="9" class="empty-state"><i class="fas fa-inbox"></i><p>暂无主动行为记录</p></td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- 系统集成 -->
+    <div id="tab-integrations" class="tab-content">
+        <div class="action-bar">
+            <button class="btn-primary" onclick="showCreateIntegrationModal()"><i class="fas fa-plus"></i> 注册新集成</button>
+            <button class="btn-secondary" onclick="loadIntegrations()"><i class="fas fa-sync"></i> 刷新</button>
+        </div>
+        <div class="panel">
+            <div class="panel-body">
+                <table class="data-table" id="integration-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>集成名称</th>
+                            <th>集成类型</th>
+                            <th>API地址</th>
+                            <th>认证方式</th>
+                            <th>同步状态</th>
+                            <th>最后同步</th>
+                            <th>状态</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="integration-table-body">
+                        <tr><td colspan="9" class="empty-state"><i class="fas fa-inbox"></i><p>暂无集成配置</p></td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- 执行日志 -->
+    <div id="tab-logs" class="tab-content">
+        <div class="action-bar">
+            <button class="btn-secondary" onclick="loadLogs()"><i class="fas fa-sync"></i> 刷新</button>
+            <select id="log-filter" onchange="loadLogs()" class="select-input">
+                <option value="">全部日志</option>
+                <option value="info">信息</option>
+                <option value="success">成功</option>
+                <option value="warning">警告</option>
+                <option value="error">错误</option>
+            </select>
+        </div>
+        <div class="panel">
+            <div class="panel-body">
+                <div id="log-list" class="log-list">
+                    <div class="empty-state"><i class="fas fa-inbox"></i><p>暂无日志记录</p></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 模态框容器 -->
+<div id="modal-container"></div>
+
+<style>
+.scheduler-wrap { padding: 20px; }
+.scheduler-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 15px; }
+.scheduler-header h1 { margin: 0 0 5px 0; color: #333; font-size: 24px; }
+.scheduler-header h1 i { color: #1890ff; margin-right: 8px; }
+.scheduler-header p { color: #666; margin: 0; font-size: 14px; }
+.header-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+.scheduler-tabs { display: flex; gap: 5px; margin-bottom: 20px; border-bottom: 2px solid #e0e0e0; flex-wrap: wrap; }
+.scheduler-tab { padding: 10px 20px; border: none; background: none; cursor: pointer; font-size: 14px; color: #666; border-bottom: 2px solid transparent; margin-bottom: -2px; transition: all 0.3s; }
+.scheduler-tab i { margin-right: 5px; }
+.scheduler-tab.active { color: #1890ff; border-bottom-color: #1890ff; font-weight: 600; }
+.scheduler-tab:hover { color: #1890ff; }
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+
+.stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 15px; margin-bottom: 20px; }
+.stat-card { background: #fff; border-radius: 8px; padding: 20px; display: flex; align-items: center; gap: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); border-left: 4px solid #1890ff; transition: all 0.3s; }
+.stat-card:hover { transform: translateY(-3px); box-shadow: 0 6px 16px rgba(0,0,0,0.1); }
+.stat-card.stat-blue { border-left-color: #1890ff; }
+.stat-card.stat-orange { border-left-color: #fa8c16; }
+.stat-card.stat-green { border-left-color: #52c41a; }
+.stat-card.stat-purple { border-left-color: #722ed1; }
+.stat-card.stat-pink { border-left-color: #eb2f96; }
+.stat-card.stat-cyan { border-left-color: #13c2c2; }
+.stat-icon { width: 50px; height: 50px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 22px; }
+.stat-blue .stat-icon { background: #e6f7ff; color: #1890ff; }
+.stat-orange .stat-icon { background: #fff7e6; color: #fa8c16; }
+.stat-green .stat-icon { background: #f6ffed; color: #52c41a; }
+.stat-purple .stat-icon { background: #f9f0ff; color: #722ed1; }
+.stat-pink .stat-icon { background: #fff0f6; color: #eb2f96; }
+.stat-cyan .stat-icon { background: #e6fffb; color: #13c2c2; }
+.stat-body { flex: 1; }
+.stat-value { font-size: 28px; font-weight: 700; color: #333; line-height: 1.2; }
+.stat-label { color: #666; font-size: 13px; margin-top: 3px; }
+
+.panel-row { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+.panel { background: #fff; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); margin-bottom: 15px; overflow: hidden; }
+.panel-header { padding: 15px 20px; border-bottom: 1px solid #f0f0f0; display: flex; justify-content: space-between; align-items: center; }
+.panel-header h2 { margin: 0; font-size: 16px; color: #333; }
+.panel-header h2 i { color: #1890ff; margin-right: 8px; }
+.panel-body { padding: 15px 20px; }
+
+.action-bar { display: flex; gap: 10px; margin-bottom: 15px; align-items: center; flex-wrap: wrap; }
+.btn-primary { background: #1890ff; color: #fff; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-size: 14px; transition: all 0.3s; }
+.btn-primary:hover { background: #40a9ff; }
+.btn-success { background: #52c41a; color: #fff; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-size: 14px; transition: all 0.3s; }
+.btn-success:hover { background: #73d13d; }
+.btn-warning { background: #fa8c16; color: #fff; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-size: 14px; transition: all 0.3s; }
+.btn-warning:hover { background: #ffa940; }
+.btn-secondary { background: #f0f0f0; color: #333; border: 1px solid #d9d9d9; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-size: 14px; transition: all 0.3s; }
+.btn-secondary:hover { background: #e0e0e0; }
+.btn-danger { background: #ff4d4f; color: #fff; border: none; padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; }
+.btn-danger:hover { background: #ff7875; }
+.btn-sm { padding: 4px 10px; font-size: 12px; }
+.select-input { padding: 8px 12px; border: 1px solid #d9d9d9; border-radius: 4px; font-size: 14px; }
+
+.data-table { width: 100%; border-collapse: collapse; }
+.data-table th { text-align: left; padding: 12px; font-size: 13px; color: #666; font-weight: 600; border-bottom: 2px solid #f0f0f0; background: #fafafa; }
+.data-table td { padding: 12px; border-bottom: 1px solid #f0f0f0; font-size: 13px; color: #333; }
+.data-table tr:hover { background: #fafafa; }
+.data-table .empty-state { text-align: center; padding: 40px; color: #999; }
+.data-table .empty-state i { font-size: 36px; display: block; margin-bottom: 10px; opacity: 0.4; }
+
+.tag { display: inline-block; padding: 2px 10px; border-radius: 12px; font-size: 12px; font-weight: 500; }
+.tag-pending { background: #fff7e6; color: #fa8c16; }
+.tag-running { background: #e6f7ff; color: #1890ff; }
+.tag-completed { background: #f6ffed; color: #52c41a; }
+.tag-failed { background: #fff1f0; color: #ff4d4f; }
+.tag-priority-high { background: #fff1f0; color: #ff4d4f; }
+.tag-priority-medium { background: #fff7e6; color: #fa8c16; }
+.tag-priority-low { background: #f6ffed; color: #52c41a; }
+.tag-active { background: #f6ffed; color: #52c41a; }
+.tag-inactive { background: #f0f0f0; color: #999; }
+.tag-syncing { background: #e6f7ff; color: #1890ff; }
+.tag-synced { background: #f6ffed; color: #52c41a; }
+.tag-sync-failed { background: #fff1f0; color: #ff4d4f; }
+
+.log-list { max-height: 600px; overflow-y: auto; }
+.log-item { padding: 12px 15px; border-left: 3px solid #1890ff; background: #fafafa; border-radius: 4px; margin-bottom: 8px; }
+.log-item.log-info { border-left-color: #1890ff; }
+.log-item.log-success { border-left-color: #52c41a; }
+.log-item.log-warning { border-left-color: #fa8c16; }
+.log-item.log-error { border-left-color: #ff4d4f; }
+.log-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
+.log-level { font-weight: 600; font-size: 12px; text-transform: uppercase; }
+.log-time { color: #999; font-size: 12px; }
+.log-message { font-size: 13px; color: #333; }
+.log-meta { font-size: 12px; color: #999; margin-top: 4px; }
+
+.empty-state { text-align: center; padding: 40px; color: #999; }
+.empty-state i { font-size: 48px; display: block; margin-bottom: 15px; opacity: 0.4; }
+
+.modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 999; display: flex; align-items: center; justify-content: center; }
+.modal-box { background: #fff; border-radius: 8px; padding: 25px; min-width: 450px; max-width: 600px; max-height: 85vh; overflow-y: auto; }
+.modal-box h3 { margin: 0 0 20px 0; color: #333; font-size: 18px; }
+.modal-box h3 i { color: #1890ff; margin-right: 8px; }
+.form-group { margin-bottom: 15px; }
+.form-group label { display: block; margin-bottom: 6px; font-weight: 600; font-size: 13px; color: #333; }
+.form-group input, .form-group select, .form-group textarea { width: 100%; padding: 8px 12px; border: 1px solid #d9d9d9; border-radius: 4px; font-size: 14px; box-sizing: border-box; }
+.form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: #1890ff; outline: none; box-shadow: 0 0 0 2px rgba(24,144,255,0.1); }
+.form-group textarea { min-height: 80px; resize: vertical; }
+.modal-actions { text-align: right; margin-top: 20px; }
+.modal-actions button { margin-left: 10px; }
+
+.toast { position: fixed; top: 20px; right: 20px; padding: 12px 20px; border-radius: 4px; color: #fff; font-size: 14px; z-index: 2000; animation: slideIn 0.3s ease-out; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+.toast.success { background: #52c41a; }
+.toast.error { background: #ff4d4f; }
+.toast.info { background: #1890ff; }
+.toast.warning { background: #fa8c16; }
+@keyframes slideIn { from { transform: translateX(120%); } to { transform: translateX(0); } }
+
+.overview-task-item { padding: 12px; border-radius: 6px; background: #fafafa; margin-bottom: 8px; }
+.overview-task-item .ov-task-name { font-weight: 600; font-size: 13px; color: #333; }
+.overview-task-item .ov-task-meta { font-size: 12px; color: #999; margin-top: 4px; }
+
+.proactive-item { padding: 12px; border-left: 3px solid #722ed1; background: #fafafa; border-radius: 4px; margin-bottom: 8px; }
+.proactive-item .pa-title { font-weight: 600; font-size: 13px; color: #333; }
+.proactive-item .pa-meta { font-size: 12px; color: #999; margin-top: 4px; }
+
+@media (max-width: 1024px) {
+    .panel-row { grid-template-columns: 1fr; }
+}
+@media (max-width: 768px) {
+    .scheduler-header { flex-direction: column; align-items: flex-start; }
+    .stats-grid { grid-template-columns: 1fr; }
+    .data-table { font-size: 12px; }
+    .data-table th, .data-table td { padding: 8px; }
+    .modal-box { min-width: 90%; }
+}
+</style>
+
+<script>
+const CURRENT_USER_ID = {{ user.id }};
+const API_BASE = '/api/optimization/ai-scheduler';
+
+// === 标签页切换 ===
+function switchTab(tab, event) {
+    document.querySelectorAll('.scheduler-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    if (event) event.target.classList.add('active');
+    document.getElementById('tab-' + tab).classList.add('active');
+
+    if (tab === 'overview') { loadStats(); loadTasks(); loadProactiveActions(); }
+    else if (tab === 'tasks') loadTasks();
+    else if (tab === 'proactive') loadProactiveActions();
+    else if (tab === 'integrations') loadIntegrations();
+    else if (tab === 'logs') loadLogs();
+}
+
+// === 提示框 ===
+function showToast(msg, type) {
+    type = type || 'info';
+    const toast = document.createElement('div');
+    toast.className = 'toast ' + type;
+    toast.innerHTML = '<i class="fas fa-' + (type === 'success' ? 'check-circle' : type === 'error' ? 'times-circle' : type === 'warning' ? 'exclamation-triangle' : 'info-circle') + '"></i> ' + msg;
+    document.body.appendChild(toast);
+    setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => toast.remove(), 300); }, 3000);
+}
+
+function closeModal() {
+    document.getElementById('modal-container').innerHTML = '';
+}
+
+// === 加载所有数据 ===
+function loadAllData() {
+    loadStats();
+    loadTasks();
+    loadProactiveActions();
+    loadIntegrations();
+    loadLogs();
+}
+
+// === 统计数据 ===
+async function loadStats() {
+    try {
+        const res = await fetch(API_BASE + '/stats');
+        const data = await res.json();
+        if (data.success || data.code === 0 || data.stats) {
+            const stats = data.stats || data.data || data;
+            document.getElementById('stat-pending').textContent = stats.pending_tasks ?? stats.pending ?? '--';
+            document.getElementById('stat-running').textContent = stats.running_tasks ?? stats.running ?? '--';
+            document.getElementById('stat-today-done').textContent = stats.today_completed ?? stats.today_done ?? stats.completed_today ?? '--';
+            document.getElementById('stat-proactive').textContent = stats.proactive_actions ?? stats.proactive_count ?? '--';
+            document.getElementById('stat-active-employees').textContent = stats.active_employees ?? stats.active_ai_employees ?? '--';
+            document.getElementById('stat-integrations').textContent = stats.integrations ?? stats.integration_count ?? '--';
+
+            renderOverviewTasks(stats.recent_tasks || []);
+            renderOverviewProactive(stats.recent_proactive || []);
+        }
+    } catch (e) {
+        console.error('加载统计失败:', e);
+    }
+}
+
+function renderOverviewTasks(tasks) {
+    const el = document.getElementById('overview-tasks');
+    if (!tasks || tasks.length === 0) {
+        el.innerHTML = '<div class="empty-state"><i class="fas fa-inbox"></i><p>暂无任务</p></div>';
+        return;
+    }
+    el.innerHTML = tasks.slice(0, 5).map(t => `
+        <div class="overview-task-item">
+            <div class="ov-task-name">${escapeHtml(t.name || t.task_name || '未命名任务')}</div>
+            <div class="ov-task-meta">
+                <span class="tag tag-${t.status || 'pending'}">${getStatusText(t.status)}</span>
+                优先级: ${getPriorityText(t.priority)} | ${t.created_at || ''}
+            </div>
+        </div>
+    `).join('');
+}
+
+function renderOverviewProactive(actions) {
+    const el = document.getElementById('overview-proactive');
+    if (!actions || actions.length === 0) {
+        el.innerHTML = '<div class="empty-state"><i class="fas fa-inbox"></i><p>暂无主动行为</p></div>';
+        return;
+    }
+    el.innerHTML = actions.slice(0, 5).map(a => `
+        <div class="proactive-item">
+            <div class="pa-title">${escapeHtml(a.action_type || a.type || '主动行为')}</div>
+            <div class="pa-meta">${escapeHtml(a.reason || a.trigger_reason || '')} | ${a.triggered_at || a.created_at || ''}</div>
+        </div>
+    `).join('');
+}
+
+// === 任务管理 ===
+async function loadTasks() {
+    const filter = document.getElementById('task-filter') ? document.getElementById('task-filter').value : '';
+    try {
+        let url = API_BASE + '/tasks';
+        if (filter) url += '?status=' + filter;
+        const res = await fetch(url);
+        const data = await res.json();
+        const tasks = data.tasks || data.data || (Array.isArray(data) ? data : []);
+        const tbody = document.getElementById('task-table-body');
+        if (!tasks || tasks.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="11" class="empty-state"><i class="fas fa-inbox"></i><p>暂无任务</p></td></tr>';
+            return;
+        }
+        tbody.innerHTML = tasks.map(t => `
+            <tr>
+                <td>${t.id || t.task_id}</td>
+                <td>${escapeHtml(t.name || t.task_name || '')}</td>
+                <td>${escapeHtml(t.type || t.task_type || '')}</td>
+                <td>${escapeHtml(t.target_module || '')}</td>
+                <td>${escapeHtml(t.target_action || '')}</td>
+                <td><span class="tag tag-priority-${(t.priority || 'medium').toLowerCase()}">${getPriorityText(t.priority)}</span></td>
+                <td>${escapeHtml(t.trigger_type || '')}</td>
+                <td><span class="tag tag-${t.status || 'pending'}">${getStatusText(t.status)}</span></td>
+                <td>${escapeHtml(t.assigned_employee || t.employee_name || '未分配')}</td>
+                <td>${t.created_at || ''}</td>
+                <td>
+                    ${t.status === 'pending' ? `<button class="btn-primary btn-sm" onclick="executeTask(${t.id || t.task_id})">执行</button>` : ''}
+                    <button class="btn-secondary btn-sm" onclick="showAssignModal(${t.id || t.task_id})">分配</button>
+                </td>
+            </tr>
+        `).join('');
+    } catch (e) {
+        console.error('加载任务失败:', e);
+        showToast('加载任务失败', 'error');
+    }
+}
+
+function showCreateTaskModal() {
+    document.getElementById('modal-container').innerHTML = `
+        <div class="modal-overlay" onclick="if(event.target===this)closeModal()">
+            <div class="modal-box">
+                <h3><i class="fas fa-plus-circle"></i> 创建调度任务</h3>
+                <div class="form-group">
+                    <label>任务名称 *</label>
+                    <input type="text" id="task-name" placeholder="请输入任务名称">
+                </div>
+                <div class="form-group">
+                    <label>任务类型 *</label>
+                    <select id="task-type">
+                        <option value="analysis">数据分析</option>
+                        <option value="generation">内容生成</option>
+                        <option value="optimization">优化任务</option>
+                        <option value="monitoring">监控任务</option>
+                        <option value="integration">集成任务</option>
+                        <option value="learning">学习任务</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>目标模块 *</label>
+                    <select id="task-target-module">
+                        <option value="learning">学习模块</option>
+                        <option value="exam">考试模块</option>
+                        <option value="employee">员工管理</option>
+                        <option value="knowledge">知识库</option>
+                        <option value="communication">通讯中心</option>
+                        <option value="security">安全模块</option>
+                        <option value="resource">资源管理</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>目标动作 *</label>
+                    <input type="text" id="task-target-action" placeholder="例如：generate_report、sync_data、analyze_pattern">
+                </div>
+                <div class="form-group">
+                    <label>优先级</label>
+                    <select id="task-priority">
+                        <option value="high">高</option>
+                        <option value="medium" selected>中</option>
+                        <option value="low">低</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>触发类型</label>
+                    <select id="task-trigger-type">
+                        <option value="manual">手动触发</option>
+                        <option value="schedule">定时调度</option>
+                        <option value="event">事件触发</option>
+                        <option value="proactive">主动行为</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>任务参数（JSON格式，可选）</label>
+                    <textarea id="task-params" placeholder='{"key": "value"}'></textarea>
+                </div>
+                <div class="modal-actions">
+                    <button class="btn-secondary" onclick="closeModal()">取消</button>
+                    <button class="btn-primary" onclick="createTask()">创建任务</button>
+                </div>
+            </div>
+        </div>`;
+}
+
+async function createTask() {
+    const name = document.getElementById('task-name').value.trim();
+    const type = document.getElementById('task-type').value;
+    const targetModule = document.getElementById('task-target-module').value;
+    const targetAction = document.getElementById('task-target-action').value.trim();
+    const priority = document.getElementById('task-priority').value;
+    const triggerType = document.getElementById('task-trigger-type').value;
+    const paramsStr = document.getElementById('task-params').value.trim();
+
+    if (!name || !targetAction) {
+        showToast('请填写必填项', 'warning');
+        return;
+    }
+
+    let params = {};
+    if (paramsStr) {
+        try { params = JSON.parse(paramsStr); }
+        catch (e) { showToast('参数格式错误，请输入有效的JSON', 'error'); return; }
+    }
+
+    try {
+        const res = await fetch(API_BASE + '/tasks', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                name: name,
+                type: type,
+                target_module: targetModule,
+                target_action: targetAction,
+                priority: priority,
+                trigger_type: triggerType,
+                params: params,
+                created_by: CURRENT_USER_ID
+            })
+        });
+        const data = await res.json();
+        if (data.success || data.code === 0 || res.ok) {
+            showToast('任务创建成功', 'success');
+            closeModal();
+            loadTasks();
+            loadStats();
+        } else {
+            showToast(data.error || data.message || '创建失败', 'error');
+        }
+    } catch (e) {
+        console.error('创建任务失败:', e);
+        showToast('创建任务失败', 'error');
+    }
+}
+
+async function executeTask(taskId) {
+    if (!confirm('确认执行此任务？')) return;
+    try {
+        const res = await fetch(`${API_BASE}/tasks/${taskId}/execute`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ user_id: CURRENT_USER_ID })
+        });
+        const data = await res.json();
+        if (data.success || data.code === 0 || res.ok) {
+            showToast('任务已触发执行', 'success');
+            loadTasks();
+            loadStats();
+        } else {
+            showToast(data.error || data.message || '执行失败', 'error');
+        }
+    } catch (e) {
+        console.error('执行任务失败:', e);
+        showToast('执行任务失败', 'error');
+    }
+}
+
+function showAssignModal(taskId) {
+    document.getElementById('modal-container').innerHTML = `
+        <div class="modal-overlay" onclick="if(event.target===this)closeModal()">
+            <div class="modal-box">
+                <h3><i class="fas fa-user-plus"></i> 分配AI员工</h3>
+                <div class="form-group">
+                    <label>AI员工ID *</label>
+                    <input type="number" id="assign-employee-id" placeholder="请输入AI员工ID">
+                </div>
+                <div class="form-group">
+                    <label>分配原因（可选）</label>
+                    <textarea id="assign-reason" placeholder="分配原因说明"></textarea>
+                </div>
+                <div class="modal-actions">
+                    <button class="btn-secondary" onclick="closeModal()">取消</button>
+                    <button class="btn-primary" onclick="assignEmployee(${taskId})">确认分配</button>
+                </div>
+            </div>
+        </div>`;
+}
+
+async function assignEmployee(taskId) {
+    const employeeId = document.getElementById('assign-employee-id').value.trim();
+    const reason = document.getElementById('assign-reason').value.trim();
+    if (!employeeId) {
+        showToast('请输入员工ID', 'warning');
+        return;
+    }
+    try {
+        const res = await fetch(`${API_BASE}/tasks/${taskId}/assign`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                employee_id: parseInt(employeeId),
+                reason: reason,
+                assigned_by: CURRENT_USER_ID
+            })
+        });
+        const data = await res.json();
+        if (data.success || data.code === 0 || res.ok) {
+            showToast('分配成功', 'success');
+            closeModal();
+            loadTasks();
+        } else {
+            showToast(data.error || data.message || '分配失败', 'error');
+        }
+    } catch (e) {
+        console.error('分配失败:', e);
+        showToast('分配失败', 'error');
+    }
+}
+
+async function autoDispatch() {
+    if (!confirm('确认启动自动调度？系统将自动为待执行任务分配AI员工。')) return;
+    try {
+        const res = await fetch(API_BASE + '/auto-dispatch', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ user_id: CURRENT_USER_ID })
+        });
+        const data = await res.json();
+        if (data.success || data.code === 0 || res.ok) {
+            const dispatched = data.dispatched || data.count || 0;
+            showToast(`自动调度完成，共调度 ${dispatched} 个任务`, 'success');
+            loadTasks();
+            loadStats();
+        } else {
+            showToast(data.error || data.message || '自动调度失败', 'error');
+        }
+    } catch (e) {
+        console.error('自动调度失败:', e);
+        showToast('自动调度失败', 'error');
+    }
+}
+
+// === 主动行为 ===
+async function triggerProactiveScan() {
+    if (!confirm('确认触发AI主动扫描？AI员工将主动检测系统状态并产生主动行为。')) return;
+    try {
+        const res = await fetch(API_BASE + '/proactive-scan', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ user_id: CURRENT_USER_ID })
+        });
+        const data = await res.json();
+        if (data.success || data.code === 0 || res.ok) {
+            const count = data.actions_triggered || data.count || 0;
+            showToast(`主动扫描完成，产生 ${count} 个主动行为`, 'success');
+            loadProactiveActions();
+            loadStats();
+        } else {
+            showToast(data.error || data.message || '主动扫描失败', 'error');
+        }
+    } catch (e) {
+        console.error('主动扫描失败:', e);
+        showToast('主动扫描失败', 'error');
+    }
+}
+
+async function loadProactiveActions() {
+    try {
+        const res = await fetch(API_BASE + '/proactive-actions?limit=50');
+        const data = await res.json();
+        const actions = data.actions || data.data || (Array.isArray(data) ? data : []);
+        const tbody = document.getElementById('proactive-table-body');
+        if (!actions || actions.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="9" class="empty-state"><i class="fas fa-inbox"></i><p>暂无主动行为记录</p></td></tr>';
+            return;
+        }
+        tbody.innerHTML = actions.map(a => `
+            <tr>
+                <td>${a.id || a.action_id}</td>
+                <td>${escapeHtml(a.action_type || a.type || '')}</td>
+                <td>${escapeHtml(a.reason || a.trigger_reason || '')}</td>
+                <td>${escapeHtml(a.employee_name || a.ai_employee || '')}</td>
+                <td>${escapeHtml(a.target_module || '')}</td>
+                <td>${escapeHtml(a.action || a.executed_action || '')}</td>
+                <td><span class="tag tag-${a.status || 'completed'}">${getStatusText(a.status)}</span></td>
+                <td>${escapeHtml(a.scope || a.impact_scope || '')}</td>
+                <td>${a.triggered_at || a.created_at || ''}</td>
+            </tr>
+        `).join('');
+    } catch (e) {
+        console.error('加载主动行为失败:', e);
+    }
+}
+
+// === 系统集成 ===
+async function loadIntegrations() {
+    try {
+        const res = await fetch(API_BASE + '/integrations');
+        const data = await res.json();
+        const integrations = data.integrations || data.data || (Array.isArray(data) ? data : []);
+        const tbody = document.getElementById('integration-table-body');
+        if (!integrations || integrations.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="9" class="empty-state"><i class="fas fa-inbox"></i><p>暂无集成配置</p></td></tr>';
+            return;
+        }
+        tbody.innerHTML = integrations.map(i => `
+            <tr>
+                <td>${i.id || i.integration_id}</td>
+                <td>${escapeHtml(i.name || i.integration_name || '')}</td>
+                <td>${escapeHtml(i.type || i.integration_type || '')}</td>
+                <td>${escapeHtml(i.api_url || i.endpoint || '')}</td>
+                <td>${escapeHtml(i.auth_type || i.auth_method || '')}</td>
+                <td><span class="tag tag-${i.sync_status || 'synced'}">${getSyncStatusText(i.sync_status)}</span></td>
+                <td>${i.last_sync || i.last_synced_at || '从未'}</td>
+                <td><span class="tag tag-${i.status === 'inactive' ? 'inactive' : 'active'}">${i.status === 'inactive' ? '停用' : '启用'}</span></td>
+                <td><button class="btn-primary btn-sm" onclick="syncIntegration(${i.id || i.integration_id})">同步</button></td>
+            </tr>
+        `).join('');
+    } catch (e) {
+        console.error('加载集成失败:', e);
+    }
+}
+
+function showCreateIntegrationModal() {
+    document.getElementById('modal-container').innerHTML = `
+        <div class="modal-overlay" onclick="if(event.target===this)closeModal()">
+            <div class="modal-box">
+                <h3><i class="fas fa-plug"></i> 注册新集成</h3>
+                <div class="form-group">
+                    <label>集成名称 *</label>
+                    <input type="text" id="int-name" placeholder="集成名称">
+                </div>
+                <div class="form-group">
+                    <label>集成类型 *</label>
+                    <select id="int-type">
+                        <option value="api">API接口</option>
+                        <option value="webhook">Webhook</option>
+                        <option value="database">数据库</option>
+                        <option value="mqtt">MQTT</option>
+                        <option value="websocket">WebSocket</option>
+                        <option value="grpc">gRPC</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>API地址 *</label>
+                    <input type="text" id="int-api-url" placeholder="https://example.com/api">
+                </div>
+                <div class="form-group">
+                    <label>认证方式</label>
+                    <select id="int-auth-type">
+                        <option value="none">无认证</option>
+                        <option value="basic">Basic Auth</option>
+                        <option value="bearer">Bearer Token</option>
+                        <option value="api_key">API Key</option>
+                        <option value="oauth">OAuth 2.0</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>认证凭据（可选）</label>
+                    <input type="text" id="int-credentials" placeholder="token或密钥">
+                </div>
+                <div class="form-group">
+                    <label>同步配置（JSON，可选）</label>
+                    <textarea id="int-sync-config" placeholder='{"interval": 300, "direction": "bidirectional"}'></textarea>
+                </div>
+                <div class="modal-actions">
+                    <button class="btn-secondary" onclick="closeModal()">取消</button>
+                    <button class="btn-primary" onclick="createIntegration()">注册</button>
+                </div>
+            </div>
+        </div>`;
+}
+
+async function createIntegration() {
+    const name = document.getElementById('int-name').value.trim();
+    const type = document.getElementById('int-type').value;
+    const apiUrl = document.getElementById('int-api-url').value.trim();
+    const authType = document.getElementById('int-auth-type').value;
+    const credentials = document.getElementById('int-credentials').value.trim();
+    const syncConfigStr = document.getElementById('int-sync-config').value.trim();
+
+    if (!name || !apiUrl) {
+        showToast('请填写必填项', 'warning');
+        return;
+    }
+
+    let syncConfig = {};
+    if (syncConfigStr) {
+        try { syncConfig = JSON.parse(syncConfigStr); }
+        catch (e) { showToast('同步配置格式错误', 'error'); return; }
+    }
+
+    try {
+        const res = await fetch(API_BASE + '/integrations', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                name: name,
+                type: type,
+                api_url: apiUrl,
+                auth_type: authType,
+                credentials: credentials,
+                sync_config: syncConfig,
+                created_by: CURRENT_USER_ID
+            })
+        });
+        const data = await res.json();
+        if (data.success || data.code === 0 || res.ok) {
+            showToast('集成注册成功', 'success');
+            closeModal();
+            loadIntegrations();
+            loadStats();
+        } else {
+            showToast(data.error || data.message || '注册失败', 'error');
+        }
+    } catch (e) {
+        console.error('注册集成失败:', e);
+        showToast('注册集成失败', 'error');
+    }
+}
+
+async function syncIntegration(id) {
+    showToast('开始同步数据...', 'info');
+    try {
+        const res = await fetch(`${API_BASE}/integrations/${id}/sync`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ user_id: CURRENT_USER_ID })
+        });
+        const data = await res.json();
+        if (data.success || data.code === 0 || res.ok) {
+            const synced = data.records_synced || data.synced_count || 0;
+            showToast(`同步完成，共同步 ${synced} 条数据`, 'success');
+            loadIntegrations();
+        } else {
+            showToast(data.error || data.message || '同步失败', 'error');
+        }
+    } catch (e) {
+        console.error('同步失败:', e);
+        showToast('同步失败', 'error');
+    }
+}
+
+// === 执行日志 ===
+async function loadLogs() {
+    const filter = document.getElementById('log-filter') ? document.getElementById('log-filter').value : '';
+    try {
+        let url = API_BASE + '/logs?limit=100';
+        if (filter) url += '&level=' + filter;
+        const res = await fetch(url);
+        const data = await res.json();
+        const logs = data.logs || data.data || (Array.isArray(data) ? data : []);
+        const el = document.getElementById('log-list');
+        if (!logs || logs.length === 0) {
+            el.innerHTML = '<div class="empty-state"><i class="fas fa-inbox"></i><p>暂无日志记录</p></div>';
+            return;
+        }
+        el.innerHTML = logs.map(l => `
+            <div class="log-item log-${l.level || 'info'}">
+                <div class="log-header">
+                    <span class="log-level" style="color: ${getLogLevelColor(l.level)}">${(l.level || 'INFO').toUpperCase()}</span>
+                    <span class="log-time">${l.created_at || l.timestamp || ''}</span>
+                </div>
+                <div class="log-message">${escapeHtml(l.message || l.content || '')}</div>
+                <div class="log-meta">
+                    ${l.task_id ? '任务ID: ' + l.task_id : ''}
+                    ${l.employee_id ? ' | 员工ID: ' + l.employee_id : ''}
+                    ${l.module ? ' | 模块: ' + escapeHtml(l.module) : ''}
+                </div>
+            </div>
+        `).join('');
+    } catch (e) {
+        console.error('加载日志失败:', e);
+    }
+}
+
+// === 辅助函数 ===
+function escapeHtml(str) {
+    if (str === null || str === undefined) return '';
+    return String(str).replace(/[&<>"']/g, m => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    }[m]));
+}
+
+function getStatusText(status) {
+    const map = {
+        pending: '待执行',
+        running: '运行中',
+        completed: '已完成',
+        failed: '失败',
+        cancelled: '已取消',
+        paused: '已暂停'
+    };
+    return map[status] || status || '未知';
+}
+
+function getPriorityText(priority) {
+    const map = { high: '高', medium: '中', low: '低' };
+    return map[(priority || 'medium').toLowerCase()] || priority || '中';
+}
+
+function getSyncStatusText(status) {
+    const map = {
+        syncing: '同步中',
+        synced: '已同步',
+        sync_failed: '同步失败',
+        pending: '等待同步'
+    };
+    return map[status] || status || '未知';
+}
+
+function getLogLevelColor(level) {
+    const map = {
+        info: '#1890ff',
+        success: '#52c41a',
+        warning: '#fa8c16',
+        error: '#ff4d4f'
+    };
+    return map[(level || 'info').toLowerCase()] || '#1890ff';
+}
+
+// === 工作负载查询（通过控制台调用） ===
+async function getEmployeeWorkload(employeeId) {
+    try {
+        const res = await fetch(`${API_BASE}/workload/${employeeId}`);
+        const data = await res.json();
+        return data.workload || data.data || data;
+    } catch (e) {
+        console.error('查询工作负载失败:', e);
+        return null;
+    }
+}
+
+// === 初始化 ===
+document.addEventListener('DOMContentLoaded', function() {
+    loadAllData();
+    // 每60秒自动刷新统计
+    setInterval(loadStats, 60000);
+});
+</script>
+{% endblock %}
