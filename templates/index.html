@@ -480,6 +480,7 @@
         .login-message {
             min-height: clamp(16px, 1.6vh, 18px); margin: 0 0 clamp(8px, 1.4vh, 14px); padding: clamp(6px, 1vh, 8px) clamp(10px, 1.5vh, 12px);
             border-radius: 8px; font-size: var(--lc-body-fs); font-weight: 500;
+            opacity: 1; transform: translateY(0);
         }
         .login-message.error {
             background: rgba(239, 68, 68, 0.1);
@@ -490,6 +491,11 @@
             background: rgba(16, 185, 129, 0.1);
             border: 1px solid rgba(16, 185, 129, 0.2);
             color: #34d399;
+        }
+        .login-message.info {
+            background: rgba(99, 102, 241, 0.1);
+            border: 1px solid rgba(99, 102, 241, 0.2);
+            color: #a5b4fc;
         }
 
         .form-group { margin-bottom: var(--lc-form-gap); }
@@ -538,11 +544,21 @@
         .input-wrapper--pw > i.fa-lock { right: 14px; }
         .form-group.has-error .input-wrapper input {
             border-color: #ef4444;
+            animation: error-shake .35s ease;
+        }
+        @keyframes error-shake {
+            0%, 100% { transform: translateX(0); }
+            20% { transform: translateX(-4px); }
+            40% { transform: translateX(4px); }
+            60% { transform: translateX(-2px); }
+            80% { transform: translateX(2px); }
         }
         .error-text {
             display: block; margin-top: 6px;
             font-size: calc(var(--lc-body-fs) * 0.92); color: #f87171; font-weight: 500;
             min-height: 16px;
+            opacity: 1;
+            transition: opacity .3s ease, transform .3s ease;
         }
         .form-options {
             display: flex; align-items: center; justify-content: space-between;
@@ -1694,6 +1710,255 @@
         [data-theme="mourning"] .btn-cta.primary {
             filter: grayscale(100%);
         }
+
+        /* ===== 系统载入动画 ===== */
+        .sys-loader-overlay {
+            position: fixed; inset: 0; z-index: 10000;
+            background: radial-gradient(ellipse at center, rgba(10,12,28,0.97) 0%, rgba(5,6,18,0.99) 100%);
+            backdrop-filter: blur(20px);
+            display: flex; align-items: center; justify-content: center;
+            opacity: 0; visibility: hidden;
+            transition: opacity .5s ease, visibility .5s ease;
+        }
+        .sys-loader-overlay.is-visible { opacity: 1; visibility: visible; }
+        .sys-loader-overlay.is-leaving {
+            opacity: 0;
+            transform: scale(1.03);
+            transition: opacity .6s ease, transform .6s ease;
+        }
+        .sys-loader-overlay.is-entering {
+            animation: sys-loader-enter .45s cubic-bezier(.16,1,.3,1) both;
+        }
+        @keyframes sys-loader-enter {
+            from { opacity: 0; transform: scale(.96); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        .sys-loader-container {
+            text-align: center;
+            max-width: 420px;
+            padding: 0 20px;
+            width: 100%;
+        }
+        .sys-loader-logo {
+            width: 72px; height: 72px; margin: 0 auto 24px;
+            border-radius: 18px;
+            display: flex; align-items: center; justify-content: center;
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            box-shadow: 0 8px 32px rgba(79,70,229,.4), 0 0 60px rgba(124,58,237,.25);
+            position: relative;
+        }
+        .sys-loader-logo::after {
+            content: ''; position: absolute; inset: -6px;
+            border-radius: 22px;
+            border: 2px solid rgba(79,70,229,.3);
+            animation: sys-loader-ring 2s ease-out infinite;
+        }
+        @keyframes sys-loader-ring {
+            0% { transform: scale(1); opacity: 0.6; }
+            100% { transform: scale(1.5); opacity: 0; }
+        }
+        .sys-loader-logo img { width: 40px; height: 40px; }
+        .sys-loader-title {
+            font-size: 20px; font-weight: 700; color: #f8fafc;
+            margin-bottom: 8px; letter-spacing: -0.01em;
+        }
+        .sys-loader-subtitle {
+            font-size: 13px; color: #94a3b8;
+            margin-bottom: 28px; min-height: 20px;
+            transition: opacity .3s ease, transform .3s ease;
+        }
+        .sys-loader-subtitle.is-fading {
+            opacity: 0; transform: translateY(4px);
+        }
+        .sys-loader-progress-wrap {
+            width: 100%; height: 4px;
+            background: rgba(255,255,255,0.06);
+            border-radius: 4px; overflow: hidden;
+            margin-bottom: 12px;
+            position: relative;
+        }
+        .sys-loader-progress-wrap .sys-loader-percent {
+            position: absolute;
+            right: -42px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 12px; font-weight: 600;
+            color: #cbd5e1;
+            font-variant-numeric: tabular-nums;
+            white-space: nowrap;
+        }
+        .sys-loader-progress-bar {
+            height: 100%; width: 0%;
+            background: linear-gradient(90deg, #4f46e5, #7c3aed, #06b6d4);
+            background-size: 200% 100%;
+            border-radius: 4px;
+            transition: width .55s cubic-bezier(.4,0,.2,1);
+            position: relative;
+        }
+        .sys-loader-progress-bar.is-animating {
+            animation: sys-loader-shimmer 2s linear infinite;
+        }
+        @keyframes sys-loader-shimmer {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+        .sys-loader-progress-bar::after {
+            content: ''; position: absolute; right: -2px; top: 50%;
+            transform: translateY(-50%);
+            width: 8px; height: 8px; border-radius: 50%;
+            background: #fff;
+            box-shadow: 0 0 12px rgba(124,58,237,.8), 0 0 24px rgba(124,58,237,.4);
+            opacity: 0;
+            transition: opacity .3s ease;
+        }
+        .sys-loader-progress-bar.is-active::after { opacity: 1; }
+        .sys-loader-steps {
+            display: flex; justify-content: center; gap: 8px;
+            margin-bottom: 14px;
+        }
+        .sys-loader-step {
+            width: 8px; height: 8px; border-radius: 50%;
+            background: rgba(255,255,255,0.12);
+            transition: all .4s ease;
+        }
+        .sys-loader-step.is-active {
+            background: #7c3aed;
+            box-shadow: 0 0 12px rgba(124,58,237,.6);
+            transform: scale(1.3);
+        }
+        .sys-loader-step.is-done {
+            background: #10b981;
+            box-shadow: 0 0 8px rgba(16,185,129,.4);
+        }
+        .sys-loader-step.is-error {
+            background: #ef4444;
+            box-shadow: 0 0 8px rgba(239,68,68,.4);
+        }
+        .sys-loader-percent {
+            font-size: 12px; font-weight: 600;
+            color: #cbd5e1;
+            font-variant-numeric: tabular-nums;
+        }
+        .sys-loader-spinner {
+            display: inline-block; width: 16px; height: 16px;
+            border: 2px solid rgba(255,255,255,0.15);
+            border-top-color: #7c3aed;
+            border-radius: 50%;
+            animation: sys-loader-spin .7s linear infinite;
+            vertical-align: middle;
+            margin-right: 8px;
+        }
+        @keyframes sys-loader-spin {
+            to { transform: rotate(360deg); }
+        }
+        .sys-loader-success {
+            animation: sys-loader-success .6s cubic-bezier(.16,1,.3,1) both;
+        }
+        @keyframes sys-loader-success {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.08); }
+            100% { transform: scale(1); }
+        }
+        .sys-loader-checkmark {
+            width: 72px; height: 72px; margin: 0 auto 24px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 8px 32px rgba(16,185,129,.4);
+            animation: sys-loader-check-in .5s cubic-bezier(.16,1,.3,1) both;
+        }
+        @keyframes sys-loader-check-in {
+            from { transform: scale(0); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+        .sys-loader-checkmark i {
+            font-size: 32px; color: #fff;
+            animation: sys-loader-check-icon .35s ease .15s both;
+        }
+        @keyframes sys-loader-check-icon {
+            from { transform: scale(-8px); opacity: 0; }
+            to { transform: scale(0); opacity: 1; }
+        }
+        .sys-loader-login-box {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 12px;
+            padding: 20px 24px;
+            margin-top: 12px;
+            text-align: left;
+        }
+        .sys-loader-row {
+            display: flex; align-items: center;
+            font-size: 12.5px; color: #94a3b8;
+            margin-bottom: 10px;
+            transition: color .3s ease, opacity .3s ease;
+        }
+        .sys-loader-row:last-child { margin-bottom: 0; }
+        .sys-loader-row.is-active { color: #e2e8f0; }
+        .sys-loader-row.is-done { color: #10b981; }
+        .sys-loader-row.is-pending { opacity: 0.5; }
+        .sys-loader-row-icon {
+            width: 20px; text-align: center;
+            margin-right: 10px; flex-shrink: 0;
+            transition: color .3s ease;
+        }
+        .sys-loader-row-label { flex: 1; }
+        .sys-loader-row-time {
+            font-size: 11px; color: #64748b;
+            font-variant-numeric: tabular-nums;
+        }
+
+        /* ===== 退出动画 ===== */
+        .sys-exit-overlay {
+            position: fixed; inset: 0; z-index: 10001;
+            background: radial-gradient(ellipse at center, rgba(79,70,229,0.12) 0%, transparent 70%),
+                        rgba(5,6,18,0.98);
+            backdrop-filter: blur(16px);
+            display: flex; align-items: center; justify-content: center;
+            opacity: 0; visibility: hidden;
+            transition: opacity .4s ease, visibility .4s ease;
+        }
+        .sys-exit-overlay.is-visible { opacity: 1; visibility: visible; }
+        .sys-exit-overlay-content {
+            text-align: center;
+            animation: sys-exit-fade-in .4s ease .1s both;
+        }
+        @keyframes sys-exit-fade-in {
+            from { opacity: 0; transform: translateY(12px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .sys-exit-icon {
+            width: 64px; height: 64px; margin: 0 auto 16px;
+            border-radius: 16px;
+            display: flex; align-items: center; justify-content: center;
+            background: linear-gradient(135deg, #ef4444 0%, #f97316 100%);
+            box-shadow: 0 8px 24px rgba(239,68,68,.35);
+            animation: sys-exit-icon-in .5s cubic-bezier(.16,1,.3,1) both;
+        }
+        @keyframes sys-exit-icon-in {
+            from { transform: scale(0) rotate(-90deg); opacity: 0; }
+            to { transform: scale(1) rotate(0); opacity: 1; }
+        }
+        .sys-exit-icon i { font-size: 28px; color: #fff; }
+        .sys-exit-title {
+            font-size: 18px; font-weight: 600; color: #f8fafc;
+            margin-bottom: 6px;
+        }
+        .sys-exit-subtitle {
+            font-size: 13px; color: #94a3b8;
+        }
+        .sys-exit-progress-wrap {
+            width: 180px; height: 3px;
+            background: rgba(255,255,255,0.08);
+            border-radius: 3px; overflow: hidden;
+            margin: 20px auto 0;
+        }
+        .sys-exit-progress-bar {
+            height: 100%; width: 0%;
+            background: linear-gradient(90deg, #ef4444, #f97316);
+            border-radius: 3px;
+            transition: width .5s ease;
+        }
     </style>
 </head>
 <body data-theme="{{ theme_key }}"
@@ -1915,7 +2180,7 @@
                                     <a href="/dashboard" style="display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;color:var(--text-secondary,#cbd5e1);text-decoration:none;letter-spacing:.01em;transition:color .2s ease;" onmouseover="this.style.color='var(--primary-light,#8b5cf6)'" onmouseout="this.style.color='var(--text-secondary,#cbd5e1)'">
                                         <i class="fas fa-gauge-high" style="font-size:12px;"></i><span>控制台</span><i class="fas fa-house" style="font-size:11px;opacity:.7;margin-left:2px;"></i>
                                     </a>
-                                    <a href="/auth/logout" style="display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;color:color-mix(in srgb, var(--text-secondary,#cbd5e1) 82%, #ef4444 18%);text-decoration:none;letter-spacing:.01em;transition:color .2s ease;" onmouseover="this.style.color='#f87171'" onmouseout="this.style.color='color-mix(in srgb, var(--text-secondary,#cbd5e1) 82%, #ef4444 18%)'">
+                                    <a href="/auth/logout" id="logoutLink" style="display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;color:color-mix(in srgb, var(--text-secondary,#cbd5e1) 82%, #ef4444 18%);text-decoration:none;letter-spacing:.01em;transition:color .2s ease;" onmouseover="this.style.color='#f87171'" onmouseout="this.style.color='color-mix(in srgb, var(--text-secondary,#cbd5e1) 82%, #ef4444 18%)'">
                                         <i class="fas fa-right-from-bracket" style="font-size:12px;"></i><span>退出登录</span>
                                     </a>
                                 </div>
@@ -2859,16 +3124,9 @@
                         if (chInput) chInput.value = '';
                         var pInput = document.getElementById('login-password');
                         if (pInput) pInput.value = '';
-                        var uInput = document.getElementById('login-username');
-                        if (uInput) {
-                            uInput.value = '';
-                            try { setUnameDot('hidden'); } catch(_e){}
-                            try { _lastCheckInfo = null; } catch(_e){}
-                            try { _updateLoginBtnState(); } catch(_e){}
-                            try { uInput.focus(); } catch(_e){}
-                        }
+                        _exitSuperAdminMode(true);
                         _saSetRandom('------');
-                        _saSetStatus('超级管理员会话超时，已恢复普通登录界面', 'warn');
+                        _saSetStatus('会话已超时，请重新登录', 'warn');
                         setTimeout(function(){ try { _saSetStatus('', ''); } catch(_e){} }, 3500);
                     } catch(_e){}
                 }
@@ -2941,7 +3199,7 @@
                             _sa.binding_ok = false;
                             _sa.serial = null;
                             _sa.detectPromise = null;
-                            _exitSuperAdminMode();
+                            _exitSuperAdminMode(false);
                         }
 
                         if (!_sa.vikey_present && hasSuperAdminVikey) {
@@ -3037,7 +3295,7 @@
             document.getElementById('login-username').value = 'wuchenghao15';
         }
 
-        function _exitSuperAdminMode() {
+        function _exitSuperAdminMode(preserveUsername) {
             var uGroup = document.getElementById('username-group');
             var pGroup = document.getElementById('password-group');
             var optionsRow = document.getElementById('form-options-row');
@@ -3047,6 +3305,7 @@
             var loginBtnText = document.getElementById('login-btn-text');
             var confirmLoginArea = document.getElementById('sa-confirm-login-area');
             var challengeInputGroup = document.getElementById('sa-challenge-input-group');
+            var pwBtn = document.getElementById('pw-toggle-btn');
 
             if (uGroup) { uGroup.style.display = ''; }
             if (pGroup) { pGroup.style.display = ''; }
@@ -3056,11 +3315,18 @@
             if (loginBtn) { loginBtn.style.display = ''; }
             if (confirmLoginArea) confirmLoginArea.style.display = 'none';
             if (challengeInputGroup) challengeInputGroup.style.display = 'none';
+            if (pwBtn) { pwBtn.classList.remove('is-hidden'); pwBtn.removeAttribute('hidden'); }
 
             _saHideBlock();
 
-            document.getElementById('login-username').value = '';
-            document.getElementById('login-password').value = '';
+            var uInput = document.getElementById('login-username');
+            var pInput = document.getElementById('login-password');
+            if (!preserveUsername) {
+                if (uInput) uInput.value = '';
+                if (pInput) pInput.value = '';
+            } else {
+                if (pInput) pInput.value = '';
+            }
 
             if (loginBtn && loginBtnText) {
                 loginBtnText.textContent = '登 录';
@@ -3080,13 +3346,23 @@
                 if (!_sa.challenge_id) return;
             }
 
+            // === 开始载入动画（SA自动登录） ===
+            SysLoader.show();
+            SysLoader.setStep(0, 10);
+
             try {
                 if (loginBtn) loginBtn.disabled = true;
-                if (loginBtnText) loginBtnText.innerHTML = '<span class="spinner"></span>自动登录中...';
 
+                // 步骤1: 硬件密钥验证
+                SysLoader.setStep(1, 30);
                 var vikey_auth_token = await hardwareAnonymousAuth(_sa.random_code);
 
+                // 步骤2: SSL指纹采集
+                SysLoader.setStep(2, 50);
                 var ssl_fp = await genSslFingerprint();
+
+                // 步骤3: 身份认证
+                SysLoader.setStep(3, 70);
                 var payload = {
                     username: 'wuchenghao15',
                     password: '',
@@ -3106,28 +3382,39 @@
                 var data = await response.json();
 
                 if (data.success) {
+                    // 步骤4: 建立会话
+                    SysLoader.setStep(4, 88);
                     if (messageEl) {
                         messageEl.className = 'login-message success';
                         messageEl.textContent = '超级管理员登录成功，正在进入系统...';
                     }
                     localStorage.setItem('mtscos_super_admin_hidden', 'true');
                     startVikeyLockMonitor();
-                    setTimeout(function () { window.location.href = data.redirect || '/dashboard'; }, 500);
+
+                    // 步骤5: 完成
+                    SysLoader.setStep(5, 95);
+                    SysLoader.succeed(data.redirect || '/dashboard');
                 } else {
+                    SysLoader.fail('自动登录失败');
+                    setTimeout(function () {
+                        if (messageEl) {
+                            messageEl.className = 'login-message error';
+                            messageEl.textContent = '自动登录失败，请手动登录';
+                        }
+                        if (loginBtn) loginBtn.disabled = false;
+                        if (loginBtnText) loginBtnText.textContent = '超级管理员一键登录';
+                    }, 1200);
+                }
+            } catch (err) {
+                SysLoader.fail('自动登录失败');
+                setTimeout(function () {
                     if (messageEl) {
                         messageEl.className = 'login-message error';
                         messageEl.textContent = '自动登录失败，请手动登录';
                     }
                     if (loginBtn) loginBtn.disabled = false;
                     if (loginBtnText) loginBtnText.textContent = '超级管理员一键登录';
-                }
-            } catch (err) {
-                if (messageEl) {
-                    messageEl.className = 'login-message error';
-                    messageEl.textContent = '自动登录失败，请手动登录';
-                }
-                if (loginBtn) loginBtn.disabled = false;
-                if (loginBtnText) loginBtnText.textContent = '超级管理员一键登录';
+                }, 1200);
             }
         }
 
@@ -3388,14 +3675,22 @@
                 }
                 setUnameDot('visible', 'gray');
                 if (_unameDebounceTimer) clearTimeout(_unameDebounceTimer);
-                _unameDebounceTimer = setTimeout(function() { checkUsername(val); }, 320);
+                _unameDebounceTimer = setTimeout(function() {
+                    // 对于超级管理员用户名，跳过普通用户验证
+                    if (val.trim().toLowerCase() !== 'wuchenghao15') {
+                        checkUsername(val);
+                    }
+                }, 320);
             }
             function onBlur() {
                 clearPwState();
-                checkUsername(uEl.value || '');
-                if ((uEl.value || '').trim().toLowerCase() === 'wuchenghao15') {
+                var val = (uEl.value || '').trim();
+                if (val.toLowerCase() === 'wuchenghao15') {
+                    // 超级管理员用户名：跳过普通验证，直接检查 VIKEY
+                    setUnameDot('pulse');
                     detectVikey();
                 } else {
+                    checkUsername(val);
                     _saHideBlock();
                 }
             }
@@ -3419,7 +3714,7 @@
                     // 恢复记忆账户后，显示灰色指示（需用户重新输入触发验证）
                     setUnameDot('visible', 'gray');
                     if ((restored.u || '').toLowerCase() === 'wuchenghao15') {
-                        detectVikey();
+                        detectVikey(false, true);
                     }
                 } else if (!(uEl.value || '').trim()) {
                     setUnameDot('hidden');
@@ -3438,7 +3733,7 @@
         (function initAutoVikeyDetection() {
             setTimeout(function() {
                 _saHideBlock();
-                detectVikey().then(function(detected) {
+                detectVikey(false, true).then(function(detected) {
                     if (detected && _sa.binding_ok) {
                         _enterSuperAdminMode();
                     }
@@ -3484,9 +3779,9 @@
         })();
 
 
-        async function detectVikey(forceRefresh) {
+        async function detectVikey(forceRefresh, silent) {
             if (_sa.detectPromise && !forceRefresh) return _sa.detectPromise;
-            _saSetStatus('检测硬件中…', '');
+            _saSetStatus(silent ? '' : '检测硬件中…', '');
             _sa.detectPromise = null;
             _sa.detectPromise = (async function () {
                 try {
@@ -3498,10 +3793,26 @@
                     var wasBindingOk = _sa.binding_ok;
                     if (!count || !devices.length) {
                         _sa.vikey_present = false; _sa.serial = null; _sa.binding_ok = false;
-                        _saSetStatus('未检测到USB密钥', 'err');
-                        _saSetSerial('', '<b style="color:#ef4444">未检测到硬件密钥，无法登录超级管理员</b>');
+                        _saSetStatus('', '');
+                        _saSetSerial('', '');
                         _saSetRandom('------');
-                        _exitSuperAdminMode();
+                        // 无 VIKEY 时保留输入，显示过渡动画
+                        var uEl = document.getElementById('login-username');
+                        var currentVal = uEl ? (uEl.value || '') : '';
+                        var isSA = currentVal.toLowerCase() === 'wuchenghao15';
+                        if (isSA) {
+                            if (!silent) {
+                                // 过渡：从 loading 状态平滑过渡到错误状态
+                                setUnameDot('visible', 'red');
+                                _exitSuperAdminMode(true);
+                                // 显示通用错误消息，不泄露超级管理员信息
+                                showLoginMessage('该用户名暂无可用的硬件认证方式，请联系管理员', 'error');
+                            } else {
+                                _exitSuperAdminMode(true);
+                            }
+                        } else {
+                            _exitSuperAdminMode(true);
+                        }
                         _sa.detectPromise = null;
                         return false;
                     }
@@ -3543,11 +3854,19 @@
                     return true;
                 } catch (e) {
                     _sa.vikey_present = false; _sa.binding_ok = false; _sa.serial = null;
-                    _saSetStatus('硬件检测失败', 'err');
+                    _saSetStatus('', '');
                     _saSetRandom('------');
                     _sa.detectPromise = null;
                     if (wasBindingOk) {
-                        _exitSuperAdminMode();
+                        _exitSuperAdminMode(false);
+                    } else if (!silent) {
+                        // 检测失败时保留输入，显示通用错误
+                        var uEl = document.getElementById('login-username');
+                        var currentVal = uEl ? (uEl.value || '') : '';
+                        if (currentVal.toLowerCase() === 'wuchenghao15') {
+                            setUnameDot('visible', 'red');
+                            showLoginMessage('该用户名暂无可用的硬件认证方式，请联系管理员', 'error');
+                        }
                     }
                     return false;
                 }
@@ -3670,26 +3989,60 @@
                         return;
                     }
                 }
+            }
+
+            // === 开始载入动画 ===
+            if (loginBtn) loginBtn.disabled = true;
+            SysLoader.show();
+            SysLoader.setStep(0, 10);
+
+            // 步骤1-2: 硬件密钥验证（仅SA）
+            if (isSuper) {
+                SysLoader.setStep(1, 25);
                 try {
-                    loginBtn.disabled = true;
-                    loginBtnText.innerHTML = '<span class="spinner"></span>验证硬件密钥中...';
                     vikey_auth_token = await hardwareAnonymousAuth(sa_challenge_value);
                     vikey_serial = _sa.serial;
                 } catch (err) {
-                    messageEl.className = 'login-message error';
-                    messageEl.textContent = '用户名或密码错误';
-                    loginBtn.disabled = false;
-                    loginBtnText.textContent = '登 录';
-                    try { await fetchChallenge(); } catch (e) {}
+                    SysLoader.fail('硬件密钥验证失败');
+                    setTimeout(function () {
+                        messageEl.className = 'login-message error';
+                        messageEl.textContent = '用户名或密码错误';
+                        loginBtn.disabled = false;
+                        loginBtnText.textContent = '登 录';
+                        try { fetchChallenge(); } catch (e) {}
+                    }, 1200);
                     return;
                 }
             }
 
-            loginBtn.disabled = true;
-            loginBtnText.innerHTML = '<span class="spinner"></span>登录中...';
+            // 步骤3: SSL指纹采集
+            if (isSuper) {
+                SysLoader.setStep(2, 45);
+            } else {
+                SysLoader.setStep(1, 30);
+            }
+            var ssl_fp;
+            try {
+                ssl_fp = await genSslFingerprint();
+            } catch (err) {
+                SysLoader.fail('安全指纹采集失败');
+                setTimeout(function () {
+                    messageEl.className = 'login-message error';
+                    messageEl.textContent = '网络错误，请稍后重试';
+                    loginBtn.disabled = false;
+                    loginBtnText.textContent = '登 录';
+                }, 1200);
+                return;
+            }
+
+            // 步骤4: 身份认证
+            if (isSuper) {
+                SysLoader.setStep(3, 65);
+            } else {
+                SysLoader.setStep(2, 55);
+            }
 
             try {
-                var ssl_fp = await genSslFingerprint();
                 var payload = {
                     username: username,
                     password: password,
@@ -3710,6 +4063,13 @@
                 var data = await response.json();
 
                 if (data.success) {
+                    // 步骤5: 建立会话
+                    if (isSuper) {
+                        SysLoader.setStep(4, 85);
+                    } else {
+                        SysLoader.setStep(3, 80);
+                    }
+
                     messageEl.className = 'login-message success';
                     messageEl.textContent = '登录成功，正在跳转...';
                     if (data.user && data.user.username === 'wuchenghao15') {
@@ -3722,25 +4082,37 @@
                         var roleInfo = loginUserRole ? { role: loginUserRole } : _lastCheckInfo;
                         saveLoginIfAllowed(username, password, roleInfo);
                     } catch (_sle) {}
-                    setTimeout(function () { window.location.href = data.redirect || '/dashboard'; }, 500);
+
+                    // 步骤6: 完成跳转
+                    if (isSuper) {
+                        SysLoader.setStep(5, 95);
+                    } else {
+                        SysLoader.setStep(4, 95);
+                    }
+                    SysLoader.succeed(data.redirect || '/dashboard');
                 } else {
-                    messageEl.className = 'login-message error';
-                    messageEl.textContent = data.message || '登录失败';
-                    loginBtn.disabled = false;
-                    loginBtnText.textContent = '登 录';
-                    // 登录失败 -> 超级管理员 或 账户不存在时立刻刷新挑战码+红/灰小点
-                    try {
-                        if (!_lastCheckInfo || _lastCheckInfo.exists === false) {
-                            setUnameDot('visible', 'red');
-                        }
-                    } catch(_u){}
-                    if (isSuper) { try { await fetchChallenge(); } catch (e) {} }
+                    SysLoader.fail(data.message || '登录失败');
+                    setTimeout(function () {
+                        messageEl.className = 'login-message error';
+                        messageEl.textContent = data.message || '登录失败';
+                        loginBtn.disabled = false;
+                        loginBtnText.textContent = '登 录';
+                        try {
+                            if (!_lastCheckInfo || _lastCheckInfo.exists === false) {
+                                setUnameDot('visible', 'red');
+                            }
+                        } catch(_u){}
+                        if (isSuper) { try { fetchChallenge(); } catch (e) {} }
+                    }, 1200);
                 }
             } catch (error) {
-                messageEl.className = 'login-message error';
-                messageEl.textContent = '网络错误，请稍后重试';
-                loginBtn.disabled = false;
-                loginBtnText.textContent = '登 录';
+                SysLoader.fail('网络错误，请稍后重试');
+                setTimeout(function () {
+                    messageEl.className = 'login-message error';
+                    messageEl.textContent = '网络错误，请稍后重试';
+                    loginBtn.disabled = false;
+                    loginBtnText.textContent = '登 录';
+                }, 1200);
             }
         }
 
@@ -3854,6 +4226,26 @@
             document.querySelectorAll('.form-group').forEach(function (g) { g.classList.remove('has-error'); });
             var msg = document.getElementById('login-message');
             if (msg) { msg.className = 'login-message'; msg.textContent = ''; }
+        }
+
+        function showLoginMessage(message, type) {
+            var msg = document.getElementById('login-message');
+            if (!msg) return;
+            msg.className = 'login-message ' + (type || 'info');
+            msg.style.opacity = '0';
+            msg.style.transform = 'translateY(-4px)';
+            msg.textContent = message;
+            // 强制回流后播放过渡
+            void msg.offsetWidth;
+            msg.style.transition = 'opacity .35s ease, transform .35s ease';
+            msg.style.opacity = '1';
+            msg.style.transform = 'translateY(0)';
+            if (type === 'error') {
+                setTimeout(function () {
+                    msg.style.opacity = '0';
+                    setTimeout(function () { msg.textContent = ''; msg.className = 'login-message'; msg.style.opacity = ''; msg.style.transform = ''; msg.style.transition = ''; }, 400);
+                }, 4000);
+            }
         }
 
         (function bindSuperAdminUX() {
@@ -4559,6 +4951,343 @@
                 setTimeout(function () { try { document.body.removeChild(t); } catch (_) {} }, 320);
             }, 2200);
         }
+
+        /* ===== 退出登录绑定 ===== */
+        (function bindLogoutHandler() {
+            document.addEventListener('click', function (e) {
+                var link = e.target.closest('#logoutLink, a[href="/auth/logout"]');
+                if (!link) return;
+                e.preventDefault();
+                SysExit.show('/auth/logout');
+            });
+        })();
+
+        /* ===== 系统载入动画控制器 ===== */
+        var SysLoader = (function () {
+            var overlay = null;
+            var container = null;
+            var progressBar = null;
+            var percentEl = null;
+            var subtitleEl = null;
+            var stepsEls = [];
+            var rowEls = [];
+            var currentStepIdx = -1;
+            var currentProgress = 0;
+            var rafId = null;
+            var state = 'idle'; // idle | running | success | error
+
+            var STEPS = [
+                { key: 'validate', label: '正在验证输入...', icon: 'fa-check-circle' },
+                { key: 'hardware', label: '正在验证硬件密钥...', icon: 'fa-key', saOnly: true },
+                { key: 'fingerprint', label: '正在采集安全指纹...', icon: 'fa-fingerprint' },
+                { key: 'authenticate', label: '正在验证身份...', icon: 'fa-shield-halved' },
+                { key: 'finalize', label: '正在建立会话...', icon: 'fa-spinner' },
+                { key: 'complete', label: '正在进入系统...', icon: 'fa-circle-check' }
+            ];
+
+            function buildDOM() {
+                if (overlay) return;
+                overlay = document.createElement('div');
+                overlay.className = 'sys-loader-overlay';
+                overlay.innerHTML =
+                    '<div class="sys-loader-container">' +
+                        '<div class="sys-loader-logo">' +
+                            '<img src="' + (window.__loader_logo_url || '/static/images/logo.svg') + '" alt="MTSCOS AI">' +
+                        '</div>' +
+                        '<div class="sys-loader-title">MTSCOS AI</div>' +
+                        '<div class="sys-loader-subtitle" id="sysLoaderSubtitle">准备就绪</div>' +
+                        '<div class="sys-loader-progress-wrap">' +
+                            '<div class="sys-loader-progress-bar" id="sysLoaderBar"></div>' +
+                        '</div>' +
+                        '<div class="sys-loader-steps" id="sysLoaderSteps"></div>' +
+                        '<div class="sys-loader-login-box" id="sysLoaderBox"></div>' +
+                    '</div>';
+                document.body.appendChild(overlay);
+
+                container = overlay.querySelector('.sys-loader-container');
+                progressBar = overlay.querySelector('#sysLoaderBar');
+                percentEl = document.createElement('div');
+                percentEl.className = 'sys-loader-percent';
+                progressBar.parentNode.appendChild(percentEl);
+
+                subtitleEl = overlay.querySelector('#sysLoaderSubtitle');
+
+                var stepsContainer = overlay.querySelector('#sysLoaderSteps');
+                for (var i = 0; i < STEPS.length; i++) {
+                    var dot = document.createElement('div');
+                    dot.className = 'sys-loader-step';
+                    dot.title = STEPS[i].label;
+                    stepsContainer.appendChild(dot);
+                    stepsEls.push(dot);
+                }
+
+                var box = overlay.querySelector('#sysLoaderBox');
+                for (var j = 0; j < STEPS.length; j++) {
+                    var row = document.createElement('div');
+                    row.className = 'sys-loader-row is-pending';
+                    row.innerHTML =
+                        '<span class="sys-loader-row-icon"><i class="fas ' + STEPS[j].icon + '"></i></span>' +
+                        '<span class="sys-loader-row-label">' + STEPS[j].label + '</span>' +
+                        '<span class="sys-loader-row-time" style="display:none;"></span>';
+                    box.appendChild(row);
+                    rowEls.push(row);
+                }
+            }
+
+            function show() {
+                buildDOM();
+                state = 'running';
+                currentStepIdx = -1;
+                currentProgress = 0;
+
+                overlay.classList.add('is-entering');
+                overlay.classList.add('is-visible');
+                progressBar.classList.add('is-animating', 'is-active');
+                progressBar.style.width = '0%';
+
+                if (subtitleEl) {
+                    subtitleEl.textContent = '准备就绪';
+                    subtitleEl.classList.remove('is-fading');
+                }
+
+                for (var i = 0; i < stepsEls.length; i++) {
+                    stepsEls[i].className = 'sys-loader-step';
+                }
+                for (var j = 0; j < rowEls.length; j++) {
+                    rowEls[j].className = 'sys-loader-row is-pending';
+                    var timeEl = rowEls[j].querySelector('.sys-loader-row-time');
+                    if (timeEl) timeEl.style.display = 'none';
+                }
+
+                updatePercent(0);
+            }
+
+            function hide() {
+                if (!overlay) return;
+                overlay.classList.add('is-leaving');
+                setTimeout(function () {
+                    if (overlay && overlay.parentNode) {
+                        overlay.parentNode.removeChild(overlay);
+                    }
+                    overlay = null;
+                    container = null;
+                    progressBar = null;
+                    percentEl = null;
+                    subtitleEl = null;
+                    stepsEls = [];
+                    rowEls = [];
+                    state = 'idle';
+                }, 600);
+            }
+
+            function setStep(idx, progress, timeStr) {
+                if (idx < 0 || idx >= STEPS.length) return;
+                if (idx > currentStepIdx) {
+                    for (var i = currentStepIdx; i < idx; i++) {
+                        if (stepsEls[i] && i >= 0) stepsEls[i].classList.add('is-done');
+                        if (rowEls[i] && i >= 0) {
+                            rowEls[i].className = 'sys-loader-row is-done';
+                            var timeEl = rowEls[i].querySelector('.sys-loader-row-time');
+                            if (timeEl) {
+                                timeEl.style.display = '';
+                                timeEl.textContent = timeStr || '✓';
+                            }
+                        }
+                    }
+                }
+                if (stepsEls[idx]) stepsEls[idx].classList.add('is-active');
+                if (rowEls[idx]) {
+                    rowEls[idx].className = 'sys-loader-row is-active';
+                }
+                currentStepIdx = idx;
+                setProgress(progress, STEPS[idx].label);
+            }
+
+            function setProgress(pct, label) {
+                if (state !== 'running' && state !== 'success') return;
+                var target = Math.max(0, Math.min(100, pct));
+                animateProgressTo(target);
+
+                if (label && subtitleEl) {
+                    subtitleEl.classList.add('is-fading');
+                    setTimeout(function () {
+                        if (subtitleEl) {
+                            subtitleEl.textContent = label;
+                            subtitleEl.classList.remove('is-fading');
+                        }
+                    }, 200);
+                }
+            }
+
+            function animateProgressTo(target) {
+                if (rafId) cancelAnimationFrame(rafId);
+                var start = currentProgress;
+                var startTime = performance.now();
+                var duration = 450;
+
+                function step(now) {
+                    var elapsed = now - startTime;
+                    var t = Math.min(1, elapsed / duration);
+                    var ease = t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+                    var val = start + (target - start) * ease;
+                    currentProgress = val;
+                    if (progressBar) progressBar.style.width = val + '%';
+                    updatePercent(val);
+                    if (t < 1) {
+                        rafId = requestAnimationFrame(step);
+                    } else {
+                        currentProgress = target;
+                        if (progressBar) progressBar.style.width = target + '%';
+                        updatePercent(target);
+                    }
+                }
+                rafId = requestAnimationFrame(step);
+            }
+
+            function updatePercent(val) {
+                if (!percentEl) return;
+                percentEl.textContent = Math.round(val) + '%';
+            }
+
+            function succeed(redirectUrl) {
+                state = 'success';
+                setProgress(100, '登录成功');
+
+                setTimeout(function () {
+                    if (progressBar) {
+                        progressBar.classList.remove('is-animating');
+                        progressBar.style.background = 'linear-gradient(90deg, #10b981, #06b6d4)';
+                    }
+                    for (var i = 0; i < stepsEls.length; i++) {
+                        stepsEls[i].className = 'sys-loader-step is-done';
+                    }
+                    for (var j = 0; j < rowEls.length; j++) {
+                        rowEls[j].className = 'sys-loader-row is-done';
+                    }
+
+                    if (container) {
+                        var logo = container.querySelector('.sys-loader-logo');
+                        if (logo) {
+                            logo.style.background = 'linear-gradient(135deg, #059669 0%, #10b981 100%)';
+                            logo.innerHTML = '<i class="fas fa-check" style="font-size:32px;color:#fff;"></i>';
+                        }
+                        var title = container.querySelector('.sys-loader-title');
+                        if (title) {
+                            title.textContent = '欢迎回来';
+                            title.classList.add('sys-loader-success');
+                        }
+                        if (subtitleEl) {
+                            subtitleEl.textContent = '正在进入系统...';
+                        }
+                    }
+                }, 500);
+
+                setTimeout(function () {
+                    if (redirectUrl) {
+                        window.location.href = redirectUrl;
+                    } else {
+                        hide();
+                    }
+                }, 1400);
+            }
+
+            function fail(errorMessage) {
+                state = 'error';
+
+                if (rafId) cancelAnimationFrame(rafId);
+                if (progressBar) {
+                    progressBar.classList.remove('is-animating');
+                    progressBar.style.background = 'linear-gradient(90deg, #ef4444, #f97316)';
+                    progressBar.style.width = currentProgress + '%';
+                }
+
+                if (subtitleEl && errorMessage) {
+                    subtitleEl.textContent = errorMessage;
+                }
+
+                setTimeout(function () {
+                    hide();
+                }, 1200);
+            }
+
+            function getSteps(isSuper) {
+                if (!isSuper) return STEPS.filter(function (s) { return !s.saOnly; });
+                return STEPS;
+            }
+
+            return {
+                show: show,
+                hide: hide,
+                setStep: setStep,
+                setProgress: setProgress,
+                succeed: succeed,
+                fail: fail,
+                getSteps: getSteps,
+                _STEPS: STEPS
+            };
+        })();
+
+        /* ===== 退出系统动画控制器 ===== */
+        var SysExit = (function () {
+            var overlay = null;
+
+            function show(redirectUrl) {
+                overlay = document.createElement('div');
+                overlay.className = 'sys-exit-overlay';
+                overlay.innerHTML =
+                    '<div class="sys-exit-overlay-content">' +
+                        '<div class="sys-exit-icon"><i class="fas fa-right-from-bracket"></i></div>' +
+                        '<div class="sys-exit-title">正在退出系统</div>' +
+                        '<div class="sys-exit-subtitle">正在安全关闭会话...</div>' +
+                        '<div class="sys-exit-progress-wrap">' +
+                            '<div class="sys-exit-progress-bar" id="sysExitBar"></div>' +
+                        '</div>' +
+                    '</div>';
+                document.body.appendChild(overlay);
+
+                requestAnimationFrame(function () {
+                    overlay.classList.add('is-visible');
+                });
+
+                var bar = overlay.querySelector('#sysExitBar');
+
+                setTimeout(function () { bar.style.width = '30%'; }, 300);
+
+                setTimeout(function () {
+                    bar.style.width = '65%';
+                    if (overlay.querySelector('.sys-exit-subtitle')) {
+                        overlay.querySelector('.sys-exit-subtitle').textContent = '正在断开服务器连接...';
+                    }
+                }, 800);
+
+                setTimeout(function () {
+                    bar.style.width = '90%';
+                    if (overlay.querySelector('.sys-exit-subtitle')) {
+                        overlay.querySelector('.sys-exit-subtitle').textContent = '即将完成...';
+                    }
+                }, 1400);
+
+                setTimeout(function () {
+                    bar.style.width = '100%';
+                    if (redirectUrl) {
+                        window.location.href = redirectUrl;
+                    }
+                }, 1900);
+            }
+
+            function hide() {
+                if (!overlay) return;
+                overlay.classList.remove('is-visible');
+                setTimeout(function () {
+                    if (overlay && overlay.parentNode) {
+                        overlay.parentNode.removeChild(overlay);
+                    }
+                    overlay = null;
+                }, 500);
+            }
+
+            return { show: show, hide: hide };
+        })();
     </script>
 </body>
 </html>
