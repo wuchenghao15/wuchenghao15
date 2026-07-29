@@ -10,7 +10,7 @@ A distributed multi-agent intelligent education and exam platform driven by the 
 [![License](https://img.shields.io/badge/license-MIT-yellow)](LICENSE)
 
 > The full documentation has been migrated to the [`docs/`](docs/) directory:
-> - English: [docs/README.md](docs/README.md) · [docs/README_EN.md](docs/README_EN.md)
+> - English: [docs/README.md](docs/README.md)
 > - 中文文档: [README.zh-CN.md](README.zh-CN.md) · [docs/README.zh-CN.md](docs/README.zh-CN.md)
 
 ---

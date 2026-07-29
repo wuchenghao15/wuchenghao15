@@ -1,9 +1,11 @@
-# MTS 架构 v2.0
+# MTS 架构 v2.0 / MTS Architecture v2.0
 
-> **文档版本**: 2.0
-> **发布日期**: 2026-07-26
-> **架构代号**: MTSCOS AI Architecture
+> **文档版本**: 2.0 | **Document Version**: 2.0
+> **发布日期**: 2026-07-26 | **Updated**: 2026-07-26
+> **架构代号**: MTSCOS AI Architecture | **Codename**: MTSCOS AI Architecture
 > **所属系统**: MTSCOS AI 智能考试系统
+>
+> [English Version / 英文版](MT_ARCHITECTURE.en.md)
 
 ---
 

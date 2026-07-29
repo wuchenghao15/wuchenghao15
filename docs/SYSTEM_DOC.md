@@ -1,8 +1,10 @@
-# MTSCOS AI 智能考试系统 - 系统说明书
+# MTSCOS AI 智能考试系统 - 系统说明书 / System Manual
 
-> 版本: v17.22.0 (SuperAdmin UX Unified Edition)
-> 更新日期: 2026-07-26
-> 文档版本: 17.0
+> 版本: v17.22.0 (SuperAdmin UX Unified Edition) | Version: v17.22.0
+> 更新日期: 2026-07-26 | Updated: 2026-07-26
+> 文档版本: 17.0 | Document Version: 17.0
+>
+> [English Version / 英文版](SYSTEM_DOC.en.md)
 
 ## 目录
 

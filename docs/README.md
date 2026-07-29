@@ -423,14 +423,21 @@ Security disclosures → [docs/SECURITY.md](docs/SECURITY.md)
 
 | Document | Purpose |
 |---|---|
-| 🇨🇳 [中文 README](README.zh-CN.md) | 面向中文用户的完整文档 |
-| 🏛️ [MTS Architecture v2.0](docs/MT_ARCHITECTURE.md) | 550+ AI employees / 47 agents dual-engine pipeline explained |
-| 📋 [System Spec (§1–§9 hard rules)](docs/SYSTEM_DOC.md) | 系统完整说明书（中文） |
-| 🚀 [Deployment Guide](docs/DEPLOYMENT_GUIDE.md) | Prod / docker / k8s / TLS / HA |
-| 🚧 [Security](docs/SECURITY.md) | Vulnerability reporting / WAF / CI scanners |
-| ➕ [Contributing](docs/CONTRIBUTING.md) | Code style / commit format / PR flow |
-| 📦 [Project Structure](docs/PROJECT_STRUCTURE.md) | Full directory tree, what-goes-where |
-| 🗺️ [Changelog](docs/CHANGELOG.md) | Every version since v1.0 |
+| 🇨🇳 [中文 README](README.zh-CN.md) | Chinese documentation |
+| 🏛️ [MTS Architecture (EN)](MT_ARCHITECTURE.en.md) | MTS Architecture v2.0 (English) |
+| 🏛️ [MTS架构（中文）](MT_ARCHITECTURE.md) | MTS架构 v2.0 |
+| 📋 [System Manual (EN)](SYSTEM_DOC.en.md) | Complete system manual (English) |
+| 📋 [系统说明书（中文）](SYSTEM_DOC.md) | 系统完整说明书 |
+| 📋 [System Spec (EN)](SYSTEM_SPEC.en.md) | System specification (English) |
+| 📋 [系统规范（中文）](系统规范.md) | 系统规范 |
+| 📋 [System Rules (EN)](SYSTEM_RULES.en.md) | 260+ system rules (English) |
+| 📋 [系统规则（中文）](系统规则.md) | 260+ 系统规则 |
+| 🚀 [Deployment Guide](DEPLOYMENT_GUIDE.md) | Prod / docker / k8s / TLS / HA |
+| 🚧 [Security](SECURITY.md) | Vulnerability reporting / WAF / CI scanners |
+| ➕ [Contributing (EN)](CONTRIBUTING.en.md) | Code style / commit format / PR flow (English) |
+| ➕ [贡献指南（中文）](CONTRIBUTING.md) | 代码规范 / 提交格式 / PR流程 |
+| 📦 [Project Structure](PROJECT_STRUCTURE.md) | Full directory tree, what-goes-where |
+| 🗺️ [Changelog](CHANGELOG.md) | Every version since v1.0 |
 | 🧠 [AI Engine Architecture](ai_engines/AI_ENGINE_ARCHITECTURE.md) | 550+ AI employees matrix |
 | 🏷️ [Releases](https://github.com/wuchenghao15/MTSCOS-AI-Project/releases) | Tagged releases on GitHub |
 

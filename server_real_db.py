@@ -405,19 +405,44 @@ _init_ai_firewall_and_workforce()
 # - 建表：vikey_device_bindings / vikey_operations_log / vikey_device_certs
 # - 种子：2 个默认测试绑定（幂等）
 # - 挂载：Blueprint /api/vikey
+# - 初始化：VikeyAPI 统一封装类（所有模块通过 get_vikey_api() 调用）
 # ================================================================
 def _init_vikey_driver_and_api():
     import logging as _vk_logger
+    # ---- 1) 优先初始化 VikeyAPI 统一封装（Facade），供后续所有模块调用 ----
     try:
-        from core.services.vikey_driver import get_vikey_manager, VIKEY_DRIVER_VERSION
+        from core.services.vikey_api import (
+            get_vikey_api, VIKEY_API_VERSION, VIKEY_DRIVER_VERSION,
+        )
+        vk_api = get_vikey_api()
+        vi = vk_api.get_version_info()
+        try:
+            hc = vk_api.health_check()
+            dev_count = hc.get("device_count", 0)
+            sa_serial = hc.get("super_admin_serial")
+        except Exception:
+            dev_count = 0
+            sa_serial = None
+        _vk_logger.info(
+            f"[vikey] VikeyAPI init OK: api_version={VIKEY_API_VERSION} "
+            f"driver_version={VIKEY_DRIVER_VERSION} "
+            f"backend={vi.get('backend')} devices={dev_count} "
+            f"sa_serial={sa_serial}"
+        )
+    except Exception as e:
+        _vk_logger.warning(f"[vikey] VikeyAPI init fail: {e}")
+    # ---- 2) 底层驱动初始化（保持向后兼容，某些老代码仍直接访问 manager）----
+    try:
+        from core.services.vikey_driver import get_vikey_manager, VIKEY_DRIVER_VERSION as _DV
         mgr = get_vikey_manager()
         _vk_logger.info(
-            f"[vikey] init: driver_version={VIKEY_DRIVER_VERSION} "
+            f"[vikey] driver init: driver_version={_DV} "
             f"backend={mgr.backend.NAME} devices={len(mgr.enumerate_devices())} "
-            f"bindings={len(mgr.list_bindings())}"
+            f"bindings={len(mgr.list_bindings()) if hasattr(mgr, 'list_bindings') else 'N/A'}"
         )
     except Exception as e:
         _vk_logger.warning(f"[vikey] driver init fail: {e}")
+    # ---- 3) 挂载旧 Blueprint（保持 /api/_vikey_legacy 向后兼容）----
     try:
         from app.api.vikey_api import vikey_api as _vk_api
         app.register_blueprint(_vk_api, url_prefix='/api/_vikey_legacy')
@@ -935,7 +960,14 @@ def _mt_sys_container_session_loader():
 # ---------- VIKEY 系统锁定检查：before_request ----------
 @app.before_request
 def _mt_vikey_lock_check():
-    from core.services.vikey_driver import get_vikey_manager
+    # 优先使用新的 VikeyAPI 封装，失败回退到底层 driver
+    try:
+        from core.services.vikey_api import get_vikey_api as _get_api
+        vk_api = _get_api()
+        _lock_state_fn = vk_api.get_lock_state
+    except Exception:
+        from core.services.vikey_driver import get_vikey_manager
+        _lock_state_fn = lambda: get_vikey_manager().get_lock_state()
     try:
         path = request.path or ''
         bypass_paths = {
@@ -960,8 +992,7 @@ def _mt_vikey_lock_check():
             pass
 
         if is_super_admin and force_check_enabled:
-            mgr = get_vikey_manager()
-            lock_state = mgr.get_lock_state()
+            lock_state = _lock_state_fn()
 
             if lock_state.get('locked'):
                 if lock_state.get('timeout_reached'):
@@ -1123,6 +1154,7 @@ def system_container(page_name: str, require_auth: str = 'auto', allowed_roles=N
                     denied = (403, '需要超级管理员权限')
 
             # 2) VIKEY强制检查（超级管理员必须插入VIKEY，无论调试模式）
+            #    优先使用 VikeyAPI.detect() 统一封装，失败回退到底层 driver
             if not denied and _sa:
                 try:
                     force_check_enabled = True
@@ -1134,22 +1166,41 @@ def system_container(page_name: str, require_auth: str = 'auto', allowed_roles=N
                         pass
 
                     if force_check_enabled:
-                        from core.services.vikey_driver import get_vikey_manager
-                        mgr = get_vikey_manager()
-                        vikey_state = mgr.get_lock_state()
-                        vikey_devices = []
+                        # --- 使用 VikeyAPI 统一封装 ---
                         try:
-                            detect_r = mgr.detect()
-                            if detect_r and (detect_r.get('present_count', 0) > 0 or detect_r.get('device_count', 0) > 0):
-                                vikey_devices = detect_r.get('devices', [])
+                            from core.services.vikey_api import get_vikey_api
+                            vk_api = get_vikey_api()
+                            detect_r = vk_api.detect()
                         except Exception:
-                            pass
+                            # fallback 到底层
+                            from core.services.vikey_driver import get_vikey_manager
+                            mgr = get_vikey_manager()
+                            try:
+                                detect_r = mgr.detect()
+                            except Exception:
+                                detect_r = None
+                        # --- 统一处理 detect 结果 ---
+                        vikey_devices = []
+                        if detect_r:
+                            # VikeyAPI.detect() 用 "devices"；老 driver.detect() 可能用 "devices"/"presents"
+                            vikey_devices = (
+                                detect_r.get('devices')
+                                or detect_r.get('presents')
+                                or []
+                            )
 
                         has_valid_vikey = False
                         for dev in vikey_devices:
                             binding = dev.get('binding', {})
-                            if dev.get('is_present') and binding.get('binding_status') == 'bound':
-                                if (binding.get('username') or '').lower() == 'wuchenghao15':
+                            if dev.get('is_present') and (
+                                binding.get('binding_status') == 'bound'
+                                or binding.get('status') == 'bound'
+                                or binding.get('role')
+                            ):
+                                if (
+                                    (binding.get('username') or '').lower() == 'wuchenghao15'
+                                    or (dev.get('binding') or {}).get('role_hint') == 'super_admin'
+                                ):
                                     has_valid_vikey = True
                                     break
 
@@ -1372,24 +1423,40 @@ def _mt_sys_container_ctx_injector():
         
         try:
             from core.services.lunar_calendar_service import lunar_calendar_service  # type: ignore[import]
-            lunar_display = lunar_calendar_service.get_display_text()
+            lunar_display = lunar_calendar_service.get_display_text(lang='zh')
+            lunar_display_en = lunar_calendar_service.get_display_text(lang='en')
             lunar_date = lunar_calendar_service.get_lunar_date_string()
             is_special_day = lunar_calendar_service.is_first_or_fifteenth()
+            lunar_countdown = lunar_calendar_service.get_countdown()
+            buddha_festivals = lunar_calendar_service.get_buddha_info()
+            buddha_festivals_en = lunar_calendar_service._get_lunar_festivals_en(
+                lunar_countdown.get('lunar_month', 0),
+                lunar_countdown.get('lunar_day', 0)
+            )
         except Exception:
             lunar_display = ""
+            lunar_display_en = ""
             lunar_date = ""
             is_special_day = False
+            lunar_countdown = {}
+            buddha_festivals = []
+            buddha_festivals_en = []
         
+        # 优先使用 VikeyAPI 统一封装的 VikeyGetStatus（兼容同名函数）
         try:
-            from core.services.vikey_driver import VikeyGetStatus
+            from core.services.vikey_api import VikeyGetStatus
             vikey_status = VikeyGetStatus()
         except Exception:
-            vikey_status = {
-                'present': False,
-                'count': 0,
-                'has_super_admin_key': False,
-                'super_admin_serial': None,
-            }
+            try:
+                from core.services.vikey_driver import VikeyGetStatus
+                vikey_status = VikeyGetStatus()
+            except Exception:
+                vikey_status = {
+                    'present': False,
+                    'count': 0,
+                    'has_super_admin_key': False,
+                    'super_admin_serial': None,
+                }
         
         ctx = {
             'container': {
@@ -1405,8 +1472,12 @@ def _mt_sys_container_ctx_injector():
             'user_ctx': user,
             'is_super_admin_container': (user.get('username') == 'wuchenghao15'),
             'lunar_display': lunar_display,
+            'lunar_display_en': lunar_display_en,
             'lunar_date': lunar_date,
             'is_special_day': is_special_day,
+            'lunar_countdown': lunar_countdown,
+            'buddha_festivals': buddha_festivals,
+            'buddha_festivals_en': buddha_festivals_en,
             'vikey_present': vikey_status.get('present', False),
             'vikey_count': vikey_status.get('count', 0),
             'vikey_has_super_admin': vikey_status.get('has_super_admin_key', False),
@@ -2238,15 +2309,56 @@ def _verify_ssl_fingerprint(fp, ip, ua, username):
 def _verify_super_admin_vikey(username, vikey_auth_token, vikey_serial, ip, ua):
     """超级管理员 (wuchenghao15 或 role=super_admin) 强制 USB Key + 随机码 硬件级验证
     返回 (ok: bool, fail_reason: str, info: dict)
-    优先级：
-      1) 先尝试旧蓝图 app.api.vikey_api.verify_vikey_token；通过直接返回
-      2) 外部模块不可用 / 外部校验失败（可能写 APP_DB 外部模块读 admin.db）→ 走 fallback
+    优先级（新增 VikeyAPI 为最高优先级）：
+      0) **VikeyAPI 统一封装**：get_binding() + ensure_session()，跨 admin/app DB 统一读
+      1) 旧蓝图 app.api.vikey_api.verify_vikey_token；通过直接返回
+      2) 外部模块不可用 / 外部校验失败 → 走 fallback
       3) Fallback：直接在 APP_DB vikey_device_bindings 中校验 (serial + auth_token + username + role/status 均匹配)
     """
     if not vikey_auth_token or not vikey_serial:
         return False, 'vikey_token_missing', {}
     ext_info, ext_reason, ext_ok = {}, None, False
-    # ---- 1) 先尝试外部模块（旧蓝图 app.api.vikey_api.verify_vikey_token 契约） ----
+    # ====== 0) VikeyAPI 统一封装（优先）—— 跨 admin.db / app.db 统一查绑定 ======
+    try:
+        from core.services.vikey_api import (
+            get_vikey_api,
+            BINDING_STATUS_BOUND as _BS_BOUND,
+            VIKEY_SUPER_ADMIN_ROLE_HINT as _ROLE_SA,
+            VIKEY_HW_ADMIN_ROLE_HINT as _ROLE_HW,
+        )
+        vk_api = get_vikey_api()
+        binding = vk_api.get_binding(vikey_serial)
+        if binding:
+            # ① auth_token 匹配（admin.db 中也同步写入 auth_token 了）
+            b_token = str(binding.get('auth_token') or '').strip()
+            if b_token and b_token == str(vikey_auth_token).strip():
+                # ② username 匹配
+                b_user = (binding.get('username') or '').strip().lower()
+                if b_user == str(username).strip().lower():
+                    # ③ 状态：binding_status = bound
+                    b_status = str(binding.get('binding_status') or '').lower()
+                    b_role = str(binding.get('role_hint') or binding.get('role') or '')
+                    if b_status == 'bound' or b_status == _BS_BOUND:
+                        # ④ 角色符合：super_admin / hardware_vikey_admin
+                        if b_role.lower() in ('super_admin', 'hardware_vikey_admin', _ROLE_SA, _ROLE_HW):
+                            info = {
+                                'binding': {
+                                    'serial': vikey_serial,
+                                    'username': binding.get('username'),
+                                    'role': b_role,
+                                    'bound_at': binding.get('bound_at'),
+                                },
+                                'source': 'vikey_api',
+                            }
+                            # 标记 touch：更新 last_used_at
+                            try:
+                                vk_api.touch_binding(vikey_serial)
+                            except Exception:
+                                pass
+                            return True, 'ok', info
+    except Exception as _vk_api_err:
+        ext_reason = 'vikey_api_' + str(_vk_api_err)[:60]
+    # ---- 1) 旧蓝图 app.api.vikey_api.verify_vikey_token 契约 ----
     try:
         from app.api.vikey_api import verify_vikey_token as _ext_v  # type: ignore
         with app.test_request_context(
@@ -2291,7 +2403,7 @@ def _verify_super_admin_vikey(username, vikey_auth_token, vikey_serial, ip, ua):
                 ext_reason = 'vikey_verify_fail'
     except Exception as e:
         # 外部模块不可用
-        ext_reason = 'vikey_exception_' + str(e)[:60]
+        ext_reason = ext_reason or ('vikey_exception_' + str(e)[:60])
     # ---- 2) Fallback：直接在 APP_DB vikey_device_bindings 中匹配四字段 ----
     try:
         import sqlite3 as _sq3
@@ -2333,7 +2445,7 @@ def _verify_super_admin_vikey(username, vikey_auth_token, vikey_serial, ip, ua):
                 else:
                     # 未知类型：谨慎起见直接拒
                     continue
-            return True, 'ok', {'binding': {k: d.get(k) for k in ['id','serial','username','role','bound_at'] if k in d}}
+            return True, 'ok', {'binding': {k: d.get(k) for k in ['id','serial','username','role','bound_at'] if k in d}, 'source': 'app_db_fallback'}
         # 遍历完没匹配
         return False, ext_reason or 'vikey_bind_mismatch', {'checked': len(rows), 'ext_reason': ext_reason}
     except Exception as e:
@@ -9361,10 +9473,108 @@ def api_ai_inspection_knowledge():
         return jsonify({'success': False, 'message': str(e), 'trace': _tb.format_exc(limit=3)}), 500
 
 
+@app.route('/api/auto_plans/status', methods=['GET'])
+def api_auto_plans_status():
+    """自动计划调度器状态"""
+    try:
+        from core.services.auto_plans import list_all_plans, get_plan_scheduler
+        plans = list_all_plans()
+        overall = get_plan_scheduler().get_overall_status()
+        return jsonify({
+            'success': True,
+            'plans': [{'plan_id': p.plan_id, 'name': p.name, 'category': p.category,
+                       'status': p.status.value if hasattr(p.status, 'value') else str(p.status),
+                       'last_run': p.last_run, 'total_runs': p.total_runs,
+                       'success_rate': p.success_rate, 'enabled': p.enabled} for p in plans],
+            'overall': overall,
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
+@app.route('/api/auto_plans/run/<plan_id>', methods=['POST'])
+def api_auto_plans_run(plan_id):
+    """手动执行指定计划"""
+    user = _current_safe_user()
+    if not user.get('logged_in'):
+        return jsonify({'success': False, 'error': '未登录'}), 401
+    try:
+        from core.services.auto_plans import get_plan
+        plan = get_plan(plan_id)
+        if not plan:
+            return jsonify({'success': False, 'message': f'计划 {plan_id} 不存在'}), 404
+        result = plan.run_once()
+        return jsonify({
+            'success': result.success,
+            'plan_id': plan_id,
+            'message': result.message,
+            'duration_ms': result.duration_ms,
+            'data': result.data,
+            'errors': result.errors,
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
+@app.route('/api/auto_plans/toggle/<plan_id>', methods=['POST'])
+def api_auto_plans_toggle(plan_id):
+    """启用/禁用指定计划"""
+    user = _current_safe_user()
+    if not user.get('logged_in'):
+        return jsonify({'success': False, 'error': '未登录'}), 401
+    try:
+        from core.services.auto_plans import get_plan
+        plan = get_plan(plan_id)
+        if not plan:
+            return jsonify({'success': False, 'message': f'计划 {plan_id} 不存在'}), 404
+        enabled = request.json.get('enabled') if request.is_json else None
+        new_state = plan.toggle(enabled)
+        return jsonify({'success': True, 'plan_id': plan_id, 'enabled': new_state})
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
+@app.route('/api/auto_plans/run_all', methods=['POST'])
+def api_auto_plans_run_all():
+    """手动执行所有计划"""
+    user = _current_safe_user()
+    if not user.get('logged_in'):
+        return jsonify({'success': False, 'error': '未登录'}), 401
+    try:
+        from core.services.auto_plans import get_plan_scheduler
+        results = get_plan_scheduler().run_all()
+        return jsonify({
+            'success': True,
+            'results': {pid: {'success': r.success, 'message': r.message, 'duration_ms': r.duration_ms} for pid, r in results.items()},
+            'total': len(results),
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
 if __name__ == '__main__':
     v, info, _ = get_version_info()
     import os
     debug_mode = os.environ.get('FLASK_DEBUG', '0') == '1' or os.environ.get('DEBUG', '0') == '1'
     _enforce_super_admin_rule()
     print(f'[MTSCOS Real DB] bind=0.0.0.0:8888  version=v{v}  source={info.get("source")}  auth={AUTH_DB} debug={debug_mode}')
+
+    # 启动自动计划调度器
+    try:
+        from core.services.auto_plans import create_all_plans_and_register, get_plan_scheduler, get_dynamic_generator
+        print('[AutoPlans] 正在初始化自动计划调度器...')
+        scheduler = create_all_plans_and_register()
+        # 触发 AI 自动延展
+        try:
+            generator = get_dynamic_generator()
+            auto_generated = generator.scan_and_generate()
+            print(f'[AutoPlans] AI 自动延展生成 {len(auto_generated)} 个新计划')
+        except Exception as _ae:
+            print(f'[AutoPlans] AI 延展跳过: {_ae}')
+        scheduler.start_all()
+        status = scheduler.get_overall_status()
+        print(f'[AutoPlans] 已启动 {status["total_plans"]} 个计划（{status["active_plans"]} 活跃）')
+    except Exception as _e:
+        print(f'[AutoPlans] 调度器启动失败: {_e}')
+
     app.run(host='0.0.0.0', port=8888, debug=debug_mode, threaded=True)

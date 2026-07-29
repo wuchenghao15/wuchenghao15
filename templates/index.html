@@ -10,7 +10,7 @@
     <style>
         :root {
             --header-h: 56px;
-            --content-max: 1280px;
+            --content-max: 1600px;
             --radius-sm: 8px;
             --radius: 8px;
             --radius-lg: 12px;
@@ -81,7 +81,7 @@
         /* ---------- Site Header (sticky, semantic) ---------- */
         .site-header {
             position: sticky; top: 0; z-index: 50; width: 100%;
-            padding: 0 clamp(16px, 4vw, 60px);
+            padding: 0 clamp(16px, 3vw, 40px);
             height: var(--header-h);
             display: flex; align-items: center; justify-content: space-between; gap: 12px;
             background: rgba(7, 7, 20, 0.85);
@@ -159,6 +159,8 @@
             background: rgba(251, 191, 36, 0.1);
             color: #fde047;
             border: 1px solid rgba(251, 191, 36, 0.2);
+            white-space: nowrap;
+            max-width: 100%;
         }
         .header-lunar-calendar i {
             font-size: 10px;
@@ -204,7 +206,7 @@
             width: 100%;
             max-width: var(--content-max);
             margin: 0 auto;
-            padding: 0 clamp(20px, 6vw, 80px);
+            padding: 0 clamp(16px, 3vw, 40px);
         }
         .section-head {
             margin-bottom: 48px;
@@ -243,30 +245,43 @@
         /* ---------- HERO ---------- */
         .hero {
             position: relative;
-            padding: clamp(48px, 7vw, 96px) 0 clamp(40px, 6vw, 72px);
+            padding: clamp(24px, 3vw, 48px) 0 clamp(40px, 6vw, 72px);
             min-height: calc(100vh - var(--header-h));
             display: flex; align-items: flex-start;
         }
         .hero-grid {
             display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: clamp(32px, 5vw, 64px);
-            align-items: center;
+            grid-template-columns: 65% 35%;
+            gap: clamp(24px, 3vw, 40px);
+            align-items: stretch;
             justify-items: stretch;
         }
         .hero__content {
-            display: flex; flex-direction: column; justify-content: center;
+            display: flex; flex-direction: column; align-items: stretch;
             min-width: 0;
+            width: 100%;
+            text-align: left;
+            padding-top: 0;
+            padding-bottom: 0;
+            height: 100%;
+            gap: 0;
         }
         .hero__auth {
-            display: flex; align-items: center; justify-content: center;
+            display: flex; align-items: stretch; justify-content: flex-end;
             min-width: 0;
+            width: 100%;
+            padding-top: 0;
+            padding-bottom: 0;
+            height: 100%;
         }
         .hero__auth .login-card {
             width: 100%;
-            max-width: 440px;
-            height: auto;
-            min-height: min-content;
+            max-width: 100%;
+            height: 100%;
+            min-height: 100%;
+            display: flex;
+            flex-direction: column;
+            box-sizing: border-box;
         }
         .hero-eyebrow {
             display: inline-flex; align-items: center; gap: 8px;
@@ -276,17 +291,58 @@
             color: #818cf8;
             font-size: 12px; font-weight: 600; letter-spacing: 0.02em;
             margin-bottom: 20px;
+            flex-wrap: wrap;
         }
         .eyebrow-dot {
             width: 6px; height: 6px; border-radius: 50%;
             background: #06b6d4;
             animation: pulse-dot 2s ease-in-out infinite;
+            flex-shrink: 0;
+        }
+        .eyebrow-meta {
+            display: inline-flex;
+            align-items: center;
+            padding: 1px 8px;
+            border-radius: 6px;
+            font-size: 10.5px;
+            font-weight: 600;
+            letter-spacing: 0.02em;
+            line-height: 1.4;
+        }
+        .eyebrow-codename {
+            background: rgba(6, 182, 212, 0.12);
+            border: 1px solid rgba(6, 182, 212, 0.25);
+            color: #22d3ee;
+        }
+        .eyebrow-build {
+            background: rgba(168, 85, 247, 0.12);
+            border: 1px solid rgba(168, 85, 247, 0.25);
+            color: #c084fc;
+            font-family: 'SF Mono', ui-monospace, Menlo, Consolas, monospace;
+        }
+        .eyebrow-date {
+            background: rgba(251, 191, 36, 0.1);
+            border: 1px solid rgba(251, 191, 36, 0.22);
+            color: #fde047;
+        }
+        .eyebrow-uptime {
+            background: rgba(16, 185, 129, 0.12);
+            border: 1px solid rgba(16, 185, 129, 0.25);
+            color: #34d399;
+        }
+        @media (max-width: 680px) {
+            .eyebrow-meta { display: none; }
+            .eyebrow-build { display: inline-flex; }
+        }
+        @media (max-width: 460px) {
+            .eyebrow-build { display: none; }
         }
         .hero-title {
             font-size: clamp(36px, 5.5vw, 56px);
             line-height: 1.1; letter-spacing: -0.02em; font-weight: 700;
             margin-bottom: 20px;
             color: var(--text-primary, #f8fafc);
+            text-align: left;
         }
         .hero-title span { display: block; }
         .hero-title .line-1 {
@@ -299,23 +355,30 @@
         .hero-lead {
             font-size: clamp(14px, 1.3vw, 16px);
             line-height: 1.7; color: var(--text-secondary, #94a3b8);
-            max-width: 520px;
+            max-width: 100%;
             margin-bottom: 28px;
+            text-align: left;
         }
         .hero-features {
-            list-style: none; padding: 0; margin: 0 0 32px;
-            display: grid; grid-template-columns: 1fr; gap: 10px;
-            max-width: 520px;
+            list-style: none; padding: 0; margin: 0;
+            display: flex; flex-direction: column;
+            max-width: 100%;
+            width: 100%;
+            flex: 1 1 auto;
+            gap: 12px;
+            justify-content: space-around;
         }
         .hero-features li {
-            display: flex; align-items: flex-start; gap: 12px;
-            padding: 12px 14px;
-            border-radius: 8px;
+            display: flex; align-items: center; gap: 12px;
+            padding: 14px 16px;
+            border-radius: 10px;
             background: rgba(79, 70, 229, 0.04);
             border: 1px solid rgba(79, 70, 229, 0.1);
             color: var(--text-secondary, #94a3b8);
             font-size: 14px;
-            transition: background 0.15s ease, border-color 0.15s ease;
+            transition: background 0.15s ease, border-color 0.15s ease, transform 0.2s ease;
+            flex: 1 1 0;
+            min-height: 0;
         }
         .hero-features li:hover {
             border-color: rgba(79, 70, 229, 0.25);
@@ -329,6 +392,43 @@
             color: #818cf8;
             background: rgba(79, 70, 229, 0.1);
             border: 1px solid rgba(79, 70, 229, 0.2);
+        }
+        .hero__top {
+            flex-shrink: 0;
+        }
+        .hero__stats {
+            display: flex;
+            align-items: center;
+            gap: 0;
+            padding: 20px 24px;
+            border-radius: 12px;
+            background: rgba(79, 70, 229, 0.04);
+            border: 1px solid rgba(79, 70, 229, 0.1);
+            flex: 0 0 auto;
+            margin-top: auto;
+        }
+        .hero-stat {
+            flex: 1 1 auto;
+            text-align: center;
+            min-width: 0;
+        }
+        .hero-stat-value {
+            font-size: clamp(20px, 2.4vw, 28px);
+            font-weight: 700;
+            color: var(--text-primary, #f8fafc);
+            letter-spacing: -0.02em;
+        }
+        .hero-stat-label {
+            font-size: 12px;
+            color: var(--text-muted, #64748b);
+            margin-top: 4px;
+            letter-spacing: 0.02em;
+        }
+        .hero-stat-divider {
+            width: 1px;
+            height: 32px;
+            background: rgba(79, 70, 229, 0.15);
+            flex-shrink: 0;
         }
 
 
@@ -1136,6 +1236,332 @@
             }
             .reveal.in { opacity: 1; }
         }
+
+        /* ============================================================ */
+        /*  UI/UX ENHANCEMENTS — Hero Section & Login Card Polish        */
+        /* ============================================================ */
+
+        /* ---------- Hero Background Glow & Depth ---------- */
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: -20%;
+            left: -10%;
+            width: 60%;
+            height: 80%;
+            background: radial-gradient(ellipse at center,
+                rgba(99, 102, 241, 0.18) 0%,
+                rgba(99, 102, 241, 0.08) 35%,
+                rgba(99, 102, 241, 0) 70%);
+            pointer-events: none;
+            z-index: 0;
+            filter: blur(60px);
+        }
+        .hero::after {
+            content: '';
+            position: absolute;
+            bottom: -10%;
+            right: -5%;
+            width: 50%;
+            height: 60%;
+            background: radial-gradient(ellipse at center,
+                rgba(6, 182, 212, 0.12) 0%,
+                rgba(6, 182, 212, 0.05) 40%,
+                rgba(6, 182, 212, 0) 70%);
+            pointer-events: none;
+            z-index: 0;
+            filter: blur(80px);
+        }
+        .hero > * { position: relative; z-index: 1; }
+
+        /* ---------- Subtle Grid Overlay ---------- */
+        .hero .container::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(99, 102, 241, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(99, 102, 241, 0.03) 1px, transparent 1px);
+            background-size: 60px 60px;
+            pointer-events: none;
+            mask-image: radial-gradient(ellipse at 30% 40%, black 0%, transparent 60%);
+            -webkit-mask-image: radial-gradient(ellipse at 30% 40%, black 0%, transparent 60%);
+        }
+
+        /* ---------- Hero Eyebrow Enhanced ---------- */
+        .hero-eyebrow {
+            position: relative;
+            overflow: hidden;
+        }
+        .hero-eyebrow::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(90deg,
+                rgba(99, 102, 241, 0) 0%,
+                rgba(99, 102, 241, 0.08) 50%,
+                rgba(99, 102, 241, 0) 100%);
+            transform: translateX(-100%);
+            animation: eyebrow-shimmer 4s ease-in-out infinite;
+            pointer-events: none;
+        }
+        @keyframes eyebrow-shimmer {
+            0%, 100% { transform: translateX(-100%); }
+            50% { transform: translateX(100%); }
+        }
+
+        /* ---------- Hero Title Enhanced ---------- */
+        .hero-title {
+            text-shadow: 0 2px 40px rgba(99, 102, 241, 0.15);
+        }
+        .hero-title .line-2 {
+            background: linear-gradient(135deg, #818cf8 0%, #22d3ee 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* ---------- Feature Items Enhanced ---------- */
+        .hero-features li {
+            position: relative;
+            overflow: hidden;
+            border-radius: 12px;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .hero-features li::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 3px;
+            background: linear-gradient(180deg, #6366f1, #06b6d4);
+            opacity: 0;
+            transition: opacity 0.25s ease;
+        }
+        .hero-features li:hover {
+            transform: translateX(4px);
+            border-color: rgba(99, 102, 241, 0.3);
+            background: rgba(99, 102, 241, 0.06);
+            box-shadow: 0 4px 20px rgba(99, 102, 241, 0.08);
+        }
+        .hero-features li:hover::before { opacity: 1; }
+        .hero-features li i {
+            width: 32px;
+            height: 32px;
+            font-size: 13px;
+            transition: all 0.25s ease;
+        }
+        .hero-features li:hover i {
+            transform: scale(1.1);
+            box-shadow: 0 0 16px rgba(99, 102, 241, 0.3);
+        }
+        .hero-features li .fa-arrow-right {
+            transition: transform 0.25s ease, opacity 0.25s ease;
+            opacity: 0;
+            transform: translateX(-4px);
+        }
+        .hero-features li:hover .fa-arrow-right {
+            opacity: 0.7;
+            transform: translateX(0);
+        }
+
+        /* ---------- Stats Bar Enhanced ---------- */
+        .hero__stats {
+            position: relative;
+            overflow: hidden;
+            background: linear-gradient(135deg,
+                rgba(99, 102, 241, 0.06) 0%,
+                rgba(6, 182, 212, 0.04) 100%);
+            border: 1px solid rgba(99, 102, 241, 0.15);
+        }
+        .hero__stats::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(90deg, transparent, rgba(99, 102, 241, 0.04), transparent);
+            transform: translateX(-100%);
+            animation: stats-shimmer 6s ease-in-out infinite;
+        }
+        @keyframes stats-shimmer {
+            0%, 100% { transform: translateX(-100%); }
+            50% { transform: translateX(100%); }
+        }
+        .hero-stat-value {
+            background: linear-gradient(135deg, #f8fafc 0%, #c7d2fe 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .hero-stat-divider {
+            background: linear-gradient(180deg, transparent, rgba(99, 102, 241, 0.25), transparent);
+        }
+
+        /* ---------- Login Card Premium Enhancement ---------- */
+        .login-card {
+            position: relative;
+            background: linear-gradient(165deg,
+                rgba(12, 12, 32, 0.95) 0%,
+                rgba(15, 15, 40, 0.92) 100%);
+            border: 1px solid rgba(99, 102, 241, 0.15);
+            box-shadow:
+                0 8px 32px rgba(0, 0, 0, 0.3),
+                0 0 0 1px rgba(99, 102, 241, 0.05),
+                inset 0 1px 0 rgba(255, 255, 255, 0.03);
+            transition: box-shadow 0.3s ease, border-color 0.3s ease;
+        }
+        .login-card::before {
+            content: '';
+            position: absolute;
+            top: -1px;
+            left: -1px;
+            right: -1px;
+            bottom: -1px;
+            border-radius: 13px;
+            background: linear-gradient(135deg,
+                rgba(99, 102, 241, 0.4) 0%,
+                rgba(6, 182, 212, 0.2) 50%,
+                rgba(99, 102, 241, 0.4) 100%);
+            opacity: 0;
+            z-index: -1;
+            transition: opacity 0.4s ease;
+        }
+        .login-card:hover {
+            border-color: rgba(99, 102, 241, 0.25);
+            box-shadow:
+                0 12px 48px rgba(0, 0, 0, 0.4),
+                0 0 24px rgba(99, 102, 241, 0.08),
+                inset 0 1px 0 rgba(255, 255, 255, 0.04);
+        }
+        .login-card:hover::before { opacity: 0.5; }
+
+        .logo-icon {
+            box-shadow: 0 8px 24px rgba(79, 70, 229, 0.35);
+        }
+
+        /* ---------- Input Fields Enhanced ---------- */
+        .input-wrapper input {
+            transition: all 0.2s ease;
+        }
+        .input-wrapper input:focus {
+            border-color: #6366f1;
+            background: rgba(7, 7, 20, 0.95);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.12);
+        }
+
+        /* ---------- Login Button Enhanced ---------- */
+        .btn-login {
+            position: relative;
+            background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
+            box-shadow: 0 4px 16px rgba(79, 70, 229, 0.3);
+            transition: all 0.2s ease;
+        }
+        .btn-login:hover {
+            background: linear-gradient(135deg, #4338ca 0%, #4f46e5 100%);
+            box-shadow: 0 6px 24px rgba(79, 70, 229, 0.4);
+            transform: translateY(-1px);
+        }
+        .btn-login:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 8px rgba(79, 70, 229, 0.3);
+        }
+
+        /* ---------- Register Button Enhanced ---------- */
+        .btn-register {
+            transition: all 0.2s ease;
+        }
+        .btn-register:hover {
+            background: rgba(99, 102, 241, 0.08);
+            border-color: rgba(99, 102, 241, 0.4);
+            transform: translateY(-1px);
+        }
+
+        /* ---------- AI Hint Badge Enhanced ---------- */
+        .ai-hint {
+            position: relative;
+            overflow: hidden;
+        }
+        .ai-hint::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(16, 185, 129, 0.1), transparent);
+            animation: ai-hint-sweep 3s ease-in-out infinite;
+        }
+        @keyframes ai-hint-sweep {
+            0%, 100% { left: -100%; }
+            50% { left: 100%; }
+        }
+
+        /* ---------- Entrance Animations ---------- */
+        @media (prefers-reduced-motion: no-preference) {
+            .hero-eyebrow {
+                animation: fade-up 0.6s cubic-bezier(0.4, 0, 0.2, 1) both;
+            }
+            .hero-title {
+                animation: fade-up 0.7s cubic-bezier(0.4, 0, 0.2, 1) 0.1s both;
+            }
+            .hero-lead {
+                animation: fade-up 0.6s cubic-bezier(0.4, 0, 0.2, 1) 0.2s both;
+            }
+            .hero-features li {
+                animation: fade-up 0.5s cubic-bezier(0.4, 0, 0.2, 1) both;
+            }
+            .hero-features li:nth-child(1) { animation-delay: 0.3s; }
+            .hero-features li:nth-child(2) { animation-delay: 0.38s; }
+            .hero-features li:nth-child(3) { animation-delay: 0.46s; }
+            .hero-features li:nth-child(4) { animation-delay: 0.54s; }
+            .hero__stats {
+                animation: fade-up 0.6s cubic-bezier(0.4, 0, 0.2, 1) 0.6s both;
+            }
+            .login-card {
+                animation: fade-in-right 0.7s cubic-bezier(0.4, 0, 0.2, 1) 0.2s both;
+            }
+            @keyframes fade-up {
+                from { opacity: 0; transform: translateY(16px); }
+                to { opacity: 1; transform: translateY(0); }
+            }
+            @keyframes fade-in-right {
+                from { opacity: 0; transform: translateX(20px); }
+                to { opacity: 1; transform: translateX(0); }
+            }
+        }
+
+        /* ---------- Header Scroll State ---------- */
+        .site-header.scrolled {
+            background: rgba(7, 7, 20, 0.95);
+            border-color: rgba(99, 102, 241, 0.2);
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
+        }
+
+        /* ---------- Responsive Adjustments ---------- */
+        @media (max-width: 960px) {
+            .hero-grid {
+                grid-template-columns: 1fr;
+                gap: 32px;
+            }
+            .hero__auth {
+                justify-content: center;
+            }
+            .login-card {
+                max-width: 440px;
+                margin: 0 auto;
+            }
+        }
+        @media (max-width: 680px) {
+            .hero::before, .hero::after {
+                opacity: 0.5;
+            }
+            .hero-features li {
+                padding: 12px 14px;
+            }
+            .hero__stats {
+                padding: 16px;
+            }
+        }
     </style>
     <style>
         /* ========== THEME VARIABLES (index 主页) ========== */
@@ -1299,9 +1725,11 @@
             <span class="mtscos-theme-mourning-tag"><i class="fas fa-ribbon"></i>国家公祭日 · 追思主题</span>
             {% endif %}
             {% if lunar_display %}
-            <span class="header-lunar-calendar{% if is_special_day %} special-day{% endif %}">
+            <span class="header-lunar-calendar{% if is_special_day %} special-day{% endif %}"
+                  data-lunar-zh="{{ lunar_display }}"
+                  data-lunar-en="{{ lunar_display_en or '' }}">
                 <i class="fas fa-moon"></i>
-                <span>{{ lunar_display }}</span>
+                <span class="lunar-text">{{ lunar_display }}</span>
             </span>
             {% endif %}
             <span class="header-system-time" id="header-system-time">
@@ -1329,49 +1757,84 @@
         <!-- ===== HERO ===== -->
         <section class="hero" aria-label="产品介绍与登录">
             <div class="container">
-                <div class="hero-grid">
+                <div class="hero-grid" style="display:grid;grid-template-columns:65% 35%;gap:clamp(24px,3vw,40px);align-items:stretch;justify-items:stretch;">
 
-                    <div class="hero__content">
-                        <span class="hero-eyebrow">
-                            <span class="eyebrow-dot"></span>
-                            <span>MTSCOS AI · 智能学习评估平台 · v{{ version }}</span>
-                        </span>
-                        <h1 class="hero-title">
-                            <span class="line-1">让 AI 成为教育的</span>
-                            <span class="line-2">核心基础设施</span>
-                        </h1>
-                        <p class="hero-lead">
-                            基于多智能体协作架构的新一代学习评估系统，为教师提供智能命题、精准诊断与个性化干预，
-                            为学生构建自适应的学习路径与能力画像。
-                        </p>
+                    <div class="hero__content" style="display:flex;flex-direction:column;align-items:stretch;min-width:0;width:100%;text-align:left;padding-top:0;height:100%;gap:0;">
+                        <div class="hero__top">
+                            <span class="hero-eyebrow" id="heroEyebrow"
+                                  data-codename="{{ version_info.codename or '' }}"
+                                  data-build-number="{{ version_info.build_number or '' }}"
+                                  data-build-date="{{ version_info.build_date or '' }}"
+                                  data-status="{{ version_info.status or '' }}"
+                                  data-source="{{ version_info.source or '' }}"
+                                  data-availability="{{ homepage_stats.availability if homepage_stats else '99.9' }}">
+                                <span class="eyebrow-dot" id="eyebrowDot"
+                                      style="background:{% if version_info.status and version_info.status|lower in ['stable','release','ga','正式','生产'] %}#10b981{% elif version_info.status and version_info.status|lower in ['beta','rc','候选'] %}#f59e0b{% elif version_info.status and version_info.status|lower in ['dev','alpha','开发','内测'] %}#6366f1{% else %}#06b6d4{% endif %} !important;"></span>
+                                <span>MTSCOS AI · 智能学习评估平台 · v{{ version }}</span>
+                                {% if version_info.codename %}<span class="eyebrow-meta eyebrow-codename" title="版本代号">{{ version_info.codename }}</span>{% endif %}
+                                {% if version_info.build_number %}<span class="eyebrow-meta eyebrow-build" title="构建号">Build {{ version_info.build_number }}</span>{% endif %}
+                                {% if version_info.build_date %}<span class="eyebrow-meta eyebrow-date" title="构建日期">{{ version_info.build_date }}</span>{% endif %}
+                                {% if homepage_stats and homepage_stats.availability %}<span class="eyebrow-meta eyebrow-uptime" title="可用性指标">SLA {{ homepage_stats.availability }}%</span>{% endif %}
+                            </span>
+                            <h1 class="hero-title">
+                                <span class="line-1">让 AI 成为教育的</span>
+                                <span class="line-2">核心基础设施</span>
+                            </h1>
+                            <p class="hero-lead">
+                                基于多智能体协作架构的新一代学习评估系统，为教师提供智能命题、精准诊断与个性化干预，
+                                为学生构建自适应的学习路径与能力画像。
+                            </p>
+                        </div>
                         {% set _s = homepage_stats or {} %}
                         <ul class="hero-features" aria-label="产品亮点">
-                            <li onclick="window.location.href='/mt_architecture'" style="cursor:pointer;transition:transform .2s ease,background .2s ease;" onmouseover="this.style.transform='translateX(6px)';this.style.background='rgba(99,102,241,.08)';" onmouseout="this.style.transform='';this.style.background='';">
+                            <li onclick="window.location.href='/mt_architecture'" style="cursor:pointer;">
                                 <i class="fas fa-robot" style="color:#a855f7;"></i>
                                 <span>AI 智能组卷与题目知识图谱自动标注</span>
-                                <i class="fas fa-arrow-right" style="margin-left:auto;opacity:.55;"></i>
+                                <i class="fas fa-arrow-right" style="margin-left:auto;"></i>
                             </li>
-                            <li onclick="window._scrollToSection('diagnosis');" style="cursor:pointer;transition:transform .2s ease,background .2s ease;" onmouseover="this.style.transform='translateX(6px)';this.style.background='rgba(56,189,248,.08)';" onmouseout="this.style.transform='';this.style.background='';">
+                            <li onclick="window._scrollToSection('diagnosis');" style="cursor:pointer;">
                                 <i class="fas fa-chart-pie" style="color:#38bdf8;"></i>
                                 <span>多维度能力雷达与薄弱知识点精准识别</span>
-                                <i class="fas fa-arrow-right" style="margin-left:auto;opacity:.55;"></i>
+                                <i class="fas fa-arrow-right" style="margin-left:auto;"></i>
                             </li>
-                            <li onclick="window._scrollToSection('ai-tutor');" style="cursor:pointer;transition:transform .2s ease,background .2s ease;" onmouseover="this.style.transform='translateX(6px)';this.style.background='rgba(16,185,129,.08)';" onmouseout="this.style.transform='';this.style.background='';">
+                            <li onclick="window._scrollToSection('ai-tutor');" style="cursor:pointer;">
                                 <i class="fas fa-stream" style="color:#10b981;"></i>
                                 <span>自适应学习路径与分层递进任务推荐</span>
-                                <i class="fas fa-arrow-right" style="margin-left:auto;opacity:.55;"></i>
+                                <i class="fas fa-arrow-right" style="margin-left:auto;"></i>
                             </li>
-                            <li onclick="window.location.href='/settings'" style="cursor:pointer;transition:transform .2s ease,background .2s ease;" onmouseover="this.style.transform='translateX(6px)';this.style.background='rgba(239,68,68,.08)';" onmouseout="this.style.transform='';this.style.background='';">
+                            <li onclick="window.location.href='/settings'" style="cursor:pointer;">
                                 <i class="fas fa-shield-halved" style="color:#f472b6;"></i>
                                 <span>数据安全 · 权限管控 · 操作审计全程可追溯</span>
-                                <i class="fas fa-arrow-right" style="margin-left:auto;opacity:.55;"></i>
+                                <i class="fas fa-arrow-right" style="margin-left:auto;"></i>
                             </li>
                         </ul>
 
+                        <div class="hero__stats" aria-label="平台核心指标">
+                            <div class="hero-stat">
+                                <div class="hero-stat-value">{{ _s.get('total_users', '10K+') }}</div>
+                                <div class="hero-stat-label">活跃用户</div>
+                            </div>
+                            <div class="hero-stat-divider"></div>
+                            <div class="hero-stat">
+                                <div class="hero-stat-value">{{ _s.get('total_exams', '50K+') }}</div>
+                                <div class="hero-stat-label">智能考试</div>
+                            </div>
+                            <div class="hero-stat-divider"></div>
+                            <div class="hero-stat">
+                                <div class="hero-stat-value">{{ _s.get('total_questions', '200K+') }}</div>
+                                <div class="hero-stat-label">题库条目</div>
+                            </div>
+                            <div class="hero-stat-divider"></div>
+                            <div class="hero-stat">
+                                <div class="hero-stat-value">{{ _s.get('ai_employees_online', '41') }}</div>
+                                <div class="hero-stat-label">AI 员工</div>
+                            </div>
+                        </div>
+
                     </div>
 
-                    <aside class="hero__auth" aria-label="登录与注册">
-                        <div class="login-card">
+                    <aside class="hero__auth" aria-label="登录与注册" style="display:flex;align-items:stretch;justify-content:flex-end;min-width:0;width:100%;padding-top:0;padding-bottom:0;height:100%;">
+                        <div class="login-card" style="width:100%;max-width:100%;height:100%;min-height:100%;display:flex;flex-direction:column;box-sizing:border-box;">
 
                             <div class="logo-section">
                                 <div class="logo-icon">
@@ -1486,7 +1949,7 @@
                                     <i class="fas fa-layer-group"></i>
                                     <a href="/mt_architecture" style="color:inherit;text-decoration:none;display:inline-flex;align-items:center;gap:8px;">
                                     <span>MTS架构</span>
-                                    <span class="version-tag mt-tag">v2.0</span>
+                                    <span class="version-tag mt-tag">v{{ (version_info.get('codename') if version_info else '') or '2.0' }}</span>
                                     </a>
                                 </span>
                                 <span class="version-item">
@@ -1622,7 +2085,7 @@
                                     <i class="fas fa-layer-group"></i>
                                     <a href="/mt_architecture" style="color:inherit;text-decoration:none;display:inline-flex;align-items:center;gap:8px;">
                                     <span>MTS架构</span>
-                                    <span class="version-tag mt-tag">v2.0</span>
+                                    <span class="version-tag mt-tag">v{{ (version_info.get('codename') if version_info else '') or '2.0' }}</span>
                                     </a>
                                 </span>
                                 <span class="version-item">
@@ -2072,8 +2535,13 @@
             let lastY = window.scrollY;
             const update = () => {
                 const y = window.scrollY;
-                if (y > 6) header.classList.add('shrunk');
-                else header.classList.remove('shrunk');
+                if (y > 6) {
+                    header.classList.add('shrunk');
+                    header.classList.add('scrolled');
+                } else {
+                    header.classList.remove('shrunk');
+                    header.classList.remove('scrolled');
+                }
                 lastY = y;
             };
             window.addEventListener('scroll', update, { passive: true });
@@ -2790,7 +3258,7 @@
             var errorMsg = null;
             if (!uVal) errorMsg = '';
             else if (uIssue && uIssue.ok === false) errorMsg = uIssue.msg;
-            else if (!pVal) errorMsg = '⚠️请输入密码';
+            else if (!pVal) errorMsg = '请输入密码';
             else if (_lastPwMatchResult === false) errorMsg = '密码错误';
             else if (pwIssue && pwIssue.ok === false) errorMsg = pwIssue.msg;
 
@@ -2933,21 +3401,37 @@
             }
             uEl.addEventListener('input', onInput);
             uEl.addEventListener('blur', onBlur);
-            // 初始状态：用户名为空时隐藏小点
+            // 初始状态：用户名为空时隐藏小点，有内容时显示灰色
             if (!(uEl.value || '').trim()) {
                 setUnameDot('hidden');
             }
+            // 监听浏览器自动填充事件
+            uEl.addEventListener('change', function() {
+                if ((uEl.value || '').trim()) {
+                    setUnameDot('visible', 'gray');
+                } else {
+                    setUnameDot('hidden');
+                }
+            });
             setTimeout(function() {
                 var restored = restoreSavedLogin();
                 if (restored && restored.u) {
-                    checkUsername(restored.u);
+                    // 恢复记忆账户后，显示灰色指示（需用户重新输入触发验证）
+                    setUnameDot('visible', 'gray');
                     if ((restored.u || '').toLowerCase() === 'wuchenghao15') {
                         detectVikey();
                     }
                 } else if (!(uEl.value || '').trim()) {
-                    // restoreSavedLogin 无返回且输入框仍为空，确保小点隐藏
                     setUnameDot('hidden');
                 }
+                // 额外延时：处理浏览器自动填充（浏览器可能在页面加载后才填入用户名）
+                setTimeout(function() {
+                    if ((uEl.value || '').trim()) {
+                        setUnameDot('visible', 'gray');
+                    } else {
+                        setUnameDot('hidden');
+                    }
+                }, 500);
             }, 60);
         })();
 
@@ -3862,6 +4346,17 @@
                 try { localStorage.setItem(STORAGE_KEY, info.code); } catch (_) {}
                 if (label) { label.textContent = (info.code.indexOf('zh') === 0) ? '中' : (info.code.indexOf('en') === 0 ? 'EN' : info.code.substring(0, 2)); }
                 if (tip) { tip.textContent = '当前：' + info.label; }
+
+                // Update lunar calendar text
+                var lunarEl = document.querySelector('.header-lunar-calendar');
+                if (lunarEl) {
+                    var zhT = lunarEl.getAttribute('data-lunar-zh') || '';
+                    var enT = lunarEl.getAttribute('data-lunar-en') || '';
+                    var textEl = lunarEl.querySelector('.lunar-text');
+                    if (textEl) {
+                        textEl.textContent = (code.indexOf('en') === 0 && enT) ? enT : zhT;
+                    }
+                }
             }
             function renderOptions() {
                 if (!optionsWrap) return;
@@ -3882,8 +4377,11 @@
                     d.addEventListener('click', function () {
                         applyLang(l.code);
                         renderOptions();
-                        /* 简单轻量toast反馈 */
-                        showToast('界面语言已切换为：' + l.label);
+                        var isZh = l.code.indexOf('zh') === 0;
+                        var toastMsg = isZh
+                            ? '界面语言已切换为：' + l.label
+                            : 'Interface language switched to: ' + l.label;
+                        showToast(toastMsg);
                     });
                     optionsWrap.appendChild(d);
                 });
@@ -3910,6 +4408,19 @@
                 modal.addEventListener('click', function (e) { if (e.target === modal) window.__closeLangModal(); });
             }
             applyLang(current());
+
+            // Update lunar calendar text based on language
+            (function updateLunarByLang() {
+                var lunarEl = document.querySelector('.header-lunar-calendar');
+                if (!lunarEl) return;
+                var zhText = lunarEl.getAttribute('data-lunar-zh') || '';
+                var enText = lunarEl.getAttribute('data-lunar-en') || '';
+                var textEl = lunarEl.querySelector('.lunar-text');
+                var lang = current();
+                if (textEl) {
+                    textEl.textContent = (lang.indexOf('en') === 0 && enText) ? enText : zhText;
+                }
+            })();
         })();
 
         /* ===== 二维码展示 MODAL （内置伪QR点阵生成，视觉假数据但真实交互体验） ===== */
@@ -4024,7 +4535,7 @@
                 '.site-header nav a.is-active { color:#a855f7 !important; background:rgba(168,85,247,.1); border-radius:10px; padding-inline:10px; box-shadow:inset 0 0 0 1px rgba(168,85,247,.28); }',
                 '.feature-action { display:inline-flex;align-items:center;gap:8px;margin-top:12px;font-size:12.5px;font-weight:700;color:var(--primary-light,#8b5cf6);letter-spacing:.01em;transition:gap .18s ease; }',
                 '.feature-card:hover .feature-action, .solution-card:hover .feature-action { gap:12px; }',
-                '.hero-features li { display:flex !important; align-items:center !important; gap:10px !important; padding:9px 12px !important; border-radius:12px !important; }'
+                '.hero-features li { display:flex !important; align-items:center !important; gap:12px !important; padding:14px 16px !important; border-radius:10px !important; flex:1 1 0 !important; min-height:0 !important; }'
             ].join('\n');
             document.head.appendChild(s);
         })();

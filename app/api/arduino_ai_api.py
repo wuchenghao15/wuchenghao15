@@ -682,3 +682,283 @@ def enhanced_learning_path():
             'success': False,
             'error': str(e)
         }), 500
+
+
+# ── 智能顾问AI端点 ──────────────────────────────────────────────
+
+@arduino_ai_api.route('/api/arduino/ai/smart-intent', methods=['POST'])
+def smart_intent():
+    """AI意图识别 - 分析用户描述识别项目意图"""
+    data = request.get_json() or {}
+    text = data.get('text', '')
+    if not text:
+        return jsonify({'success': False, 'error': '描述文本不能为空'}), 400
+    try:
+        from ai_engines.arduino_ai_employees import ArduinoSmartAdvisorEmployee
+        advisor = ArduinoSmartAdvisorEmployee("api_smart_intent", "SmartIntent", 9)
+        result = advisor.execute_task({'type': 'intent', 'text': text})
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@arduino_ai_api.route('/api/arduino/ai/smart-advise', methods=['POST'])
+def smart_advise():
+    """AI智能建议 - 根据描述推荐项目方案、模板和组件"""
+    data = request.get_json() or {}
+    description = data.get('description', '')
+    board_type = data.get('board_type', 'uno')
+    if not description:
+        return jsonify({'success': False, 'error': '项目描述不能为空'}), 400
+    try:
+        from ai_engines.arduino_ai_employees import ArduinoSmartAdvisorEmployee
+        advisor = ArduinoSmartAdvisorEmployee("api_smart_advise", "SmartAdvise", 9)
+        result = advisor.execute_task({'type': 'advise', 'description': description, 'board_type': board_type})
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@arduino_ai_api.route('/api/arduino/ai/auto-pin-assign', methods=['POST'])
+def auto_pin_assign():
+    """AI自动引脚分配 - 根据组件列表智能分配引脚"""
+    data = request.get_json() or {}
+    components = data.get('components', [])
+    board_type = data.get('board_type', 'uno')
+    if not components:
+        return jsonify({'success': False, 'error': '组件列表不能为空'}), 400
+    try:
+        from ai_engines.arduino_ai_employees import ArduinoSmartAdvisorEmployee
+        advisor = ArduinoSmartAdvisorEmployee("api_pin_assign", "PinAssign", 9)
+        result = advisor.execute_task({'type': 'pin_assign', 'components': components, 'board_type': board_type})
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@arduino_ai_api.route('/api/arduino/ai/project-plan', methods=['POST'])
+def project_plan():
+    """AI项目计划生成 - 生成完整的项目实施计划"""
+    data = request.get_json() or {}
+    description = data.get('description', '')
+    board_type = data.get('board_type', 'uno')
+    if not description:
+        return jsonify({'success': False, 'error': '项目描述不能为空'}), 400
+    try:
+        from ai_engines.arduino_ai_employees import ArduinoSmartAdvisorEmployee
+        advisor = ArduinoSmartAdvisorEmployee("api_project_plan", "ProjectPlan", 9)
+        result = advisor.execute_task({'type': 'project_plan', 'description': description, 'board_type': board_type})
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+# ── 自动化测试AI端点 ────────────────────────────────────────────
+
+@arduino_ai_api.route('/api/arduino/ai/generate-test-cases', methods=['POST'])
+def generate_test_cases():
+    """AI测试用例生成 - 根据代码自动生成测试用例"""
+    data = request.get_json() or {}
+    code = data.get('code', '')
+    component = data.get('component', 'LED')
+    if not code:
+        return jsonify({'success': False, 'error': '代码不能为空'}), 400
+    try:
+        from ai_engines.arduino_ai_employees import ArduinoAutoTesterEmployee
+        tester = ArduinoAutoTesterEmployee("api_test_gen", "TestGen", 8)
+        result = tester.execute_task({'type': 'generate_test', 'code': code, 'component': component})
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@arduino_ai_api.route('/api/arduino/ai/patrol-test', methods=['POST'])
+def patrol_test():
+    """AI轮巡测试 - 执行N次代码生成→调试→优化→模拟全流程"""
+    data = request.get_json() or {}
+    iterations = int(data.get('iterations', 100))
+    try:
+        from ai_engines.arduino_ai_employees import ArduinoAutoTesterEmployee
+        tester = ArduinoAutoTesterEmployee("api_patrol", "Patrol", 8)
+        result = tester.execute_task({'type': 'patrol', 'iterations': iterations})
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@arduino_ai_api.route('/api/arduino/ai/stress-test', methods=['POST'])
+def stress_test():
+    """AI压力测试 - 对代码进行高负载压力测试"""
+    data = request.get_json() or {}
+    code = data.get('code', '')
+    iterations = int(data.get('iterations', 500))
+    if not code:
+        return jsonify({'success': False, 'error': '代码不能为空'}), 400
+    try:
+        from ai_engines.arduino_ai_employees import ArduinoAutoTesterEmployee
+        tester = ArduinoAutoTesterEmployee("api_stress", "StressTest", 8)
+        result = tester.execute_task({'type': 'stress_test', 'code': code, 'iterations': iterations})
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+# ── IoT自动化AI端点 ─────────────────────────────────────────────
+
+@arduino_ai_api.route('/api/arduino/ai/iot-discover', methods=['POST'])
+def iot_discover():
+    """AI设备发现 - 自动扫描网络中的Arduino/IoT设备"""
+    data = request.get_json() or {}
+    subnet = data.get('subnet', '192.168.1.0/24')
+    device_types = data.get('device_types', ['arduino', 'esp32', 'esp8266'])
+    try:
+        from ai_engines.arduino_ai_employees import ArduinoIoTAutomationEmployee
+        iot_auto = ArduinoIoTAutomationEmployee("api_iot_disc", "IoTDiscover", 9)
+        result = iot_auto.execute_task({'type': 'discover', 'subnet': subnet, 'device_types': device_types})
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@arduino_ai_api.route('/api/arduino/ai/iot-deploy', methods=['POST'])
+def iot_deploy():
+    """AI自动部署 - 向目标设备部署代码"""
+    data = request.get_json() or {}
+    target_ips = data.get('target_ips', [])
+    code = data.get('code', '')
+    firmware_version = data.get('firmware_version', '1.0.0')
+    if not target_ips or not code:
+        return jsonify({'success': False, 'error': '目标设备和代码不能为空'}), 400
+    try:
+        from ai_engines.arduino_ai_employees import ArduinoIoTAutomationEmployee
+        iot_auto = ArduinoIoTAutomationEmployee("api_iot_deploy", "IoTDeploy", 9)
+        result = iot_auto.execute_task({'type': 'deploy', 'target_ips': target_ips, 'code': code, 'firmware_version': firmware_version})
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@arduino_ai_api.route('/api/arduino/ai/iot-monitor', methods=['GET'])
+def iot_monitor():
+    """AI设备监控 - 获取所有设备的实时状态"""
+    device_ids = request.args.getlist('device_ids') or None
+    try:
+        from ai_engines.arduino_ai_employees import ArduinoIoTAutomationEmployee
+        iot_auto = ArduinoIoTAutomationEmployee("api_iot_mon", "IoTMonitor", 9)
+        result = iot_auto.execute_task({'type': 'monitor', 'device_ids': device_ids})
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@arduino_ai_api.route('/api/arduino/ai/iot-automation', methods=['POST'])
+def iot_automation():
+    """AI自动化规则设置 - 创建自动化触发规则"""
+    data = request.get_json() or {}
+    trigger_type = data.get('trigger_type', 'threshold')
+    conditions = data.get('conditions', [])
+    actions = data.get('actions', [])
+    try:
+        from ai_engines.arduino_ai_employees import ArduinoIoTAutomationEmployee
+        iot_auto = ArduinoIoTAutomationEmployee("api_iot_auto", "IoTAuto", 9)
+        result = iot_auto.execute_task({'type': 'automation', 'trigger_type': trigger_type, 'conditions': conditions, 'actions': actions})
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@arduino_ai_api.route('/api/arduino/ai/iot-ota', methods=['POST'])
+def iot_ota():
+    """AI OTA升级 - 对IoT设备进行远程固件升级"""
+    data = request.get_json() or {}
+    target_ips = data.get('target_ips', [])
+    firmware_url = data.get('firmware_url', '')
+    version = data.get('version', '1.0.0')
+    if not target_ips:
+        return jsonify({'success': False, 'error': '目标设备列表不能为空'}), 400
+    try:
+        from ai_engines.arduino_ai_employees import ArduinoIoTAutomationEmployee
+        iot_auto = ArduinoIoTAutomationEmployee("api_iot_ota", "IoTOTA", 9)
+        result = iot_auto.execute_task({'type': 'ota', 'target_ips': target_ips, 'firmware_url': firmware_url, 'version': version})
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+# ── 代码进化AI端点 ──────────────────────────────────────────────
+
+@arduino_ai_api.route('/api/arduino/ai/code-learn', methods=['POST'])
+def code_learn():
+    """AI代码学习 - 从代码中学习模式和结构"""
+    data = request.get_json() or {}
+    code = data.get('code', '')
+    if not code:
+        return jsonify({'success': False, 'error': '代码不能为空'}), 400
+    try:
+        from ai_engines.arduino_ai_employees import ArduinoCodeEvolverEmployee
+        evolver = ArduinoCodeEvolverEmployee("api_evolver", "CodeEvolver", 10)
+        result = evolver.execute_task({'type': 'learn', 'code': code})
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@arduino_ai_api.route('/api/arduino/ai/code-evolve', methods=['POST'])
+def code_evolve():
+    """AI代码进化 - 基于学习结果进化代码质量"""
+    data = request.get_json() or {}
+    code = data.get('code', '')
+    goal = data.get('goal', '')
+    if not code:
+        return jsonify({'success': False, 'error': '代码不能为空'}), 400
+    try:
+        from ai_engines.arduino_ai_employees import ArduinoCodeEvolverEmployee
+        evolver = ArduinoCodeEvolverEmployee("api_evolve", "CodeEvolve", 10)
+        result = evolver.execute_task({'type': 'evolve', 'code': code, 'goal': goal})
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@arduino_ai_api.route('/api/arduino/ai/pattern-search', methods=['POST'])
+def pattern_search():
+    """AI模式搜索 - 在已学习的模式中搜索匹配"""
+    data = request.get_json() or {}
+    query = data.get('query', '')
+    try:
+        from ai_engines.arduino_ai_employees import ArduinoCodeEvolverEmployee
+        evolver = ArduinoCodeEvolverEmployee("api_pattern", "PatternSearch", 10)
+        result = evolver.execute_task({'type': 'pattern_search', 'query': query})
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@arduino_ai_api.route('/api/arduino/ai/batch-learn', methods=['POST'])
+def batch_learn():
+    """AI批量学习 - 从多个代码文件中批量学习模式"""
+    data = request.get_json() or {}
+    codes = data.get('codes', [])
+    if not codes:
+        return jsonify({'success': False, 'error': '代码列表不能为空'}), 400
+    try:
+        from ai_engines.arduino_ai_employees import ArduinoCodeEvolverEmployee
+        evolver = ArduinoCodeEvolverEmployee("api_batch", "BatchLearn", 10)
+        result = evolver.execute_task({'type': 'batch_learn', 'codes': codes})
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+# ── AI员工状态端点 ──────────────────────────────────────────────
+
+@arduino_ai_api.route('/api/arduino/ai/employees/status', methods=['GET'])
+def get_employees_status():
+    """获取所有Arduino AI员工的状态"""
+    try:
+        from ai_engines.arduino_ai_employees import create_arduino_ai_employees
+        employees = create_arduino_ai_employees()
+        statuses = []
+        for eid, emp in employees.items():
+            statuses.append({
+                'id': eid,
+                'name': emp.name,
+                'type': emp.type,
+                'level': emp.level,
+                'status': emp.get_status()
+            })
+        return jsonify({
+            'success': True,
+            'employees': statuses,
+            'total': len(statuses)
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500

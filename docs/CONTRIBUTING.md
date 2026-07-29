@@ -1,7 +1,9 @@
-# MTSCOS AI 贡献指南
+# MTSCOS AI 贡献指南 / Contributing Guide
 
-> 版本: v17.22.0
-> 更新日期: 2026-07-26
+> 版本: v17.22.0 | Version: v17.22.0
+> 更新日期: 2026-07-26 | Updated: 2026-07-26
+>
+> [English Version / 英文版](CONTRIBUTING.en.md)
 
 ---
 
@@ -399,11 +401,13 @@ def test_<功能>_<场景>_<预期结果>():
 | 文档 | 文件 | 说明 |
 |------|------|------|
 | 项目介绍 | README.md | 项目概述和快速开始 |
-| 英文文档 | README_EN.md | 英文项目介绍 |
+| 英文文档 | README.md | 英文项目介绍 |
+| 中文文档 | README.zh-CN.md | 中文项目介绍 |
 | 部署指南 | DEPLOYMENT_GUIDE.md | 详细部署说明 |
 | 系统文档 | SYSTEM_DOC.md | 系统详细说明 |
 | 安全文档 | SECURITY.md | 安全相关文档 |
-| 贡献指南 | CONTRIBUTING.md | 贡献说明 |
+| 贡献指南（中文） | CONTRIBUTING.md | 中文贡献说明 |
+| 贡献指南（英文） | CONTRIBUTING.en.md | 英文贡献说明 |
 | 变更日志 | CHANGELOG.md | 版本变更记录 |
 
 ### 文档规范

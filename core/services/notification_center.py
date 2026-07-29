@@ -71,7 +71,10 @@ class NotificationCenter:
             'retention_days': 30,
             'enable_email_notification': True,
             'enable_sms_notification': False,
-            'enable_system_notification': True
+            'enable_system_notification': True,
+            'enable_wecom_notification': False,
+            'wecom_agentid': 0,
+            'wecom_markdown_enabled': True,
         }
     
     def _save_config(self):
@@ -177,6 +180,7 @@ class NotificationCenter:
     
     def _dispatch_notification(self, notification: Dict[str, Any]):
         """分发通知"""
+        # 邮件通知
         if self.config['enable_email_notification']:
             try:
                 from email_service import email_service
@@ -190,6 +194,7 @@ class NotificationCenter:
             except Exception as e:
                 logger(f"[通知] 邮件通知失败: {e}")
         
+        # 短信通知
         if self.config['enable_sms_notification']:
             try:
                 from sms_service import sms_service
@@ -200,6 +205,65 @@ class NotificationCenter:
                     )
             except Exception as e:
                 logger(f"[通知] 短信通知失败: {e}")
+        
+        # 企业微信通知
+        if self.config.get('enable_wecom_notification', False):
+            try:
+                self._dispatch_wecom_notification(notification)
+            except Exception as e:
+                logger(f"[通知] 企业微信通知失败: {e}")
+    
+    def _dispatch_wecom_notification(self, notification: Dict[str, Any]):
+        """分发企业微信通知"""
+        try:
+            from core.services.wecom_client import get_wecom_client
+            client = get_wecom_client()
+            
+            if not client:
+                logger.warning("[通知] 企业微信客户端未初始化，跳过企业微信通知")
+                return
+            
+            target_users = notification.get('target_user_ids', [])
+            if not target_users:
+                # 如果没有指定用户，使用 @all
+                target_users = ['@all']
+            
+            title = notification.get('title', '系统通知')
+            content = notification.get('content', '')
+            priority = notification.get('priority', 'normal')
+            
+            # 格式化消息内容
+            if self.config.get('wecom_markdown_enabled', True):
+                # Markdown 格式
+                priority_icon = {
+                    'critical': '🚨',
+                    'high': '⚠️',
+                    'normal': 'ℹ️',
+                    'low': '💡'
+                }.get(priority, 'ℹ️')
+                
+                markdown_content = f"""## {priority_icon} {title}
+
+{content}
+
+> 发送时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+> 优先级: {priority}"""
+                
+                result = client.send_markdown_message(target_users, markdown_content)
+            else:
+                # 纯文本格式
+                text_content = f"【{title}】\n{content}"
+                result = client.send_text_message(target_users, text_content)
+            
+            if result.get('errcode') == 0:
+                logger.info(f"[通知] 企业微信通知已发送: {title}")
+            else:
+                logger.error(f"[通知] 企业微信通知发送失败: {result.get('errmsg')}")
+                
+        except ImportError:
+            logger.warning("[通知] 企业微信模块未安装")
+        except Exception as e:
+            logger.error(f"[通知] 企业微信通知异常: {e}")
     
     def get_notifications(self, user_id: str = None, notification_type: str = None,
                          priority: str = None, is_read: bool = None,
