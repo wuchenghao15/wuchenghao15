@@ -337,23 +337,62 @@ class MTSCOSExtensionManager:
                 'result': extension_result
             }
 
+    EXTENSION_LEVEL_STRATEGIES = {
+        1: {
+            'ai_engine': ['增强AI能力', '添加自适应学习', '集成集群矩阵', '性能优化'],
+            'route': ['添加API文档', '增加限流保护', '添加缓存层'],
+            'template': ['响应式布局优化', '交互体验增强', '无障碍访问支持'],
+            'blueprint': ['API版本管理', '错误处理增强', '日志记录完善'],
+            'default': ['基础拓展', '性能优化', '稳定性增强'],
+        },
+        2: {
+            'ai_engine': ['深度学习增强', '多模态融合', '强化学习集成', '联邦学习支持', '知识库自动拓展'],
+            'route': ['OAuth2.0集成', 'API网关路由', 'GraphQL支持', 'WebSocket推送'],
+            'template': ['SSR渲染优化', '前端性能监控', 'A/B测试框架', '国际化完善'],
+            'blueprint': ['微服务拆分', '服务网格集成', '分布式追踪', '熔断降级'],
+            'default': ['高级拓展', '架构优化', '可观测性增强'],
+        },
+        3: {
+            'ai_engine': ['AGI原型集成', '元学习能力', '自主进化机制', '跨领域迁移学习', '实时知识库构建'],
+            'route': ['AI驱动路由调度', '智能负载均衡', '自适应API版本协商', '边缘计算支持'],
+            'template': ['AI自适应UI', '脑机接口交互', '全息投影支持', '空间计算适配'],
+            'blueprint': ['Serverless架构', '事件驱动重构', 'CQRS分离', '混沌工程集成'],
+            'default': ['深度拓展', '架构重构', '智能化升级'],
+        },
+    }
+
     def _auto_extend(self, feature: Dict, config: Dict) -> List[str]:
-        """自动拓展策略"""
-        extensions = []
+        """自动拓展策略 — 按拓展等级返回不同深度的拓展项"""
+        current_level = feature.get('extension_level', 0)
+        next_level = current_level + 1
         ftype = feature.get('feature_type')
 
-        if ftype == 'ai_engine':
-            extensions.extend(['增强AI能力', '添加自适应学习', '集成集群矩阵', '性能优化'])
-        elif ftype == 'route':
-            extensions.extend(['添加API文档', '增加限流保护', '添加缓存层'])
-        elif ftype == 'template':
-            extensions.extend(['响应式布局优化', '交互体验增强', '无障碍访问支持'])
-        elif ftype == 'blueprint':
-            extensions.extend(['API版本管理', '错误处理增强', '日志记录完善'])
-        else:
-            extensions.extend(['基础拓展', '性能优化', '稳定性增强'])
+        strategies = self.EXTENSION_LEVEL_STRATEGIES
+        level_strategies = strategies.get(next_level, strategies[3])
+        extensions = list(level_strategies.get(ftype, level_strategies['default']))
+
+        if next_level >= 2:
+            extensions.extend(self._get_category_extras(feature))
 
         return extensions
+
+    def _get_category_extras(self, feature: Dict) -> List[str]:
+        """按分类返回额外拓展项"""
+        cat = feature.get('category', '')
+        extras_map = {
+            'ai_engine': ['AI员工自动发现', '集群矩阵扩容', '知识库自动构建', '自我修复能力'],
+            'exam': ['题库AI扩充', '智能组卷', '难度自适应', '错题智能推送'],
+            'learning': ['学习路径AI规划', '个性化推荐', '知识图谱构建', '自适应评估'],
+            'admin': ['权限矩阵动态调整', '审计AI分析', '配置热更新', '灰度发布支持'],
+            'user': ['用户画像AI构建', '行为预测', '流失预警', '个性化门户'],
+            'monitoring': ['异常检测AI', '根因分析', '容量预测', '自愈系统'],
+            'api': ['API消费预测', '智能限流', '接口自动文档', '版本协商'],
+            'hardware': ['固件AI升级', '硬件健康预测', '功耗优化', '远程诊断'],
+            'notification': ['智能推送策略', '情绪感知通知', '定时学习提醒', '多渠道聚合'],
+            'backup': ['增量智能备份', '数据冷热分层', '灾备AI决策', '恢复点预测'],
+            'mobile': ['离线AI推理', '移动端自适应', '跨端一致体验', '小程序热更'],
+        }
+        return extras_map.get(cat, ['深度拓展', '智能化升级', '生态集成'])
 
     def _extend_capacity(self, feature: Dict, config: Dict) -> List[str]:
         """容量拓展"""
@@ -368,38 +407,64 @@ class MTSCOSExtensionManager:
         return ['健康检查集成', '性能指标采集', '异常告警配置', '日志聚合接入']
 
     def extend_all_features(self) -> Dict[str, Any]:
-        """拓展所有功能"""
+        """拓展所有功能（单轮 Lv.1）"""
+        return self._run_extension_rounds(rounds=1)
+
+    def deep_extend_all_features(self, rounds: int = 3) -> Dict[str, Any]:
+        """深度拓展所有功能（多轮，达到指定等级）"""
+        return self._run_extension_rounds(rounds=rounds)
+
+    def _run_extension_rounds(self, rounds: int = 1) -> Dict[str, Any]:
+        """执行多轮拓展"""
         with self._lock:
             if not self.discovered_features:
                 self.discover_all_features()
 
-            results = []
-            success_count = 0
-            fail_count = 0
+            total_success = 0
+            total_fail = 0
+            all_results = []
+            round_summary = []
 
-            for feature_id in list(self.discovered_features.keys()):
-                try:
-                    result = self.extend_feature(feature_id, {'extension_type': 'auto'})
-                    if result.get('success'):
-                        success_count += 1
-                    else:
-                        fail_count += 1
-                    results.append(result)
-                except Exception as e:
-                    fail_count += 1
-                    results.append({
-                        'feature_id': feature_id,
-                        'success': False,
-                        'message': str(e)
-                    })
+            for rnd in range(1, rounds + 1):
+                round_success = 0
+                round_fail = 0
+                round_results = []
+
+                for feature_id in list(self.discovered_features.keys()):
+                    try:
+                        result = self.extend_feature(feature_id, {'extension_type': 'auto'})
+                        if result.get('success'):
+                            round_success += 1
+                        else:
+                            round_fail += 1
+                        round_results.append(result)
+                    except Exception as e:
+                        round_fail += 1
+                        round_results.append({
+                            'feature_id': feature_id,
+                            'success': False,
+                            'message': str(e)
+                        })
+
+                total_success += round_success
+                total_fail += round_fail
+                all_results.extend(round_results)
+
+                round_summary.append({
+                    'round': rnd,
+                    'success': round_success,
+                    'fail': round_fail
+                })
 
             return {
                 'success': True,
                 'timestamp': datetime.now().isoformat(),
-                'total': len(results),
-                'success_count': success_count,
-                'fail_count': fail_count,
-                'results': results
+                'total_rounds': rounds,
+                'total': len(all_results),
+                'total_success': total_success,
+                'total_fail': total_fail,
+                'round_summary': round_summary,
+                'results': all_results
             }
 
     # ==================== 数据持久化 ====================
