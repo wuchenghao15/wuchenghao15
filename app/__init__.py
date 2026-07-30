@@ -16,6 +16,7 @@ def _register_blueprints(app):
     """注册所有API蓝图"""
     blueprints = [
         ('agent_management_api', 'app.api.agent_management_api'),
+        ('eigenflux_api', 'app.api.eigenflux_api'),
         ('ai_dashboard_api', 'app.api.ai_dashboard_api'),
         ('ai_professional_api', 'app.api.ai_professional_api'),
         ('ai_recommendation_api', 'app.api.ai_recommendation_api'),
