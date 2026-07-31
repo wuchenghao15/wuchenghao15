@@ -1,6 +1,6 @@
 # MTSCOS AI 项目目录规范
 
-> 版本: v17.22.0 | 更新日期: 2026-07-26
+> 版本: v18.2.0 | 更新日期: 2026-07-31
 
 ## 项目根目录
 
@@ -60,6 +60,10 @@ flask-app/
 │   │   ├── __init__.py
 │   │   ├── auth_service.py
 │   │   ├── exam_service.py
+│   │   ├── eigenflux_adapter.py       # ✅ EigenFlux.al 适配器（1475+ AI 员工广播网络）
+│   │   ├── user_container.py          # ✅ 用户容器系统（6 字段令牌 + 全链路验证）
+│   │   ├── vikey_auth.py              # ✅ vikey 硬件认证（超管铁律实时检测）
+│   │   ├── rule_approval.py           # ✅ 规则审批流程（提议→审批→AI防火墙→终审→适配→保密撤回）
 │   │   └── ...
 │   ├── exceptions/                    # ✅ 自定义异常体系
 │   │   ├── __init__.py                # AppException 基类及具体异常
@@ -83,6 +87,8 @@ flask-app/
 │   ├── unified_error.html             # 统一错误页面
 │   ├── admin_app/                     # 管理后台页面
 │   │   ├── education_management.html  # ✅ 教育综合管理页面
+│   │   ├── security_console.html      # ✅ 安全控制台（用户容器/vikey/规则审批可视化）
+│   │   ├── rule_management.html       # ✅ 规则管理页面（规则审批流程操作台）
 │   │   └── ...
 │   ├── mobile/                        # 移动端页面
 │   ├── about/                         # 关于页面

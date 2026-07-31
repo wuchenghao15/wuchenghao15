@@ -4,7 +4,7 @@
 
 A distributed multi-agent intelligent education and exam platform driven by the MTS Architecture v2.0. It unifies AI-powered question generation, smart exam composition, weakness diagnosis, personalized learning paths, and enterprise-grade RBAC + ABAC governance, covering K12, adult education, and higher education scenarios.
 
-[![Version](https://img.shields.io/badge/version-v17.22.0-purple)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-v18.2.0-purple)](CHANGELOG.md)
 [![Python](https://img.shields.io/badge/python-3.9%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/downloads/)
 [![Flask](https://img.shields.io/badge/flask-3.x-000000?logo=flask&logoColor=white)](https://flask.palletsprojects.com/)
 [![License](https://img.shields.io/badge/license-MIT-yellow)](LICENSE)
@@ -26,6 +26,10 @@ A distributed multi-agent intelligent education and exam platform driven by the 
 | **Lunar Calendar Service** | Built-in lunar calendar service ([`core/services/lunar_calendar_service.py`](core/services/lunar_calendar_service.py)) for schedule-aware education scenarios |
 | **Enterprise RBAC + ABAC** | 16-level roles, 50+ permission rules, full-chain immutable audit, VIKEY USB hardware key login for super admins |
 | **AI Firewall & App Security** | WAF (SQLi/XSS/RCE/SSRF/LFI/traversal/rate-limit) + pip-audit / Trivy / Bandit / CodeQL in CI, Dependabot daily updates |
+| **EigenFlux.al Integration** | 1475+ AI employees registered to EigenFlux.al broadcast network; supports broadcast messaging, inter-AI chat, and learning data sync |
+| **User Container Security** | Mandatory container validation on all non-index pages; fields include user_group, permission_code, login_status, is_anomaly, is_valid, unique_login_timestamp |
+| **Super Admin vikey Iron Law** | Real-time vikey hardware detection (desktop) / fingerprint (mobile) required for ALL super admin operations — page access, backend config, debug, release activation, AI tools |
+| **Rule Approval Workflow** | Proposal → Multi-admin approval → AI firewall review → Super admin final approval → Adaptation period → Confidential withdrawal (memory-only, no DB logs) |
 
 ---
 
@@ -73,11 +77,11 @@ Open <http://localhost:8888/> in your browser.
 ## Docker
 
 ```bash
-docker build -t mtscos-ai:v17.22.0 .
+docker build -t mtscos-ai:v18.2.0 .
 docker run -d -p 8888:8888 --name mtscos-ai \
   -v $(pwd)/split_databases:/app/split_databases:rw \
   -v $(pwd)/data:/app/data:rw \
-  mtscos-ai:v17.22.0
+  mtscos-ai:v18.2.0
 ```
 
 ### Entry Points
@@ -118,7 +122,7 @@ docker run -d -p 8888:8888 --name mtscos-ai \
 | [Security Policy](SECURITY.md) · [docs/SECURITY.md](docs/SECURITY.md) | Vulnerability reporting, WAF rules, CI scan matrix |
 | [Contributing Guide](CONTRIBUTING.md) | Code style, commit format, PR workflow |
 | [Project Structure](docs/PROJECT_STRUCTURE.md) | Full directory tree and module ownership |
-| [Changelog](CHANGELOG.md) · [docs/CHANGELOG.md](docs/CHANGELOG.md) | Full change history from v1.0 to v17.22.0 |
+| [Changelog](CHANGELOG.md) · [docs/CHANGELOG.md](docs/CHANGELOG.md) | Full change history from v1.0 to v18.2.0 |
 | [AI Engine Architecture](ai_engines/AI_ENGINE_ARCHITECTURE.md) | 550+ AI employee / engine matrix |
 
 ---

@@ -4,7 +4,7 @@
 
 基于 MTS 架构 v2.0 的分布式多智能体智能教育与考试平台。统一集成 AI 自动命题、智能组卷、薄弱诊断、个性化学习路径与企业级 RBAC + ABAC 治理，覆盖 K12、成人教育与高等教育全场景。
 
-[![版本](https://img.shields.io/badge/版本-v17.22.0-purple)](CHANGELOG.md)
+[![版本](https://img.shields.io/badge/版本-v18.2.0-purple)](CHANGELOG.md)
 [![Python](https://img.shields.io/badge/python-3.9%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/downloads/)
 [![Flask](https://img.shields.io/badge/flask-3.x-000000?logo=flask&logoColor=white)](https://flask.palletsprojects.com/)
 [![许可证](https://img.shields.io/badge/license-MIT-yellow)](LICENSE)
@@ -26,6 +26,10 @@
 | **农历服务** | 内置农历日历服务（[`core/services/lunar_calendar_service.py`](core/services/lunar_calendar_service.py)），适配按学期 / 节气排课的教育场景 |
 | **企业级 RBAC + ABAC** | 16 级角色、50+ 权限规则、全链路不可篡改审计、超管 VIKEY USB 硬件密钥登录 |
 | **AI 防火墙与应用安全** | WAF（SQLi/XSS/RCE/SSRF/LFI/目录穿越/限流）+ CI 全矩阵 pip-audit / Trivy / Bandit / CodeQL，Dependabot 日更 |
+| **EigenFlux.al 集成** | 1475+ AI员工接入EigenFlux.al广播网络，支持广播消息、AI员工聊天、学习数据同步 |
+| **用户容器安全** | 所有非首页页面强制验证用户容器（user_group/permission_code/login_status/is_anomaly/is_valid/unique_login_timestamp） |
+| **超管vikey铁律** | 所有超管操作实时检测vikey硬件（桌面）/指纹（移动端），铁律红线不可绕开 |
+| **规则审批流程** | 提议→多人审批→AI防火墙→超管终审→适配期→保密撤回（内存级保密，数据库无记录） |
 
 ---
 
@@ -73,11 +77,11 @@ python3 server_real_db.py --host 0.0.0.0 --port 8888
 ## Docker 部署
 
 ```bash
-docker build -t mtscos-ai:v17.22.0 .
+docker build -t mtscos-ai:v18.2.0 .
 docker run -d -p 8888:8888 --name mtscos-ai \
   -v $(pwd)/split_databases:/app/split_databases:rw \
   -v $(pwd)/data:/app/data:rw \
-  mtscos-ai:v17.22.0
+  mtscos-ai:v18.2.0
 ```
 
 ### 入口说明
@@ -118,7 +122,7 @@ docker run -d -p 8888:8888 --name mtscos-ai \
 | [安全策略](SECURITY.md) · [docs/SECURITY.md](docs/SECURITY.md) | 漏洞上报流程、WAF 规则、CI 扫描矩阵 |
 | [贡献者指南](CONTRIBUTING.md) | 代码规范、提交格式、PR 流程 |
 | [项目结构详解](docs/PROJECT_STRUCTURE.md) | 完整目录树、模块归属 |
-| [变更日志](CHANGELOG.md) · [docs/CHANGELOG.md](docs/CHANGELOG.md) | v1.0 至 v17.22.0 全量变更 |
+| [变更日志](CHANGELOG.md) · [docs/CHANGELOG.md](docs/CHANGELOG.md) | v1.0 至 v18.2.0 全量变更 |
 | [AI 引擎架构](ai_engines/AI_ENGINE_ARCHITECTURE.md) | 550+ AI 员工 / 引擎矩阵 |
 
 ---

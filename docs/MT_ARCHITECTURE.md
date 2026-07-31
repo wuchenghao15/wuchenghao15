@@ -1,9 +1,9 @@
 # MTS 架构 v2.0 / MTS Architecture v2.0
 
-> **文档版本**: 2.0 | **Document Version**: 2.0
-> **发布日期**: 2026-07-26 | **Updated**: 2026-07-26
+> **文档版本**: 2.1 | **Document Version**: 2.1
+> **发布日期**: 2026-07-31 | **Updated**: 2026-07-31
 > **架构代号**: MTSCOS AI Architecture | **Codename**: MTSCOS AI Architecture
-> **所属系统**: MTSCOS AI 智能考试系统
+> **所属系统**: MTSCOS AI 智能考试系统（v18.2.0）
 >
 > [English Version / 英文版](MT_ARCHITECTURE.en.md)
 
@@ -360,6 +360,51 @@ AI 引擎矩阵 (550+ 员工/引擎、47 Agent)
 | parent | 2 | 家长，查看子女学习 |
 | guest / anonymous / visitor | 1 | 访客，只读访问 |
 
+### 6.3 v18.2.0 安全层扩展（新增）
+
+v18.2.0 在原有 5 层安全架构基础上，新增三大安全组件，形成全链路、实时化、可审批的安全闭环。
+
+```text
+v18.2.0 安全层扩展
+├── 用户容器中间件（User Container Middleware）
+│   ├── 6 字段容器令牌（user_group / permission_code / login_status / is_anomaly / is_valid / unique_login_timestamp）
+│   ├── 全页面强制验证（除 index.html 外）
+│   ├── 登录流程重构（index.html → admin_app/login → 容器创建 → 重定向）
+│   └── 服务文件：app/services/user_container.py
+├── vikey 实时检测（vikey Real-time Check）
+│   ├── 超管操作铁律红线（不可绕开）
+│   ├── 桌面端 USB 硬件挑战/响应
+│   ├── 移动端设备指纹比对
+│   └── 服务文件：app/services/vikey_auth.py
+└── EigenFlux.al 适配器（EigenFlux Adapter）
+    ├── 1475+ AI 员工广播网络接入
+    ├── 广播消息 / AI 员工聊天 / 学习数据同步
+    └── 服务文件：app/services/eigenflux_adapter.py
+```
+
+#### 安全层协同关系
+
+```text
+请求入口
+  → 用户容器中间件（校验容器令牌 6 字段）
+    → 通过：进入业务层
+    → 失败：重定向登录页
+  → 业务层（超管敏感操作）
+    → vikey 实时检测（铁律红线）
+      → 通过：执行 + 审计
+      → 失败：拒绝 + 告警
+  → 规则变更
+    → 规则审批流程（propose → multi-approval → AI 防火墙 → 超管终审 → 适配期 → 保密撤回）
+  → AI 员工通信
+    → EigenFlux.al 适配器（广播 / 聊天 / 同步）
+```
+
+#### 与原架构的集成点
+- **表现层**：登录流程重构，admin_app/login 作为后端枢纽统一签发容器令牌
+- **业务层**：超管操作拦截器接入 vikey_auth 服务，规则引擎接入 rule_approval 服务
+- **AI 引擎矩阵**：AI 员工通过 eigenflux_adapter 接入广播网络，与现有 550+ 引擎协同
+- **权限层**：容器 user_group / permission_code 与现有 RBAC 16 角色体系对齐
+
 ---
 
 ## 7. 部署架构
@@ -522,5 +567,6 @@ MTS 架构 v2.0 里程碑
 
 | 日期 | 版本 | 变更内容 |
 |------|------|----------|
+| 2026-07-31 | v2.1 | 新增 v18.2.0 安全层扩展（用户容器中间件、vikey 实时检测、EigenFlux.al 适配器）、登录流程重构、规则审批流程 |
 | 2026-07-26 | v2.0 | 架构升级为 MTS 双引擎分层协作、新增 L3 MTS 核心层、VIKEY 硬件密钥、AI 防火墙、LayoutAI、公祭日主题 |
 | 2026-07-21 | v1.0 | 首次发布 MT 架构文档 |

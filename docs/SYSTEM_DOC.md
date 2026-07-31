@@ -1,8 +1,8 @@
 # MTSCOS AI 智能考试系统 - 系统说明书 / System Manual
 
-> 版本: v17.22.0 (SuperAdmin UX Unified Edition) | Version: v17.22.0
-> 更新日期: 2026-07-26 | Updated: 2026-07-26
-> 文档版本: 17.0 | Document Version: 17.0
+> 版本: v18.2.0 (Security Architecture & EigenFlux Integration Edition) | Version: v18.2.0
+> 更新日期: 2026-07-31 | Updated: 2026-07-31
+> 文档版本: 18.0 | Document Version: 18.0
 >
 > [English Version / 英文版](SYSTEM_DOC.en.md)
 
@@ -37,7 +37,7 @@
 
 ## 1. 系统概述
 
-MTSCOS AI 智能考试系统是一个基于 Flask 框架的分布式智能考试管理平台。v17.22.0 版本代号 "SuperAdmin UX Unified Edition"（超管 UX 统一版），主要新增超管识别隐藏记住我/忘记密码/创建账号、VIKEY 全链路打通、主版本+20 子系统统一对齐、CI 接入 Dependabot+Trivy+Bandit 等特性。
+MTSCOS AI 智能考试系统是一个基于 Flask 框架的分布式智能考试管理平台。v18.2.0 版本代号 "Security Architecture & EigenFlux Integration Edition"（安全架构重构与 EigenFlux 集成版），在 v17.22.0 基础上进行安全架构重构与 EigenFlux.al 集成，主要新增安全架构重构（用户容器系统、超级管理员 vikey 铁律、规则审批流程）、EigenFlux.al AI 员工广播网络集成（1475+ AI 员工接入）、用户容器全链路验证、登录流程重构（index.html → admin_app/login 后端枢纽 → 容器创建 → 重定向）、Arduino IDE 权限控制等特性。
 
 ### 核心特性
 - **MTS 架构 v2.0 双引擎**：规划引擎（策略）+ 执行 AI 员工阵列（550+ AI 员工/引擎、47 Agent），8 阶段配置加载 + 6 阶段模块加载
@@ -49,6 +49,10 @@ MTSCOS AI 智能考试系统是一个基于 Flask 框架的分布式智能考试
 - **自维护运维 OS**：8 维自动修复（表结构/配置/缓存/连接池/回滚/数据恢复/索引/ACL）+ 8 维预防式健康诊断
 - **统一版本 API**：1 个主版本 + 20 个子系统版本，批量升级/回滚/版本锁定/变更历史
 - **响应式 + 移动门户**：桌面/平板/手机布局全覆盖，移动端独立登录与考试页，VIKEY USB 硬件密钥登录
+- **EigenFlux.al 广播网络集成**: 1475+ AI员工接入EigenFlux.al，支持广播消息、AI员工聊天、学习数据同步
+- **用户容器安全系统**: 全链路用户容器验证（user_group/permission_code/login_status/is_anomaly/is_valid/unique_login_timestamp），所有非首页页面强制验证
+- **超级管理员vikey铁律**: 所有超管操作实时检测vikey硬件（桌面）/指纹（移动端），铁律红线不可绕开
+- **规则修改审批流程**: 提议→多人审批→AI防火墙→超管终审→适配期→保密撤回（内存级保密）
 
 ### 系统优势矩阵
 
@@ -447,6 +451,128 @@ python3 server_real_db.py --ssl --ssl-port 8443
 - 服务文件：`core/services/ai_firewall.py`
 - API 文件：`app/api/ai_firewall_api.py`
 - 功能：实时安全扫描、威胁检测、自动防护
+
+### 10.6 用户容器系统（v18.2.0 新增）
+
+#### 容器字段定义
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| user_group | string | 用户所属分组（如 admin/arduino/super_admin 等） |
+| permission_code | string | 权限码（基于 RBAC 角色派生） |
+| login_status | enum | 登录状态（logged_in/logged_out/expired） |
+| is_anomaly | bool | 异常标记（命中风控规则时置 true） |
+| is_valid | bool | 容器有效性（失效后所有非首页请求被拒） |
+| unique_login_timestamp | datetime | 唯一登录时间戳（防并发会话） |
+
+#### 中间件机制
+- **强制验证**：所有非首页（index.html）页面请求必须携带有效容器令牌
+- **登录流程重构**：index.html → admin_app/login 后端枢纽 → 容器创建 → 重定向目标页
+- **失效策略**：is_valid=false / is_anomaly=true / login_status≠logged_in 任一命中即拒绝访问
+- **唯一性约束**：unique_login_timestamp 保证同账号同时刻只有一个活跃容器
+
+#### 生命周期
+
+```text
+登录请求 → admin_app/login 后端枢纽
+  → 凭证校验（账号/密码/VIKEY）
+  → 创建用户容器（写入 6 字段）
+  → 签发容器令牌（Cookie + 服务端会话）
+  → 重定向目标页面（携带令牌）
+
+后续请求 → 容器中间件
+  → 解析令牌 → 校验 is_valid / is_anomaly / login_status
+  → 通过：放行；失败：重定向到登录页
+
+登出 → 销毁容器（is_valid=false，login_status=logged_out）
+```
+
+### 10.7 vikey 铁律（v18.2.0 新增）
+
+#### 实时检测机制
+- **桌面端**：实时检测 vikey USB 硬件是否存在（挑战/响应协议）
+- **移动端**：实时检测设备指纹是否匹配绑定记录
+- **铁律红线**：所有超级管理员操作（rule 修改、安全配置、用户授权等）必须通过 vikey 实时验证，不可绕开
+
+#### 覆盖范围
+- 规则审批终审
+- 安全配置变更
+- 用户权限授予/撤销
+- Arduino IDE 访问授权
+- 保密撤回操作
+- 超管仪表盘敏感操作
+
+#### 验证流程
+
+```text
+超管发起操作
+  → vikey_auth 服务实时检测
+    → 桌面：USB 硬件挑战/响应
+    → 移动端：指纹比对
+  → 通过：执行操作并记录审计日志
+  → 失败：拒绝操作，触发安全告警
+```
+
+- 服务文件：`app/services/vikey_auth.py`
+- API 端点：`POST /api/security/vikey/verify`
+
+### 10.8 规则审批流程（v18.2.0 新增）
+
+#### 工作流阶段
+
+```text
+阶段 1: 规则提议（propose）
+  → 任意授权用户发起规则修改提议
+
+阶段 2: 多人审批（multi-approval）
+  → 至少 N 名审批人同意（可配置阈值）
+
+阶段 3: AI 防火墙审查
+  → AI 自动扫描规则安全性、合规性、冲突检测
+
+阶段 4: 超管终审（final-approve）
+  → 超级管理员 vikey 铁律实时验证后终审
+
+阶段 5: 适配期（adaptation period）
+  → 规则灰度生效，观察期可回滚
+
+阶段 6: 保密撤回（confidential withdrawal）
+  → 内存级保密撤回，不留持久痕迹
+```
+
+#### 保密撤回机制
+- **内存级保密**：撤回操作仅在内存中执行，不写入持久化日志
+- **超管独占**：仅超级管理员经 vikey 验证后可执行保密撤回
+- **API 端点**：`POST /api/rules/proposals/<id>/withdraw`
+
+#### API 端点
+- `POST /api/rules/propose` - 规则提议
+- `POST /api/rules/proposals/<id>/final-approve` - 超管终审
+- `POST /api/rules/proposals/<id>/withdraw` - 保密撤回
+
+- 服务文件：`app/services/rule_approval.py`
+
+### 10.9 EigenFlux.al 集成（v18.2.0 新增）
+
+#### 适配器服务
+- 服务文件：`app/services/eigenflux_adapter.py`
+- 适配规模：1475+ AI 员工已注册到 EigenFlux.al 广播网络
+
+#### 核心能力
+- **广播网络**：向全部已适配 AI 员工广播消息（任务派发、状态同步）
+- **AI 员工聊天**：点对点或群组 AI 员工通信
+- **学习数据同步**：AI 员工学习成果双向同步
+
+#### API 端点
+
+| 接口 | 方法 | 说明 |
+|------|------|------|
+| /api/eigenflux/initialize | POST | 初始化 EigenFlux 适配器 |
+| /api/eigenflux/batch-register | POST | 批量注册 AI 员工 |
+| /api/eigenflux/status | GET | 适配状态查询 |
+| /api/eigenflux/broadcast | POST | 广播消息 |
+| /api/eigenflux/chat | POST | AI 员工聊天 |
+| /api/eigenflux/messages/<id> | GET | 接收消息 |
 
 ---
 
@@ -854,6 +980,7 @@ POST /api/ai/exam-compose
 
 | 版本 | 代号 | 日期 | 主要特性 |
 |------|------|------|---------|
+| v18.2.0 | Security Architecture & EigenFlux Integration Edition | 2026-07-31 | 安全架构重构（用户容器系统、vikey 铁律、规则审批流程）、EigenFlux.al 集成（1475+ AI 员工）、登录流程重构、Arduino IDE 权限控制、security_console.html / rule_management.html 新增页面 |
 | v17.22.0 | SuperAdmin UX Unified Edition | 2026-07-26 | 超管 UX 统一、VIKEY 全链路打通、主版本+20 子系统统一对齐、CI 接入 Dependabot+Trivy+Bandit、9+ SQLite 分片（87 张表）、550+ AI 员工/引擎、47 Agent |
 | v7.2.0 | Comprehensive Enhancement Edition | 2026-07-09 | 题库拓展(37K 题)、权限矩阵(12 角色)、AI 集群(15 模型)、端口管理(21 端口)、集群管理(4 种策略)、AI 题目生成器、AI 学习路径推荐、AI 试卷自动组卷、学生成绩分析仪表盘 |
 | v7.1.0 | Dashboard Refactor Edition | 2026-07-08 | 仪表盘重构、AI 拓展系统、629 路由、41AI 员工 |
@@ -920,6 +1047,32 @@ POST /api/ai/exam-compose
 | /api/monitoring/errors | GET | 错误统计 |
 | /api/monitoring/logs | GET | 监控日志 |
 
+### 23.7 EigenFlux.al 集成 API（v18.2.0 新增）
+
+| 接口 | 方法 | 说明 |
+|------|------|------|
+| /api/eigenflux/initialize | POST | 初始化 EigenFlux 适配器 |
+| /api/eigenflux/batch-register | POST | 批量注册 AI 员工 |
+| /api/eigenflux/status | GET | 适配状态 |
+| /api/eigenflux/broadcast | POST | 广播消息 |
+| /api/eigenflux/chat | POST | AI 员工聊天 |
+| /api/eigenflux/messages/<id> | GET | 接收消息 |
+
+### 23.8 安全架构 API（v18.2.0 新增）
+
+| 接口 | 方法 | 说明 |
+|------|------|------|
+| /api/security/vikey/verify | POST | vikey 验证（超管操作实时检测） |
+| /api/security/container/status | GET | 用户容器状态 |
+
+### 23.9 规则审批流程 API（v18.2.0 新增）
+
+| 接口 | 方法 | 说明 |
+|------|------|------|
+| /api/rules/propose | POST | 规则提议 |
+| /api/rules/proposals/<id>/final-approve | POST | 超管终审（需 vikey 铁律验证） |
+| /api/rules/proposals/<id>/withdraw | POST | 保密撤回（内存级保密） |
+
 ---
 
 ## 24. 部署指南
@@ -963,4 +1116,4 @@ python3 server_real_db.py --host 0.0.0.0 --port 8888
 
 ---
 
-*文档结束 - MTSCOS AI 智能考试系统 v17.22.0*
+*文档结束 - MTSCOS AI 智能考试系统 v18.2.0*
