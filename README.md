@@ -70,7 +70,7 @@ Open <http://localhost:8888/> in your browser.
 | `--ssl-port` | HTTPS port | `8443` |
 | `--debug` | Debug mode | `False` |
 
-### Docker
+## Docker
 
 ```bash
 docker build -t mtscos-ai:v17.22.0 .

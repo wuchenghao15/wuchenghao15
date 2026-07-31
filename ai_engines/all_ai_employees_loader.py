@@ -232,8 +232,10 @@ class AIEmployeeLoader:
              'id': 'test_sys_001', 'name': '测试系统AI员工', 'type': 'test_system', 'level': 7},
             {'module': 'diagnostics_repair_employee', 'class': 'DiagnosticsRepairEmployee', 
              'id': 'diag_001', 'name': '诊断修复AI员工', 'type': 'diagnostics_repair', 'level': 9},
-            {'module': 'ai_vikey_security_employee', 'class': 'AI_VIKEY_Security_Employee', 
+            {'module': 'ai_vikey_security_employee', 'class': 'AI_VIKEY_Security_Employee',
              'id': 'vikey_sec_001', 'name': 'VIKEY安全专家', 'type': 'vikey_security', 'level': 9},
+            {'module': 'dispatch_ai_employee', 'class': 'DispatchAIEmployee',
+             'id': 'dispatch_001', 'name': '输配调度AI员工', 'type': 'dispatch', 'level': 9},
         ]
         
         for emp_spec in specialized_employees:

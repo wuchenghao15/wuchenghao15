@@ -522,17 +522,78 @@ def sync_integration(integration_id):
 @optimization_api.route('/api/optimization/ai-scheduler/stats', methods=['GET'])
 @admin_required
 def get_scheduler_stats():
-    total_employees = 12
-    active_employees = max(5, int(total_employees * 0.7))
-    running_tasks = 24
-    pending_tasks = 8
+    import os
+    import sqlite3
+    from datetime import datetime, timedelta
+    db_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), 'app.db')
     stats = {
-        'total_employees': total_employees,
-        'active_employees': active_employees,
-        'running_tasks': running_tasks,
-        'pending_tasks': pending_tasks,
-        'ai_employees': total_employees,
+        'total_employees': 0,
+        'active_employees': 0,
+        'running_tasks': 0,
+        'pending_tasks': 0,
+        'ai_employees': 0,
+        'completed_tasks': 0,
+        'failed_tasks': 0,
+        'total_tasks': 0,
+        'tasks_today': 0,
     }
+    try:
+        if os.path.exists(db_path):
+            conn = sqlite3.connect(db_path)
+            conn.row_factory = sqlite3.Row
+            c = conn.cursor()
+            try:
+                c.execute("SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='ai_employees'")
+                if c.fetchone()[0]:
+                    c.execute('SELECT COUNT(*) FROM ai_employees')
+                    r = c.fetchone()
+                    if r:
+                        stats['total_employees'] = r[0] or 0
+                        stats['ai_employees'] = stats['total_employees']
+                    c.execute("SELECT COUNT(*) FROM ai_employees WHERE status = 'active'")
+                    r = c.fetchone()
+                    if r:
+                        stats['active_employees'] = r[0] or 0
+            except Exception:
+                pass
+            try:
+                c.execute("SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='ai_scheduled_tasks'")
+                if c.fetchone()[0]:
+                    c.execute('SELECT COUNT(*) FROM ai_scheduled_tasks')
+                    r = c.fetchone()
+                    if r:
+                        stats['total_tasks'] = r[0] or 0
+                    c.execute("SELECT COUNT(*) FROM ai_scheduled_tasks WHERE status = 'pending'")
+                    r = c.fetchone()
+                    if r:
+                        stats['pending_tasks'] = r[0] or 0
+                    c.execute("SELECT COUNT(*) FROM ai_scheduled_tasks WHERE status = 'running'")
+                    r = c.fetchone()
+                    if r:
+                        stats['running_tasks'] = r[0] or 0
+                    c.execute("SELECT COUNT(*) FROM ai_scheduled_tasks WHERE status = 'completed'")
+                    r = c.fetchone()
+                    if r:
+                        stats['completed_tasks'] = r[0] or 0
+                    c.execute("SELECT COUNT(*) FROM ai_scheduled_tasks WHERE status = 'failed'")
+                    r = c.fetchone()
+                    if r:
+                        stats['failed_tasks'] = r[0] or 0
+            except Exception:
+                pass
+            try:
+                c.execute("SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='ai_task_logs'")
+                if c.fetchone()[0]:
+                    today_start = datetime.now().replace(hour=0, minute=0, second=0).isoformat()
+                    c.execute('SELECT COUNT(*) FROM ai_task_logs WHERE created_at >= ?', (today_start,))
+                    r = c.fetchone()
+                    if r:
+                        stats['tasks_today'] = r[0] or 0
+            except Exception:
+                pass
+            conn.close()
+    except Exception:
+        pass
     return jsonify({'success': True, 'stats': stats})
 
 

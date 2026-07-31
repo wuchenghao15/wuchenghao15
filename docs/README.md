@@ -246,7 +246,7 @@ Now open:
 --debug     Debug mode        (default False)
 ```
 
-### Option 2 — Docker (production)
+## Option 2 — Docker (production)
 
 ```bash
 git clone https://github.com/wuchenghao15/MTSCOS-AI-Project.git && cd $_

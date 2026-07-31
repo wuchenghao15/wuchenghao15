@@ -151,7 +151,7 @@ This change implements complete WeCom (WeChat Work) integration, including:
 "wecom_workflow_engine": "analytical",
 ```
 
-### 3.2 Notification Center Extension
+## 3.2 Notification Center Extension
 | File Path | Modification |
 |-----------|-------------|
 | `core/services/notification_center.py` | Added WeCom notification channel support |
@@ -285,7 +285,7 @@ result = client.send_markdown_message(
 )
 ```
 
-### 6.2 AI Intelligent Dialogue
+## 6.2 AI Intelligent Dialogue
 
 ```python
 # Via API
@@ -304,7 +304,7 @@ POST /api/wecom/ai/chat
 }
 ```
 
-### 6.3 Approval Automation
+## 6.3 Approval Automation
 
 ```python
 # AI recommends approval template
@@ -327,7 +327,7 @@ POST /api/wecom/approval
 }
 ```
 
-### 6.4 Webhook Robot
+## 6.4 Webhook Robot
 
 ```python
 # Send group robot message

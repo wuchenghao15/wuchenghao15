@@ -191,14 +191,14 @@ openssl req -x509 -newkey rsa:4096 -nodes -out cert.pem -keyout key.pem -days 36
 python3 server_real_db.py --ssl --ssl-port 8443
 ```
 
-### API 密钥管理
+## API 密钥管理
 
 ```bash
 # 生成新的 API 密钥
 python -c "import secrets; print(secrets.token_hex(32))"
 ```
 
-### 安全配置文件
+## 安全配置文件
 
 ```python
 # config/security.py

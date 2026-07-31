@@ -41,7 +41,7 @@ result = generator.execute_task({
 # Returns: {'success': True, 'code': '...', 'template_used': 'blink'}
 ```
 
-### 2.2 ArduinoCodeDebuggerEmployee - Code Debugging Expert
+## 2.2 ArduinoCodeDebuggerEmployee - Code Debugging Expert
 
 **Responsibility**: Code analysis and error detection
 
@@ -408,7 +408,7 @@ sim_result = simulator.simulate(opt_result['optimized_code'], iterations=10)
 print(f"Simulation Log: {sim_result.get('log')}")
 ```
 
-### 7.2 Using Smart Advisor
+## 7.2 Using Smart Advisor
 ```python
 from ai_engines.arduino_ai_employees import ArduinoSmartAdvisorEmployee
 
@@ -430,7 +430,7 @@ if result.get('generated_code'):
     print(f"Generated Code:\n{result['generated_code']}")
 ```
 
-### 7.3 Run 100-Iteration Patrol
+## 7.3 Run 100-Iteration Patrol
 ```bash
 # Direct execution
 python scripts/python/arduino_ai_patrol_test.py 100

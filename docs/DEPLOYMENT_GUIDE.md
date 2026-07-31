@@ -67,7 +67,7 @@ source venv/bin/activate
 venv\Scripts\activate
 ```
 
-#### 步骤 3：安装依赖
+## 步骤 3：安装依赖
 
 ```bash
 # 安装基础依赖
@@ -77,7 +77,7 @@ pip install -r flask-app/requirements.txt
 pip install -r requirements-dev.txt
 ```
 
-#### 步骤 4：配置环境变量
+## 步骤 4：配置环境变量
 
 ```bash
 # 创建 .env 文件
@@ -87,7 +87,7 @@ cp .env.example .env
 vim .env
 ```
 
-#### 步骤 5：初始化数据库
+## 步骤 5：初始化数据库
 
 ```bash
 # 初始化所有分布式数据库分片
@@ -97,9 +97,9 @@ python3 server_real_db.py --init
 curl -X POST http://localhost:8888/api/system/init
 ```
 
-### 2.2 配置说明
+## 2.2 配置说明
 
-#### 配置文件结构
+### 配置文件结构
 
 ```text
 MTSCOS-AI-Project/
@@ -143,7 +143,7 @@ gunicorn -w 4 -b 0.0.0.0:8888 "server_real_db:app"
 python3 server_real_db.py --host 0.0.0.0 --port 8888
 ```
 
-#### 启动参数
+## 启动参数
 
 | 参数 | 说明 | 默认值 |
 |------|------|--------|
@@ -226,7 +226,7 @@ git pull
 docker-compose up -d --build
 ```
 
-### 3.2 快速部署（仅应用）
+## 3.2 快速部署（仅应用）
 
 适用于开发和测试环境，无需 Redis 依赖。
 
@@ -241,9 +241,9 @@ docker-compose -f docker-compose.quick.yml logs -f
 docker-compose -f docker-compose.quick.yml down
 ```
 
-### 3.3 Docker Compose 配置说明
+## 3.3 Docker Compose 配置说明
 
-#### docker-compose.yml（完整部署）
+### docker-compose.yml（完整部署）
 
 ```yaml
 version: '3.8'
@@ -386,11 +386,11 @@ SQLALCHEMY_DATABASE_URI = 'sqlite:///split_databases/auth.db'
 SQLALCHEMY_TRACK_MODIFICATIONS = False
 ```
 
-### 使用其他数据库
+## 使用其他数据库
 
 系统支持 MySQL 和 PostgreSQL，但需要额外安装驱动。
 
-#### MySQL 配置
+### MySQL 配置
 
 ```bash
 # 安装 MySQL 驱动
@@ -402,7 +402,7 @@ pip install mysql-connector-python
 SQLALCHEMY_DATABASE_URI = 'mysql+mysqlconnector://user:password@host:port/database'
 ```
 
-#### PostgreSQL 配置
+## PostgreSQL 配置
 
 ```bash
 # 安装 PostgreSQL 驱动
@@ -414,7 +414,7 @@ pip install psycopg2-binary
 SQLALCHEMY_DATABASE_URI = 'postgresql://user:password@host:port/database'
 ```
 
-### 数据库初始化
+## 数据库初始化
 
 ```bash
 # 初始化所有分布式数据库
@@ -441,7 +441,7 @@ openssl req -x509 -newkey rsa:4096 -nodes -out cert.pem -keyout key.pem -days 36
 python3 server_real_db.py --ssl --ssl-port 8443
 ```
 
-### 防火墙规则
+## 防火墙规则
 
 系统内置企业级 AI 防火墙，支持以下规则：
 
@@ -478,7 +478,7 @@ CACHE_REDIS_URL = 'redis://localhost:6379/0'
 CACHE_DEFAULT_TIMEOUT = 300
 ```
 
-### 并发配置
+## 并发配置
 
 ```bash
 # 使用 gunicorn 配置并发
@@ -490,7 +490,7 @@ gunicorn -w 4 -b 0.0.0.0:8888 --timeout 120 "server_real_db:app"
 # --keep-alive: 长连接时间
 ```
 
-### 数据库优化
+## 数据库优化
 
 ```bash
 # 优化 SQLite 数据库
@@ -514,7 +514,7 @@ lsof -i :8888
 kill -9 <PID>
 ```
 
-#### 问题 2：依赖安装失败
+## 问题 2：依赖安装失败
 
 ```bash
 # 更新 pip
@@ -527,7 +527,7 @@ pip cache purge
 pip install -r flask-app/requirements.txt
 ```
 
-#### 问题 3：数据库连接失败
+## 问题 3：数据库连接失败
 
 ```bash
 # 检查数据库文件权限
@@ -537,7 +537,7 @@ ls -la split_databases/
 chmod -R 755 split_databases/
 ```
 
-#### 问题 4：Docker 构建失败
+## 问题 4：Docker 构建失败
 
 ```bash
 # 清理缓存
@@ -547,7 +547,7 @@ docker-compose build --no-cache
 docker-compose up --build
 ```
 
-#### 问题 5：Git 同步失败
+## 问题 5：Git 同步失败
 
 ```bash
 # 检查 Git 配置
@@ -560,7 +560,7 @@ git remote -v
 ssh -T git@github.com
 ```
 
-### 日志查看
+## 日志查看
 
 ```bash
 # 查看应用日志

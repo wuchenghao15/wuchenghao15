@@ -51,6 +51,7 @@
         <div class="sa-tab" data-tab="tab-monitor"><i class="fas fa-chart-line"></i><span>系统监控</span></div>
         <div class="sa-tab" data-tab="tab-security"><i class="fas fa-shield-alt"></i><span>安全设置</span></div>
         <div class="sa-tab" data-tab="tab-backup"><i class="fas fa-copy"></i><span>备份管理</span></div>
+        <div class="sa-tab" data-tab="tab-pae"><i class="fas fa-shield-virus"></i><span>页面审计</span></div>
         <div class="sa-tab" data-tab="tab-about"><i class="fas fa-info-circle"></i><span>关于系统</span></div>
     </div>
 
@@ -1024,6 +1025,87 @@
         </div>
     </div>
 
+    <div class="sa-section" id="tab-pae">
+        <div class="sa-section-head">
+            <div class="sa-section-head-left">
+                <div class="sa-si purple"><i class="fas fa-shield-virus"></i></div>
+                <h2>页面自动审计引擎 (PAE)</h2>
+            </div>
+            <div class="sa-section-head-actions">
+                <button class="sa-btn sa-btn-primary" onclick="initPAEAudit()"><i class="fas fa-play"></i> 启动100轮巡检</button>
+                <button class="sa-btn sa-btn-secondary" onclick="exportPAEReport()"><i class="fas fa-download"></i> 导出报告</button>
+                <button class="sa-btn sa-btn-secondary" onclick="clearPAEReport()"><i class="fas fa-rotate-left"></i> 重置</button>
+            </div>
+        </div>
+        <div class="sa-section-body">
+            <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:20px;">
+                <div style="background:rgba(99,102,241,.1);border:1px solid rgba(99,102,241,.2);border-radius:12px;padding:14px;text-align:center;">
+                    <div style="color:#818cf8;font-weight:700;font-size:22px;" id="sa-pae-dom">0</div>
+                    <div style="color:#94a3b8;font-size:11px;margin-top:4px;">DOM节点</div>
+                </div>
+                <div style="background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.2);border-radius:12px;padding:14px;text-align:center;">
+                    <div style="color:#10b981;font-weight:700;font-size:22px;" id="sa-pae-fixes">0</div>
+                    <div style="color:#94a3b8;font-size:11px;margin-top:4px;">已修复</div>
+                </div>
+                <div style="background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.2);border-radius:12px;padding:14px;text-align:center;">
+                    <div style="color:#f59e0b;font-weight:700;font-size:22px;" id="sa-pae-suggestions">0</div>
+                    <div style="color:#94a3b8;font-size:11px;margin-top:4px;">AI建议</div>
+                </div>
+                <div style="background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);border-radius:12px;padding:14px;text-align:center;">
+                    <div style="color:#ef4444;font-weight:700;font-size:22px;" id="sa-pae-issues">0</div>
+                    <div style="color:#94a3b8;font-size:11px;margin-top:4px;">问题数</div>
+                </div>
+                <div style="background:rgba(59,130,246,.1);border:1px solid rgba(59,130,246,.2);border-radius:12px;padding:14px;text-align:center;">
+                    <div style="color:#3b82f6;font-weight:700;font-size:22px;" id="sa-pae-iteration">0/100</div>
+                    <div style="color:#94a3b8;font-size:11px;margin-top:4px;">巡检进度</div>
+                </div>
+            </div>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px;">
+                <div class="sa-config-card" style="margin:0;">
+                    <div class="sa-card-head" style="padding:14px 18px;">
+                        <div class="sa-card-icon" style="background:rgba(239,68,68,.15);color:#ef4444;"><i class="fas fa-triangle-exclamation"></i></div>
+                        <h3>问题清单</h3>
+                    </div>
+                    <div class="sa-card-body" style="padding:14px 18px;max-height:220px;overflow-y:auto;" id="sa-pae-issues-list">
+                        <div style="color:#64748b;font-size:12px;text-align:center;padding:24px;">暂无问题，点击上方"启动100轮巡检"开始审计</div>
+                    </div>
+                </div>
+                <div class="sa-config-card" style="margin:0;">
+                    <div class="sa-card-head" style="padding:14px 18px;">
+                        <div class="sa-card-icon" style="background:rgba(16,185,129,.15);color:#10b981;"><i class="fas fa-check-circle"></i></div>
+                        <h3>已应用修复</h3>
+                    </div>
+                    <div class="sa-card-body" style="padding:14px 18px;max-height:220px;overflow-y:auto;" id="sa-pae-fixes-list">
+                        <div style="color:#64748b;font-size:12px;text-align:center;padding:24px;">暂无修复记录</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="sa-config-card" style="margin:0;margin-bottom:20px;">
+                <div class="sa-card-head" style="padding:14px 18px;">
+                    <div class="sa-card-icon" style="background:rgba(139,92,246,.15);color:#a78bfa;"><i class="fas fa-lightbulb"></i></div>
+                    <h3>AI 智能建议</h3>
+                </div>
+                <div class="sa-card-body" style="padding:14px 18px;max-height:200px;overflow-y:auto;" id="sa-pae-suggestions-list">
+                    <div style="color:#64748b;font-size:12px;text-align:center;padding:24px;">审计完成后将生成优化建议</div>
+                </div>
+            </div>
+
+            <div id="sa-pae-summary" style="margin-bottom:20px;"></div>
+
+            <div class="sa-config-card" style="margin:0;">
+                <div class="sa-card-head" style="padding:14px 18px;">
+                    <div class="sa-card-icon" style="background:rgba(59,130,246,.15);color:#3b82f6;"><i class="fas fa-terminal"></i></div>
+                    <h3>审计日志</h3>
+                </div>
+                <div class="sa-card-body" style="padding:10px 14px;max-height:160px;overflow-y:auto;background:#0a0e1a;border-radius:10px;" id="sa-pae-log">
+                    <div style="color:#475569;font-family:monospace;font-size:11px;padding:10px;">[PAE] 等待启动... 点击上方"启动100轮巡检"按钮开始</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="sa-section" id="tab-about">
         <div class="sa-section-head">
             <div class="sa-section-head-left">
@@ -1928,7 +2010,8 @@
             'tab-api-keys': loadAPIKeys,
             'tab-vikeys': function() { loadVIKEYs(); refreshUSBDrives(); },
             'tab-monitor': loadMonitorData,
-            'tab-backup': loadBackups
+            'tab-backup': loadBackups,
+            'tab-pae': initPAEAudit
         };
         if (initMap[tabId]) initMap[tabId]();
     }
@@ -2896,6 +2979,193 @@
     }
 
     loadMonitorData();
+})();
+</script>
+
+<script src="/static/assets/js/utils/pae_engine.js"></script>
+<script>
+(function() {
+    var saPaeRunning = false;
+    var saPaeTimer = null;
+
+    window.initPAEAudit = function() {
+        if (saPaeRunning) { showToast('审计正在进行中...', 'info'); return; }
+        if (typeof window.PAE === 'undefined') {
+            saAppendLog('[PAE] 引擎未加载，请刷新页面', 'error');
+            return;
+        }
+        saPaeRunning = true;
+        saClearReport(false);
+        saAppendLog('[PAE] 启动100轮巡检...', 'info');
+        showToast('PAE审计已启动', 'success');
+
+        var PAE = window.PAE;
+        PAE.reset();
+        PAE.takeDomSnapshot();
+
+        var phases = [
+            { name: '基础功能巡检', method: 'performBasicChecks', start: 1, end: 10 },
+            { name: '交互功能测试', method: 'performInteractionTests', start: 11, end: 30 },
+            { name: '权限安全检查', method: 'performSecurityChecks', start: 31, end: 50 },
+            { name: '无障碍检查', method: 'performAccessibilityChecks', start: 51, end: 70 },
+            { name: '性能内存检查', method: 'performPerformanceChecks', start: 71, end: 90 },
+            { name: 'AI优化建议', method: 'performAIOptimizationRound', start: 91, end: 100 }
+        ];
+
+        var phaseIdx = 0;
+        var round = 0;
+
+        function runPhase() {
+            if (phaseIdx >= phases.length) {
+                saFinishAudit();
+                return;
+            }
+            var phase = phases[phaseIdx];
+            saAppendLog('[PAE] 进入第' + (phaseIdx + 1) + '阶段: ' + phase.name, 'info');
+
+            function stepRound() {
+                if (round > phase.end || !PAE.active) {
+                    phaseIdx++;
+                    round = phases[phaseIdx] ? phases[phaseIdx].start : 0;
+                    setTimeout(runPhase, 100);
+                    return;
+                }
+                round++;
+                PAE.iterations = round;
+                try {
+                    PAE[phase.method](round);
+                } catch(e) {
+                    saAppendLog('[PAE] 轮次' + round + '异常: ' + e.message, 'warn');
+                }
+                saUpdateStatus();
+                saPaeTimer = setTimeout(stepRound, 30);
+            }
+            round = phase.start - 1;
+            stepRound();
+        }
+
+        runPhase();
+    };
+
+    function saFinishAudit() {
+        saPaeRunning = false;
+        var PAE = window.PAE;
+        PAE.active = false;
+        saAppendLog('[PAE] 100轮巡检完成！', 'success');
+        saRenderIssues(PAE.issues);
+        saRenderFixes(PAE.fixesApplied);
+        saRenderSuggestions(PAE.suggestions);
+        saUpdateStatus();
+
+        var summaryEl = document.getElementById('sa-pae-summary');
+        if (summaryEl && window.__PAE__) {
+            window.__PAE__.generateReport(summaryEl);
+        }
+        showToast('审计完成，共' + (PAE.issues.length || 0) + '个问题, ' + (PAE.fixesApplied.length || 0) + '项修复', 'success');
+    }
+
+    function saUpdateStatus() {
+        var PAE = window.PAE;
+        if (!PAE) return;
+        var m = PAE.metrics || {};
+        document.getElementById('sa-pae-dom').textContent = m.domNodes || 0;
+        document.getElementById('sa-pae-fixes').textContent = (PAE.fixesApplied || []).length;
+        document.getElementById('sa-pae-suggestions').textContent = (PAE.suggestions || []).length;
+        document.getElementById('sa-pae-issues').textContent = (PAE.issues || []).length;
+        document.getElementById('sa-pae-iteration').textContent = (PAE.iterations || 0) + '/100';
+    }
+
+    function saRenderIssues(issues) {
+        var el = document.getElementById('sa-pae-issues-list');
+        if (!issues || issues.length === 0) { el.innerHTML = '<div style="color:#64748b;font-size:12px;text-align:center;padding:24px;">未发现问题 ✓</div>'; return; }
+        el.innerHTML = issues.slice(0, 50).map(function(i) {
+            var c = i.severity === 'error' ? '#ef4444' : i.severity === 'warn' ? '#f59e0b' : '#3b82f6';
+            var ic = i.severity === 'error' ? 'fa-circle-xmark' : i.severity === 'warn' ? 'fa-triangle-exclamation' : 'fa-info-circle';
+            return '<div style="display:flex;gap:8px;padding:6px 0;border-bottom:1px solid rgba(100,116,139,.15);font-size:12px;">'
+                + '<i class="fas ' + ic + '" style="color:' + c + ';margin-top:2px;"></i>'
+                + '<div style="flex:1;"><div style="color:#e2e8f0;font-weight:600;">' + saEsc(i.title) + '</div>'
+                + '<div style="color:#64748b;font-size:11px;">R' + i.round + ' · ' + saEsc(i.category) + (i.detail ? ' · ' + saEsc(i.detail) : '') + '</div></div></div>';
+        }).join('');
+        if (issues.length > 50) el.innerHTML += '<div style="color:#64748b;font-size:11px;padding:8px;text-align:center;">还有 ' + (issues.length - 50) + ' 条问题...</div>';
+    }
+
+    function saRenderFixes(fixes) {
+        var el = document.getElementById('sa-pae-fixes-list');
+        if (!fixes || fixes.length === 0) { el.innerHTML = '<div style="color:#64748b;font-size:12px;text-align:center;padding:24px;">未应用修复</div>'; return; }
+        el.innerHTML = fixes.slice(0, 50).map(function(f) {
+            return '<div style="display:flex;gap:8px;padding:6px 0;border-bottom:1px solid rgba(100,116,139,.15);font-size:12px;">'
+                + '<i class="fas fa-check-circle" style="color:#10b981;margin-top:2px;"></i>'
+                + '<div style="flex:1;"><div style="color:#e2e8f0;font-weight:600;">' + saEsc(f.name || f.title || '') + '</div>'
+                + '<div style="color:#64748b;font-size:11px;">R' + f.round + ' 应用</div></div></div>';
+        }).join('');
+        if (fixes.length > 50) el.innerHTML += '<div style="color:#64748b;font-size:11px;padding:8px;text-align:center;">还有 ' + (fixes.length - 50) + ' 项修复...</div>';
+    }
+
+    function saRenderSuggestions(suggestions) {
+        var el = document.getElementById('sa-pae-suggestions-list');
+        if (!suggestions || suggestions.length === 0) { el.innerHTML = '<div style="color:#64748b;font-size:12px;text-align:center;padding:24px;">暂无建议</div>'; return; }
+        el.innerHTML = suggestions.slice(0, 30).map(function(s) {
+            return '<div style="display:flex;gap:8px;padding:8px;background:rgba(139,92,246,.08);border-radius:8px;margin-bottom:6px;font-size:12px;">'
+                + '<i class="fas fa-lightbulb" style="color:#a78bfa;margin-top:2px;"></i>'
+                + '<div style="flex:1;"><div style="color:#e2e8f0;font-weight:600;">' + saEsc(s.title || '') + '</div>'
+                + (s.implementation ? '<div style="color:#94a3b8;font-size:11px;margin-top:4px;">' + saEsc(s.implementation) + '</div>' : '')
+                + '<div style="color:#64748b;font-size:10px;margin-top:2px;">R' + s.round + ' · ' + saEsc(s.category) + '</div></div></div>';
+        }).join('');
+        if (suggestions.length > 30) el.innerHTML += '<div style="color:#64748b;font-size:11px;padding:8px;text-align:center;">还有 ' + (suggestions.length - 30) + ' 条建议...</div>';
+    }
+
+    function saAppendLog(msg, level) {
+        var el = document.getElementById('sa-pae-log');
+        if (!el) return;
+        var c = level === 'error' ? '#ef4444' : level === 'warn' ? '#f59e0b' : level === 'success' ? '#10b981' : '#64748b';
+        var line = document.createElement('div');
+        line.style.color = c;
+        line.style.fontFamily = 'monospace';
+        line.style.fontSize = '11px';
+        line.style.padding = '2px 0';
+        line.textContent = '[' + new Date().toLocaleTimeString('zh-CN', { hour12: false }) + '] ' + msg;
+        el.appendChild(line);
+        el.scrollTop = el.scrollHeight;
+        while (el.children.length > 200) el.removeChild(el.firstChild);
+    }
+
+    window.clearPAEReport = function(showMsg) { saClearReport(showMsg); };
+    function saClearReport(showMsg) {
+        var PAE = window.PAE;
+        if (PAE) {
+            PAE.reset();
+        }
+        if (saPaeTimer) { clearTimeout(saPaeTimer); saPaeTimer = null; }
+        saPaeRunning = false;
+        ['sa-pae-dom','sa-pae-fixes','sa-pae-suggestions','sa-pae-issues','sa-pae-iteration'].forEach(function(id) {
+            document.getElementById(id).textContent = id === 'sa-pae-iteration' ? '0/100' : '0';
+        });
+        document.getElementById('sa-pae-issues-list').innerHTML = '<div style="color:#64748b;font-size:12px;text-align:center;padding:24px;">暂无问题</div>';
+        document.getElementById('sa-pae-fixes-list').innerHTML = '<div style="color:#64748b;font-size:12px;text-align:center;padding:24px;">暂无修复记录</div>';
+        document.getElementById('sa-pae-suggestions-list').innerHTML = '<div style="color:#64748b;font-size:12px;text-align:center;padding:24px;">审计完成后将生成优化建议</div>';
+        document.getElementById('sa-pae-log').innerHTML = '<div style="color:#475569;font-family:monospace;font-size:11px;padding:10px;">[PAE] 已重置，等待启动...</div>';
+        if (showMsg !== false) showToast('审计报告已重置', 'info');
+    }
+
+    window.exportPAEReport = function() {
+        var PAE = window.PAE;
+        if (!PAE || ((PAE.issues || []).length === 0 && (PAE.fixesApplied || []).length === 0)) {
+            showToast('暂无审计数据可导出，请先运行审计', 'error'); return;
+        }
+        var report = PAE.getReport ? PAE.getReport() : {};
+        report.exportTime = new Date().toISOString();
+        var blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' });
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement('a');
+        a.href = url; a.download = 'pae-audit-report-' + Date.now() + '.json'; a.click();
+        URL.revokeObjectURL(url);
+        showToast('报告已导出', 'success');
+    };
+
+    function saEsc(s) {
+        if (!s) return '';
+        var d = document.createElement('div'); d.textContent = String(s); return d.innerHTML;
+    }
 })();
 </script>
 {% endblock %}

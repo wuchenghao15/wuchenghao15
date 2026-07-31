@@ -131,18 +131,18 @@ flowchart TD
 
     subgraph 规划引擎
         B --> C[任务分解]
-        C --> D[ACL权限校验]
+        C --> D[ACL 权限校验]
         D --> E[路由决策]
     end
 
-    subgraph AI员工阵列
-        E --> F[命题AI]
-        E --> G[组卷AI]
-        E --> H[批改AI]
-        E --> I[诊断AI]
-        E --> J[学习规划AI]
-        E --> K[安全审计AI]
-        E --> L[运维AI]
+    subgraph AI 员工阵列
+        E --> F[命题 AI]
+        E --> G[组卷 AI]
+        E --> H[批改 AI]
+        E --> I[诊断 AI]
+        E --> J[学习规划 AI]
+        E --> K[安全审计 AI]
+        E --> L[运维 AI]
     end
 
     subgraph 响应出口
@@ -180,37 +180,37 @@ flowchart TD
 
 ```mermaid
 graph LR
-    subgraph 教学AI团队
-        A[教师AI] -- 教学计划 --> B[命题专家]
-        B -- 生成题目 --> C[题库管理AI]
-        C -- 组卷 --> D[组卷AI]
-        D -- 试卷 --> E[监考AI]
-        E -- 答卷 --> F[批改AI]
-        F -- 成绩 --> G[诊断AI]
-        G -- 建议 --> H[学习规划AI]
-        H -- 路径 --> I[辅导AI]
+    subgraph 教学 AI 团队
+        A[教师 AI] -- 教学计划 --> B[命题专家]
+        B -- 生成题目 --> C[题库管理 AI]
+        C -- 组卷 --> D[组卷 AI]
+        D -- 试卷 --> E[监考 AI]
+        E -- 答卷 --> F[批改 AI]
+        F -- 成绩 --> G[诊断 AI]
+        G -- 建议 --> H[学习规划 AI]
+        H -- 路径 --> I[辅导 AI]
     end
 
-    subgraph 运维AI团队
-        J[Git管家] -- 版本控制 --> K[DevOps]
-        K -- 部署 --> L[监控AI]
-        L -- 异常 --> M[修复AI]
-        M -- 代码修复 --> N[代码审查AI]
+    subgraph 运维 AI 团队
+        J[Git 管家] -- 版本控制 --> K[DevOps]
+        K -- 部署 --> L[监控 AI]
+        L -- 异常 --> M[修复 AI]
+        M -- 代码修复 --> N[代码审查 AI]
         N -- 质量保证 --> K
     end
 
-    subgraph 安全AI团队
-        O[安全审计AI] -- 漏洞检测 --> P[漏洞扫描AI]
-        P -- 报告 --> Q[AI防火墙]
+    subgraph 安全 AI 团队
+        O[安全审计 AI] -- 漏洞检测 --> P[漏洞扫描 AI]
+        P -- 报告 --> Q[AI 防火墙]
         Q -- 防护规则 --> R[WAF AI]
-        R -- 日志 --> S[日志监控AI]
+        R -- 日志 --> S[日志监控 AI]
         S -- 分析 --> O
     end
 
-    subgraph 数据AI团队
-        T[数据分析AI] -- 学习数据 --> U[知识图谱AI]
-        U -- 关联 --> V[脑库管理AI]
-        V -- 知识 --> W[智能搜索AI]
+    subgraph 数据 AI 团队
+        T[数据分析 AI] -- 学习数据 --> U[知识图谱 AI]
+        U -- 关联 --> V[脑库管理 AI]
+        V -- 知识 --> W[智能搜索 AI]
         W -- 结果 --> A
     end
 

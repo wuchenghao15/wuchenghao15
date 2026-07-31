@@ -534,7 +534,7 @@ pip install -r flask-app/requirements.txt
 python3 server_preview.py --port 8888 --debug
 ```
 
-### 24.2 Docker Deployment
+## 24.2 Docker Deployment
 
 ```bash
 # Build and run with Docker
@@ -545,7 +545,7 @@ docker build -t mtscos-ai .
 docker run -p 8888:8888 -v ./data:/data mtscos-ai
 ```
 
-### 24.3 Production Considerations
+## 24.3 Production Considerations
 
 - Use Nginx as reverse proxy
 - Enable HTTPS with Let's Encrypt

@@ -1015,7 +1015,764 @@
         .ai-agent-item .agent-status.running .sdot {
             animation: agentDot 1.5s infinite;
         }
+
+        /* ============ 搜索框通用 ============ */
+        .search-input {
+            width: 100%;
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 8px 12px 8px 34px;
+            border-radius: var(--radius-sm);
+            font-size: 13px;
+            outline: none;
+            transition: border-color .15s, box-shadow .15s;
+        }
+        .search-input:focus { border-color: var(--primary-color); box-shadow: 0 0 0 3px var(--primary-glow); }
+        .search-wrap { position: relative; padding: 10px; }
+        .search-wrap i {
+            position: absolute; left: 20px; top: 50%; transform: translateY(-50%);
+            color: var(--text-muted); font-size: 13px;
+        }
+
+        /* ============ 分类过滤器 ============ */
+        .cat-filter {
+            display: flex; flex-wrap: wrap; gap: 6px; padding: 0 10px 10px;
+        }
+        .cat-chip {
+            padding: 4px 10px;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all .15s;
+            white-space: nowrap;
+        }
+        .cat-chip:hover { background: var(--bg-hover); color: var(--text-primary); }
+        .cat-chip.active {
+            background: rgba(99,102,241,0.18);
+            color: var(--primary-light);
+            border-color: var(--primary-color);
+        }
+
+        /* ============ 库列表 ============ */
+        .lib-item-row {
+            display: flex; flex-direction: column; gap: 8px;
+            padding: 10px 12px; margin: 0 10px 8px;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            transition: all .15s;
+        }
+        .lib-item-row:hover { background: var(--bg-hover); border-color: var(--border-strong); }
+        .lib-item-header { display: flex; align-items: center; gap: 10px; }
+        .lib-item-icon {
+            width: 34px; height: 34px; border-radius: 8px;
+            background: rgba(99,102,241,0.14);
+            display: grid; place-items: center; color: var(--primary-light); font-size: 16px;
+            flex-shrink: 0;
+        }
+        .lib-item-meta { flex: 1; min-width: 0; }
+        .lib-item-name { font-size: 13px; font-weight: 700; color: var(--text-primary); display: flex; align-items: center; gap: 6px; }
+        .lib-item-ver { font-size: 10px; color: var(--text-muted); font-family: var(--font-mono); padding: 1px 6px; background: var(--bg-dark); border-radius: 4px; }
+        .lib-item-desc { font-size: 11px; color: var(--text-muted); margin-top: 2px; line-height: 1.4; }
+        .lib-status-badge {
+            font-size: 10px; padding: 2px 8px; border-radius: 20px; font-weight: 700; white-space: nowrap;
+        }
+        .lib-status-badge.installed { background: rgba(16,185,129,0.14); color: var(--accent-success); border: 1px solid rgba(16,185,129,0.3); }
+        .lib-status-badge.not-installed { background: rgba(107,114,128,0.15); color: var(--text-muted); border: 1px solid var(--border-color); }
+        .lib-status-badge.update { background: rgba(245,158,11,0.14); color: var(--accent-warning); border: 1px solid rgba(245,158,11,0.3); }
+        .lib-action-row { display: flex; gap: 6px; }
+        .lib-btn {
+            padding: 5px 10px; border-radius: 4px; font-size: 11px; font-weight: 600; cursor: pointer;
+            border: 1px solid var(--border-color); background: var(--bg-dark); color: var(--text-secondary);
+            transition: all .15s; display: inline-flex; align-items: center; gap: 4px;
+        }
+        .lib-btn:hover { background: var(--bg-hover); color: var(--text-primary); border-color: var(--border-strong); }
+        .lib-btn.primary { background: linear-gradient(135deg, var(--primary-color), var(--primary-dark)); color: #fff; border-color: transparent; }
+        .lib-btn.success { background: linear-gradient(135deg, #10b981, #059669); color: #fff; border-color: transparent; }
+        .lib-btn.danger { background: rgba(239,68,68,0.15); color: var(--accent-error); border-color: rgba(239,68,68,0.3); }
+        .lib-btn.danger:hover { background: rgba(239,68,68,0.25); }
+
+        /* ============ 引脚分配 ============ */
+        .pin-diagram-wrap { padding: 12px; overflow-x: auto; }
+        .pin-board {
+            background: linear-gradient(135deg, #1a2445, #0e1428);
+            border: 2px solid var(--border-strong);
+            border-radius: var(--radius);
+            padding: 16px;
+            position: relative;
+            min-width: 320px;
+        }
+        .pin-board-title {
+            text-align: center; font-size: 13px; font-weight: 700;
+            color: var(--primary-light); margin-bottom: 12px;
+            letter-spacing: 0.1em;
+        }
+        .pin-row {
+            display: flex; align-items: center; gap: 8px; margin-bottom: 4px;
+        }
+        .pin-row.reverse { flex-direction: row-reverse; }
+        .pin-box {
+            width: 26px; height: 26px; border-radius: 4px;
+            display: grid; place-items: center;
+            font-size: 9px; font-weight: 700; cursor: pointer;
+            border: 1px solid transparent; transition: all .15s;
+            position: relative;
+        }
+        .pin-box:hover { transform: scale(1.15); z-index: 5; box-shadow: 0 0 10px currentColor; }
+        .pin-box.used { opacity: 0.5; }
+        .pin-box.digital { background: rgba(59,130,246,0.25); color: #60a5fa; border-color: rgba(59,130,246,0.4); }
+        .pin-box.analog { background: rgba(16,185,129,0.25); color: #34d399; border-color: rgba(16,185,129,0.4); }
+        .pin-box.pwm { background: rgba(245,158,11,0.25); color: #fbbf24; border-color: rgba(245,158,11,0.4); }
+        .pin-box.i2c { background: rgba(168,85,247,0.25); color: #c084fc; border-color: rgba(168,85,247,0.4); }
+        .pin-box.spi { background: rgba(236,72,153,0.25); color: #f472b6; border-color: rgba(236,72,153,0.4); }
+        .pin-box.uart { background: rgba(20,184,166,0.25); color: #2dd4bf; border-color: rgba(20,184,166,0.4); }
+        .pin-box.power { background: rgba(239,68,68,0.25); color: #f87171; border-color: rgba(239,68,68,0.4); }
+        .pin-box.gnd { background: rgba(107,114,128,0.25); color: #9ca3af; border-color: rgba(107,114,128,0.4); }
+        .pin-label { font-size: 11px; color: var(--text-secondary); min-width: 60px; font-weight: 600; }
+        .pin-legend {
+            display: flex; flex-wrap: wrap; gap: 8px; padding: 10px 12px;
+            border-top: 1px solid var(--border-color);
+        }
+        .legend-item { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; color: var(--text-muted); }
+        .legend-dot { width: 10px; height: 10px; border-radius: 3px; }
+
+        .pin-table-wrap { padding: 10px; }
+        .pin-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+        .pin-table th {
+            text-align: left; padding: 8px 10px; font-size: 11px; font-weight: 700;
+            color: var(--text-muted); text-transform: uppercase; letter-spacing: .05em;
+            background: var(--bg-dark); border-bottom: 1px solid var(--border-color);
+            position: sticky; top: 0;
+        }
+        .pin-table td {
+            padding: 7px 10px; border-bottom: 1px solid var(--border-color);
+            color: var(--text-secondary);
+        }
+        .pin-table tr:hover td { background: var(--bg-hover); }
+        .pin-conflict {
+            color: var(--accent-error); font-weight: 700;
+            background: rgba(239,68,68,0.12); padding: 2px 6px; border-radius: 4px;
+        }
+        .pin-auto-btn { margin: 10px; }
+
+        /* ============ 文件树 ============ */
+        .file-tree-actions {
+            display: flex; gap: 6px; padding: 8px 10px;
+            border-bottom: 1px solid var(--border-color); background: var(--bg-dark);
+        }
+        .file-tree-btn {
+            padding: 5px 8px; font-size: 11px; border-radius: 4px; cursor: pointer;
+            background: var(--bg-elevated); color: var(--text-secondary);
+            border: 1px solid var(--border-color); display: inline-flex; align-items: center; gap: 4px;
+            transition: all .15s;
+        }
+        .file-tree-btn:hover { background: var(--bg-hover); color: var(--text-primary); border-color: var(--border-strong); }
+        .file-tree { padding: 6px 4px; }
+        .file-node {
+            display: flex; align-items: center; gap: 6px; padding: 5px 8px; margin: 0 6px 2px;
+            border-radius: 4px; cursor: pointer; transition: all .15s;
+            font-size: 13px; color: var(--text-secondary);
+        }
+        .file-node:hover { background: var(--bg-hover); }
+        .file-node.active { background: rgba(99,102,241,0.18); color: var(--primary-light); }
+        .file-node i { font-size: 13px; width: 16px; text-align: center; }
+        .file-node .file-icon-ino { color: #3b82f6; }
+        .file-node .file-icon-h { color: #f59e0b; }
+        .file-node .file-icon-cpp { color: #10b981; }
+        .file-node .file-name { flex: 1; }
+        .file-node .file-del {
+            opacity: 0; color: var(--text-muted); padding: 2px 4px; border-radius: 3px;
+        }
+        .file-node:hover .file-del { opacity: 1; }
+        .file-node .file-del:hover { color: var(--accent-error); background: rgba(239,68,68,0.15); }
+
+        /* 编辑器标签页 */
+        .editor-tabs {
+            display: flex; gap: 2px; padding: 4px 8px 0; background: var(--bg-dark);
+            border-bottom: 1px solid var(--border-color); overflow-x: auto;
+        }
+        .editor-tab {
+            display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px;
+            background: var(--bg-elevated); border: 1px solid var(--border-color);
+            border-bottom: 2px solid transparent; border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+            color: var(--text-muted); font-size: 12px; font-weight: 600; cursor: pointer;
+            white-space: nowrap; transition: all .15s;
+        }
+        .editor-tab:hover { background: var(--bg-hover); color: var(--text-secondary); }
+        .editor-tab.active {
+            background: var(--bg-panel); color: var(--primary-light);
+            border-bottom-color: var(--primary-color); border-color: var(--border-color) var(--border-color) transparent;
+        }
+        .editor-tab .tab-close {
+            width: 16px; height: 16px; border-radius: 3px; display: grid; place-items: center;
+            font-size: 10px; opacity: 0.5;
+        }
+        .editor-tab:hover .tab-close { opacity: 1; }
+        .editor-tab .tab-close:hover { background: rgba(239,68,68,0.2); color: var(--accent-error); }
+        .breadcrumb {
+            display: inline-flex; align-items: center; gap: 4px;
+            font-size: 11px; color: var(--text-muted);
+        }
+        .breadcrumb i { font-size: 10px; }
+        .breadcrumb strong { color: var(--text-secondary); }
+
+        /* ============ 串口绘图器 ============ */
+        .plotter-toolbar {
+            display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+            padding: 8px 10px; border-bottom: 1px solid var(--border-color); background: var(--bg-dark);
+        }
+        .plotter-btn {
+            padding: 5px 10px; border-radius: 4px; font-size: 11px; font-weight: 600; cursor: pointer;
+            border: 1px solid var(--border-color); background: var(--bg-elevated); color: var(--text-secondary);
+            transition: all .15s; display: inline-flex; align-items: center; gap: 5px;
+        }
+        .plotter-btn:hover { background: var(--bg-hover); color: var(--text-primary); border-color: var(--border-strong); }
+        .plotter-btn.primary { background: linear-gradient(135deg, var(--primary-color), var(--primary-dark)); color: #fff; border-color: transparent; }
+        .plotter-btn.success { background: linear-gradient(135deg, #10b981, #059669); color: #fff; border-color: transparent; }
+        .plotter-btn.danger { background: linear-gradient(135deg, #ef4444, #dc2626); color: #fff; border-color: transparent; }
+        .plotter-select {
+            background: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-primary);
+            padding: 5px 24px 5px 8px; border-radius: 4px; font-size: 11px; cursor: pointer;
+            outline: none; appearance: none;
+            background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%239aa6bd' stroke-width='3'><path d='M6 9l6 6 6-6'/></svg>");
+            background-repeat: no-repeat; background-position: right 6px center;
+        }
+        .color-picker-mini {
+            width: 18px; height: 18px; border-radius: 4px; border: 1px solid var(--border-color);
+            cursor: pointer; appearance: none; padding: 0;
+        }
+        .channel-row {
+            display: flex; align-items: center; gap: 8px; padding: 4px 10px;
+            font-size: 11px; color: var(--text-secondary); border-bottom: 1px solid var(--border-color);
+        }
+        .channel-row input[type="checkbox"] { accent-color: var(--primary-color); }
+        .channel-name { flex: 1; }
+        .chart-container {
+            position: relative; flex: 1; background: var(--terminal-bg);
+            margin: 10px; border-radius: var(--radius-sm); overflow: hidden;
+            border: 1px solid #000; min-height: 220px;
+        }
+        .chart-canvas { width: 100%; height: 100%; display: block; }
+        .chart-stats {
+            display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; padding: 10px;
+            border-top: 1px solid var(--border-color);
+        }
+        .chart-stat-box {
+            background: var(--bg-elevated); border: 1px solid var(--border-color);
+            border-radius: 6px; padding: 8px; text-align: center;
+        }
+        .chart-stat-label { font-size: 10px; color: var(--text-muted); text-transform: uppercase; font-weight: 700; letter-spacing: .05em; }
+        .chart-stat-value { font-size: 13px; font-weight: 700; font-family: var(--font-mono); margin-top: 3px; }
+        .chart-stat-value.min { color: #60a5fa; }
+        .chart-stat-value.max { color: #f87171; }
+        .chart-stat-value.avg { color: #fbbf24; }
+        .chart-stat-value.last { color: #34d399; }
+
+        /* ============ 仿真调试器 ============ */
+        .debug-toolbar {
+            display: flex; flex-wrap: wrap; align-items: center; gap: 6px;
+            padding: 8px 10px; border-bottom: 1px solid var(--border-color); background: var(--bg-dark);
+        }
+        .debug-btn {
+            padding: 6px 10px; border-radius: 4px; font-size: 11px; font-weight: 600; cursor: pointer;
+            border: 1px solid var(--border-color); background: var(--bg-elevated); color: var(--text-secondary);
+            transition: all .15s; display: inline-flex; align-items: center; gap: 5px;
+        }
+        .debug-btn:hover { background: var(--bg-hover); color: var(--text-primary); }
+        .debug-btn.play { background: linear-gradient(135deg, #10b981, #059669); color: #fff; border-color: transparent; }
+        .debug-btn.pause { background: linear-gradient(135deg, #f59e0b, #d97706); color: #fff; border-color: transparent; }
+        .debug-btn.step { background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: #fff; border-color: transparent; }
+        .debug-btn.reset { background: linear-gradient(135deg, #8b5cf6, #6d28d9); color: #fff; border-color: transparent; }
+        .debug-section-title {
+            display: flex; align-items: center; gap: 8px; padding: 8px 12px;
+            font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em;
+            color: var(--text-muted); background: var(--bg-dark); border-bottom: 1px solid var(--border-color);
+        }
+        .debug-section-title i { color: var(--primary-light); }
+        .watch-list { padding: 6px 0; }
+        .watch-item {
+            display: flex; align-items: center; gap: 8px; padding: 6px 12px;
+            font-size: 12px; border-bottom: 1px solid rgba(99,102,241,0.08);
+        }
+        .watch-item:hover { background: var(--bg-hover); }
+        .watch-name { color: var(--primary-light); font-family: var(--font-mono); font-weight: 600; flex: 1; }
+        .watch-value { color: var(--accent-success); font-family: var(--font-mono); font-weight: 700; }
+        .watch-type { color: var(--text-muted); font-size: 10px; padding: 1px 6px; background: var(--bg-dark); border-radius: 3px; }
+        .watch-add {
+            padding: 6px 12px; display: flex; gap: 6px; border-bottom: 1px solid var(--border-color);
+        }
+        .watch-add input {
+            flex: 1; background: var(--bg-input); border: 1px solid var(--border-color);
+            color: var(--text-primary); padding: 4px 8px; border-radius: 4px; font-size: 12px; outline: none;
+            font-family: var(--font-mono);
+        }
+        .watch-add input:focus { border-color: var(--primary-color); }
+        .breakpoint-item {
+            display: flex; align-items: center; gap: 8px; padding: 6px 12px;
+            font-size: 12px; border-bottom: 1px solid rgba(99,102,241,0.08);
+        }
+        .bp-enabled { accent-color: var(--accent-error); }
+        .bp-line { font-family: var(--font-mono); color: var(--text-secondary); min-width: 50px; }
+        .bp-desc { flex: 1; color: var(--text-muted); font-size: 11px; }
+        .bp-del { color: var(--text-muted); cursor: pointer; padding: 2px 4px; border-radius: 3px; }
+        .bp-del:hover { color: var(--accent-error); background: rgba(239,68,68,0.15); }
+        .call-stack-list { padding: 6px 0; }
+        .stack-frame {
+            display: flex; align-items: center; gap: 8px; padding: 6px 12px;
+            font-size: 12px; border-bottom: 1px solid rgba(99,102,241,0.08);
+            font-family: var(--font-mono);
+        }
+        .stack-frame.top { background: rgba(99,102,241,0.1); color: var(--primary-light); }
+        .stack-frame .frame-num { color: var(--text-muted); min-width: 24px; }
+        .stack-frame .frame-fn { font-weight: 600; }
+        .stack-frame .frame-file { color: var(--text-muted); font-size: 10px; margin-left: auto; }
+        .reg-grid {
+            display: grid; grid-template-columns: repeat(2, 1fr); gap: 4px; padding: 8px 12px;
+        }
+        .reg-item {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 4px 8px; background: var(--bg-dark); border-radius: 4px;
+            font-size: 11px; font-family: var(--font-mono);
+        }
+        .reg-name { color: var(--primary-light); font-weight: 700; }
+        .reg-value { color: var(--accent-success); font-weight: 600; }
+        .timing-canvas-wrap {
+            padding: 10px; background: var(--terminal-bg); margin: 10px;
+            border-radius: var(--radius-sm); border: 1px solid #000;
+            min-height: 120px;
+        }
+
+        /* ============ 电路原理图 ============ */
+        .schematic-toolbar {
+            display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+            padding: 8px 10px; border-bottom: 1px solid var(--border-color); background: var(--bg-dark);
+        }
+        .schematic-canvas-wrap {
+            flex: 1; overflow: auto; padding: 16px; background: #0a0e1a;
+            background-image:
+                radial-gradient(circle, rgba(99,102,241,0.08) 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+        .schematic-svg { width: 100%; height: 100%; min-height: 400px; }
+        .net-label { font-size: 10px; fill: var(--text-muted); font-family: var(--font-mono); }
+        .component-label { font-size: 11px; fill: var(--primary-light); font-weight: 700; }
+        .component-value { font-size: 9px; fill: var(--accent-warning); font-family: var(--font-mono); }
+        .wire-path { stroke: var(--text-secondary); stroke-width: 1.5; fill: none; }
+        .wire-path.power { stroke: var(--accent-error); stroke-width: 2; }
+        .wire-path.gnd { stroke: var(--text-muted); stroke-width: 2; }
+        .wire-path.signal { stroke: var(--accent-success); }
+
+        /* ============ AI 代码建议 ============ */
+        .ai-suggest-toolbar {
+            display: flex; gap: 8px; padding: 10px 12px;
+            border-bottom: 1px solid var(--border-color); background: var(--bg-dark);
+        }
+        .ai-suggest-section { padding: 10px 12px; border-bottom: 1px solid var(--border-color); }
+        .ai-suggest-title {
+            display: flex; align-items: center; gap: 8px;
+            font-size: 12px; font-weight: 700; color: var(--text-secondary); margin-bottom: 8px;
+        }
+        .ai-suggest-title i { color: var(--primary-light); }
+        .ai-suggest-count {
+            margin-left: auto; font-size: 10px; padding: 1px 8px; border-radius: 12px;
+            background: rgba(99,102,241,0.14); color: var(--primary-light); font-weight: 700;
+        }
+        .snippet-card {
+            background: var(--bg-elevated); border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm); padding: 10px; margin-bottom: 8px; cursor: pointer;
+            transition: all .15s;
+        }
+        .snippet-card:hover { background: var(--bg-hover); border-color: var(--primary-color); transform: translateX(2px); }
+        .snippet-name { font-size: 13px; font-weight: 700; color: var(--text-primary); display: flex; align-items: center; gap: 6px; }
+        .snippet-name i { color: var(--primary-light); }
+        .snippet-desc { font-size: 11px; color: var(--text-muted); margin-top: 4px; line-height: 1.4; }
+        .snippet-code {
+            margin-top: 6px; padding: 6px 8px; background: var(--terminal-bg);
+            border-radius: 4px; font-family: var(--font-mono); font-size: 10px;
+            color: #c9d1d9; overflow-x: auto; white-space: pre;
+        }
+        .error-card {
+            background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.25);
+            border-left: 3px solid var(--accent-error);
+            border-radius: 4px; padding: 10px; margin-bottom: 8px;
+        }
+        .warning-card {
+            background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.25);
+            border-left: 3px solid var(--accent-warning);
+            border-radius: 4px; padding: 10px; margin-bottom: 8px;
+        }
+        .info-card {
+            background: rgba(59,130,246,0.08); border: 1px solid rgba(59,130,246,0.25);
+            border-left: 3px solid var(--accent-info);
+            border-radius: 4px; padding: 10px; margin-bottom: 8px;
+        }
+        .issue-title { font-size: 12px; font-weight: 700; color: var(--text-primary); display: flex; align-items: center; gap: 6px; }
+        .issue-title .line-tag {
+            font-size: 10px; padding: 1px 6px; background: var(--bg-dark);
+            border-radius: 3px; color: var(--text-muted); font-family: var(--font-mono); font-weight: 600;
+        }
+        .issue-msg { font-size: 11px; color: var(--text-secondary); margin-top: 4px; line-height: 1.4; }
+        .issue-fix {
+            margin-top: 6px; padding: 6px 8px; background: var(--bg-dark);
+            border-radius: 4px; font-size: 11px; color: var(--accent-success);
+            display: inline-flex; align-items: center; gap: 5px; cursor: pointer;
+        }
+        .issue-fix:hover { background: var(--bg-hover); }
+        .memory-bar-wrap {
+            background: var(--bg-elevated); border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm); padding: 12px; margin-bottom: 10px;
+        }
+        .memory-bar-title {
+            display: flex; justify-content: space-between; align-items: center;
+            font-size: 12px; margin-bottom: 8px;
+        }
+        .memory-bar-title .label { color: var(--text-secondary); font-weight: 600; display: inline-flex; align-items: center; gap: 5px; }
+        .memory-bar-title .value { font-family: var(--font-mono); font-size: 11px; font-weight: 700; }
+        .memory-bar-title .value.good { color: var(--accent-success); }
+        .memory-bar-title .value.warn { color: var(--accent-warning); }
+        .memory-bar-title .value.danger { color: var(--accent-error); }
+        .memory-bar-outer { height: 8px; background: var(--bg-dark); border-radius: 4px; overflow: hidden; }
+        .memory-bar-inner { height: 100%; border-radius: 4px; transition: width .5s ease; }
+        .memory-bar-inner.good { background: linear-gradient(90deg, #10b981, #34d399); }
+        .memory-bar-inner.warn { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
+        .memory-bar-inner.danger { background: linear-gradient(90deg, #ef4444, #f87171); }
+        .completion-popup {
+            position: absolute; z-index: 100; background: var(--bg-panel);
+            border: 1px solid var(--border-strong); border-radius: var(--radius-sm);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.5); max-height: 200px; overflow-y: auto;
+            min-width: 240px;
+        }
+        .completion-item {
+            padding: 6px 10px; font-size: 12px; cursor: pointer;
+            color: var(--text-secondary); display: flex; align-items: center; gap: 8px;
+            border-bottom: 1px solid rgba(99,102,241,0.08); font-family: var(--font-mono);
+        }
+        .completion-item:hover, .completion-item.selected {
+            background: rgba(99,102,241,0.14); color: var(--primary-light);
+        }
+        .completion-type {
+            font-size: 9px; padding: 1px 6px; border-radius: 3px; background: var(--bg-dark); color: var(--text-muted);
+            margin-left: auto; text-transform: uppercase;
+        }
+
+        /* ============ 进度条 ============ */
+        .progress-wrap {
+            background: var(--bg-dark); border-radius: var(--radius-sm); overflow: hidden;
+            border: 1px solid var(--border-color);
+        }
+        .progress-bar-outer { height: 6px; background: var(--bg-input); position: relative; }
+        .progress-bar-inner {
+            height: 100%; background: linear-gradient(90deg, var(--primary-color), var(--primary-light));
+            transition: width .3s ease; border-radius: 0 3px 3px 0;
+            position: relative; overflow: hidden;
+        }
+        .progress-bar-inner::after {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            animation: progressShine 1.5s infinite;
+        }
+        @keyframes progressShine {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+        .progress-info {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 6px 10px; font-size: 11px; color: var(--text-muted);
+        }
+        .progress-info .percent { color: var(--primary-light); font-weight: 700; font-family: var(--font-mono); }
+
+        .compile-item.clickable { cursor: pointer; }
+        .compile-item.clickable:hover { background: var(--bg-hover); transform: translateX(2px); }
+        .verbose-select {
+            background: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-primary);
+            padding: 4px 24px 4px 8px; border-radius: 4px; font-size: 11px; cursor: pointer; outline: none;
+            appearance: none;
+            background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%239aa6bd' stroke-width='3'><path d='M6 9l6 6 6-6'/></svg>");
+            background-repeat: no-repeat; background-position: right 6px center;
+        }
+        .compile-msg.info { color: var(--accent-info); }
+        .compile-msg.error { color: var(--accent-error); }
+        .compile-msg.warning { color: var(--accent-warning); }
+        .usage-bar-chart {
+            display: flex; flex-direction: column; gap: 10px; margin-top: 10px;
+        }
+
+        /* ============ 串口监视器增强 ============ */
+        .serial-tabs {
+            display: flex; gap: 4px; padding: 4px 8px 0; background: var(--bg-dark);
+            border-bottom: 1px solid var(--border-color);
+        }
+        .serial-tab {
+            padding: 5px 10px; font-size: 11px; font-weight: 600; cursor: pointer;
+            background: var(--bg-elevated); border: 1px solid var(--border-color);
+            border-bottom: 2px solid transparent; border-radius: 6px 6px 0 0;
+            color: var(--text-muted); display: inline-flex; align-items: center; gap: 5px;
+            transition: all .15s;
+        }
+        .serial-tab:hover { color: var(--text-secondary); }
+        .serial-tab.active {
+            background: var(--bg-panel); color: var(--primary-light);
+            border-bottom-color: var(--primary-color);
+        }
+        .serial-input-row {
+            display: flex; gap: 6px; padding: 8px 10px;
+            border-top: 1px solid var(--border-color); background: var(--bg-dark);
+        }
+        .serial-input {
+            flex: 1; background: var(--bg-input); border: 1px solid var(--border-color);
+            color: var(--text-primary); padding: 6px 10px; border-radius: var(--radius-sm);
+            font-size: 12px; outline: none; font-family: var(--font-mono);
+        }
+        .serial-input:focus { border-color: var(--primary-color); box-shadow: 0 0 0 2px var(--primary-glow); }
+        .history-dropdown {
+            position: absolute; z-index: 50; bottom: 100%; left: 0; right: 0; margin-bottom: 4px;
+            background: var(--bg-panel); border: 1px solid var(--border-strong);
+            border-radius: var(--radius-sm); max-height: 150px; overflow-y: auto;
+            box-shadow: 0 -4px 16px rgba(0,0,0,0.4);
+        }
+        .history-item {
+            padding: 6px 10px; font-size: 12px; color: var(--text-secondary);
+            cursor: pointer; font-family: var(--font-mono);
+            border-bottom: 1px solid rgba(99,102,241,0.08);
+        }
+        .history-item:hover { background: var(--bg-hover); color: var(--text-primary); }
+        .serial-line .timestamp { color: #6b7280; margin-right: 8px; font-size: 10px; }
+        .view-toggle {
+            display: inline-flex; background: var(--bg-elevated); border: 1px solid var(--border-color);
+            border-radius: 4px; overflow: hidden;
+        }
+        .view-toggle button {
+            padding: 4px 8px; font-size: 10px; font-weight: 600; background: transparent;
+            color: var(--text-muted); border: 0; cursor: pointer; transition: all .15s;
+        }
+        .view-toggle button.active {
+            background: rgba(99,102,241,0.18); color: var(--primary-light);
+        }
+        .autocomplete-list {
+            position: absolute; z-index: 60; background: var(--bg-panel);
+            border: 1px solid var(--border-strong); border-radius: var(--radius-sm);
+            max-height: 120px; overflow-y: auto; min-width: 180px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.5);
+        }
+        .autocomplete-item {
+            padding: 5px 10px; font-size: 11px; cursor: pointer;
+            color: var(--text-secondary); font-family: var(--font-mono);
+            border-bottom: 1px solid rgba(99,102,241,0.08);
+        }
+        .autocomplete-item:hover { background: rgba(99,102,241,0.14); color: var(--primary-light); }
+
+        /* ============ 模态框 / 对话框 ============ */
+        .modal-backdrop {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+            z-index: 2000; display: none; align-items: center; justify-content: center;
+            backdrop-filter: blur(4px);
+        }
+        .modal-backdrop.open { display: flex; }
+        .modal-dialog {
+            background: var(--bg-panel); border: 1px solid var(--border-strong);
+            border-radius: var(--radius-lg); box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+            max-width: 90vw; max-height: 85vh; overflow: hidden;
+            display: flex; flex-direction: column; min-width: 400px;
+            animation: modalIn .2s ease;
+        }
+        @keyframes modalIn {
+            from { transform: scale(0.92) translateY(10px); opacity: 0; }
+            to { transform: scale(1) translateY(0); opacity: 1; }
+        }
+        .modal-header {
+            display: flex; align-items: center; padding: 14px 18px;
+            background: linear-gradient(135deg, rgba(99,102,241,0.14), rgba(139,92,246,0.1));
+            border-bottom: 1px solid var(--border-color);
+        }
+        .modal-title { font-size: 15px; font-weight: 700; color: var(--text-primary); display: inline-flex; align-items: center; gap: 8px; }
+        .modal-title i { color: var(--primary-light); }
+        .modal-close {
+            margin-left: auto; width: 28px; height: 28px; border-radius: 6px;
+            background: transparent; border: 1px solid transparent; color: var(--text-secondary);
+            cursor: pointer; display: grid; place-items: center; transition: all .15s;
+        }
+        .modal-close:hover { background: var(--bg-hover); color: var(--text-primary); border-color: var(--border-color); }
+        .modal-body { padding: 16px 18px; overflow-y: auto; flex: 1; min-height: 0; }
+        .modal-footer {
+            padding: 12px 18px; border-top: 1px solid var(--border-color);
+            display: flex; justify-content: flex-end; gap: 8px; background: var(--bg-dark);
+        }
+        .shortcut-grid {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+        }
+        .shortcut-group { }
+        .shortcut-group-title {
+            font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em;
+            color: var(--primary-light); margin-bottom: 8px;
+        }
+        .shortcut-row {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 5px 0; font-size: 12px; color: var(--text-secondary);
+            border-bottom: 1px solid rgba(99,102,241,0.06);
+        }
+        .shortcut-key {
+            display: inline-flex; gap: 3px;
+        }
+        .kbd {
+            background: var(--bg-elevated); border: 1px solid var(--border-color);
+            border-bottom-width: 2px; border-radius: 4px;
+            padding: 2px 7px; font-size: 10px; font-weight: 700;
+            color: var(--text-primary); font-family: var(--font-mono);
+            box-shadow: 0 1px 0 rgba(0,0,0,0.3);
+        }
+        .theme-grid {
+            display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;
+        }
+        .theme-card {
+            background: var(--bg-elevated); border: 2px solid var(--border-color);
+            border-radius: var(--radius-sm); padding: 12px; cursor: pointer;
+            transition: all .15s; text-align: center;
+        }
+        .theme-card:hover { background: var(--bg-hover); border-color: var(--border-strong); }
+        .theme-card.active { border-color: var(--primary-color); box-shadow: 0 0 0 3px var(--primary-glow); }
+        .theme-preview {
+            height: 60px; border-radius: 6px; margin-bottom: 8px;
+            border: 1px solid var(--border-color);
+        }
+        .theme-preview.dark { background: linear-gradient(135deg, #0c1120, #111726); }
+        .theme-preview.light { background: linear-gradient(135deg, #f8fafc, #e2e8f0); }
+        .theme-preview.material { background: linear-gradient(135deg, #1a237e, #283593); }
+        .theme-name { font-size: 13px; font-weight: 700; color: var(--text-primary); }
+
+        /* 查找替换 */
+        .find-replace-grid {
+            display: grid; grid-template-columns: auto 1fr; gap: 10px 12px; align-items: center;
+        }
+        .find-replace-grid label {
+            font-size: 12px; font-weight: 600; color: var(--text-secondary);
+        }
+        .find-replace-grid input {
+            background: var(--bg-input); border: 1px solid var(--border-color);
+            color: var(--text-primary); padding: 8px 10px; border-radius: var(--radius-sm);
+            font-size: 13px; outline: none; font-family: var(--font-mono);
+        }
+        .find-replace-grid input:focus { border-color: var(--primary-color); box-shadow: 0 0 0 2px var(--primary-glow); }
+        .find-options {
+            display: flex; gap: 12px; margin-top: 12px; padding: 10px;
+            background: var(--bg-elevated); border-radius: var(--radius-sm);
+            border: 1px solid var(--border-color);
+        }
+        .find-options label {
+            display: inline-flex; align-items: center; gap: 6px;
+            font-size: 12px; color: var(--text-secondary); cursor: pointer;
+        }
+        .find-result-info {
+            margin-top: 10px; padding: 8px 12px;
+            background: var(--bg-elevated); border-radius: var(--radius-sm);
+            border: 1px solid var(--border-color); font-size: 12px; color: var(--text-secondary);
+        }
+        .find-result-info strong { color: var(--primary-light); }
+
+        /* 分享对话框 */
+        .share-actions { display: flex; flex-direction: column; gap: 10px; }
+        .share-link-row {
+            display: flex; gap: 8px;
+        }
+        .share-link {
+            flex: 1; background: var(--bg-input); border: 1px solid var(--border-color);
+            color: var(--text-primary); padding: 8px 10px; border-radius: var(--radius-sm);
+            font-size: 12px; font-family: var(--font-mono); outline: none;
+        }
+        .examples-list {
+            max-height: 350px; overflow-y: auto;
+        }
+        .example-group-title {
+            padding: 8px 10px; font-size: 11px; font-weight: 700;
+            text-transform: uppercase; letter-spacing: .06em; color: var(--primary-light);
+            background: var(--bg-dark); position: sticky; top: 0;
+        }
+        .example-item {
+            display: flex; align-items: center; gap: 10px;
+            padding: 9px 12px; cursor: pointer; transition: all .15s;
+            border-bottom: 1px solid rgba(99,102,241,0.06);
+        }
+        .example-item:hover { background: var(--bg-hover); transform: translateX(4px); }
+        .example-icon {
+            width: 30px; height: 30px; border-radius: 6px;
+            background: rgba(99,102,241,0.14); color: var(--primary-light);
+            display: grid; place-items: center; font-size: 14px; flex-shrink: 0;
+        }
+        .example-info { flex: 1; }
+        .example-name { font-size: 13px; font-weight: 600; color: var(--text-primary); }
+        .example-desc { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+
+        /* 自动保存开关 */
+        .toggle-switch {
+            position: relative; width: 38px; height: 20px; cursor: pointer;
+            flex-shrink: 0;
+        }
+        .toggle-switch input { opacity: 0; width: 0; height: 0; }
+        .toggle-slider {
+            position: absolute; inset: 0; background: var(--bg-elevated);
+            border: 1px solid var(--border-color); border-radius: 20px;
+            transition: all .15s;
+        }
+        .toggle-slider::before {
+            content: ''; position: absolute; left: 2px; top: 50%;
+            transform: translateY(-50%); width: 14px; height: 14px;
+            border-radius: 50%; background: var(--text-muted);
+            transition: all .15s;
+        }
+        .toggle-switch input:checked + .toggle-slider {
+            background: rgba(99,102,241,0.25); border-color: var(--primary-color);
+        }
+        .toggle-switch input:checked + .toggle-slider::before {
+            transform: translate(18px, -50%); background: var(--primary-light);
+            box-shadow: 0 0 8px var(--primary-glow);
+        }
+        .autosave-wrap {
+            display: inline-flex; align-items: center; gap: 8px;
+            font-size: 12px; color: var(--text-secondary); cursor: pointer;
+        }
+        .last-save {
+            font-size: 11px; color: var(--text-muted); font-family: var(--font-mono);
+        }
+        .last-save.saved { color: var(--accent-success); }
+
+        /* Light theme overrides */
+        body.theme-light {
+            --bg-darkest: #f8fafc;
+            --bg-dark: #f1f5f9;
+            --bg-panel: #ffffff;
+            --bg-elevated: #f1f5f9;
+            --bg-hover: #e2e8f0;
+            --bg-input: #f8fafc;
+            --border-color: rgba(100,116,139,0.2);
+            --border-strong: rgba(99,102,241,0.4);
+            --text-primary: #1e293b;
+            --text-secondary: #475569;
+            --text-muted: #94a3b8;
+            --terminal-bg: #0f172a;
+        }
+        body.theme-material {
+            --primary-color: #2196f3;
+            --primary-dark: #1976d2;
+            --primary-light: #64b5f6;
+            --primary-glow: rgba(33,150,243,0.35);
+            --bg-darkest: #0d1424;
+            --bg-dark: #121a2d;
+            --bg-panel: #162038;
+            --bg-elevated: #1b2847;
+            --bg-hover: #223157;
+            --border-color: rgba(33,150,243,0.15);
+            --border-strong: rgba(33,150,243,0.3);
+            --accent-success: #00e676;
+            --accent-warning: #ffab00;
+            --accent-error: #ff5252;
+        }
     </style>
+
+    <link rel="stylesheet" href="/static/css/theme.css">
 </head>
 <body>
     <!-- 顶部工具栏 -->
@@ -1040,11 +1797,24 @@
         </select>
 
         <div class="toolbar-actions">
-            <button class="tool-btn" onclick="newProject()" title="新建项目"><i class="fas fa-file-circle-plus"></i><span>新建</span></button>
-            <button class="tool-btn primary" onclick="saveProject()" title="保存项目"><i class="fas fa-floppy-disk"></i><span>保存</span></button>
-            <button class="tool-btn success" onclick="compileCode()" title="编译代码"><i class="fas fa-hammer"></i><span>编译</span></button>
+            <button class="tool-btn" onclick="newProject()" title="新建项目 (Ctrl+N)"><i class="fas fa-file-circle-plus"></i><span>新建</span></button>
+            <button class="tool-btn primary" onclick="saveProject()" title="保存项目 (Ctrl+S)"><i class="fas fa-floppy-disk"></i><span>保存</span></button>
+            <div class="toolbar-divider"></div>
+            <button class="tool-btn icon-only" onclick="undoEdit()" title="撤销 (Ctrl+Z)"><i class="fas fa-rotate-left"></i></button>
+            <button class="tool-btn icon-only" onclick="redoEdit()" title="重做 (Ctrl+Y)"><i class="fas fa-rotate-right"></i></button>
+            <button class="tool-btn" onclick="formatCode()" title="格式化代码 (Ctrl+Shift+F)"><i class="fas fa-align-left"></i><span>格式</span></button>
+            <button class="tool-btn" onclick="openFindReplace()" title="查找替换 (Ctrl+F)"><i class="fas fa-magnifying-glass"></i><span>查找替换</span></button>
+            <div class="toolbar-divider"></div>
+            <button class="tool-btn" onclick="openExamples()" title="导入示例"><i class="fas fa-folder-tree"></i><span>示例导入</span></button>
+            <button class="tool-btn" onclick="checkMemory()" title="检查内存使用"><i class="fas fa-memory"></i><span>检查内存</span></button>
+            <button class="tool-btn" onclick="openShare()" title="分享项目"><i class="fas fa-share-nodes"></i><span>分享</span></button>
+            <div class="toolbar-divider"></div>
+            <button class="tool-btn success" onclick="compileCode()" title="编译代码 (Ctrl+Enter)"><i class="fas fa-hammer"></i><span>编译</span></button>
             <button class="tool-btn" onclick="uploadCode()" title="上传（模拟）"><i class="fas fa-upload"></i><span>上传</span></button>
             <button class="tool-btn" onclick="runSerial()" title="串口监视器"><i class="fas fa-terminal"></i><span>串口</span></button>
+            <div class="toolbar-divider"></div>
+            <button class="tool-btn icon-only" onclick="openThemeSelector()" title="主题设置"><i class="fas fa-palette"></i></button>
+            <button class="tool-btn icon-only" onclick="openShortcuts()" title="快捷键 (Ctrl+K Ctrl+S)"><i class="fas fa-keyboard"></i></button>
             <button class="ai-agent-btn" onclick="toggleAgentPanel(event)" title="AI Agent 状态"><span class="status-dot"></span><i class="fas fa-robot"></i> <span>AI Agent</span></button>
             <button class="tool-btn icon-only" onclick="togglePanel('left')" title="切换左侧栏"><i class="fas fa-outdent"></i></button>
             <button class="tool-btn icon-only" onclick="togglePanel('right')" title="切换右侧栏"><i class="fas fa-indent"></i></button>
@@ -1073,25 +1843,103 @@
     <div class="ide-main">
         <!-- 左侧面板 -->
         <div class="side-panel left-panel" id="left-panel">
-            <div class="tabs">
+            <div class="tabs" style="flex-wrap:wrap;">
                 <button class="tab-btn active" data-tab="components" onclick="switchTab('left','components')"><i class="fas fa-cube"></i> 组件库</button>
-                <button class="tab-btn" data-tab="templates" onclick="switchTab('left','templates')"><i class="fas fa-code"></i> 模板</button>
+                <button class="tab-btn" data-tab="libraries" onclick="switchTab('left','libraries')"><i class="fas fa-boxes-stacked"></i> 库管理器</button>
+                <button class="tab-btn" data-tab="pins" onclick="switchTab('left','pins')"><i class="fas fa-microchip"></i> 引脚分配</button>
+                <button class="tab-btn" data-tab="files" onclick="switchTab('left','files')"><i class="fas fa-folder-tree"></i> 文件树</button>
+                <button class="tab-btn" data-tab="templates" onclick="switchTab('left','templates')"><i class="fas fa-code"></i> 项目模板</button>
             </div>
             <div class="tab-pane active" data-tab="components" id="components-list">
                 <div class="loading-text"><i class="fas fa-spinner fa-spin"></i> 加载组件中...</div>
             </div>
+            <div class="tab-pane" data-tab="libraries" id="libraries-list">
+                <div class="search-wrap">
+                    <i class="fas fa-search"></i>
+                    <input type="text" class="search-input" id="lib-search" placeholder="搜索库名称..." oninput="filterLibraries()">
+                </div>
+                <div class="cat-filter" id="lib-cat-filter">
+                    <span class="cat-chip active" data-cat="all" onclick="filterLibCat('all',this)">全部</span>
+                    <span class="cat-chip" data-cat="basic" onclick="filterLibCat('basic',this)">基础</span>
+                    <span class="cat-chip" data-cat="comm" onclick="filterLibCat('comm',this)">通信</span>
+                    <span class="cat-chip" data-cat="sensor" onclick="filterLibCat('sensor',this)">传感器</span>
+                    <span class="cat-chip" data-cat="display" onclick="filterLibCat('display',this)">显示</span>
+                    <span class="cat-chip" data-cat="storage" onclick="filterLibCat('storage',this)">存储</span>
+                    <span class="cat-chip" data-cat="time" onclick="filterLibCat('time',this)">时间</span>
+                    <span class="cat-chip" data-cat="motor" onclick="filterLibCat('motor',this)">电机</span>
+                    <span class="cat-chip" data-cat="network" onclick="filterLibCat('network',this)">网络</span>
+                    <span class="cat-chip" data-cat="security" onclick="filterLibCat('security',this)">安全</span>
+                    <span class="cat-chip" data-cat="ai" onclick="filterLibCat('ai',this)">AI</span>
+                </div>
+                <div id="lib-container"></div>
+            </div>
+            <div class="tab-pane" data-tab="pins" style="display:none; flex-direction:column;">
+                <div style="padding:10px 12px; border-bottom:1px solid var(--border-color); display:flex; gap:8px; align-items:center;">
+                    <select id="pin-board-select" class="board-select" style="flex:1; padding:6px 28px 6px 10px; font-size:12px;" onchange="renderPinDiagram()">
+                        <option value="uno">Arduino Uno</option>
+                        <option value="nano">Arduino Nano</option>
+                        <option value="mega">Arduino Mega</option>
+                        <option value="esp32">ESP32</option>
+                    </select>
+                </div>
+                <div class="pin-auto-btn">
+                    <button class="tool-btn" style="width:100%; justify-content:center;" onclick="autoAssignPins()"><i class="fas fa-wand-magic-sparkles"></i> 自动分配引脚</button>
+                </div>
+                <div id="pin-diagram-container" class="pin-diagram-wrap"></div>
+                <div class="pin-legend">
+                    <span class="legend-item"><span class="legend-dot" style="background:#60a5fa;"></span>数字</span>
+                    <span class="legend-item"><span class="legend-dot" style="background:#34d399;"></span>模拟</span>
+                    <span class="legend-item"><span class="legend-dot" style="background:#fbbf24;"></span>PWM</span>
+                    <span class="legend-item"><span class="legend-dot" style="background:#c084fc;"></span>I2C</span>
+                    <span class="legend-item"><span class="legend-dot" style="background:#f472b6;"></span>SPI</span>
+                    <span class="legend-item"><span class="legend-dot" style="background:#2dd4bf;"></span>UART</span>
+                    <span class="legend-item"><span class="legend-dot" style="background:#f87171;"></span>电源</span>
+                    <span class="legend-item"><span class="legend-dot" style="background:#9ca3af;"></span>GND</span>
+                </div>
+                <div class="pin-table-wrap" style="flex:1; overflow:auto; min-height:0;">
+                    <table class="pin-table">
+                        <thead><tr><th>Pin#</th><th>功能</th><th>状态</th><th>使用者</th></tr></thead>
+                        <tbody id="pin-table-body"></tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="tab-pane" data-tab="files" style="display:none; flex-direction:column;">
+                <div class="file-tree-actions">
+                    <button class="file-tree-btn" onclick="newFile()"><i class="fas fa-file-plus"></i> 新建</button>
+                    <button class="file-tree-btn" onclick="renameFile()"><i class="fas fa-pen"></i> 重命名</button>
+                    <button class="file-tree-btn" onclick="deleteFile()"><i class="fas fa-trash"></i> 删除</button>
+                </div>
+                <div class="file-tree" id="file-tree-container" style="flex:1; overflow:auto; min-height:0;"></div>
+            </div>
             <div class="tab-pane" data-tab="templates" id="templates-list">
-                <div class="loading-text"><i class="fas fa-spinner fa-spin"></i> 加载模板中...</div>
+                <div class="search-wrap">
+                    <i class="fas fa-search"></i>
+                    <input type="text" class="search-input" id="tpl-search" placeholder="搜索模板..." oninput="filterTemplatesUI()">
+                </div>
+                <div class="cat-filter" id="tpl-cat-filter"></div>
+                <div id="tpl-container"></div>
             </div>
         </div>
 
         <!-- 中间编辑器 -->
         <div class="editor-wrap">
+            <div class="editor-tabs" id="editor-tabs"></div>
             <div class="editor-bar">
                 <span class="dot"></span>
-                <span class="file-name" id="file-name">sketch<span class="ino">.ino</span></span>
+                <span class="breadcrumb" id="breadcrumb-path">
+                    <i class="fas fa-house"></i> 项目 <i class="fas fa-chevron-right"></i> <strong id="project-crumb">Blink 示例项目</strong> <i class="fas fa-chevron-right"></i> <strong id="file-crumb">sketch.ino</strong>
+                </span>
+                <span class="spacer" style="flex:1;"></span>
+                <label class="autosave-wrap">
+                    <span class="toggle-switch">
+                        <input type="checkbox" id="autosave-toggle" onchange="toggleAutoSave()" checked>
+                        <span class="toggle-slider"></span>
+                    </span>
+                    自动保存
+                </label>
+                <span class="last-save" id="last-save-time">上次保存: --</span>
             </div>
-            <div class="editor-container">
+            <div class="editor-container" id="editor-container-wrap">
                 <div class="line-numbers"><div class="line-numbers-inner" id="line-numbers-inner">1</div></div>
                 <div class="code-container">
                     <pre class="code-backdrop" id="code-backdrop"><code id="highlighted"></code></pre>
@@ -1101,33 +1949,216 @@
             <div class="editor-statusbar">
                 <span class="status-item"><i class="fas fa-code"></i> 行数 <strong id="status-lines">0</strong></span>
                 <span class="status-item"><i class="fas fa-font"></i> 字符 <strong id="status-chars">0</strong></span>
+                <span class="status-item"><i class="fas fa-arrow-down"></i> Ln <strong id="status-cur-line">1</strong></span>
+                <span class="status-item"><i class="fas fa-arrow-right"></i> Col <strong id="status-cur-col">1</strong></span>
                 <span class="spacer"></span>
                 <span class="status-item"><i class="fas fa-microchip"></i> 开发板 <strong id="status-board">Arduino Uno</strong></span>
                 <span class="status-item"><i class="fas fa-circle-check"></i> UTF-8</span>
+                <span class="status-item"><i class="fas fa-language"></i> C++</span>
             </div>
         </div>
 
         <!-- 右侧面板 -->
         <div class="side-panel right-panel" id="right-panel">
-            <div class="tabs">
-                <button class="tab-btn active" data-tab="serial" onclick="switchTab('right','serial')"><i class="fas fa-terminal"></i> 串口监视器</button>
-                <button class="tab-btn" data-tab="compile" onclick="switchTab('right','compile')"><i class="fas fa-hammer"></i> 编译输出</button>
+            <div class="tabs" style="flex-wrap:wrap;">
+                <button class="tab-btn active" data-tab="serial" onclick="switchTab('right','serial')"><i class="fas fa-terminal"></i> 串口</button>
+                <button class="tab-btn" data-tab="plotter" onclick="switchTab('right','plotter')"><i class="fas fa-chart-line"></i> 绘图器</button>
+                <button class="tab-btn" data-tab="debugger" onclick="switchTab('right','debugger')"><i class="fas fa-bug"></i> 仿真器</button>
+                <button class="tab-btn" data-tab="schematic" onclick="switchTab('right','schematic')"><i class="fas fa-diagram-project"></i> 原理图</button>
+                <button class="tab-btn" data-tab="ai" onclick="switchTab('right','ai')"><i class="fas fa-wand-magic-sparkles"></i> AI建议</button>
+                <button class="tab-btn" data-tab="compile" onclick="switchTab('right','compile')"><i class="fas fa-hammer"></i> 编译</button>
             </div>
 
-            <!-- 串口监视器 -->
+            <!-- 串口监视器（增强版） -->
             <div class="tab-pane active" data-tab="serial" style="display:flex; flex-direction:column;">
+                <div class="serial-tabs">
+                    <span class="serial-tab active" data-port="COM1" onclick="switchSerialPort(this)"><i class="fas fa-usb"></i> COM1</span>
+                    <span class="serial-tab" data-port="COM2" onclick="switchSerialPort(this)"><i class="fas fa-usb"></i> COM2</span>
+                    <span class="serial-tab" style="padding:5px 6px;" onclick="addSerialPort()" title="新建串口标签"><i class="fas fa-plus"></i></span>
+                </div>
                 <div class="serial-toolbar">
                     <button class="mini-btn" onclick="runSerial()"><i class="fas fa-play"></i> 运行</button>
+                    <button class="mini-btn" onclick="pauseSerial()" id="serial-pause-btn"><i class="fas fa-pause"></i> 暂停</button>
                     <button class="mini-btn" onclick="clearSerial()"><i class="fas fa-broom"></i> 清空</button>
-                    <span class="baud">9600 baud</span>
+                    <select id="serial-baud" class="plotter-select" onchange="updateBaud()">
+                        <option>9600</option><option>19200</option><option>38400</option>
+                        <option>57600</option><option>115200</option><option>230400</option>
+                    </select>
+                    <select id="serial-lineend" class="plotter-select" onchange="updateLineEnd()">
+                        <option value="none">无换行</option>
+                        <option value="nl">Newline(\n)</option>
+                        <option value="cr">CR(\r)</option>
+                        <option value="crlf" selected>CRLF(\r\n)</option>
+                    </select>
                     <label class="auto-scroll-wrap">
                         <input type="checkbox" id="auto-scroll" checked> 自动滚动
                     </label>
                 </div>
-                <div class="serial-terminal" id="serial-terminal"><div class="serial-line sys">> 串口监视器就绪，点击"运行"开始模拟输出...</div></div>
+                <div style="padding:4px 10px; display:flex; gap:8px; align-items:center; border-bottom:1px solid var(--border-color); background:var(--bg-dark);">
+                    <label style="display:inline-flex; align-items:center; gap:5px; font-size:11px; color:var(--text-secondary); cursor:pointer;">
+                        <input type="checkbox" id="serial-timestamp" onchange="updateTimestamp()" checked> 时间戳
+                    </label>
+                    <div class="view-toggle">
+                        <button class="active" id="view-ascii" onclick="setSerialView('ascii',this)">ASCII</button>
+                        <button id="view-hex" onclick="setSerialView('hex',this)">HEX</button>
+                        <button id="view-both" onclick="setSerialView('both',this)">两者</button>
+                    </div>
+                </div>
+                <div class="serial-terminal" id="serial-terminal" style="flex:1;"><div class="serial-line sys">> 串口监视器就绪，点击"运行"开始模拟输出...</div></div>
+                <div style="position:relative;">
+                    <div id="serial-autocomplete" class="autocomplete-list" style="display:none;"></div>
+                    <div id="serial-history-dropdown" class="history-dropdown" style="display:none;"></div>
+                    <div class="serial-input-row">
+                        <button class="tool-btn icon-only" style="padding:6px 8px;" onclick="toggleHistory()" title="历史记录"><i class="fas fa-clock-rotate-left"></i></button>
+                        <input type="text" class="serial-input" id="serial-input" placeholder="发送数据..." onkeydown="handleSerialInput(event)" oninput="serialAutocomplete()">
+                        <button class="tool-btn primary" style="padding:6px 12px;" onclick="sendSerialData()"><i class="fas fa-paper-plane"></i> 发送</button>
+                    </div>
+                </div>
             </div>
 
-            <!-- 编译输出 -->
+            <!-- 串口绘图器 -->
+            <div class="tab-pane" data-tab="plotter" style="display:none; flex-direction:column;">
+                <div class="plotter-toolbar">
+                    <button class="plotter-btn success" onclick="startPlotter()"><i class="fas fa-play"></i> 开始</button>
+                    <button class="plotter-btn" onclick="pausePlotter()" id="plotter-pause"><i class="fas fa-pause"></i> 暂停</button>
+                    <button class="plotter-btn danger" onclick="stopPlotter()"><i class="fas fa-stop"></i> 停止</button>
+                    <button class="plotter-btn" onclick="clearPlotter()"><i class="fas fa-broom"></i> 清空</button>
+                    <button class="plotter-btn" onclick="exportPlotterCSV()"><i class="fas fa-file-export"></i> 导出CSV</button>
+                    <select class="plotter-select" id="plotter-baud">
+                        <option>9600</option><option>115200</option>
+                    </select>
+                    <select class="plotter-select" id="plotter-yaxis" onchange="updatePlotterYAxis()">
+                        <option value="auto">Y轴: 自动</option>
+                        <option value="0-1023">0-1023</option>
+                        <option value="0-5V">0-5V</option>
+                        <option value="0-3.3V">0-3.3V</option>
+                        <option value="custom">自定义</option>
+                    </select>
+                </div>
+                <div style="flex-shrink:0;">
+                    <div class="channel-row">
+                        <input type="checkbox" id="ch0-en" checked onchange="updatePlotterChannels()"><input type="color" class="color-picker-mini" id="ch0-color" value="#10b981">
+                        <span class="channel-name">通道 0 (Ch0)</span>
+                        <span style="font-family:var(--font-mono); font-size:11px; color:var(--text-muted);" id="ch0-val">--</span>
+                    </div>
+                    <div class="channel-row">
+                        <input type="checkbox" id="ch1-en" checked onchange="updatePlotterChannels()"><input type="color" class="color-picker-mini" id="ch1-color" value="#3b82f6">
+                        <span class="channel-name">通道 1 (Ch1)</span>
+                        <span style="font-family:var(--font-mono); font-size:11px; color:var(--text-muted);" id="ch1-val">--</span>
+                    </div>
+                    <div class="channel-row">
+                        <input type="checkbox" id="ch2-en" onchange="updatePlotterChannels()"><input type="color" class="color-picker-mini" id="ch2-color" value="#f59e0b">
+                        <span class="channel-name">通道 2 (Ch2)</span>
+                        <span style="font-family:var(--font-mono); font-size:11px; color:var(--text-muted);" id="ch2-val">--</span>
+                    </div>
+                    <div class="channel-row">
+                        <input type="checkbox" id="ch3-en" onchange="updatePlotterChannels()"><input type="color" class="color-picker-mini" id="ch3-color" value="#a855f7">
+                        <span class="channel-name">通道 3 (Ch3)</span>
+                        <span style="font-family:var(--font-mono); font-size:11px; color:var(--text-muted);" id="ch3-val">--</span>
+                    </div>
+                </div>
+                <div class="chart-container" id="plotter-chart-wrap" style="flex:1;">
+                    <canvas id="plotter-canvas" class="chart-canvas"></canvas>
+                </div>
+                <div class="chart-stats">
+                    <div class="chart-stat-box"><div class="chart-stat-label">最小值</div><div class="chart-stat-value min" id="stat-min">--</div></div>
+                    <div class="chart-stat-box"><div class="chart-stat-label">最大值</div><div class="chart-stat-value max" id="stat-max">--</div></div>
+                    <div class="chart-stat-box"><div class="chart-stat-label">平均值</div><div class="chart-stat-value avg" id="stat-avg">--</div></div>
+                    <div class="chart-stat-box"><div class="chart-stat-label">最新值</div><div class="chart-stat-value last" id="stat-last">--</div></div>
+                </div>
+            </div>
+
+            <!-- 仿真调试器 -->
+            <div class="tab-pane" data-tab="debugger" style="display:none; flex-direction:column; overflow-y:auto;">
+                <div class="debug-toolbar">
+                    <button class="debug-btn play" onclick="debugRun()" id="debug-run-btn"><i class="fas fa-play"></i> 运行</button>
+                    <button class="debug-btn pause" onclick="debugPause()"><i class="fas fa-pause"></i> 暂停</button>
+                    <button class="debug-btn step" onclick="debugStep()"><i class="fas fa-arrow-down"></i> 单步</button>
+                    <button class="debug-btn" onclick="debugStepOver()"><i class="fas fa-angles-down"></i> 跳过</button>
+                    <button class="debug-btn" onclick="debugStepOut()"><i class="fas fa-share-from-square"></i> 跳出</button>
+                    <button class="debug-btn reset" onclick="debugReset()"><i class="fas fa-rotate-left"></i> 重置</button>
+                </div>
+                <div style="padding:6px 12px; background:var(--bg-dark); border-bottom:1px solid var(--border-color); font-size:11px; color:var(--text-muted);">
+                    <i class="fas fa-location-dot" style="color:var(--primary-light);"></i> 当前行: <strong id="debug-current-line" style="color:var(--text-secondary); font-family:var(--font-mono);">--</strong>
+                    <span style="margin-left:16px;"><i class="fas fa-clock" style="color:var(--accent-success);"></i> 运行时间: <strong id="debug-time" style="color:var(--text-secondary); font-family:var(--font-mono);">0.000s</strong></span>
+                </div>
+                <div class="debug-section-title"><i class="fas fa-binoculars"></i> 变量监视</div>
+                <div class="watch-add">
+                    <input type="text" id="watch-add-input" placeholder="输入变量名添加监视..." onkeydown="if(event.key==='Enter')addWatchVar()">
+                    <button class="tool-btn primary" style="padding:4px 10px;" onclick="addWatchVar()"><i class="fas fa-plus"></i></button>
+                </div>
+                <div class="watch-list" id="watch-list"></div>
+                <div class="debug-section-title"><i class="fas fa-circle-stop" style="color:var(--accent-error);"></i> 断点管理</div>
+                <div style="padding:6px 12px;">
+                    <button class="file-tree-btn" onclick="addBreakpoint()"><i class="fas fa-plus"></i> 添加断点</button>
+                </div>
+                <div id="breakpoint-list"></div>
+                <div class="debug-section-title"><i class="fas fa-layer-group"></i> 调用栈</div>
+                <div class="call-stack-list" id="call-stack-list"></div>
+                <div class="debug-section-title"><i class="fas fa-memory"></i> 寄存器 (AVR)</div>
+                <div class="reg-grid" id="register-grid"></div>
+                <div class="debug-section-title"><i class="fas fa-timeline"></i> 引脚时序图</div>
+                <div class="timing-canvas-wrap">
+                    <canvas id="timing-canvas" style="width:100%; height:100%;"></canvas>
+                </div>
+            </div>
+
+            <!-- 电路原理图 -->
+            <div class="tab-pane" data-tab="schematic" style="display:none; flex-direction:column;">
+                <div class="schematic-toolbar">
+                    <button class="plotter-btn" onclick="regenSchematic()"><i class="fas fa-rotate"></i> 重新生成</button>
+                    <button class="plotter-btn primary" onclick="exportSchematic('svg')"><i class="fas fa-file-export"></i> SVG</button>
+                    <button class="plotter-btn success" onclick="exportSchematic('png')"><i class="fas fa-image"></i> PNG</button>
+                    <button class="plotter-btn" onclick="zoomSchematic(-0.2)"><i class="fas fa-minus"></i></button>
+                    <button class="plotter-btn" onclick="zoomSchematic(0.2)"><i class="fas fa-plus"></i></button>
+                    <button class="plotter-btn" onclick="resetSchematicZoom()"><i class="fas fa-expand"></i> 复位</button>
+                    <label style="display:inline-flex; align-items:center; gap:5px; font-size:11px; color:var(--text-secondary); margin-left:auto;">
+                        <input type="checkbox" id="show-net-labels" checked onchange="toggleNetLabels()"> 网络标签
+                    </label>
+                    <label style="display:inline-flex; align-items:center; gap:5px; font-size:11px; color:var(--text-secondary);">
+                        <input type="checkbox" id="show-wire-labels" onchange="toggleWireLabels()"> 线标号
+                    </label>
+                </div>
+                <div class="schematic-canvas-wrap" id="schematic-canvas-wrap">
+                    <svg id="schematic-svg" class="schematic-svg" viewBox="0 0 900 600" style="transition:transform .2s ease;"></svg>
+                </div>
+            </div>
+
+            <!-- AI 代码建议 -->
+            <div class="tab-pane" data-tab="ai" style="display:none; flex-direction:column; overflow-y:auto;">
+                <div class="ai-suggest-toolbar">
+                    <button class="plotter-btn primary" onclick="runAISuggest()"><i class="fas fa-wand-magic-sparkles"></i> 运行分析</button>
+                    <button class="plotter-btn" onclick="runMemoryEstimate()"><i class="fas fa-memory"></i> 内存估算</button>
+                    <button class="plotter-btn" onclick="insertNextCompletion()"><i class="fas fa-keyboard"></i> 代码补全</button>
+                </div>
+                <div class="ai-suggest-section">
+                    <div class="ai-suggest-title"><i class="fas fa-memory"></i> 内存使用估算 <span class="ai-suggest-count" id="mem-count">--</span></div>
+                    <div class="memory-bar-wrap">
+                        <div class="memory-bar-title">
+                            <span class="label"><i class="fas fa-microchip"></i> Flash (程序)</span>
+                            <span class="value good" id="flash-val">0 / 32256 B (0%)</span>
+                        </div>
+                        <div class="memory-bar-outer"><div class="memory-bar-inner good" id="flash-bar" style="width:0%;"></div></div>
+                    </div>
+                    <div class="memory-bar-wrap">
+                        <div class="memory-bar-title">
+                            <span class="label"><i class="fas fa-database"></i> RAM (内存)</span>
+                            <span class="value good" id="ram-val">0 / 2048 B (0%)</span>
+                        </div>
+                        <div class="memory-bar-outer"><div class="memory-bar-inner good" id="ram-bar" style="width:0%;"></div></div>
+                    </div>
+                </div>
+                <div class="ai-suggest-section">
+                    <div class="ai-suggest-title"><i class="fas fa-list-check"></i> 语法/最佳实践 <span class="ai-suggest-count" id="issue-count">0 问题</span></div>
+                    <div id="issues-container"><div class="empty-text" style="padding:16px; font-size:12px;">点击"运行分析"检测问题</div></div>
+                </div>
+                <div class="ai-suggest-section">
+                    <div class="ai-suggest-title"><i class="fas fa-lightbulb"></i> 代码片段库</div>
+                    <div id="snippets-container"></div>
+                </div>
+            </div>
+
+            <!-- 编译输出（增强版） -->
             <div class="tab-pane" data-tab="compile" id="compile-output">
                 <div class="compile-pane">
                     <div class="compile-status idle"><i class="fas fa-circle-info"></i> 尚未编译，点击"编译"按钮开始</div>
@@ -1211,770 +2242,193 @@
         <i class="fas fa-robot"></i>
     </button>
 
-    <script src="/assets/js/utils/apiRequest.js"></script>
-    <script>
-        // ============ 全局状态 ============
-        var currentProjectId = null;
-        var currentBoard = 'uno';
-        var _componentsFlat = [];
-        var _templatesFlat = [];
-
-        var DEFAULT_CODE =
-            '// Arduino Blink 示例\n' +
-            '// 默认项目代码\n\n' +
-            'int ledPin = 13;\n\n' +
-            'void setup() {\n' +
-            '  Serial.begin(9600);\n' +
-            '  pinMode(ledPin, OUTPUT);\n' +
-            '  Serial.println("Blink Ready");\n' +
-            '}\n\n' +
-            'void loop() {\n' +
-            '  digitalWrite(ledPin, HIGH);\n' +
-            '  Serial.println("LED ON");\n' +
-            '  delay(1000);\n' +
-            '  digitalWrite(ledPin, LOW);\n' +
-            '  Serial.println("LED OFF");\n' +
-            '  delay(1000);\n' +
-            '}\n';
-
-        var BOARD_NAMES = { uno: 'Arduino Uno', mega: 'Arduino Mega', nano: 'Arduino Nano', esp32: 'ESP32' };
-        var TEMPLATE_CAT = { basic: { label: '基础', icon: 'fa-seedling' }, intermediate: { label: '进阶', icon: 'fa-fire' }, advanced: { label: '高级', icon: 'fa-rocket' } };
-        var COMP_CAT = { input: { label: '输入组件', icon: 'fa-arrow-down-to-bracket' }, output: { label: '输出组件', icon: 'fa-arrow-up-from-bracket' } };
-
-        // ============ 工具函数 ============
-        function escapeHtml(s) {
-            return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-        }
-        function escapeAttr(s) {
-            return escapeHtml(s).replace(/"/g, '&quot;');
-        }
-        function boardDisplayName(b) { return BOARD_NAMES[b] || b || 'Arduino Uno'; }
-        function emptyHtml(msg, icon) {
-            return '<div class="empty-text"><i class="fas ' + (icon || 'fa-inbox') + '" style="font-size:22px;display:block;margin-bottom:8px;color:var(--text-muted);"></i>' + escapeHtml(msg) + '</div>';
-        }
-
-        // ============ 语法高亮 ============
-        var TOKEN_RE = /(\/\*[\s\S]*?\*\/|\/\/[^\n]*)|("(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*')|(^[ \t]*#[^\n]*)|\b(void|int|float|double|char|bool|boolean|long|short|byte|unsigned|const|static|volatile|if|else|for|while|do|switch|case|break|continue|return|new|class|struct|public|private|protected|default|sizeof|true|false|HIGH|LOW|INPUT|OUTPUT|INPUT_PULLUP|LED_BUILTIN)\b|\b(setup|loop|pinMode|digitalWrite|digitalRead|analogWrite|analogRead|delay|delayMicroseconds|millis|micros|attachInterrupt|detachInterrupt|map|constrain|random|randomSeed|tone|noTone|pulseIn|shiftOut|begin|end|print|println|write|read|available|flush|peek|attach)\b|\b(Serial|Servo|LiquidCrystal|String|Wire|SPI|EEPROM)\b|\b(0x[0-9a-fA-F]+|\d+\.?\d*)\b/gm;
-
-        function highlightCode(code) {
-            var escaped = code.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-            return escaped.replace(TOKEN_RE, function (m, comment, str, pre, kw, fn, cls, num) {
-                if (comment) return '<span class="tok-comment">' + comment + '</span>';
-                if (str) return '<span class="tok-string">' + str + '</span>';
-                if (pre) return '<span class="tok-preprocessor">' + pre + '</span>';
-                if (kw) return '<span class="tok-keyword">' + kw + '</span>';
-                if (fn) return '<span class="tok-function">' + fn + '</span>';
-                if (cls) return '<span class="tok-class">' + cls + '</span>';
-                if (num) return '<span class="tok-number">' + num + '</span>';
-                return m;
-            });
-        }
-
-        // ============ 编辑器核心 ============
-        function updateEditor() {
-            var ta = document.getElementById('code-editor');
-            document.getElementById('highlighted').innerHTML = highlightCode(ta.value) + '\n';
-            updateLineNumbers();
-            updateStatusBar();
-        }
-
-        function updateLineNumbers() {
-            var ta = document.getElementById('code-editor');
-            var lines = ta.value.split('\n').length;
-            var html = '';
-            for (var i = 1; i <= lines; i++) {
-                html += i + '\n';
-            }
-            document.getElementById('line-numbers-inner').textContent = html;
-        }
-
-        function updateStatusBar() {
-            var ta = document.getElementById('code-editor');
-            document.getElementById('status-lines').textContent = ta.value.split('\n').length;
-            document.getElementById('status-chars').textContent = ta.value.length;
-            document.getElementById('status-board').textContent = boardDisplayName(currentBoard);
-        }
-
-        function syncScroll() {
-            var ta = document.getElementById('code-editor');
-            document.getElementById('code-backdrop').scrollTop = ta.scrollTop;
-            document.getElementById('code-backdrop').scrollLeft = ta.scrollLeft;
-            document.getElementById('line-numbers-inner').style.transform = 'translateY(' + (-ta.scrollTop) + 'px)';
-        }
-
-        function insertComponent(code) {
-            var ta = document.getElementById('code-editor');
-            var start = ta.selectionStart, end = ta.selectionEnd;
-            var insert = (code ? code + '\n' : '');
-            ta.value = ta.value.substring(0, start) + insert + ta.value.substring(end);
-            ta.selectionStart = ta.selectionEnd = start + insert.length;
-            ta.focus();
-            updateEditor();
-            syncScroll();
-            ApiRequest.showToast('已插入组件示例代码', 'success');
-        }
-
-        function loadTemplate(code) {
-            if (!confirm('加载模板将覆盖当前编辑器内容，是否继续？')) return;
-            document.getElementById('code-editor').value = code || '';
-            updateEditor();
-            syncScroll();
-            ApiRequest.showToast('模板代码已加载', 'success');
-        }
-
-        // ============ 标签页 / 面板折叠 ============
-        function switchTab(panel, tab) {
-            var p = document.getElementById(panel + '-panel');
-            p.querySelectorAll('.tab-btn').forEach(function (b) {
-                b.classList.toggle('active', b.dataset.tab === tab);
-            });
-            p.querySelectorAll('.tab-pane').forEach(function (pane) {
-                var match = pane.dataset.tab === tab;
-                pane.classList.toggle('active', match);
-                pane.style.display = match ? (pane.dataset.tab === 'serial' ? 'flex' : 'block') : 'none';
-            });
-        }
-
-        function togglePanel(panel) {
-            var p = document.getElementById(panel + '-panel');
-            p.classList.toggle('collapsed');
-        }
-
-        function toggleProjects() {
-            document.getElementById('projects-bar').classList.toggle('expanded');
-        }
-
-        // ============ 数据加载 ============
-        function loadComponents() {
-            var container = document.getElementById('components-list');
-            container.innerHTML = '<div class="loading-text"><i class="fas fa-spinner fa-spin"></i> 加载组件中...</div>';
-            ApiRequest.get('/api/arduino/components').then(function (res) {
-                var data = (res && res.data) || [];
-                var groups = { input: [], output: [] };
-                data.forEach(function (c) {
-                    var key = c.category || 'output';
-                    if (!groups[key]) groups[key] = [];
-                    groups[key].push(c);
-                });
-                if (!data.length) { container.innerHTML = emptyHtml('暂无组件数据'); return; }
-
-                var flat = [];
-                var html = '';
-                ['input', 'output'].forEach(function (cat) {
-                    var meta = COMP_CAT[cat] || { label: cat, icon: 'fa-cube' };
-                    html += '<div class="lib-group"><div class="lib-group-title"><i class="fas ' + meta.icon + '"></i> ' + meta.label + '</div>';
-                    (groups[cat] || []).forEach(function (c) {
-                        var idx = flat.length;
-                        flat.push(c);
-                        html += '<div class="lib-item" data-idx="' + idx + '" title="' + escapeAttr(c.description || '') + '">' +
-                            '<span class="lib-icon">' + escapeHtml(c.icon || '🔌') + '</span>' +
-                            '<div class="lib-info"><div class="lib-name">' + escapeHtml(c.name) + '</div>' +
-                            '<div class="lib-desc">' + escapeHtml(c.pin_type || '') + '</div></div>' +
-                            '<span class="lib-badge">插入</span></div>';
-                    });
-                    html += '</div>';
-                });
-                _componentsFlat = flat;
-                container.innerHTML = html;
-                container.querySelectorAll('.lib-item').forEach(function (el) {
-                    el.addEventListener('click', function () {
-                        var i = parseInt(el.dataset.idx, 10);
-                        if (_componentsFlat[i]) insertComponent(_componentsFlat[i].default_code || '');
-                    });
-                });
-            }).catch(function () {
-                container.innerHTML = emptyHtml('组件加载失败，请刷新重试', 'fa-triangle-exclamation');
-            });
-        }
-
-        function loadTemplates() {
-            var container = document.getElementById('templates-list');
-            container.innerHTML = '<div class="loading-text"><i class="fas fa-spinner fa-spin"></i> 加载模板中...</div>';
-            ApiRequest.get('/api/arduino/templates').then(function (res) {
-                var data = (res && res.data) || [];
-                if (!data.length) { container.innerHTML = emptyHtml('暂无模板'); return; }
-                var groups = { basic: [], intermediate: [], advanced: [] };
-                data.forEach(function (t) {
-                    var key = t.category || 'basic';
-                    if (!groups[key]) groups[key] = [];
-                    groups[key].push(t);
-                });
-                var flat = [];
-                var html = '';
-                ['basic', 'intermediate', 'advanced'].forEach(function (cat) {
-                    var meta = TEMPLATE_CAT[cat] || { label: cat, icon: 'fa-code' };
-                    if (!(groups[cat] || []).length) return;
-                    html += '<div class="lib-group"><div class="lib-group-title"><i class="fas ' + meta.icon + '"></i> ' + meta.label + '</div>';
-                    groups[cat].forEach(function (t) {
-                        var idx = flat.length;
-                        flat.push(t);
-                        html += '<div class="lib-item" data-idx="' + idx + '" title="' + escapeAttr(t.description || '') + '">' +
-                            '<span class="lib-icon"><i class="fas fa-file-code" style="color:var(--primary-light);"></i></span>' +
-                            '<div class="lib-info"><div class="lib-name">' + escapeHtml(t.name) + '</div>' +
-                            '<div class="lib-desc">' + escapeHtml(t.description || '') + '</div></div>' +
-                            '<span class="lib-badge">加载</span></div>';
-                    });
-                    html += '</div>';
-                });
-                _templatesFlat = flat;
-                container.innerHTML = html;
-                container.querySelectorAll('.lib-item').forEach(function (el) {
-                    el.addEventListener('click', function () {
-                        var i = parseInt(el.dataset.idx, 10);
-                        if (_templatesFlat[i]) loadTemplate(_templatesFlat[i].code || '');
-                    });
-                });
-            }).catch(function () {
-                container.innerHTML = emptyHtml('模板加载失败，请刷新重试', 'fa-triangle-exclamation');
-            });
-        }
-
-        function loadProjects() {
-            var list = document.getElementById('projects-list');
-            list.innerHTML = '<div class="empty-text">加载中...</div>';
-            ApiRequest.get('/api/arduino/projects').then(function (res) {
-                var data = (res && res.data) || [];
-                document.getElementById('projects-count').textContent = data.length;
-                if (!data.length) { list.innerHTML = emptyHtml('暂无项目，点击工具栏"新建"创建项目'); return; }
-                list.innerHTML = data.map(function (p) {
-                    var active = (p.id === currentProjectId) ? ' active' : '';
-                    var desc = p.description ? ' · <span class="project-desc">' + escapeHtml(p.description) + '</span>' : '';
-                    return '<div class="project-item' + active + '" onclick="loadProject(' + p.id + ')">' +
-                        '<div class="project-info">' +
-                        '<div class="project-name">' + escapeHtml(p.name) + ' <span class="board-tag">' + escapeHtml(p.board_type || 'uno') + '</span></div>' +
-                        '<div class="project-meta"><i class="far fa-clock"></i> ' + escapeHtml(p.updated_at || p.created_at || '') + desc + '</div>' +
-                        '</div>' +
-                        '<button class="project-del" onclick="deleteProject(' + p.id + ', event)" title="删除项目"><i class="fas fa-trash"></i></button>' +
-                        '</div>';
-                }).join('');
-            }).catch(function () {
-                list.innerHTML = emptyHtml('项目列表加载失败', 'fa-triangle-exclamation');
-            });
-        }
-
-        // ============ 项目操作 ============
-        function newProject() {
-            if (!confirm('新建项目将清空当前编辑器内容，是否继续？')) return;
-            currentProjectId = null;
-            document.getElementById('project-name').value = '新建项目';
-            document.getElementById('code-editor').value = DEFAULT_CODE;
-            document.getElementById('board-select').value = 'uno';
-            currentBoard = 'uno';
-            updateEditor();
-            syncScroll();
-            loadProjects();
-            ApiRequest.showToast('已创建新项目', 'info');
-        }
-
-        function saveProject() {
-            var name = document.getElementById('project-name').value.trim();
-            if (!name) { ApiRequest.showToast('请输入项目名称', 'warning'); return; }
-            var code = document.getElementById('code-editor').value;
-            var payload = { name: name, description: '', code: code, board_type: currentBoard, tags: '' };
-            if (currentProjectId) {
-                ApiRequest.put('/api/arduino/projects/' + currentProjectId, payload, { showSuccessToast: true, successMessage: '项目已保存' })
-                    .then(function () { loadProjects(); });
-            } else {
-                ApiRequest.post('/api/arduino/projects', payload, { showSuccessToast: true, successMessage: '项目已创建' })
-                    .then(function (res) {
-                        if (res && res.data && res.data.id) currentProjectId = res.data.id;
-                        loadProjects();
-                    });
-            }
-        }
-
-        function loadProject(id) {
-            ApiRequest.get('/api/arduino/projects/' + id).then(function (res) {
-                var p = res.data || {};
-                currentProjectId = p.id;
-                document.getElementById('project-name').value = p.name || '未命名项目';
-                document.getElementById('code-editor').value = p.code || '';
-                document.getElementById('board-select').value = p.board_type || 'uno';
-                currentBoard = p.board_type || 'uno';
-                updateEditor();
-                syncScroll();
-                document.getElementById('projects-bar').classList.add('expanded');
-                loadProjects();
-                ApiRequest.showToast('已加载项目: ' + (p.name || ''), 'success');
-            }).catch(function () {
-                ApiRequest.showToast('加载项目失败', 'error');
-            });
-        }
-
-        function deleteProject(id, ev) {
-            if (ev) { ev.stopPropagation(); ev.preventDefault(); }
-            if (!confirm('确认删除该项目？此操作不可恢复。')) return;
-            ApiRequest.delete('/api/arduino/projects/' + id, { showSuccessToast: true, successMessage: '项目已删除' })
-                .then(function () {
-                    if (currentProjectId === id) currentProjectId = null;
-                    loadProjects();
-                });
-        }
-
-        // ============ 编译 ============
-        function compileCode() {
-            var code = document.getElementById('code-editor').value;
-            var out = document.getElementById('compile-output');
-            switchTab('right', 'compile');
-            out.innerHTML = '<div class="compile-pane"><div class="compile-status idle"><i class="fas fa-spinner fa-spin"></i> 正在编译...</div></div>';
-            ApiRequest.post('/api/arduino/compile', { code: code, board_type: currentBoard }, { showErrorToast: false })
-                .then(function (res) { renderCompileResult(res); })
-                .catch(function (err) {
-                    if (err && err.data) { renderCompileResult(err.data); }
-                    else {
-                        out.innerHTML = '<div class="compile-pane"><div class="compile-status fail"><i class="fas fa-times-circle"></i> 编译请求失败: ' + escapeHtml(err.message || '未知错误') + '</div></div>';
-                    }
-                });
-        }
-
-        function renderCompileResult(res) {
-            var out = document.getElementById('compile-output');
-            var success = !!(res && res.success);
-            var errors = (res && res.errors) || [];
-            var warnings = (res && res.warnings) || [];
-            var stats = (res && res.stats) || {};
-            var html = '<div class="compile-pane">';
-            html += '<div class="compile-status ' + (success ? 'ok' : 'fail') + '"><i class="fas ' + (success ? 'fa-check-circle' : 'fa-times-circle') + '"></i> ' + (success ? '编译成功' : '编译失败') + '</div>';
-
-            if (errors.length) {
-                html += '<div class="compile-section"><div class="compile-section-title error"><i class="fas fa-bug"></i> 错误 (' + errors.length + ')</div>';
-                errors.forEach(function (e) {
-                    html += '<div class="compile-item"><span class="compile-line">行 ' + (e.line || 0) + '</span><span class="compile-msg">' + escapeHtml(e.message || '') + '</span></div>';
-                });
-                html += '</div>';
-            }
-            if (warnings.length) {
-                html += '<div class="compile-section"><div class="compile-section-title warning"><i class="fas fa-triangle-exclamation"></i> 警告 (' + warnings.length + ')</div>';
-                warnings.forEach(function (w) {
-                    html += '<div class="compile-item warning"><span class="compile-line">行 ' + (w.line || 0) + '</span><span class="compile-msg">' + escapeHtml(w.message || '') + '</span></div>';
-                });
-                html += '</div>';
-            }
-
-            html += '<div class="compile-section"><div class="compile-section-title" style="color:var(--text-secondary);"><i class="fas fa-chart-simple"></i> 编译统计</div>';
-            html += '<div class="compile-stats">';
-            html += '<div class="stat-row"><span class="label">代码总行数</span><span class="value">' + (stats.total_lines || 0) + '</span></div>';
-            html += '<div class="stat-row"><span class="label">源码大小</span><span class="value">' + (stats.code_size || 0) + ' B</span></div>';
-            if (stats.binary_size) {
-                html += '<div class="stat-row"><span class="label">二进制大小</span><span class="value">' + stats.binary_size + ' B</span></div>';
-            }
-            if (stats.flash_usage) {
-                html += '<div class="stat-row"><span class="label">Flash 占用</span><span class="value good">' + stats.flash_usage + '</span></div>';
-            }
-            if (stats.ram_usage) {
-                html += '<div class="stat-row"><span class="label">RAM 占用</span><span class="value good">' + stats.ram_usage + '</span></div>';
-            }
-            html += '</div></div></div>';
-            out.innerHTML = html;
-        }
-
-        // ============ 串口模拟 ============
-        function runSerial() {
-            var code = document.getElementById('code-editor').value;
-            var term = document.getElementById('serial-terminal');
-            switchTab('right', 'serial');
-            term.innerHTML = '';
-            appendSerial('sys', '> 启动串口模拟 (9600 baud)...');
-            appendSerial('sys', '> 正在解析 Serial 输出语句...');
-            ApiRequest.post('/api/arduino/serial', { code: code, duration: 5 }, { showErrorToast: false })
-                .then(function (res) {
-                    var data = (res && res.data) || [];
-                    appendSerial('sys', '> 共生成 ' + data.length + ' 条输出，开始模拟运行：');
-                    appendSerial('sys', '----------------------------------------');
-                    data.forEach(function (d, i) {
-                        setTimeout(function () {
-                            appendSerial('out', '[' + d.time + '] ' + d.data);
-                        }, i * 130);
-                    });
-                })
-                .catch(function (err) {
-                    appendSerial('err', '> 串口模拟失败: ' + (err.message || '未知错误'));
-                });
-        }
-
-        function appendSerial(cls, text) {
-            var term = document.getElementById('serial-terminal');
-            var div = document.createElement('div');
-            div.className = 'serial-line ' + cls;
-            div.textContent = text;
-            term.appendChild(div);
-            var auto = document.getElementById('auto-scroll');
-            if (!auto || auto.checked) term.scrollTop = term.scrollHeight;
-        }
-
-        function clearSerial() {
-            document.getElementById('serial-terminal').innerHTML = '<div class="serial-line sys">> 串口监视器已清空</div>';
-        }
-
-        // ============ 上传（模拟） ============
-        function uploadCode() {
-            ApiRequest.showToast('正在上传到开发板（模拟）...', 'info');
-            compileCode();
-            setTimeout(function () {
-                ApiRequest.showToast('上传完成（模拟）', 'success');
-                appendSerial('sys', '> [上传] 代码已上传至 ' + boardDisplayName(currentBoard) + '（模拟）');
-            }, 1400);
-        }
-
-        // ============ 初始化 ============
-        (function init() {
-            var ta = document.getElementById('code-editor');
-            ta.value = DEFAULT_CODE;
-
-            ta.addEventListener('input', function () { updateEditor(); });
-            ta.addEventListener('scroll', syncScroll);
-            ta.addEventListener('keydown', function (e) {
-                if (e.key === 'Tab') {
-                    e.preventDefault();
-                    var start = this.selectionStart, end = this.selectionEnd;
-                    this.value = this.value.substring(0, start) + '  ' + this.value.substring(end);
-                    this.selectionStart = this.selectionEnd = start + 2;
-                    updateEditor();
-                    syncScroll();
-                }
-                if (e.key === 'Enter') {
-                    // 自动缩进：复制当前行前导空白
-                    var pos = this.selectionStart;
-                    var lineStart = this.value.lastIndexOf('\n', pos - 1) + 1;
-                    var line = this.value.substring(lineStart, pos);
-                    var indent = (line.match(/^[ \t]*/) || [''])[0];
-                    var after = this.value.substring(pos);
-                    // 若上一行以 { 结尾则增加缩进
-                    var trimmed = line.trim();
-                    if (trimmed.charAt(trimmed.length - 1) === '{') indent += '  ';
-                    this.value = this.value.substring(0, pos) + '\n' + indent + after;
-                    this.selectionStart = this.selectionEnd = pos + 1 + indent.length;
-                    e.preventDefault();
-                    updateEditor();
-                    syncScroll();
-                }
-            });
-
-            document.getElementById('board-select').addEventListener('change', function () {
-                currentBoard = this.value;
-                updateStatusBar();
-            });
-
-            updateEditor();
-
-            // 加载数据
-            loadComponents();
-            loadTemplates();
-            loadProjects();
-            loadAIAgents();
-        })();
-
-        // ============ 编辑器辅助函数 ============
-        var editorTextarea = document.getElementById('code-editor');
-
-        function getEditorCode() {
-            return document.getElementById('code-editor').value;
-        }
-
-        function setEditorCode(code) {
-            document.getElementById('code-editor').value = code || '';
-            updateEditor();
-            syncScroll();
-        }
-
-        // ============ AI 助手面板 ============
-        var _aiPanelOpen = false;
-        var _aiLoading = false;
-
-        function toggleAIPanel() {
-            var panel = document.getElementById('ai-assistant-panel');
-            _aiPanelOpen = !_aiPanelOpen;
-            panel.classList.toggle('open', _aiPanelOpen);
-            if (_aiPanelOpen) {
-                setTimeout(function () {
-                    document.getElementById('ai-input').focus();
-                }, 200);
-            }
-        }
-
-        function handleAIInputKeydown(e) {
-            if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                sendAIMessage();
-            }
-        }
-
-        function addAIMessage(role, contentHtml) {
-            var chatArea = document.getElementById('ai-chat-area');
-            var msgDiv = document.createElement('div');
-            msgDiv.className = 'ai-chat-msg ' + role;
-            var icon = role === 'user' ? 'fa-user' : 'fa-robot';
-            msgDiv.innerHTML =
-                '<div class="msg-avatar"><i class="fas ' + icon + '"></i></div>' +
-                '<div class="msg-bubble">' + contentHtml + '</div>';
-            chatArea.appendChild(msgDiv);
-            chatArea.scrollTop = chatArea.scrollHeight;
-            return msgDiv;
-        }
-
-        function addAILoadingMessage() {
-            var chatArea = document.getElementById('ai-chat-area');
-            var msgDiv = document.createElement('div');
-            msgDiv.className = 'ai-chat-msg ai';
-            msgDiv.id = 'ai-loading-msg';
-            msgDiv.innerHTML =
-                '<div class="msg-avatar"><i class="fas fa-robot"></i></div>' +
-                '<div class="msg-bubble"><div class="ai-loading-dots"><span></span><span></span><span></span></div></div>';
-            chatArea.appendChild(msgDiv);
-            chatArea.scrollTop = chatArea.scrollHeight;
-            return msgDiv;
-        }
-
-        function removeAILoadingMessage() {
-            var el = document.getElementById('ai-loading-msg');
-            if (el) el.remove();
-        }
-
-        function parseAICodeBlocks(text) {
-            var html = '';
-            var parts = text.split(/(```[\s\S]*?```)/g);
-            parts.forEach(function (part) {
-                var codeMatch = part.match(/^```(\w*)\n?([\s\S]*?)\n?```$/);
-                if (codeMatch) {
-                    var lang = codeMatch[1] || 'cpp';
-                    var code = codeMatch[2];
-                    var codeId = 'ai-code-' + Date.now() + '-' + Math.random().toString(36).substr(2, 6);
-                    html += '<div class="ai-code-block">';
-                    html += '<div class="ai-code-header"><span class="lang">' + escapeHtml(lang) + '</span>';
-                    html += '<button class="insert-btn" onclick="insertAICodeToEditor(\'' + codeId + '\')">';
-                    html += '<i class="fas fa-code-merge"></i> 插入到编辑器</button></div>';
-                    html += '<pre id="' + codeId + '"><code>' + escapeHtml(code) + '</code></pre>';
-                    html += '</div>';
-                } else {
-                    html += formatAIMarkdown(part);
-                }
-            });
-            return html;
-        }
-
-        function formatAIMarkdown(text) {
-            var html = escapeHtml(text);
-            html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
-            html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
-            html = html.replace(/`([^`]+)`/g, '<code style="background:rgba(99,102,241,0.15);padding:1px 6px;border-radius:4px;font-family:var(--font-mono);font-size:12px;color:var(--primary-light);">$1</code>');
-            var lines = html.split('\n');
-            var result = [];
-            var inList = false;
-            lines.forEach(function (line) {
-                var trimmed = line.trim();
-                if (trimmed.match(/^[-*]\s/)) {
-                    if (!inList) { result.push('<ul>'); inList = true; }
-                    result.push('<li>' + trimmed.replace(/^[-*]\s/, '') + '</li>');
-                } else if (trimmed.match(/^\d+\.\s/)) {
-                    if (!inList) { result.push('<ol>'); inList = true; }
-                    result.push('<li>' + trimmed.replace(/^\d+\.\s/, '') + '</li>');
-                } else if (trimmed === '') {
-                    if (inList) {
-                        var last = result[result.length - 1];
-                        if (last === '</ul>' || last === '</ol>') inList = false;
-                        else {
-                            if (result[result.length - 1] && result[result.length - 1].indexOf('<li>') === 0) {
-                                result.push('</ul>');
-                            }
-                            inList = false;
-                        }
-                    }
-                } else {
-                    if (inList) {
-                        result.push('</ul>');
-                        inList = false;
-                    }
-                    if (trimmed) result.push('<p>' + line + '</p>');
-                }
-            });
-            if (inList) result.push('</ul>');
-            return result.join('');
-        }
-
-        function insertAICodeToEditor(codeId) {
-            var codeEl = document.getElementById(codeId);
-            if (!codeEl) return;
-            var code = codeEl.textContent || codeEl.innerText;
-            setEditorCode(code);
-            ApiRequest.showToast('代码已插入到编辑器', 'success');
-        }
-
-        function clearAIChat() {
-            var chatArea = document.getElementById('ai-chat-area');
-            chatArea.innerHTML =
-                '<div class="ai-chat-msg ai">' +
-                '<div class="msg-avatar"><i class="fas fa-robot"></i></div>' +
-                '<div class="msg-bubble">' +
-                '<p><strong>👋 对话已清空</strong></p>' +
-                '<p>有什么我可以帮你的吗？点击上方快捷按钮或直接输入问题开始。</p>' +
-                '</div></div>';
-        }
-
-        function sendAIMessage() {
-            if (_aiLoading) return;
-            var input = document.getElementById('ai-input');
-            var text = input.value.trim();
-            if (!text) return;
-
-            addAIMessage('user', '<p>' + escapeHtml(text) + '</p>');
-            input.value = '';
-            input.style.height = '38px';
-            _aiLoading = true;
-            document.getElementById('ai-send-btn').disabled = true;
-            addAILoadingMessage();
-
-            ApiRequest.post('/api/arduino/ai/generate', {
-                description: text,
-                components: '',
-                difficulty: 'intermediate'
-            }, { showErrorToast: false }).then(function (res) {
-                handleAIResponse(res);
-            }).catch(function (err) {
-                handleAIError(err);
-            });
-        }
-
-        function handleAIResponse(res) {
-            removeAILoadingMessage();
-            _aiLoading = false;
-            document.getElementById('ai-send-btn').disabled = false;
-            var data = (res && res.data) || {};
-            var content = data.content || data.result || data.message || (typeof res === 'string' ? res : '');
-            if (!content && data.code) {
-                content = '以下是生成的代码：\n\n```cpp\n' + data.code + '\n```';
-                if (data.explanation) content += '\n\n' + data.explanation;
-            }
-            if (!content) content = '抱歉，我无法生成有效的响应。';
-            var html = parseAICodeBlocks(content);
-            addAIMessage('ai', html);
-        }
-
-        function handleAIError(err) {
-            removeAILoadingMessage();
-            _aiLoading = false;
-            document.getElementById('ai-send-btn').disabled = false;
-            var msg = (err && err.message) ? err.message : '请求失败，请稍后重试';
-            addAIMessage('ai', '<p style="color:var(--accent-error);"><strong>❌ 出错了</strong></p><p>' + escapeHtml(msg) + '</p>');
-        }
-
-        function quickAIAction(type) {
-            if (_aiLoading) return;
-            var code = getEditorCode();
-
-            if (type === 'generate') {
-                if (!_aiPanelOpen) toggleAIPanel();
-                setTimeout(function () {
-                    document.getElementById('ai-input').focus();
-                    addAIMessage('ai', '<p><strong><i class="fas fa-sparkles"></i> 代码生成模式</strong></p><p>请描述你想要实现的功能，例如：</p><ul><li>控制LED灯闪烁，间隔500ms</li><li>使用超声波传感器测距并在串口输出</li><li>通过PWM控制电机转速</li></ul><p>请输入你的需求描述：</p>');
-                }, 150);
-                return;
-            }
-
-            if (!_aiPanelOpen) toggleAIPanel();
-
-            var actionLabels = {
-                debug: '🔍 代码调试',
-                optimize: '<i class="fas fa-bolt"></i> 代码优化',
-                components: '<i class="fas fa-wrench"></i> 组件推荐',
-                explain: '<i class="fas fa-book-open"></i> 代码解释'
-            };
-
-            addAIMessage('user', '<p><strong>' + actionLabels[type] + '</strong></p>');
-            _aiLoading = true;
-            document.getElementById('ai-send-btn').disabled = true;
-            addAILoadingMessage();
-
-            var apiMap = {
-                debug: { url: '/api/arduino/ai/debug', body: { code: code } },
-                optimize: { url: '/api/arduino/ai/optimize', body: { code: code, level: 'balanced' } },
-                components: { url: '/api/arduino/ai/components', body: { description: code, project_type: 'project' } },
-                explain: { url: '/api/arduino/ai/explain', body: { code: code } }
-            };
-
-            var api = apiMap[type];
-            if (!api) return;
-
-            ApiRequest.post(api.url, api.body, { showErrorToast: false })
-                .then(function (res) { handleAIResponse(res); })
-                .catch(function (err) { handleAIError(err); });
-        }
-
-        // ============ AI Agent 状态面板 ============
-        var _agentPanelOpen = false;
-        var _agentsCache = [];
-
-        function toggleAgentPanel(e) {
-            if (e) {
-                e.stopPropagation();
-                e.preventDefault();
-            }
-            var panel = document.getElementById('ai-agent-panel');
-            _agentPanelOpen = !_agentPanelOpen;
-            panel.classList.toggle('open', _agentPanelOpen);
-            if (_agentPanelOpen) {
-                loadAIAgents();
-            }
-        }
-
-        document.addEventListener('click', function (e) {
-            var panel = document.getElementById('ai-agent-panel');
-            var btn = document.querySelector('.ai-agent-btn');
-            if (_agentPanelOpen && panel && !panel.contains(e.target) && btn && !btn.contains(e.target)) {
-                _agentPanelOpen = false;
-                panel.classList.remove('open');
-            }
-        });
-
-        var DEFAULT_AGENTS = [
-            { id: 'code-gen', name: 'Arduino代码生成Agent', icon: 'gen', fa_icon: 'fa-wand-magic-sparkles', status: 'running', description: '根据需求描述自动生成Arduino代码' },
-            { id: 'code-debug', name: 'Arduino代码调试Agent', icon: 'debug', fa_icon: 'fa-bug', status: 'running', description: '智能分析代码错误并提供修复建议' },
-            { id: 'code-optimize', name: 'Arduino代码优化Agent', icon: 'optimize', fa_icon: 'fa-gauge-high', status: 'running', description: '优化代码性能、内存占用和功耗' },
-            { id: 'component-rec', name: 'Arduino组件推荐Agent', icon: 'component', fa_icon: 'fa-microchip', status: 'stopped', description: '根据项目需求推荐合适的电子元件' }
-        ];
-
-        function loadAIAgents() {
-            var list = document.getElementById('ai-agent-list');
-            ApiRequest.get('/api/arduino/ai/agents', { showErrorToast: false }).then(function (res) {
-                var agents = (res && res.data) || [];
-                if (!agents || !agents.length) {
-                    agents = DEFAULT_AGENTS;
-                }
-                _agentsCache = agents;
-                renderAgentList(agents);
-            }).catch(function () {
-                _agentsCache = DEFAULT_AGENTS;
-                renderAgentList(DEFAULT_AGENTS);
-            });
-        }
-
-        function renderAgentList(agents) {
-            var list = document.getElementById('ai-agent-list');
-            var html = '';
-            agents.forEach(function (agent) {
-                var iconClass = agent.icon || 'gen';
-                var faIcon = agent.fa_icon || 'fa-robot';
-                var status = agent.status || 'stopped';
-                var statusText = status === 'running' ? '运行中' : '已停止';
-                html += '<div class="ai-agent-item">';
-                html += '<div class="agent-icon ' + iconClass + '"><i class="fas ' + faIcon + '"></i></div>';
-                html += '<div class="agent-info">';
-                html += '<div class="agent-name">' + escapeHtml(agent.name) + '</div>';
-                html += '<div class="agent-desc">' + escapeHtml(agent.description || '') + '</div>';
-                html += '</div>';
-                html += '<div class="agent-status ' + status + '">';
-                html += '<span class="sdot"></span>' + statusText;
-                html += '</div>';
-                html += '</div>';
-            });
-            list.innerHTML = html;
-        }
-
-        function autoResizeAIInput() {
-            var ta = document.getElementById('ai-input');
-            if (!ta) return;
-            ta.style.height = 'auto';
-            ta.style.height = Math.min(ta.scrollHeight, 100) + 'px';
-        }
-    </script>
+    <!-- ========== 模态框: 快捷键 ========== -->
+    <div class="modal-backdrop" id="modal-shortcuts" onclick="if(event.target===this)closeModal('modal-shortcuts')">
+        <div class="modal-dialog" style="min-width:560px;">
+            <div class="modal-header">
+                <div class="modal-title"><i class="fas fa-keyboard"></i> 键盘快捷键</div>
+                <button class="modal-close" onclick="closeModal('modal-shortcuts')"><i class="fas fa-xmark"></i></button>
+            </div>
+            <div class="modal-body">
+                <div class="shortcut-grid">
+                    <div class="shortcut-group">
+                        <div class="shortcut-group-title">文件</div>
+                        <div class="shortcut-row"><span>新建项目</span><span class="shortcut-key"><span class="kbd">Ctrl</span><span class="kbd">N</span></span></div>
+                        <div class="shortcut-row"><span>保存项目</span><span class="shortcut-key"><span class="kbd">Ctrl</span><span class="kbd">S</span></span></div>
+                        <div class="shortcut-row"><span>另存为</span><span class="shortcut-key"><span class="kbd">Ctrl</span><span class="kbd">Shift</span><span class="kbd">S</span></span></div>
+                        <div class="shortcut-row"><span>导出Zip</span><span class="shortcut-key"><span class="kbd">Ctrl</span><span class="kbd">E</span></span></div>
+                    </div>
+                    <div class="shortcut-group">
+                        <div class="shortcut-group-title">编辑</div>
+                        <div class="shortcut-row"><span>撤销</span><span class="shortcut-key"><span class="kbd">Ctrl</span><span class="kbd">Z</span></span></div>
+                        <div class="shortcut-row"><span>重做</span><span class="shortcut-key"><span class="kbd">Ctrl</span><span class="kbd">Y</span></span></div>
+                        <div class="shortcut-row"><span>格式化代码</span><span class="shortcut-key"><span class="kbd">Ctrl</span><span class="kbd">Shift</span><span class="kbd">F</span></span></div>
+                        <div class="shortcut-row"><span>查找替换</span><span class="shortcut-key"><span class="kbd">Ctrl</span><span class="kbd">F</span></span></div>
+                        <div class="shortcut-row"><span>行注释</span><span class="shortcut-key"><span class="kbd">Ctrl</span><span class="kbd">/</span></span></div>
+                    </div>
+                    <div class="shortcut-group">
+                        <div class="shortcut-group-title">编译/运行</div>
+                        <div class="shortcut-row"><span>编译代码</span><span class="shortcut-key"><span class="kbd">Ctrl</span><span class="kbd">Enter</span></span></div>
+                        <div class="shortcut-row"><span>上传代码</span><span class="shortcut-key"><span class="kbd">Ctrl</span><span class="kbd">U</span></span></div>
+                        <div class="shortcut-row"><span>串口监视器</span><span class="shortcut-key"><span class="kbd">Ctrl</span><span class="kbd">Shift</span><span class="kbd">M</span></span></div>
+                        <div class="shortcut-row"><span>内存检查</span><span class="shortcut-key"><span class="kbd">Ctrl</span><span class="kbd">Shift</span><span class="kbd">E</span></span></div>
+                    </div>
+                    <div class="shortcut-group">
+                        <div class="shortcut-group-title">视图/面板</div>
+                        <div class="shortcut-row"><span>切换左侧栏</span><span class="shortcut-key"><span class="kbd">Ctrl</span><span class="kbd">B</span></span></div>
+                        <div class="shortcut-row"><span>切换右侧栏</span><span class="shortcut-key"><span class="kbd">Ctrl</span><span class="kbd">J</span></span></div>
+                        <div class="shortcut-row"><span>切换项目栏</span><span class="shortcut-key"><span class="kbd">Ctrl</span><span class="kbd">P</span></span></div>
+                        <div class="shortcut-row"><span>快捷键列表</span><span class="shortcut-key"><span class="kbd">Ctrl</span><span class="kbd">K</span> <span class="kbd">Ctrl</span><span class="kbd">S</span></span></div>
+                    </div>
+                    <div class="shortcut-group">
+                        <div class="shortcut-group-title">选择/导航</div>
+                        <div class="shortcut-row"><span>全选</span><span class="shortcut-key"><span class="kbd">Ctrl</span><span class="kbd">A</span></span></div>
+                        <div class="shortcut-row"><span>转到行</span><span class="shortcut-key"><span class="kbd">Ctrl</span><span class="kbd">G</span></span></div>
+                        <div class="shortcut-row"><span>删除行</span><span class="shortcut-key"><span class="kbd">Ctrl</span><span class="kbd">Shift</span><span class="kbd">K</span></span></div>
+                        <div class="shortcut-row"><span>复制行</span><span class="shortcut-key"><span class="kbd">Ctrl</span><span class="kbd">D</span></span></div>
+                    </div>
+                    <div class="shortcut-group">
+                        <div class="shortcut-group-title">AI助手</div>
+                        <div class="shortcut-row"><span>打开AI助手</span><span class="shortcut-key"><span class="kbd">Ctrl</span><span class="kbd">Shift</span><span class="kbd">A</span></span></div>
+                        <div class="shortcut-row"><span>快速代码生成</span><span class="shortcut-key"><span class="kbd">Ctrl</span><span class="kbd">Shift</span><span class="kbd">G</span></span></div>
+                        <div class="shortcut-row"><span>AI 代码补全</span><span class="shortcut-key"><span class="kbd">Tab</span></span></div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="tool-btn" onclick="closeModal('modal-shortcuts')">关闭</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========== 模态框: 主题选择器 ========== -->
+    <div class="modal-backdrop" id="modal-theme" onclick="if(event.target===this)closeModal('modal-theme')">
+        <div class="modal-dialog">
+            <div class="modal-header">
+                <div class="modal-title"><i class="fas fa-palette"></i> 主题设置</div>
+                <button class="modal-close" onclick="closeModal('modal-theme')"><i class="fas fa-xmark"></i></button>
+            </div>
+            <div class="modal-body">
+                <div class="theme-grid">
+                    <div class="theme-card active" data-theme="dark" onclick="applyTheme('dark',this)">
+                        <div class="theme-preview dark"></div>
+                        <div class="theme-name">🌙 Dark</div>
+                    </div>
+                    <div class="theme-card" data-theme="light" onclick="applyTheme('light',this)">
+                        <div class="theme-preview light"></div>
+                        <div class="theme-name">☀️ Light</div>
+                    </div>
+                    <div class="theme-card" data-theme="material" onclick="applyTheme('material',this)">
+                        <div class="theme-preview material"></div>
+                        <div class="theme-name">💎 Material</div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="tool-btn" onclick="closeModal('modal-theme')">关闭</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========== 模态框: 查找替换 ========== -->
+    <div class="modal-backdrop" id="modal-find" onclick="if(event.target===this)closeModal('modal-find')">
+        <div class="modal-dialog" style="min-width:500px;">
+            <div class="modal-header">
+                <div class="modal-title"><i class="fas fa-magnifying-glass"></i> 查找和替换</div>
+                <button class="modal-close" onclick="closeModal('modal-find')"><i class="fas fa-xmark"></i></button>
+            </div>
+            <div class="modal-body">
+                <div class="find-replace-grid">
+                    <label>查找:</label>
+                    <input type="text" id="find-input" placeholder="输入要查找的内容..." oninput="findInEditor()">
+                    <label>替换为:</label>
+                    <input type="text" id="replace-input" placeholder="输入替换内容...">
+                </div>
+                <div class="find-options">
+                    <label><input type="checkbox" id="find-case"> 区分大小写</label>
+                    <label><input type="checkbox" id="find-whole"> 全字匹配</label>
+                    <label><input type="checkbox" id="find-regex"> 正则表达式</label>
+                </div>
+                <div class="find-result-info" id="find-result">
+                    找到 <strong id="find-count">0</strong> 处匹配
+                </div>
+                <div style="display:flex; gap:8px; margin-top:14px;">
+                    <button class="tool-btn primary" onclick="findNext()"><i class="fas fa-arrow-down"></i> 查找下一个</button>
+                    <button class="tool-btn" onclick="findPrev()"><i class="fas fa-arrow-up"></i> 查找上一个</button>
+                    <button class="tool-btn success" onclick="replaceOne()"><i class="fas fa-check"></i> 替换</button>
+                    <button class="tool-btn" style="margin-left:auto;" onclick="replaceAll()"><i class="fas fa-check-double"></i> 全部替换</button>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="tool-btn" onclick="closeModal('modal-find')">关闭</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========== 模态框: 分享 ========== -->
+    <div class="modal-backdrop" id="modal-share" onclick="if(event.target===this)closeModal('modal-share')">
+        <div class="modal-dialog" style="min-width:480px;">
+            <div class="modal-header">
+                <div class="modal-title"><i class="fas fa-share-nodes"></i> 分享项目</div>
+                <button class="modal-close" onclick="closeModal('modal-share')"><i class="fas fa-xmark"></i></button>
+            </div>
+            <div class="modal-body">
+                <div class="share-actions">
+                    <div>
+                        <div style="font-size:12px; font-weight:700; color:var(--text-secondary); margin-bottom:8px;">
+                            <i class="fas fa-link" style="color:var(--primary-light);"></i> 分享链接
+                        </div>
+                        <div class="share-link-row">
+                            <input type="text" class="share-link" id="share-link" value="https://mtscos.ai/arduino/share/xyz123abc" readonly>
+                            <button class="tool-btn primary" onclick="copyShareLink()"><i class="fas fa-copy"></i> 复制</button>
+                        </div>
+                    </div>
+                    <div style="display:flex; gap:10px; margin-top:8px;">
+                        <button class="tool-btn" style="flex:1; justify-content:center;" onclick="ApiRequest.showToast('分享到微信（模拟）','info')"><i class="fab fa-weixin" style="color:#07c160;"></i> 微信</button>
+                        <button class="tool-btn" style="flex:1; justify-content:center;" onclick="ApiRequest.showToast('分享到QQ（模拟）','info')"><i class="fab fa-qq" style="color:#12b7f5;"></i> QQ</button>
+                        <button class="tool-btn" style="flex:1; justify-content:center;" onclick="ApiRequest.showToast('已复制链接','success')"><i class="fas fa-envelope"></i> 邮件</button>
+                    </div>
+                    <div style="padding-top:12px; border-top:1px solid var(--border-color);">
+                        <div style="font-size:12px; font-weight:700; color:var(--text-secondary); margin-bottom:8px;">
+                            <i class="fas fa-file-archive" style="color:var(--accent-warning);"></i> 导出项目
+                        </div>
+                        <div style="display:flex; gap:10px;">
+                            <button class="tool-btn success" style="flex:1; justify-content:center;" onclick="exportAsZip()"><i class="fas fa-file-zipper"></i> 导出 .zip</button>
+                            <button class="tool-btn primary" style="flex:1; justify-content:center;" onclick="exportAsJson()"><i class="fas fa-file-code"></i> 导出 .json</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="tool-btn" onclick="closeModal('modal-share')">关闭</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========== 模态框: 示例导入 ========== -->
+    <div class="modal-backdrop" id="modal-examples" onclick="if(event.target===this)closeModal('modal-examples')">
+        <div class="modal-dialog" style="min-width:520px;">
+            <div class="modal-header">
+                <div class="modal-title"><i class="fas fa-folder-tree"></i> 示例代码库</div>
+                <button class="modal-close" onclick="closeModal('modal-examples')"><i class="fas fa-xmark"></i></button>
+            </div>
+            <div class="modal-body" style="padding:0;">
+                <div style="padding:12px 16px; border-bottom:1px solid var(--border-color);">
+                    <div class="search-wrap" style="padding:0;">
+                        <i class="fas fa-search"></i>
+                        <input type="text" class="search-input" id="example-search" placeholder="搜索示例..." oninput="filterExamples()" style="padding-left:34px;">
+                    </div>
+                </div>
+                <div class="examples-list" id="examples-list" style="max-height:400px;"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="tool-btn" onclick="closeModal('modal-examples')">关闭</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/assets/js/utils/apiRequest.js"></script>
+    <script src="/static/assets/js/arduino_ide/arduino_ide_main_01.js" defer></script>
 </body>
 </html>
+

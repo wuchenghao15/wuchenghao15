@@ -191,7 +191,7 @@
 | Functions | Arrow functions preferred: `const fn = () => {}` |
 | Naming | camelCase for variables/functions, UPPER_SNAKE_CASE for constants |
 | Blank Lines | Between logic blocks, two lines between functions |
-| Comments | JSDoc required for functions: `/** Description */` |
+| Comments | JSDoc required for functions: `/** Description */` |**
 
 ---
 
@@ -225,7 +225,7 @@ def login():
     return jsonify({'success': True, 'message': 'Login successful', 'data': {...}})
 ```
 
-### 3.3 Database Operation Standards
+## 3.3 Database Operation Standards
 
 ```python
 # ✅ Recommended: Use ORM + parameterized
@@ -243,7 +243,7 @@ result = session.execute(
 query = f"SELECT * FROM users WHERE id = {user_id}"  # DANGEROUS!
 ```
 
-### 3.4 Logging Standards
+## 3.4 Logging Standards
 
 ```python
 import logging
@@ -537,18 +537,18 @@ Heartbeat Topology
 
 | Category | ID Format | Typical Types | Knowledge Domain | Personality |
 |----------|-----------|--------------|-----------------|-------------|
-| General | ai_gen_*** | general | general_programming | analytical |
-| Arduino | ai_ard_*** | arduino_code_generator/debugger | arduino/electronics | creative/analytical |
-| Config Mgmt | ai_cfg_*** | config_manager/rule_base_maintenance | system_admin | cautious |
-| Diagnostic | ai_diag_*** | diagnostics_repair/powerful_fix | diagnostics | driven |
-| Question Bank | ai_qb_*** | question_bank_maintenance/k12_question | question_bank/k12 | analytical |
-| Exam Proctor | ai_exam_*** | exam_ai/exam_proctor | education/validation | cautious |
-| Ops/Deploy | ai_ops_*** | git_manager/deployment_expert | devops/operations | driven |
-| Frontend Fix | ai_fe_*** | frontend_fixer/route_fixer | frontend/ux | creative |
-| AI Security | ai_sec_*** | ai_cybersecurity/ai_vulnerability_scanner | cybersecurity | cautious |
-| Data Governance | ai_data_*** | ai_data_analyzer/ai_knowledge_graph | data_science/knowledge | analytical |
-| AI Self-Evolution | ai_self_*** | ai_self_improvement/ai_system_upgrader | ai_evolution | driven |
-| Finance/CRM/HR | ai_biz_*** | ai_financial/ai_crm/ai_hr | business/finance/hr | supportive |
+| General | ai_gen_*** | general | general_programming | analytical |**
+| Arduino | ai_ard_*** | arduino_code_generator/debugger | arduino/electronics | creative/analytical |**
+| Config Mgmt | ai_cfg_*** | config_manager/rule_base_maintenance | system_admin | cautious |**
+| Diagnostic | ai_diag_*** | diagnostics_repair/powerful_fix | diagnostics | driven |**
+| Question Bank | ai_qb_*** | question_bank_maintenance/k12_question | question_bank/k12 | analytical |**
+| Exam Proctor | ai_exam_*** | exam_ai/exam_proctor | education/validation | cautious |**
+| Ops/Deploy | ai_ops_*** | git_manager/deployment_expert | devops/operations | driven |**
+| Frontend Fix | ai_fe_*** | frontend_fixer/route_fixer | frontend/ux | creative |**
+| AI Security | ai_sec_*** | ai_cybersecurity/ai_vulnerability_scanner | cybersecurity | cautious |**
+| Data Governance | ai_data_*** | ai_data_analyzer/ai_knowledge_graph | data_science/knowledge | analytical |**
+| AI Self-Evolution | ai_self_*** | ai_self_improvement/ai_system_upgrader | ai_evolution | driven |**
+| Finance/CRM/HR | ai_biz_*** | ai_financial/ai_crm/ai_hr | business/finance/hr | supportive |**
 
 ### 14.2 Trigger Conditions
 

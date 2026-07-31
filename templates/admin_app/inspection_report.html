@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 巡检设计报告 - MTSCOS AI</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --primary: #2563eb; --primary-hover: #3b82f6;
+            --success: #10b981; --warning: #f59e0b; --danger: #ef4444;
+            --bg: #0b1120; --card-bg: #111827; --card-bg-2: #1f2937;
+            --text: #e5e7eb; --text-secondary: #9ca3af; --text-muted: #6b7280;
+            --border: #374151; --border-soft: #1f2937;
+        }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: radial-gradient(ellipse at top, rgba(37,99,235,.12), transparent 50%), var(--bg);
+            color: var(--text); min-height: 100vh; padding: 20px; }
+        .page-header { display: flex; justify-content: space-between; align-items: flex-start;
+            margin-bottom: 24px; flex-wrap: wrap; gap: 12px; }
+        .page-header .title-wrap h1 { font-size: 24px; display: flex; align-items: center; gap: 10px; }
+        .page-header .title-wrap h1 i { color: var(--primary); }
+        .page-header .title-wrap p { color: var(--text-secondary); font-size: 13px; margin-top: 4px; }
+        .header-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+        .btn { padding: 8px 16px; border: none; border-radius: 8px; cursor: pointer; font-size: 14px;
+            display: inline-flex; align-items: center; gap: 6px; text-decoration: none;
+            transition: all .2s; background: var(--card-bg-2); color: var(--text); border: 1px solid var(--border); }
+        .btn:hover { border-color: var(--primary); color: var(--primary); }
+        .btn-primary { background: linear-gradient(135deg, var(--primary), #6366f1); color: #fff; border: none; }
+        .btn-primary:hover { filter: brightness(1.1); color: #fff; box-shadow: 0 6px 16px rgba(37,99,235,.35); }
+        .btn-success { background: linear-gradient(135deg, #059669, #10b981); color: #fff; border: none; }
+        .btn-success:hover { filter: brightness(1.1); color: #fff; }
+        .btn-sm { padding: 5px 12px; font-size: 12px; border-radius: 6px; }
+
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; margin-bottom: 20px; }
+        .stat-card { background: linear-gradient(135deg, rgba(37,99,235,.08), rgba(99,102,241,.04));
+            border: 1px solid var(--border); border-radius: 12px; padding: 16px 18px;
+            position: relative; overflow: hidden; transition: transform .2s, box-shadow .2s; }
+        .stat-card::before { content: ""; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, var(--primary), transparent); }
+        .stat-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,.3); }
+        .stat-card .row { display: flex; justify-content: space-between; align-items: center; }
+        .stat-icon { width: 38px; height: 38px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 16px;
+            background: rgba(37,99,235,.15); color: #60a5fa; }
+        .stat-icon.green { background: rgba(16,185,129,.15); color: #34d399; }
+        .stat-icon.orange { background: rgba(245,158,11,.15); color: #fbbf24; }
+        .stat-icon.red { background: rgba(239,68,68,.15); color: #f87171; }
+        .stat-icon.purple { background: rgba(168,85,247,.15); color: #c4b5fd; }
+        .stat-value { font-size: 26px; font-weight: 800; margin-top: 10px; line-height: 1.1; }
+        .stat-label { color: var(--text-secondary); font-size: 12px; margin-top: 4px; letter-spacing: .04em; text-transform: uppercase; }
+
+        .panel { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px;
+            margin-bottom: 16px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,.2); }
+        .panel-header { padding: 14px 18px; border-bottom: 1px solid var(--border-soft);
+            display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+        .panel-header h2 { font-size: 15px; margin: 0; display: flex; align-items: center; gap: 8px; }
+        .panel-header h2 i { color: var(--primary); }
+        .panel-body { padding: 18px; }
+
+        .modules-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; }
+        .module-card { background: var(--card-bg-2); border: 1px solid var(--border); border-radius: 10px; padding: 14px;
+            transition: all .2s; }
+        .module-card:hover { border-color: var(--primary); transform: translateY(-1px); }
+        .module-card .row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+        .module-card .ic { width: 34px; height: 34px; border-radius: 8px; display: flex; align-items: center; justify-content: center;
+            background: rgba(37,99,235,.14); color: #60a5fa; font-size: 14px; flex-shrink: 0; }
+        .module-card h4 { font-size: 14px; font-weight: 600; }
+        .module-card p { color: var(--text-secondary); font-size: 12px; line-height: 1.6; margin: 0; }
+        .step-badge { display: inline-block; font-size: 10px; padding: 2px 8px; border-radius: 999px;
+            background: rgba(37,99,235,.18); color: #60a5fa; letter-spacing: .08em; font-weight: 700; }
+
+        .data-table { width: 100%; border-collapse: collapse; }
+        .data-table th { text-align: left; padding: 10px 12px; font-size: 12px; color: var(--text-secondary);
+            font-weight: 600; border-bottom: 1px solid var(--border); background: var(--card-bg-2);
+            letter-spacing: .05em; text-transform: uppercase; }
+        .data-table td { padding: 10px 12px; border-bottom: 1px solid var(--border-soft); font-size: 13px; vertical-align: top; }
+        .data-table tr:hover { background: rgba(37,99,235,.04); }
+        .tag { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 11px; font-weight: 600; }
+        .tag-green { background: rgba(16,185,129,.14); color: #34d399; }
+        .tag-orange { background: rgba(245,158,11,.14); color: #fbbf24; }
+        .tag-red { background: rgba(239,68,68,.14); color: #f87171; }
+        .tag-blue { background: rgba(37,99,235,.18); color: #60a5fa; }
+        .tag-gray { background: rgba(107,114,128,.2); color: #9ca3af; }
+        .tag-purple { background: rgba(168,85,247,.18); color: #c4b5fd; }
+
+        .sev-bar { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+        .sev-item { padding: 10px 12px; border-radius: 8px; border: 1px solid var(--border); }
+        .sev-item strong { display: block; font-size: 18px; }
+        .sev-item.crit { background: rgba(239,68,68,.08); border-color: rgba(239,68,68,.25); }
+        .sev-item.crit strong { color: #f87171; }
+        .sev-item.warn { background: rgba(245,158,11,.08); border-color: rgba(245,158,11,.25); }
+        .sev-item.warn strong { color: #fbbf24; }
+        .sev-item.info { background: rgba(37,99,235,.08); border-color: rgba(37,99,235,.25); }
+        .sev-item.info strong { color: #60a5fa; }
+        .sev-item small { color: var(--text-muted); font-size: 11px; letter-spacing: .05em; text-transform: uppercase; }
+
+        .status-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; background: var(--text-muted); }
+        .status-dot.green { background: #10b981; box-shadow: 0 0 0 3px rgba(16,185,129,.2); }
+        .status-dot.orange { background: #f59e0b; box-shadow: 0 0 0 3px rgba(245,158,11,.2); }
+        .status-dot.red { background: #ef4444; box-shadow: 0 0 0 3px rgba(239,68,68,.2); }
+        .status-dot.blue { background: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,.2); }
+
+        .empty-state { text-align: center; padding: 36px 12px; color: var(--text-muted); }
+        .empty-state i { font-size: 40px; display: block; margin-bottom: 12px; opacity: .4; }
+
+        .toast { position: fixed; top: 20px; right: 20px; padding: 12px 20px; border-radius: 8px; color: #fff;
+            font-size: 14px; z-index: 9999; box-shadow: 0 6px 24px rgba(0,0,0,.3); animation: slideIn .3s ease-out; }
+        .toast.success { background: linear-gradient(135deg, #059669, #10b981); }
+        .toast.error { background: linear-gradient(135deg, #dc2626, #ef4444); }
+        .toast.info { background: linear-gradient(135deg, #2563eb, #6366f1); }
+        @keyframes slideIn { from { transform: translateX(120%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+        .pagination { display: flex; justify-content: center; gap: 6px; margin-top: 14px; flex-wrap: wrap; }
+        .pagination button { padding: 5px 12px; border-radius: 6px; border: 1px solid var(--border);
+            background: var(--card-bg-2); color: var(--text-secondary); cursor: pointer; font-size: 12px; }
+        .pagination button.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+        .pagination button:disabled { opacity: .4; cursor: not-allowed; }
+
+        .file-pill { display: inline-block; max-width: 280px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+            background: rgba(37,99,235,.1); padding: 2px 8px; border-radius: 6px; color: #93c5fd; font-size: 12px; }
+
+        .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(255,255,255,.3);
+            border-top-color: #fff; border-radius: 50%; animation: spin .8s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        @media (max-width: 640px) {
+            .stat-value { font-size: 20px; }
+            .sev-bar { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="page-header">
+        <div class="title-wrap">
+            <h1><i class="fas fa-clipboard-check"></i> AI 巡检设计报告</h1>
+            <p>七大闭环模块：文件结构 → 语法错误 → 控制台错误 → 自动修复 → 数据库上报 → 审计日志 → AI 自学习</p>
+        </div>
+        <div class="header-actions">
+            <button class="btn btn-sm" onclick="refreshReport()"><i class="fas fa-sync-alt"></i> 刷新</button>
+            <button class="btn btn-sm btn-primary" onclick="uploadReportToDB()"><i class="fas fa-database"></i> 上传数据库</button>
+            <button class="btn btn-sm" onclick="exportSuggestions()"><i class="fas fa-lightbulb"></i> 导出建议</button>
+            <button class="btn btn-sm btn-success" onclick="exportIssues()"><i class="fas fa-exclamation-triangle"></i> 导出问题</button>
+            <button class="btn btn-sm" onclick="exportFullReport()"><i class="fas fa-file-export"></i> 完整报告</button>
+        </div>
+    </div>
+
+    <!-- 引擎状态 -->
+    <div class="stats-grid" id="engineStatsGrid">
+        <div class="stat-card">
+            <div class="row">
+                <div class="stat-icon" id="engineIcon"><i class="fas fa-cogs"></i></div>
+                <span class="tag tag-blue" id="engineStatusTag">加载中</span>
+            </div>
+            <div class="stat-value" id="totalRuns">—</div>
+            <div class="stat-label">总巡检次数</div>
+        </div>
+        <div class="stat-card">
+            <div class="row"><div class="stat-icon purple"><i class="fas fa-file-code"></i></div></div>
+            <div class="stat-value" id="filesScanned">—</div>
+            <div class="stat-label">扫描文件</div>
+        </div>
+        <div class="stat-card">
+            <div class="row"><div class="stat-icon orange"><i class="fas fa-bug"></i></div></div>
+            <div class="stat-value" id="errorsFound">—</div>
+            <div class="stat-label">发现问题</div>
+        </div>
+        <div class="stat-card">
+            <div class="row"><div class="stat-icon green"><i class="fas fa-wrench"></i></div></div>
+            <div class="stat-value" id="errorsFixed">—</div>
+            <div class="stat-label">自动修复</div>
+        </div>
+        <div class="stat-card">
+            <div class="row"><div class="stat-icon"><i class="fas fa-graduation-cap"></i></div></div>
+            <div class="stat-value" id="knowledgeGained">—</div>
+            <div class="stat-label">AI 学习增长</div>
+        </div>
+        <div class="stat-card">
+            <div class="row"><div class="stat-icon red"><i class="fas fa-terminal"></i></div></div>
+            <div class="stat-value" id="consoleErrors">—</div>
+            <div class="stat-label">前端控制台错误</div>
+        </div>
+    </div>
+
+    <!-- 七大模块说明 -->
+    <div class="panel">
+        <div class="panel-header">
+            <h2><i class="fas fa-sitemap"></i> 七大闭环巡检模块</h2>
+            <span class="tag tag-blue">Inspection Loop Modules</span>
+        </div>
+        <div class="panel-body">
+            <div class="modules-grid">
+                {% for m in (inspection_modules or []) %}
+                <div class="module-card">
+                    <div class="row">
+                        <div class="ic"><i class="fas fa-{{ m.icon }}"></i></div>
+                        <div>
+                            <span class="step-badge">STEP {{ loop.index }}</span>
+                            <h4 style="margin-top:4px;">{{ m.name }}</h4>
+                        </div>
+                    </div>
+                    <p>{{ m.desc }}</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- 问题严重性分布 -->
+    <div class="panel">
+        <div class="panel-header">
+            <h2><i class="fas fa-chart-pie"></i> 巡检问题严重性分布</h2>
+            <button class="btn btn-sm" onclick="exportIssueJSON()"><i class="fas fa-download"></i> JSON</button>
+        </div>
+        <div class="panel-body">
+            <div class="sev-bar">
+                <div class="sev-item crit"><strong id="sevCritical">—</strong><small>Critical 严重</small></div>
+                <div class="sev-item warn"><strong id="sevWarning">—</strong><small>Warning 警告</small></div>
+                <div class="sev-item info"><strong id="sevInfo">—</strong><small>Info 提示</small></div>
+            </div>
+            <div style="margin-top:16px;">
+                <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text-secondary);margin-bottom:6px;">
+                    <span><i class="fas fa-tasks"></i> 总问题数：<b id="totalIssues" style="color:var(--text);">—</b></span>
+                    <span><i class="fas fa-check-circle" style="color:var(--success)"></i> 已修复：<b id="fixedIssues" style="color:var(--success);">—</b></span>
+                    <span><i class="fas fa-clock" style="color:var(--warning)"></i> 待处理：<b id="openIssues" style="color:var(--warning);">—</b></span>
+                </div>
+                <div style="height:10px;background:var(--card-bg-2);border-radius:5px;overflow:hidden;">
+                    <div id="fixProgress" style="height:100%;background:linear-gradient(90deg,var(--success),#06b6d4);width:0%;transition:width .5s;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 最近巡检运行历史 -->
+    <div class="panel">
+        <div class="panel-header">
+            <h2><i class="fas fa-history"></i> 最近巡检运行记录</h2>
+            <span class="tag tag-gray" id="runCountTag">加载中...</span>
+        </div>
+        <div class="panel-body">
+            <table class="data-table" id="runsTable">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>类型</th>
+                        <th>开始时间</th>
+                        <th>扫描</th>
+                        <th>发现</th>
+                        <th>修复</th>
+                        <th>失败</th>
+                        <th>学习</th>
+                        <th>状态</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td colspan="9" class="empty-state"><i class="fas fa-hourglass-half"></i>加载巡检记录...</td></tr>
+                </tbody>
+            </table>
+            <div class="pagination" id="runsPagination"></div>
+        </div>
+    </div>
+
+    <!-- 最近问题 -->
+    <div class="panel">
+        <div class="panel-header">
+            <h2><i class="fas fa-list-check"></i> 最近发现的问题</h2>
+            <button class="btn btn-sm" onclick="exportIssuesCSV()"><i class="fas fa-file-csv"></i> CSV</button>
+        </div>
+        <div class="panel-body">
+            <table class="data-table" id="issuesTable">
+                <thead>
+                    <tr>
+                        <th>类型</th>
+                        <th>严重性</th>
+                        <th>文件</th>
+                        <th>错误信息</th>
+                        <th>修复状态</th>
+                        <th>发现时间</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td colspan="6" class="empty-state"><i class="fas fa-hourglass-half"></i>加载问题列表...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- 前端控制台错误 -->
+    <div class="panel">
+        <div class="panel-header">
+            <h2><i class="fas fa-desktop"></i> 前端控制台错误上报</h2>
+            <span class="tag tag-gray" id="consoleCountTag">加载中...</span>
+        </div>
+        <div class="panel-body">
+            <table class="data-table" id="consoleTable">
+                <thead>
+                    <tr>
+                        <th>错误ID</th>
+                        <th>类型</th>
+                        <th>来源</th>
+                        <th>错误信息</th>
+                        <th>位置</th>
+                        <th>上报时间</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td colspan="6" class="empty-state"><i class="fas fa-hourglass-half"></i>加载控制台错误...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div style="text-align:center;padding:16px;color:var(--text-muted);font-size:12px;">
+        报告生成时间：{{ generated_at }} · 数据来源：ai_inspection_runs / ai_inspection_issues / ai_inspection_console_errors
+    </div>
+
+<script>
+const API = {
+    report: '/api/ai_inspection/report',
+    runs: '/api/ai_inspection/runs',
+    upload: '/api/ai_inspection/upload_report',
+    export: {
+        suggestions: '/api/ai_inspection/export/suggestions',
+        issues: '/api/ai_inspection/export/issues',
+        full: '/api/ai_inspection/export/full',
+    }
+};
+let CACHED = null;
+let currentPage = 1, pageSize = 20;
+
+function toast(msg, type='info') {
+    const t = document.createElement('div');
+    t.className = 'toast ' + type; t.textContent = msg;
+    document.body.appendChild(t);
+    setTimeout(() => t.remove(), 3500);
+}
+
+async function refreshReport() {
+    try {
+        const res = await fetch(API.report + '?_=' + Date.now(), { credentials: 'include' });
+        const data = await res.json();
+        if (!data.success) throw new Error(data.error || data.message);
+        CACHED = data;
+        renderReport(data);
+        toast('巡检报告已刷新', 'success');
+    } catch (e) {
+        toast('刷新失败：' + e.message, 'error');
+    }
+}
+
+function renderReport(d) {
+    const rs = d.run_stats || {}, is = d.issue_stats || {}, cs = d.console_stats || {};
+    const es = d.engine_status || {};
+    const running = d.maintenance && d.maintenance.running;
+    document.getElementById('engineStatusTag').textContent = running ? '运行中' : (es.current_status === 'unavailable' ? '未就绪' : (es.current_status || '空闲'));
+    document.getElementById('engineStatusTag').className = 'tag ' + (running ? 'tag-green' : 'tag-gray');
+    document.getElementById('engineIcon').className = 'stat-icon ' + (running ? 'green' : '');
+
+    document.getElementById('totalRuns').textContent = rs.total_runs ?? es.total_runs ?? 0;
+    document.getElementById('filesScanned').textContent = rs.total_files_scanned ?? 0;
+    document.getElementById('errorsFound').textContent = rs.total_errors_found ?? is.total_issues ?? 0;
+    document.getElementById('errorsFixed').textContent = rs.total_errors_fixed ?? is.fixed_issues ?? 0;
+    document.getElementById('knowledgeGained').textContent = es.total_knowledge_gained ?? 0;
+    document.getElementById('consoleErrors').textContent = cs.total ?? 0;
+
+    document.getElementById('sevCritical').textContent = is.critical ?? 0;
+    document.getElementById('sevWarning').textContent = is.warning ?? 0;
+    document.getElementById('sevInfo').textContent = is.info ?? 0;
+    document.getElementById('totalIssues').textContent = is.total_issues ?? 0;
+    document.getElementById('fixedIssues').textContent = is.fixed_issues ?? 0;
+    document.getElementById('openIssues').textContent = is.open_issues ?? 0;
+    const total = is.total_issues || 0, fixed = is.fixed_issues || 0;
+    const pct = total > 0 ? Math.round(fixed / total * 100) : 0;
+    document.getElementById('fixProgress').style.width = pct + '%';
+
+    document.getElementById('runCountTag').textContent = `共 ${rs.total_runs ?? 0} 次`;
+    document.getElementById('consoleCountTag').textContent = `累计 ${cs.total ?? 0} 条`;
+
+    renderRuns(rs.last_10_runs || []);
+    renderIssues(d.recent_issues || []);
+    renderConsole(cs.recent || []);
+    loadRunsPaged(1, pageSize);
+}
+
+function renderRuns(rows) {
+    const tbody = document.querySelector('#runsTable tbody');
+    if (!rows.length) {
+        tbody.innerHTML = `<tr><td colspan="9" class="empty-state"><i class="fas fa-inbox"></i>暂无巡检记录，等待首次巡检</td></tr>`;
+        return;
+    }
+    tbody.innerHTML = rows.map(r => `
+        <tr>
+            <td style="font-family:monospace;font-size:11px;color:var(--text-secondary);">${(r.run_id||'').slice(0,18)}</td>
+            <td><span class="tag ${r.run_type==='scheduled'?'tag-blue':'tag-purple'}">${r.run_type}</span></td>
+            <td style="font-size:12px;">${(r.started_at||'').replace('T',' ').slice(0,19)}</td>
+            <td><b style="color:var(--text-secondary)">${r.files_scanned??0}</b></td>
+            <td><b style="color:var(--warning)">${r.errors_found??0}</b></td>
+            <td><b style="color:var(--success)">${r.errors_fixed??0}</b></td>
+            <td><b style="color:var(--danger)">${r.errors_failed??0}</b></td>
+            <td><b style="color:var(--primary)">${r.knowledge_gained??0}</b></td>
+            <td>${runStatusTag(r.status)}</td>
+        </tr>
+    `).join('');
+}
+
+function runStatusTag(s) {
+    if (s==='completed') return `<span class="tag tag-green"><i class="status-dot green"></i>完成</span>`;
+    if (s==='running') return `<span class="tag tag-blue"><i class="status-dot blue"></i>运行中</span>`;
+    if (s==='error') return `<span class="tag tag-red"><i class="status-dot red"></i>失败</span>`;
+    return `<span class="tag tag-gray"><i class="status-dot"></i>${s||'未知'}</span>`;
+}
+
+function renderIssues(rows) {
+    const tbody = document.querySelector('#issuesTable tbody');
+    if (!rows.length) {
+        tbody.innerHTML = `<tr><td colspan="6" class="empty-state"><i class="fas fa-party-horn"></i>暂无问题，系统很健康！</td></tr>`;
+        return;
+    }
+    tbody.innerHTML = rows.slice(0, 50).map(r => {
+        const sev = (r.severity||'info').toLowerCase();
+        const sevTag = sev === 'critical' ? `<span class="tag tag-red">严重</span>` :
+                       sev === 'warning' ? `<span class="tag tag-orange">警告</span>` :
+                       `<span class="tag tag-blue">提示</span>`;
+        const fixed = !!r.fixed;
+        return `
+        <tr>
+            <td><span class="tag tag-gray">${r.issue_type||'未分类'}</span></td>
+            <td>${sevTag}</td>
+            <td><span class="file-pill" title="${r.file_path||''}">${r.file_path||'—'}</span></td>
+            <td style="color:var(--text-secondary);">${escapeHtml(String(r.error_message||'').slice(0,80))}</td>
+            <td>${fixed ? `<span class="tag tag-green"><i class="fas fa-check"></i> 已修复</span>` : `<span class="tag tag-orange"><i class="fas fa-clock"></i> 待修复</span>`}</td>
+            <td style="font-size:12px;color:var(--text-muted);">${(r.detected_at||'').replace('T',' ').slice(0,16)}</td>
+        </tr>`;
+    }).join('');
+}
+
+function renderConsole(rows) {
+    const tbody = document.querySelector('#consoleTable tbody');
+    if (!rows.length) {
+        tbody.innerHTML = `<tr><td colspan="6" class="empty-state"><i class="fas fa-heart"></i>暂无前端控制台错误上报</td></tr>`;
+        return;
+    }
+    tbody.innerHTML = rows.slice(0, 20).map(r => `
+        <tr>
+            <td style="font-family:monospace;font-size:11px;color:var(--text-secondary);">${(r.error_id||'').slice(0,16)}</td>
+            <td><span class="tag tag-red">${r.error_type||'unknown'}</span></td>
+            <td><span class="tag tag-blue">${r.source||'frontend'}</span></td>
+            <td style="color:var(--text-secondary);">${escapeHtml(String(r.error_message||'').slice(0,80))}</td>
+            <td style="font-size:12px;">
+                ${r.file_path?`<span class="file-pill">${r.file_path}</span>`:''}
+                ${r.line_number?`<span style="color:var(--text-muted)">:${r.line_number}</span>`:''}
+            </td>
+            <td style="font-size:12px;color:var(--text-muted);">${(r.reported_at||'').replace('T',' ').slice(0,16)}</td>
+        </tr>
+    `).join('');
+}
+
+async function loadRunsPaged(page, perPage) {
+    currentPage = page;
+    try {
+        const res = await fetch(`${API.runs}?page=${page}&per_page=${perPage}&_=${Date.now()}`, { credentials: 'include' });
+        const d = await res.json();
+        if (!d.success) return;
+        renderRuns(d.data || []);
+        renderPagination('runsPagination', d.total || 0, perPage, page, p => loadRunsPaged(p, perPage));
+    } catch {}
+}
+
+function renderPagination(id, total, perPage, page, onClick) {
+    const el = document.getElementById(id); if (!el) return;
+    const pages = Math.max(1, Math.ceil(total / perPage));
+    let html = `<button ${page<=1?'disabled':''} onclick="(${onClick.toString()})(${page-1})"><i class="fas fa-chevron-left"></i></button>`;
+    for (let i = Math.max(1, page-2); i <= Math.min(pages, page+2); i++) {
+        html += `<button class="${i===page?'active':''}" onclick="(${onClick.toString()})(${i})">${i}</button>`;
+    }
+    html += `<button ${page>=pages?'disabled':''} onclick="(${onClick.toString()})(${page+1})"><i class="fas fa-chevron-right"></i></button>`;
+    el.innerHTML = html;
+}
+
+function escapeHtml(s) { return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+async function uploadReportToDB() {
+    if (!CACHED) { await refreshReport(); if (!CACHED) return; }
+    const btn = event.target.closest('button');
+    const original = btn.innerHTML;
+    btn.innerHTML = '<span class="spinner"></span> 上传中...';
+    btn.disabled = true;
+    try {
+        const res = await fetch(API.upload, {
+            method: 'POST', credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                source_page: 'inspection_report_dashboard',
+                snapshot: CACHED,
+                exported_at: new Date().toISOString(),
+            })
+        });
+        const data = await res.json();
+        if (!data.success) throw new Error(data.error || data.message);
+        toast(`上传成功：已写入数据库记录 #${data.id || data.row_id || '新'}`, 'success');
+    } catch (e) {
+        toast('上传失败：' + e.message, 'error');
+    } finally {
+        btn.innerHTML = original; btn.disabled = false;
+    }
+}
+
+function buildSuggestions() {
+    const d = CACHED || {}; const is = d.issue_stats || {}; const cs = d.console_stats || {};
+    const sugs = [];
+    if ((is.critical || 0) > 0) sugs.push({
+        priority: 'HIGH', category: '问题修复', title: '优先处理严重(Critical)问题',
+        detail: `当前存在 ${is.critical} 个严重级别问题，可能引发系统崩溃或安全漏洞，建议立即进行人工复核和修复。`,
+        action: '打开【巡检设置】执行单次巡检并查看未修复严重问题'
+    });
+    if ((is.warning || 0) > 10) sugs.push({
+        priority: 'MEDIUM', category: '问题修复', title: '批量处理警告级问题',
+        detail: `警告级问题共 ${is.warning} 个，建议按问题类型分组批量修复，或启用自动修复功能。`,
+        action: '配置【自动修复启用】开关，下次巡检自动应用知识库修复方案'
+    });
+    if ((cs.total || 0) > 50) sugs.push({
+        priority: 'MEDIUM', category: '前端质量', title: '前端控制台错误数量偏多',
+        detail: `累计上报 ${cs.total} 条前端错误，建议查看 error_type 分布以定位高频问题。`,
+        action: '分析下方【前端控制台错误】按类型统计，优先修复 Top 3 类型'
+    });
+    const open = is.open_issues || 0;
+    if (open > 20) sugs.push({
+        priority: 'HIGH', category: '治理闭环', title: '待修复问题积压过多',
+        detail: `待处理问题 ${open} 个，修复率低于建议阈值(>70%)，需加快修复节奏。`,
+        action: '前往【巡检设置】开启后台定时自动修复，或分配问题给对应模块负责人'
+    });
+    const byType = is.by_type || {};
+    const tops = Object.entries(byType).sort((a,b)=>b[1]-a[1]).slice(0, 3);
+    tops.forEach(([t, n], idx) => sugs.push({
+        priority: idx === 0 ? 'MEDIUM' : 'LOW', category: '重点关注',
+        title: `高频问题类型：${t}`,
+        detail: `该类型累计 ${n} 条，建议编写专项修复脚本或补充知识库以提升修复率。`,
+        action: '在【AI 知识库】页面补充对应 error_type 的修复模板'
+    }));
+    if ((d.run_stats || {}).total_runs === 0) sugs.push({
+        priority: 'HIGH', category: '巡检机制', title: '尚未执行任何巡检',
+        detail: '当前系统无任何巡检运行记录，建议立即启动后台巡检线程或手动执行首次巡检。',
+        action: '打开【巡检设置】，点击【手动执行单次巡检】或【启动后台巡检引擎】'
+    });
+    if (sugs.length === 0) sugs.push({
+        priority: 'LOW', category: '建议', title: '巡检系统运行良好',
+        detail: '当前问题数量可控，修复率达标，建议保持现有策略并定期复核。',
+        action: '建议每周导出一次完整报告用于审计归档'
+    });
+    return sugs;
+}
+
+function downloadFile(filename, content, mime='text/plain') {
+    const blob = new Blob([content], { type: mime });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = filename;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+}
+
+async function exportSuggestions() {
+    if (!CACHED) await refreshReport();
+    const sugs = buildSuggestions();
+    const ts = new Date().toISOString().slice(0,10);
+    // Markdown 格式
+    let md = `# AI 巡检优化建议报告\n\n> 生成时间：${new Date().toLocaleString()}  \n> 数据来源：${location.hostname}\n\n`;
+    md += `## 核心指标快照\n\n| 指标 | 值 |\n| --- | --- |\n`;
+    const rs = CACHED.run_stats || {}, is = CACHED.issue_stats || {};
+    md += `| 总巡检次数 | ${rs.total_runs ?? 0} |\n`;
+    md += `| 扫描文件数 | ${rs.total_files_scanned ?? 0} |\n`;
+    md += `| 发现问题数 | ${rs.total_errors_found ?? is.total_issues ?? 0} |\n`;
+    md += `| 自动修复数 | ${rs.total_errors_fixed ?? is.fixed_issues ?? 0} |\n`;
+    md += `| 待处理问题 | ${is.open_issues ?? 0} |\n`;
+    md += `| 控制台错误 | ${(CACHED.console_stats||{}).total ?? 0} |\n\n`;
+    md += `## 优化建议（共 ${sugs.length} 条）\n\n`;
+    const prioLabel = { HIGH: '🔴 高优先级', MEDIUM: '🟡 中优先级', LOW: '🟢 低优先级' };
+    sugs.forEach((s, i) => {
+        md += `### ${i+1}. ${prioLabel[s.priority]} · ${s.title}\n\n`;
+        md += `- **类别**：${s.category}\n- **说明**：${s.detail}\n- **建议动作**：${s.action}\n\n`;
+    });
+    md += `\n---\n*报告由 MTSCOS AI 巡检引擎自动生成，请结合实际场景人工复核。*\n`;
+    downloadFile(`AI巡检建议报告_${ts}.md`, md, 'text/markdown');
+    toast(`已导出 ${sugs.length} 条优化建议`, 'success');
+}
+
+async function exportIssuesCSV() { exportIssues('csv'); }
+
+async function exportIssues(fmt='json') {
+    if (!CACHED) await refreshReport();
+    const ts = new Date().toISOString().slice(0,10);
+    const rows = CACHED.recent_issues || [];
+    if (fmt === 'csv') {
+        const header = ['issue_type','severity','file_path','line_number','error_message','error_code','fixed','fix_method','detected_at','fixed_at'];
+        let csv = header.join(',') + '\n';
+        rows.forEach(r => {
+            csv += header.map(k => {
+                let v = r[k]; if (v === undefined || v === null) v = '';
+                v = String(v).replace(/"/g,'""');
+                return /[",\n]/.test(v) ? `"${v}"` : v;
+            }).join(',') + '\n';
+        });
+        downloadFile(`AI巡检问题清单_${ts}.csv`, '\ufeff' + csv, 'text/csv');
+    } else {
+        const payload = {
+            exported_at: new Date().toISOString(),
+            summary: {
+                total_issues: (CACHED.issue_stats||{}).total_issues,
+                fixed: (CACHED.issue_stats||{}).fixed_issues,
+                open: (CACHED.issue_stats||{}).open_issues,
+                by_severity: {
+                    critical: (CACHED.issue_stats||{}).critical,
+                    warning: (CACHED.issue_stats||{}).warning,
+                    info: (CACHED.issue_stats||{}).info,
+                },
+                by_type: (CACHED.issue_stats||{}).by_type,
+            },
+            issues: rows,
+        };
+        downloadFile(`AI巡检问题清单_${ts}.json`, JSON.stringify(payload, null, 2), 'application/json');
+    }
+    toast(`已导出问题清单（${rows.length} 条）`, 'success');
+}
+
+function exportIssueJSON() { exportIssues('json'); }
+
+async function exportFullReport() {
+    if (!CACHED) await refreshReport();
+    const ts = new Date().toISOString().slice(0,10);
+    const payload = {
+        report_type: 'AI_INSPECTION_FULL_REPORT_V1',
+        exported_at: new Date().toISOString(),
+        engine_status: CACHED.engine_status,
+        maintenance: CACHED.maintenance,
+        run_stats: CACHED.run_stats,
+        issue_stats: CACHED.issue_stats,
+        console_stats: CACHED.console_stats,
+        suggestions: buildSuggestions(),
+        recent_issues: (CACHED.recent_issues || []).slice(0, 500),
+        knowledge_base: (CACHED.knowledge_base || []).slice(0, 200),
+    };
+    downloadFile(`AI巡检完整报告_${ts}.json`, JSON.stringify(payload, null, 2), 'application/json');
+    toast('完整报告已导出（JSON格式）', 'success');
+}
+
+// 初始化
+window.addEventListener('DOMContentLoaded', refreshReport);
+</script>
+</body>
+</html>

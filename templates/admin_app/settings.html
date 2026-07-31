@@ -514,7 +514,13 @@
             .system-stats { grid-template-columns: repeat(2, 1fr); }
             .backup-section { grid-template-columns: 1fr; }
         }
-    </style>
+    
+.loading-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;z-index:9999;}
+.loading-spinner{width:40px;height:40px;border:3px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin 1s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+
+    <link rel="stylesheet" href="/static/css/theme.css">
 </head>
 <body>
 <div class="page-wrap">
@@ -579,6 +585,9 @@
         </div>
         <div class="tab" data-tab="system" onclick="switchTab('system')">
             <i class="fas fa-server"></i>系统信息
+        </div>
+        <div class="tab" data-tab="pae" onclick="switchTab('pae'); initPAEAudit();">
+            <i class="fas fa-shield-virus"></i>页面审计
         </div>
     </div>
 
@@ -1247,6 +1256,87 @@
         </div>
     </div>
 
+    <div class="section" id="tab-pae">
+        <div class="section-head">
+            <div class="section-head-left">
+                <div class="si purple"><i class="fas fa-shield-virus"></i></div>
+                <h2>页面自动审计引擎 (PAE)</h2>
+            </div>
+            <div class="section-head-actions">
+                <button class="btn btn-sm btn-primary" onclick="initPAEAudit()"><i class="fas fa-play"></i>启动100轮巡检</button>
+                <button class="btn btn-sm" onclick="exportPAEReport()"><i class="fas fa-download"></i>导出报告</button>
+                <button class="btn btn-sm" onclick="clearPAEReport()"><i class="fas fa-rotate-left"></i>重置</button>
+            </div>
+        </div>
+        <div class="section-body">
+            <div id="pae-status-bar" style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:16px;">
+                <div style="background:rgba(99,102,241,.12);border:1px solid rgba(99,102,241,.25);border-radius:10px;padding:10px;text-align:center;">
+                    <div style="color:#818cf8;font-weight:700;font-size:18px;" id="pae-dom-nodes">0</div>
+                    <div style="color:#94a3b8;font-size:11px;">DOM节点</div>
+                </div>
+                <div style="background:rgba(16,185,129,.12);border:1px solid rgba(16,185,129,.25);border-radius:10px;padding:10px;text-align:center;">
+                    <div style="color:#10b981;font-weight:700;font-size:18px;" id="pae-fixes">0</div>
+                    <div style="color:#94a3b8;font-size:11px;">已修复</div>
+                </div>
+                <div style="background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.25);border-radius:10px;padding:10px;text-align:center;">
+                    <div style="color:#f59e0b;font-weight:700;font-size:18px;" id="pae-suggestions">0</div>
+                    <div style="color:#94a3b8;font-size:11px;">AI建议</div>
+                </div>
+                <div style="background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.25);border-radius:10px;padding:10px;text-align:center;">
+                    <div style="color:#ef4444;font-weight:700;font-size:18px;" id="pae-issues">0</div>
+                    <div style="color:#94a3b8;font-size:11px;">问题数</div>
+                </div>
+                <div style="background:rgba(59,130,246,.12);border:1px solid rgba(59,130,246,.25);border-radius:10px;padding:10px;text-align:center;">
+                    <div style="color:#3b82f6;font-weight:700;font-size:18px;" id="pae-iteration">0/100</div>
+                    <div style="color:#94a3b8;font-size:11px;">巡检进度</div>
+                </div>
+            </div>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+                <div class="settings-card" style="margin:0;">
+                    <div class="card-head" style="padding:12px 16px;">
+                        <div class="card-icon icon-orange"><i class="fas fa-triangle-exclamation"></i></div>
+                        <h2>问题清单</h2>
+                    </div>
+                    <div class="card-body" style="padding:12px 16px;max-height:200px;overflow-y:auto;" id="pae-issues-list">
+                        <div style="color:#64748b;font-size:12px;text-align:center;padding:20px;">暂无问题，点击上方"启动100轮巡检"开始审计</div>
+                    </div>
+                </div>
+                <div class="settings-card" style="margin:0;">
+                    <div class="card-head" style="padding:12px 16px;">
+                        <div class="card-icon icon-green"><i class="fas fa-check-circle"></i></div>
+                        <h2>已应用修复</h2>
+                    </div>
+                    <div class="card-body" style="padding:12px 16px;max-height:200px;overflow-y:auto;" id="pae-fixes-list">
+                        <div style="color:#64748b;font-size:12px;text-align:center;padding:20px;">暂无修复记录</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="settings-card" style="margin:0;margin-bottom:16px;">
+                <div class="card-head" style="padding:12px 16px;">
+                    <div class="card-icon" style="background:rgba(139,92,246,.15);color:#a78bfa;"><i class="fas fa-lightbulb"></i></div>
+                    <h2>AI 智能建议</h2>
+                </div>
+                <div class="card-body" style="padding:12px 16px;max-height:180px;overflow-y:auto;" id="pae-suggestions-list">
+                    <div style="color:#64748b;font-size:12px;text-align:center;padding:20px;">审计完成后将生成优化建议</div>
+                </div>
+            </div>
+
+            <div id="pae-summary-container" style="margin-bottom:16px;"></div>
+
+            <div class="settings-card" style="margin:0;">
+                <div class="card-head" style="padding:12px 16px;">
+                    <div class="card-icon icon-blue"><i class="fas fa-terminal"></i></div>
+                    <h2>审计日志</h2>
+                </div>
+                <div class="card-body" style="padding:8px 12px;max-height:150px;overflow-y:auto;background:#0a0e1a;border-radius:8px;" id="pae-log">
+                    <div style="color:#475569;font-family:monospace;font-size:11px;padding:8px;">[PAE] 等待启动... 点击上方"启动100轮巡检"按钮开始</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
 </div>
 
 <div class="toast" id="toast"></div>
@@ -1658,6 +1748,226 @@ function toggleApiPublic(el) {
     };
     
     document.addEventListener('DOMContentLoaded', particlesJS);
+</script>
+
+<script src="/static/assets/js/utils/apiRequest.js"></script>
+<script src="/static/assets/js/utils/pae_engine.js"></script>
+
+<script>
+(function() {
+    var paeRunning = false;
+    var paeTimer = null;
+
+    window.initPAEAudit = function() {
+        if (paeRunning) { showToast('审计正在进行中...', 'info'); return; }
+        if (typeof window.PAE === 'undefined') {
+            appendLog('[PAE] 引擎未加载，请刷新页面', 'error');
+            return;
+        }
+        paeRunning = true;
+        clearPAEReport(false);
+        appendLog('[PAE] 启动100轮巡检...', 'info');
+        showToast('PAE审计已启动', 'success');
+
+        var PAE = window.PAE;
+        PAE.reset();
+        PAE.takeDomSnapshot();
+
+        var phases = [
+            { name: '基础功能巡检', method: 'performBasicChecks', start: 1, end: 10 },
+            { name: '交互功能测试', method: 'performInteractionTests', start: 11, end: 30 },
+            { name: '权限安全检查', method: 'performSecurityChecks', start: 31, end: 50 },
+            { name: '无障碍检查', method: 'performAccessibilityChecks', start: 51, end: 70 },
+            { name: '性能内存检查', method: 'performPerformanceChecks', start: 71, end: 90 },
+            { name: 'AI优化建议', method: 'performAIOptimizationRound', start: 91, end: 100 }
+        ];
+
+        var phaseIdx = 0;
+        var round = 0;
+
+        function runPhase() {
+            if (phaseIdx >= phases.length) {
+                finishPAEAudit();
+                return;
+            }
+            var phase = phases[phaseIdx];
+            appendLog('[PAE] 进入第' + (phaseIdx + 1) + '阶段: ' + phase.name, 'info');
+
+            function stepRound() {
+                if (round > phase.end || !PAE.active) {
+                    phaseIdx++;
+                    round = phases[phaseIdx] ? phases[phaseIdx].start : 0;
+                    setTimeout(runPhase, 100);
+                    return;
+                }
+                round++;
+                PAE.iterations = round;
+                try {
+                    PAE[phase.method](round);
+                } catch(e) {
+                    appendLog('[PAE] 轮次' + round + '异常: ' + e.message, 'warn');
+                }
+                updateStatusBar();
+                paeTimer = setTimeout(stepRound, 30);
+            }
+            round = phase.start - 1;
+            stepRound();
+        }
+
+        runPhase();
+    };
+
+    function finishPAEAudit() {
+        paeRunning = false;
+        var PAE = window.PAE;
+        PAE.active = false;
+        appendLog('[PAE] 100轮巡检完成！', 'success');
+
+        renderIssuesList(PAE.issues);
+        renderFixesList(PAE.fixesApplied);
+        renderSuggestionsList(PAE.suggestions);
+        updateStatusBar();
+
+        var summaryContainer = document.getElementById('pae-summary-container');
+        if (summaryContainer && window.__PAE__) {
+            window.__PAE__.generateReport(summaryContainer);
+        }
+        showToast('审计完成，共' + (PAE.issues.length || 0) + '个问题, ' + (PAE.fixesApplied.length || 0) + '项修复', 'success');
+    }
+
+    function updateStatusBar() {
+        var PAE = window.PAE;
+        if (!PAE) return;
+        var metrics = PAE.metrics || {};
+        document.getElementById('pae-dom-nodes').textContent = metrics.domNodes || 0;
+        document.getElementById('pae-fixes').textContent = (PAE.fixesApplied || []).length;
+        document.getElementById('pae-suggestions').textContent = (PAE.suggestions || []).length;
+        document.getElementById('pae-issues').textContent = (PAE.issues || []).length;
+        document.getElementById('pae-iteration').textContent = (PAE.iterations || 0) + '/100';
+    }
+
+    function renderIssuesList(issues) {
+        var list = document.getElementById('pae-issues-list');
+        if (!issues || issues.length === 0) {
+            list.innerHTML = '<div style="color:#64748b;font-size:12px;text-align:center;padding:20px;">未发现问题 ✓</div>';
+            return;
+        }
+        list.innerHTML = issues.slice(0, 50).map(function(iss) {
+            var color = iss.severity === 'error' ? '#ef4444' : iss.severity === 'warn' ? '#f59e0b' : '#3b82f6';
+            var icon = iss.severity === 'error' ? 'fa-circle-xmark' : iss.severity === 'warn' ? 'fa-triangle-exclamation' : 'fa-info-circle';
+            return '<div style="display:flex;gap:8px;padding:6px 0;border-bottom:1px solid rgba(100,116,139,.15);font-size:12px;">'
+                + '<i class="fas ' + icon + '" style="color:' + color + ';margin-top:2px;"></i>'
+                + '<div style="flex:1;">'
+                + '<div style="color:#e2e8f0;font-weight:600;">' + escapeHtml(iss.title) + '</div>'
+                + '<div style="color:#64748b;font-size:11px;">R' + iss.round + ' · ' + escapeHtml(iss.category) + (iss.detail ? ' · ' + escapeHtml(iss.detail) : '') + '</div>'
+                + '</div></div>';
+        }).join('');
+        if (issues.length > 50) {
+            list.innerHTML += '<div style="color:#64748b;font-size:11px;padding:8px;text-align:center;">还有 ' + (issues.length - 50) + ' 条问题...</div>';
+        }
+    }
+
+    function renderFixesList(fixes) {
+        var list = document.getElementById('pae-fixes-list');
+        if (!fixes || fixes.length === 0) {
+            list.innerHTML = '<div style="color:#64748b;font-size:12px;text-align:center;padding:20px;">未应用修复</div>';
+            return;
+        }
+        list.innerHTML = fixes.slice(0, 50).map(function(f) {
+            return '<div style="display:flex;gap:8px;padding:6px 0;border-bottom:1px solid rgba(100,116,139,.15);font-size:12px;">'
+                + '<i class="fas fa-check-circle" style="color:#10b981;margin-top:2px;"></i>'
+                + '<div style="flex:1;">'
+                + '<div style="color:#e2e8f0;font-weight:600;">' + escapeHtml(f.name || f.title || '') + '</div>'
+                + '<div style="color:#64748b;font-size:11px;">R' + f.round + ' 应用</div>'
+                + '</div></div>';
+        }).join('');
+        if (fixes.length > 50) {
+            list.innerHTML += '<div style="color:#64748b;font-size:11px;padding:8px;text-align:center;">还有 ' + (fixes.length - 50) + ' 项修复...</div>';
+        }
+    }
+
+    function renderSuggestionsList(suggestions) {
+        var list = document.getElementById('pae-suggestions-list');
+        if (!suggestions || suggestions.length === 0) {
+            list.innerHTML = '<div style="color:#64748b;font-size:12px;text-align:center;padding:20px;">暂无建议</div>';
+            return;
+        }
+        list.innerHTML = suggestions.slice(0, 30).map(function(s) {
+            return '<div style="display:flex;gap:8px;padding:8px;background:rgba(139,92,246,.08);border-radius:8px;margin-bottom:6px;font-size:12px;">'
+                + '<i class="fas fa-lightbulb" style="color:#a78bfa;margin-top:2px;"></i>'
+                + '<div style="flex:1;">'
+                + '<div style="color:#e2e8f0;font-weight:600;">' + escapeHtml(s.title || '') + '</div>'
+                + (s.implementation ? '<div style="color:#94a3b8;font-size:11px;margin-top:4px;">' + escapeHtml(s.implementation) + '</div>' : '')
+                + '<div style="color:#64748b;font-size:10px;margin-top:2px;">R' + s.round + ' · ' + escapeHtml(s.category) + '</div>'
+                + '</div></div>';
+        }).join('');
+        if (suggestions.length > 30) {
+            list.innerHTML += '<div style="color:#64748b;font-size:11px;padding:8px;text-align:center;">还有 ' + (suggestions.length - 30) + ' 条建议...</div>';
+        }
+    }
+
+    function appendLog(msg, level) {
+        var logEl = document.getElementById('pae-log');
+        if (!logEl) return;
+        var color = level === 'error' ? '#ef4444' : level === 'warn' ? '#f59e0b' : level === 'success' ? '#10b981' : '#64748b';
+        var time = new Date().toLocaleTimeString('zh-CN', { hour12: false });
+        var line = document.createElement('div');
+        line.style.color = color;
+        line.style.fontFamily = 'monospace';
+        line.style.fontSize = '11px';
+        line.style.padding = '2px 0';
+        line.textContent = '[' + time + '] ' + msg;
+        logEl.appendChild(line);
+        logEl.scrollTop = logEl.scrollHeight;
+        while (logEl.children.length > 200) {
+            logEl.removeChild(logEl.firstChild);
+        }
+    }
+
+    window.clearPAEReport = function(showMsg) {
+        var PAE = window.PAE;
+        if (PAE) {
+            PAE.reset();
+        }
+        if (paeTimer) { clearTimeout(paeTimer); paeTimer = null; }
+        paeRunning = false;
+        document.getElementById('pae-dom-nodes').textContent = '0';
+        document.getElementById('pae-fixes').textContent = '0';
+        document.getElementById('pae-suggestions').textContent = '0';
+        document.getElementById('pae-issues').textContent = '0';
+        document.getElementById('pae-iteration').textContent = '0/100';
+        document.getElementById('pae-issues-list').innerHTML = '<div style="color:#64748b;font-size:12px;text-align:center;padding:20px;">暂无问题</div>';
+        document.getElementById('pae-fixes-list').innerHTML = '<div style="color:#64748b;font-size:12px;text-align:center;padding:20px;">暂无修复记录</div>';
+        document.getElementById('pae-suggestions-list').innerHTML = '<div style="color:#64748b;font-size:12px;text-align:center;padding:20px;">审计完成后将生成优化建议</div>';
+        document.getElementById('pae-log').innerHTML = '<div style="color:#475569;font-family:monospace;font-size:11px;padding:8px;">[PAE] 已重置，等待启动...</div>';
+        if (showMsg !== false) showToast('审计报告已重置', 'info');
+    };
+
+    window.exportPAEReport = function() {
+        var PAE = window.PAE;
+        if (!PAE || ((PAE.issues || []).length === 0 && (PAE.fixesApplied || []).length === 0)) {
+            showToast('暂无审计数据可导出，请先运行审计', 'error');
+            return;
+        }
+        var report = PAE.getReport ? PAE.getReport() : {};
+        report.exportTime = new Date().toISOString();
+        var blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' });
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement('a');
+        a.href = url;
+        a.download = 'pae-audit-report-' + Date.now() + '.json';
+        a.click();
+        URL.revokeObjectURL(url);
+        showToast('报告已导出', 'success');
+    };
+
+    function escapeHtml(str) {
+        if (!str) return '';
+        var div = document.createElement('div');
+        div.textContent = String(str);
+        return div.innerHTML;
+    }
+})();
 </script>
 
 </body>

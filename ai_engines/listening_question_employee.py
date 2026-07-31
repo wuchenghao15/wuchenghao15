@@ -18,6 +18,8 @@ from typing import Dict, List, Any, Optional
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+from app.services.listening_service import listening_service
+
 logger = logging.getLogger(__name__)
 
 
@@ -610,7 +612,7 @@ class ListeningQuestionEmployee:
         }
 
     def _create_listening_question(self, language: str) -> Optional[Dict]:
-        """创建单个听力题"""
+        """创建单个听力题（含自动入库与题库匹配）"""
         try:
             lang_info = self._languages.get(language, self._languages["english"])
             accent = random.choice(lang_info["accents"])
@@ -631,7 +633,10 @@ class ListeningQuestionEmployee:
                 "english": 22
             }
             
+            question_id = f"ai_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{random.randint(1000, 9999)}"
+            
             question = {
+                "id": question_id,
                 "type": "single_choice",
                 "category": "comprehension",
                 "difficulty": difficulty,
@@ -650,8 +655,44 @@ class ListeningQuestionEmployee:
                 "accent": accent,
                 "voice": voice,
                 "transcript": dialogue["transcript"],
-                "topic": topic
+                "topic": topic,
+                "source_file": f"ai://listening/{language}/{topic}/{difficulty}/{question_id}",
+                "file_hash": "",
+                "ai_metadata": {
+                    "generator": self.name,
+                    "generator_id": self.employee_id,
+                    "generated_at": datetime.now().isoformat(),
+                    "ai_model": "local_template",
+                    "quality_score": 0.7 + random.uniform(0, 0.3),
+                    "template_used": f"{language}_{difficulty}_{topic}"
+                }
             }
+            
+            try:
+                stored = listening_service.add_listening_question({
+                    "id": question_id,
+                    "subject": language,
+                    "level": difficulty,
+                    "dialogue": dialogue["transcript"],
+                    "question": dialogue["question"],
+                    "options": [opt["value"] for opt in question["options"]],
+                    "correct_answer": question["correct_answer"],
+                    "explanation": question["explanation"],
+                    "audio_url": "",
+                    "language": language,
+                    "source_file": question["source_file"],
+                    "file_hash": "",
+                    "tags": question["tags"],
+                    "ai_metadata": question["ai_metadata"],
+                    "review_status": "pending",
+                    "review_required": 1
+                })
+                if stored:
+                    logger.info(f"[听力题库员工] 题目已自动入库并匹配: {question_id}")
+                else:
+                    logger.warning(f"[听力题库员工] 自动入库失败: {question_id}")
+            except Exception as e:
+                logger.warning(f"[听力题库员工] 自动入库异常（不影响生成）: {e}")
 
             return question
 

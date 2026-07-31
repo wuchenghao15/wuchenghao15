@@ -51,16 +51,16 @@ def get_dashboard_stats():
             
     except Exception as e:
         stats = {
-            'total_users': 1,
-            'active_users': 1,
+            'total_users': 0,
+            'active_users': 0,
             'exams_count': 0,
             'questions_count': 0,
             'papers_count': 0,
             'completed_exams': 0,
             'today_logins': 0,
             'today_registers': 0,
-            'ai_employees_count': 9,
-            'active_ai_employees': 9,
+            'ai_employees_count': 0,
+            'active_ai_employees': 0,
             'growth_cycles_count': 0,
             'pending_errors': 0
         }
@@ -193,44 +193,19 @@ def get_ai_employee_stats():
                     'status': row[5]
                 })
     except Exception:
-        roles_data = {
-            '验证AI员工': 1,
-            '路由AI员工': 1,
-            '测试系统AI员工': 1,
-            '测试AI员工': 1,
-            '诊断修复AI员工': 1,
-            '题库维护AI员工': 1,
-            '政治题库AI员工': 1,
-            'K12题库AI员工': 1,
-            '听力题库AI员工': 1,
-            '规则库维护AI员工': 1,
-            '配置管理AI员工': 1,
-            '日语听力报读员-关西腔': 1,
-            '日语听力报读员-关东腔': 1,
-            '英语听力报读员-美式英语': 1,
-            '英语听力报读员-英式英语': 1
-        }
-        total_roles = sum(roles_data.values())
-        colors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16']
+        roles_data = {}
+        total_roles = 0
+        colors = []
         role_distribution = []
-        for i, (name, count) in enumerate(roles_data.items()):
-            percentage = round(count / total_roles * 100) if total_roles > 0 else 0
-            role_distribution.append({
-                'name': name,
-                'count': count,
-                'percentage': percentage,
-                'color': colors[i % len(colors)]
-            })
-        
         stats = {
-            'total_employees': 15,
-            'active_employees': 15,
+            'total_employees': 0,
+            'active_employees': 0,
             'growth_cycles': 0,
-            'knowledge_base_size': 450,
-            'thinking_sessions': 28,
-            'learning_hours': 15,
-            'roles': roles_data,
-            'role_distribution': role_distribution,
+            'knowledge_base_size': 0,
+            'thinking_sessions': 0,
+            'learning_hours': 0,
+            'roles': {},
+            'role_distribution': [],
             'employees': [],
             'growth_history': []
         }

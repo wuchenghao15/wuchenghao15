@@ -150,18 +150,18 @@ The dual-engine core is inserted between the Business Layer and AI Engine Matrix
 
 | Category | ID Format | Examples | Domain |
 |----------|-----------|----------|--------|
-| General | ai_gen_*** | general | general_programming |
-| Arduino | ai_ard_*** | code_generator/debugger | arduino/electronics |
-| Config Mgmt | ai_cfg_*** | config_manager | system_admin |
-| Diagnostic | ai_diag_*** | diagnostics_repair | diagnostics |
-| Question Bank | ai_qb_*** | question_bank_maintenance | question_bank/k12 |
-| Exam Proctor | ai_exam_*** | exam_ai/exam_proctor | education/validation |
-| Ops/Deploy | ai_ops_*** | git_manager/deployment_expert | devops/operations |
-| Frontend Fix | ai_fe_*** | frontend_fixer | frontend/ux |
-| AI Security | ai_sec_*** | ai_cybersecurity | cybersecurity |
-| Data Governance | ai_data_*** | ai_data_analyzer | data_science/knowledge |
-| AI Self-Evolution | ai_self_*** | ai_self_improvement | ai_evolution |
-| Finance/CRM/HR | ai_biz_*** | ai_financial/ai_crm | business/finance/hr |
+| General | ai_gen_*** | general | general_programming |**
+| Arduino | ai_ard_*** | code_generator/debugger | arduino/electronics |**
+| Config Mgmt | ai_cfg_*** | config_manager | system_admin |**
+| Diagnostic | ai_diag_*** | diagnostics_repair | diagnostics |**
+| Question Bank | ai_qb_*** | question_bank_maintenance | question_bank/k12 |**
+| Exam Proctor | ai_exam_*** | exam_ai/exam_proctor | education/validation |**
+| Ops/Deploy | ai_ops_*** | git_manager/deployment_expert | devops/operations |**
+| Frontend Fix | ai_fe_*** | frontend_fixer | frontend/ux |**
+| AI Security | ai_sec_*** | ai_cybersecurity | cybersecurity |**
+| Data Governance | ai_data_*** | ai_data_analyzer | data_science/knowledge |**
+| AI Self-Evolution | ai_self_*** | ai_self_improvement | ai_evolution |**
+| Finance/CRM/HR | ai_biz_*** | ai_financial/ai_crm | business/finance/hr |**
 
 ### 4.3 Agent System
 

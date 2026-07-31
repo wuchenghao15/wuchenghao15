@@ -27,8 +27,8 @@
 | `core/services/wecom_client.py` | 企业微信 API 客户端 | ~500 |
 
 **核心功能**：
-- access_token 自动获取与缓存刷新（提前5分钟）
-- 应用消息推送（文本、Markdown、图片、文件、卡片等7种类型）
+- access_token 自动获取与缓存刷新（提前 5 分钟）
+- 应用消息推送（文本、Markdown、图片、文件、卡片等 7 种类型）
 - 通讯录管理（部门、成员、标签 CRUD）
 - 审批流管理（模板查询、审批创建、状态查询）
 - 日程/会议管理
@@ -77,7 +77,7 @@
 #### 消息发送（3 个）
 | 端点 | 方法 | 说明 |
 |------|------|------|
-| `/api/wecom/message/send` | POST | 发送消息（7种类型） |
+| `/api/wecom/message/send` | POST | 发送消息（7 种类型） |
 | `/api/wecom/message/broadcast` | POST | 广播消息（@all） |
 | `/api/wecom/webhook/send` | POST | 群机器人 Webhook |
 
@@ -151,7 +151,7 @@
 "wecom_workflow_engine": "analytical",
 ```
 
-### 3.2 通知中心扩展
+## 3.2 通知中心扩展
 | 文件路径 | 修改内容 |
 |---------|---------|
 | `core/services/notification_center.py` | 添加企业微信通知通道支持 |
@@ -275,7 +275,7 @@ client = get_wecom_client()
 # 发送消息
 result = client.send_text_message(
     user_ids=['userid1', 'userid2'],
-    content='你好，这是来自AI的消息！'
+    content='你好，这是来自 AI 的消息！'
 )
 
 # 发送 Markdown 消息
@@ -285,7 +285,7 @@ result = client.send_markdown_message(
 )
 ```
 
-### 6.2 AI 智能对话
+## 6.2 AI 智能对话
 
 ```python
 # 通过 API 调用
@@ -304,13 +304,13 @@ POST /api/wecom/ai/chat
 }
 ```
 
-### 6.3 审批自动化
+## 6.3 审批自动化
 
 ```python
 # AI 推荐审批模板
 POST /api/wecom/ai/approval-recommend
 {
-    "text": "我想请假3天"
+    "text": "我想请假 3 天"
 }
 
 # 创建审批
@@ -327,7 +327,7 @@ POST /api/wecom/approval
 }
 ```
 
-### 6.4 Webhook 机器人
+## 6.4 Webhook 机器人
 
 ```python
 # 发送群机器人消息

@@ -71,7 +71,7 @@ for chunk in engine.stream_generate("请分析这个问题"):
     print(chunk['content'], end='')
 ```
 
-### 支持的模型类型
+## 支持的模型类型
 
 | 模型类型 | 名称 | 优先级 | 默认端点 |
 |----------|------|--------|----------|
@@ -102,7 +102,7 @@ export DEEPSEEK_API_KEY="your-key"
 export QWEN_API_KEY="your-key"
 ```
 
-### 提示词模板
+## 提示词模板
 
 内置 8 种专业模板：
 
@@ -142,7 +142,7 @@ engine.set_preferred_model('analysis', 'google')
 response = engine.generate("编写 Python 代码", task_type='code_generation')
 ```
 
-### 缓存配置
+## 缓存配置
 
 ```python
 # 获取缓存统计
@@ -153,7 +153,7 @@ print(f"缓存命中率: {cache_stats['hit_rate']}%")
 engine.clear_cache()
 ```
 
-### 性能监控
+## 性能监控
 
 ```python
 # 获取引擎统计

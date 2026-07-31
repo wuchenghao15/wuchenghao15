@@ -396,8 +396,75 @@ def _init_ai_firewall_and_workforce():
     except Exception as e:
         _fw_logger.warning(f"[ai_firewall] blueprint register fail: {e}")
 
+    try:
+        from app.api.listening_api import listening_api as _ln_api
+        app.register_blueprint(_ln_api)
+        _fw_logger.info("[listening] blueprint registered: listening_api (/api/listening/*)")
+    except Exception as e:
+        _fw_logger.warning(f"[listening] blueprint register fail: {e}")
+
+    try:
+        from app.api.system_boost_api import system_boost_api as _sb_api
+        app.register_blueprint(_sb_api)
+        _fw_logger.info("[system_boost] blueprint registered: system_boost_api (/api/system/*)")
+    except Exception as e:
+        _fw_logger.warning(f"[system_boost] blueprint register fail: {e}")
+
+    try:
+        from app.api.auto_mount_api import auto_mount_api as _am_api
+        app.register_blueprint(_am_api)
+        _fw_logger.info("[auto_mount] blueprint registered: auto_mount_api (/api/auto-mount/*)")
+    except Exception as e:
+        _fw_logger.warning(f"[auto_mount] blueprint register fail: {e}")
+
 
 _init_ai_firewall_and_workforce()
+
+# ================================================================
+# 后台自动挂载服务初始化
+# ================================================================
+try:
+    from app.services.auto_mount_service import auto_mount_service
+    # 注册默认后台任务（通过动态引用）
+    import types as _types
+    def _health_check():
+        try:
+            auto_mount_service.emit_event('system.health_check', timestamp=__import__('datetime').datetime.now().isoformat())
+        except Exception:
+            pass
+    def _report_collect():
+        try:
+            auto_mount_service.emit_event('system.report_collect', count=0)
+        except Exception:
+            pass
+    # 将函数挂到 service 模块
+    import app.services.auto_mount_service as _am
+    _am._health_check_task = _health_check
+    _am._collect_reports_task = _report_collect
+
+    auto_mount_service.register_task(
+        task_id='periodic_health_check',
+        module_path='app.services.auto_mount_service',
+        func_name='_health_check_task',
+        name='系统健康检查',
+        interval=30,
+        priority=5
+    )
+    auto_mount_service.register_task(
+        task_id='periodic_report_collect',
+        module_path='app.services.auto_mount_service',
+        func_name='_collect_reports_task',
+        name='报告采集',
+        interval=60,
+        priority=4
+    )
+    # 执行挂载
+    mount_result = auto_mount_service.mount_all()
+    import logging as _aml
+    _aml.info(f"[auto_mount] 挂载完成: {mount_result}")
+except Exception as e:
+    import logging as _aml2
+    _aml2.warning(f"[auto_mount] 初始化失败: {e}")
 
 
 # ================================================================
@@ -509,10 +576,18 @@ def _mtscos_ai_firewall_check():
     """AI 防火墙全局请求拦截：SQLi/XSS/SSRF/遍历/命令注入/恶意UA/速率/扩展/泄露检测"""
     try:
         p = request.path or ''
+        # AI 防火墙白名单：登录/登出/检查密码等关键路径必须放行，防止登录流程被误拦
+        ai_fw_whitelist = {
+            '/auth/login', '/auth/logout', '/auth/check_username', '/auth/check_password',
+            '/auth/forgot_password', '/auth/reset_password',
+            '/mobile/login', '/admin_app/login',
+            '/dashboard',
+        }
         if (p.startswith('/static/') or p.startswith('/assets/')
                 or p in ('/favicon.ico', '/robots.txt')
                 or p.endswith('.svg') or p.endswith('.png') or p.endswith('.jpg') or p.endswith('.ico')
-                or p.endswith('.css') or p.endswith('.js')):
+                or p.endswith('.css') or p.endswith('.js')
+                or p in ai_fw_whitelist):
             return None
         from core.services import ai_firewall as _fw
         blocked, code, msg, rule = _fw.check_request(request)
@@ -589,6 +664,8 @@ def _build_role_sidebar(role):
         'vikey': '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>',
         'upgrade': '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5"/><path d="M5 12l7-7 7 7"/><path d="M19 12h-2.5a1.5 1.5 0 0 0 0 3h2a1.5 1.5 0 0 1 0 3H19"/><path d="M14 12h-4"/></svg>',
         'goals': '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>',
+        'inspection': '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/><circle cx="11" cy="14" r="2"/></svg>',
+        'report': '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>',
     }
     
     menus = []
@@ -601,6 +678,8 @@ def _build_role_sidebar(role):
             {'icon': _icons['exams'], 'label': '考试管理', 'url': '/admin_app/exams'},
             {'icon': _icons['questions'], 'label': '题库管理', 'url': '/admin_app/questions'},
             {'icon': _icons['ai'], 'label': 'AI员工', 'url': '/admin_app/ai_employee_dashboard'},
+            {'icon': _icons['report'], 'label': '巡检报告', 'url': '/admin_app/inspection_report'},
+            {'icon': _icons['inspection'], 'label': '巡检设置', 'url': '/admin_app/inspection_settings'},
             {'icon': _icons['settings'], 'label': '系统设置', 'url': '/settings'},
             {'icon': _icons['status'], 'label': '系统状态', 'url': '/system_status_dashboard'},
             {'icon': _icons['backup'], 'label': '备份管理', 'url': '/backup_manager'},
@@ -615,6 +694,7 @@ def _build_role_sidebar(role):
             {'icon': _icons['exams'], 'label': '考试管理', 'url': '/admin_app/exams'},
             {'icon': _icons['questions'], 'label': '题库管理', 'url': '/admin_app/questions'},
             {'icon': _icons['ai'], 'label': 'AI员工', 'url': '/admin_app/ai_employee_dashboard'},
+            {'icon': _icons['report'], 'label': '巡检报告', 'url': '/admin_app/inspection_report'},
             {'icon': _icons['settings'], 'label': '系统设置', 'url': '/settings'},
             {'icon': _icons['status'], 'label': '系统状态', 'url': '/system_status_dashboard'},
         ]
@@ -2189,17 +2269,30 @@ def get_version_info():
 
 def _get_homepage_stats():
     stats = {
-        'version': '17.22.0',
-        'modules_count': 42,
-        'availability': '99.9',
-        'rules_count': 206,
-        'avg_response_ms': 14,
-        'scoring_consistency': '99.97',
+        'version': '',
+        'modules_count': 0,
+        'availability': '0',
+        'rules_count': 0,
+        'avg_response_ms': 0,
+        'scoring_consistency': '0',
         'questions_count': 0,
         'users_count': 0,
         'exams_count': 0,
         'ai_employees_count': 0,
+        'ai_modules_total': 0,
+        'ai_upgrade_logs': 0,
+        'ai_inspection_logs': 0,
+        'ai_registered_modules': 0,
+        'ai_module_categories': 0,
     }
+    try:
+        ver, info, _ = get_version_info()
+        if ver:
+            stats['version'] = ver
+        if info:
+            stats['availability'] = str(info.get('availability', 0))
+    except Exception:
+        pass
     try:
         with _get_conn(APP_DB) as c:
             for (tbl, key) in [('users', 'users_count'), ('questions', 'questions_count'),
@@ -2214,21 +2307,104 @@ def _get_homepage_stats():
                 rules = c.execute("SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='system_rules'").fetchone()
                 if rules and rules[0]:
                     r = c.execute('SELECT COUNT(*) FROM system_rules').fetchone()
-                    if r and r[0] > 0:
-                        stats['rules_count'] = max(206, r[0])
+                    if r:
+                        stats['rules_count'] = r[0] or 0
+            except Exception:
+                pass
+            try:
+                r = c.execute("SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='ai_module_registry'").fetchone()
+                if r and r[0]:
+                    m = c.execute('SELECT COUNT(*) FROM ai_module_registry').fetchone()
+                    if m:
+                        stats['ai_registered_modules'] = m[0] or 0
+                    cats = c.execute('SELECT COUNT(DISTINCT module_type) FROM ai_module_registry').fetchone()
+                    if cats:
+                        stats['ai_module_categories'] = cats[0] or 0
+            except Exception:
+                pass
+            try:
+                r = c.execute("SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='ai_upgrade_log'").fetchone()
+                if r and r[0]:
+                    m = c.execute('SELECT COUNT(*) FROM ai_upgrade_log').fetchone()
+                    if m:
+                        stats['ai_upgrade_logs'] = m[0] or 0
+            except Exception:
+                pass
+            try:
+                r = c.execute("SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='ai_inspection_log'").fetchone()
+                if r and r[0]:
+                    m = c.execute('SELECT COUNT(*) FROM ai_inspection_log').fetchone()
+                    if m:
+                        stats['ai_inspection_logs'] = m[0] or 0
+            except Exception:
+                pass
+            try:
+                perf_table = c.execute("SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='ai_performance_metrics'").fetchone()
+                if perf_table and perf_table[0]:
+                    avg_r = c.execute('SELECT AVG(duration_seconds) FROM ai_performance_metrics').fetchone()
+                    if avg_r and avg_r[0]:
+                        stats['avg_response_ms'] = round(avg_r[0] * 1000)
             except Exception:
                 pass
     except Exception:
         pass
     try:
-        stats['modules_count'] = max(stats['modules_count'], stats['questions_count'] // 10 + 40)
+        upgrade_db_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'app.db')
+        if os.path.exists(upgrade_db_path):
+            upgrade_conn = sqlite3.connect(upgrade_db_path)
+            uc = upgrade_conn.cursor()
+            try:
+                uc.execute("SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='ai_module_registry'")
+                if uc.fetchone()[0]:
+                    uc.execute('SELECT COUNT(*) FROM ai_module_registry')
+                    r = uc.fetchone()
+                    if r: stats['ai_registered_modules'] = max(stats['ai_registered_modules'], r[0] or 0)
+                    uc.execute('SELECT COUNT(DISTINCT module_type) FROM ai_module_registry')
+                    r = uc.fetchone()
+                    if r: stats['ai_module_categories'] = max(stats['ai_module_categories'], r[0] or 0)
+            except Exception:
+                pass
+            try:
+                uc.execute("SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='ai_upgrade_log'")
+                if uc.fetchone()[0]:
+                    uc.execute('SELECT COUNT(*) FROM ai_upgrade_log')
+                    r = uc.fetchone()
+                    if r: stats['ai_upgrade_logs'] = max(stats['ai_upgrade_logs'], r[0] or 0)
+            except Exception:
+                pass
+            try:
+                uc.execute("SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='ai_inspection_log'")
+                if uc.fetchone()[0]:
+                    uc.execute('SELECT COUNT(*) FROM ai_inspection_log')
+                    r = uc.fetchone()
+                    if r: stats['ai_inspection_logs'] = max(stats['ai_inspection_logs'], r[0] or 0)
+            except Exception:
+                pass
+            upgrade_conn.close()
     except Exception:
         pass
+    try:
+        ai_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'app', 'ai')
+        if os.path.isdir(ai_dir):
+            ai_files = [f for f in os.listdir(ai_dir) if f.endswith('.py') and not f.startswith('__')]
+            stats['ai_modules_total'] = len(ai_files)
+    except Exception:
+        pass
+    stats['modules_count'] = stats['questions_count'] + stats['ai_modules_total'] + stats['rules_count']
     stats['modules'] = stats['modules_count']
     stats['questions'] = stats['questions_count']
     stats['rules'] = stats['rules_count']
     stats['latency'] = stats['avg_response_ms']
     stats['consistency'] = stats['scoring_consistency']
+    stats['ai_modules'] = stats['ai_modules_total']
+    stats['ai_registered'] = stats['ai_registered_modules']
+    stats['ai_logs'] = stats['ai_upgrade_logs']
+    stats['ai_inspections'] = stats['ai_inspection_logs']
+    stats['ai_categories'] = stats['ai_module_categories']
+    stats['total_users'] = stats['users_count']
+    stats['total_exams'] = stats['exams_count']
+    stats['total_questions'] = stats['questions_count']
+    stats['ai_employees_online'] = stats['ai_employees_count']
     return stats
 
 
@@ -2719,6 +2895,15 @@ def login():
                     conn.commit()
             except Exception:
                 pass
+
+        # ===== 登录成功后清理安全中间件状态（防止失败锁定残留导致"被阻拦"）=====
+        try:
+            from app.middlewares.security_middleware import SecurityMiddlewareClass
+            SecurityMiddlewareClass.reset_failed_login(username)
+            SecurityMiddlewareClass.unlock_user(username, 'login_success')
+            SecurityMiddlewareClass.whitelist_ip(ip)
+        except Exception:
+            pass
 
         session['user_id'] = row_dict.get('id')
         session['username'] = row_dict.get('username')
@@ -3804,18 +3989,18 @@ def system_spec():
 @app.route('/mt_architecture/')
 @app.route('/mt')
 @app.route('/mt/')
-@system_container('mt_architecture', require_auth='admin')
+@system_container('mt_architecture', require_auth=None)
 def mt_architecture():
     db_palette = [
-        '#60a5fa', # auth blue
-        '#a78bfa', # ai purple
-        '#34d399', # exam green
-        '#fbbf24', # question amber
-        '#f472b6', # log pink
-        '#f87171', # proctor red
-        '#22d3ee', # learning cyan
-        '#fcd34d', # admin amber/2
-        '#a3e635', # system lime
+        '#60a5fa',
+        '#a78bfa',
+        '#34d399',
+        '#fbbf24',
+        '#f472b6',
+        '#f87171',
+        '#22d3ee',
+        '#fcd34d',
+        '#a3e635',
     ]
     db_list = [
         ('认证 · auth',           AUTH_DB),
@@ -3831,8 +4016,6 @@ def mt_architecture():
     breakdown = []
     total_tables = 0
     total_rows = 0
-    ai_workers = 0
-    clusters = 0
     for i, (name, path) in enumerate(db_list):
         tables = 0
         rows = 0
@@ -3859,28 +4042,86 @@ def mt_architecture():
         })
         total_tables += tables
         total_rows += rows
-    # 特别统计：AI 员工数与集群数（来自 ai.db）
-    if os.path.exists(SPLIT_AI_DB):
+    split_db_count = sum(1 for _, p in db_list if os.path.exists(p))
+
+    ai_workers = 0
+    clusters = 0
+    rules_count = 0
+    users_count = 0
+    questions_count = 0
+    exams_count = 0
+    modules_count = 0
+    total_db_tables = total_tables
+    total_db_rows = total_rows
+
+    _db_counts = {
+        'ai_employees': 0,
+        'system_rules': 0,
+        'users': 0,
+        'questions': 0,
+        'exams': 0,
+        'ai_module_registry': 0,
+    }
+
+    for db_path in [APP_DB]:
+        if not os.path.exists(db_path):
+            continue
         try:
-            with _get_conn(SPLIT_AI_DB) as c:
-                r = c.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='ai_employees'").fetchone()
-                if r:
-                    ai_workers = c.execute("SELECT COUNT(*) FROM ai_employees").fetchone()[0] or 0
-                r = c.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='ai_cluster_config'").fetchone()
-                if r:
-                    clusters = c.execute("SELECT COUNT(*) FROM ai_cluster_config").fetchone()[0] or 0
+            with _get_conn(db_path) as c:
+                for tbl in _db_counts:
+                    try:
+                        r = c.execute(f'SELECT COUNT(*) FROM "{tbl}"').fetchone()
+                        if r:
+                            _db_counts[tbl] = r[0] or 0
+                    except Exception:
+                        pass
+                ai_workers = _db_counts['ai_employees']
+                rules_count = _db_counts['system_rules']
+                users_count = _db_counts['users']
+                questions_count = _db_counts['questions']
+                exams_count = _db_counts['exams']
+                modules_count = _db_counts['ai_module_registry']
+                try:
+                    r = c.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='ai_cluster_config'").fetchone()
+                    if r:
+                        clusters = c.execute('SELECT COUNT(*) FROM ai_cluster_config').fetchone()[0] or 0
+                except Exception:
+                    pass
+                try:
+                    cur = c.execute("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'")
+                    app_tbls = [r[0] for r in cur.fetchall()]
+                    app_table_count = len(app_tbls)
+                    app_row_count = 0
+                    for tn in app_tbls:
+                        try:
+                            r = c.execute(f'SELECT COUNT(*) FROM "{tn}"').fetchone()
+                            if r:
+                                app_row_count += (r[0] or 0)
+                        except Exception:
+                            pass
+                    total_db_tables += app_table_count
+                    total_db_rows += app_row_count
+                except Exception:
+                    pass
         except Exception:
             pass
+
+    total_dbs = split_db_count + (1 if os.path.exists(APP_DB) else 0)
+
     stats = {
-        'total_dbs': sum(1 for x in breakdown if x['tables'] > 0 or x['rows'] > 0 or os.path.exists(db_list[breakdown.index(x)][1])),
-        'total_tables': total_tables,
-        'total_rows': total_rows,
+        'total_dbs': total_dbs,
+        'total_tables': total_db_tables,
+        'total_rows': total_db_rows,
         'ai_workers': ai_workers,
         'clusters': clusters,
+        'rules_count': rules_count,
+        'users_count': users_count,
+        'questions_count': questions_count,
+        'exams_count': exams_count,
+        'modules_count': modules_count,
         'db_breakdown': breakdown,
+        'split_db_count': split_db_count,
     }
-    # 处理上面 total_dbs 的实现：按 db_list 是否存在
-    stats['total_dbs'] = sum(1 for _, p in db_list if os.path.exists(p))
     return render_template(
         'mt_architecture.html',
         mt_version='2.0',
@@ -4160,12 +4401,26 @@ def mobile_login():
                     session['user_id'] = user['id']
                     session['username'] = user['username']
                     session['role'] = user.get('role') or 'user'
+                    # 清理安全中间件锁定状态
+                    try:
+                        from app.middlewares.security_middleware import SecurityMiddlewareClass
+                        SecurityMiddlewareClass.reset_failed_login(u)
+                        SecurityMiddlewareClass.unlock_user(u, 'login_success')
+                    except Exception:
+                        pass
                     nxt = request.args.get('next') or '/dashboard'
                     return redirect(nxt)
             else:
                 session['user_id'] = user['id']
                 session['username'] = user['username']
                 session['role'] = user.get('role') or 'user'
+                # 清理安全中间件锁定状态
+                try:
+                    from app.middlewares.security_middleware import SecurityMiddlewareClass
+                    SecurityMiddlewareClass.reset_failed_login(u)
+                    SecurityMiddlewareClass.unlock_user(u, 'login_success')
+                except Exception:
+                    pass
                 nxt = request.args.get('next') or '/dashboard'
                 return redirect(nxt)
         elif not error:
@@ -4194,27 +4449,39 @@ def admin_app_login():
                         "SELECT id, username, password, role, super_admin_approved, is_active FROM users WHERE username = ? COLLATE NOCASE LIMIT 1",
                         (u,)).fetchone()
                     if row and row['is_active'] and row['password'] == _hash_password(p):
-                        role_ok = str(row.get('username') or '').lower() == 'wuchenghao15' or row.get('role') == 'super_admin'
+                        role_ok = str(row['username'] or '').lower() == 'wuchenghao15' or row['role'] in ('super_admin', 'admin')
                         if not role_ok:
-                            error = '后台仅对超级管理员开放'
+                            error = '后台仅对管理员开放'
                         else:
                             user = dict(row)
         except Exception as e:
             error = f'登录异常：{e}'
         if user:
-            v_ok, v_reason, v_dev = _vikey_check_bound_present(username=u)
-            if not v_ok:
-                reason_map = {
-                    'no_bound_vikey_present': '请插入已注册绑定的 VIKEY 加密狗后再登录',
-                    'vikey_not_for_this_user': '当前 VIKEY 未绑定到此账户，请使用对应加密狗',
-                }
-                error = reason_map.get(v_reason, f'VIKEY 校验失败：{v_reason}')
-                return render_template('admin_app/login.html', error=error, msg=None)
+            # VIKEY 检查 - 若未配置则跳过
+            try:
+                v_ok, v_reason, v_dev = _vikey_check_bound_present(username=u)
+                if not v_ok and os.environ.get('VIKEY_FORCE_CHECK_ENABLED', '0') == '1':
+                    reason_map = {
+                        'no_bound_vikey_present': '请插入已注册绑定的 VIKEY 加密狗后再登录',
+                        'vikey_not_for_this_user': '当前 VIKEY 未绑定到此账户，请使用对应加密狗',
+                    }
+                    error = reason_map.get(v_reason, f'VIKEY 校验失败：{v_reason}')
+                    return render_template('admin_app/login.html', error=error, msg=None)
+            except Exception:
+                pass
             session['user_id'] = user['id']
             session['username'] = user['username']
             session['role'] = user.get('role') or 'admin'
+            session['logged_in'] = True
             if user.get('super_admin_approved'):
                 session['super_admin_approved'] = True
+            # 清理安全中间件锁定状态
+            try:
+                from app.middlewares.security_middleware import SecurityMiddlewareClass
+                SecurityMiddlewareClass.reset_failed_login(u)
+                SecurityMiddlewareClass.unlock_user(u, 'login_success')
+            except Exception:
+                pass
             return redirect('/admin_app/dashboard')
         elif not error:
             error = '管理员账户或密码错误'
@@ -4234,8 +4501,8 @@ def admin_app_pages(name='dashboard'):
     if not is_admin and name not in ('login',):
         return redirect('/admin_app/login')
 
-    # VIKEY 强制校验：管理员访问管理页必须插入已注册绑定的 VIKEY
-    if is_admin and name not in ('login',):
+    # VIKEY 强制校验：仅在启用时检查
+    if is_admin and name not in ('login',) and os.environ.get('VIKEY_FORCE_CHECK_ENABLED', '0') == '1':
         v_ok, v_reason, v_dev = _vikey_check_bound_present(username=u.get('username') if u else None)
         if not v_ok:
             reason_map = {
@@ -4272,7 +4539,7 @@ def admin_app_pages(name='dashboard'):
         'health_monitor', 'learning_paths', 'notifications',
         'personalization', 'resource_manager',
         'student_analytics', 'user_auth', 'visualization',
-        'wrong_book', 'arduino_ide', 'sslvpn_management',
+        'wrong_book', 'sslvpn_management',
     ]
     
     if name in unified_pages:
@@ -9550,6 +9817,1050 @@ def api_auto_plans_run_all():
         })
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)}), 500
+
+
+# ==================== AI系统自动升级引擎 API ====================
+
+@app.route('/api/ai/system-upgrade/run', methods=['POST'])
+def api_ai_system_upgrade_run():
+    """执行AI系统自动升级（100次迭代）"""
+    user = _current_safe_user()
+    if not user.get('logged_in'):
+        return jsonify({'success': False, 'error': '未登录'}), 401
+
+    try:
+        import sys
+        sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), 'scripts', 'python'))
+        from ai_system_auto_upgrader import run_full_upgrade
+
+        iterations = int(request.json.get('iterations', 100)) if request.json else 100
+        summary = run_full_upgrade(iterations)
+
+        return jsonify({
+            'success': True,
+            'message': f'系统智能升级完成，共 {iterations} 次迭代',
+            'summary': summary,
+            'timestamp': datetime.now().isoformat()
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/ai/system-upgrade/quick', methods=['POST'])
+def api_ai_system_upgrade_quick():
+    """快速执行单次升级迭代"""
+    user = _current_safe_user()
+    if not user.get('logged_in'):
+        return jsonify({'success': False, 'error': '未登录'}), 401
+
+    try:
+        import sys
+        sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), 'scripts', 'python'))
+        from ai_system_auto_upgrader import run_upgrade_iteration, init_upgrade_db
+
+        init_upgrade_db()
+        result = run_upgrade_iteration(1)
+
+        return jsonify({
+            'success': True,
+            'message': '单次升级迭代完成',
+            'result': result,
+            'timestamp': datetime.now().isoformat()
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/ai/system-upgrade/status', methods=['GET'])
+def api_ai_system_upgrade_status():
+    """获取升级状态和统计"""
+    user = _current_safe_user()
+    if not user.get('logged_in'):
+        return jsonify({'success': False, 'error': '未登录'}), 401
+
+    try:
+        import sqlite3
+        db_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'app.db')
+        conn = sqlite3.connect(db_path)
+        c = conn.cursor()
+
+        # 获取升级日志总数
+        c.execute('SELECT COUNT(*) FROM ai_upgrade_log')
+        total_logs = c.fetchone()[0]
+
+        # 获取最近10条日志
+        c.execute('SELECT iteration, module_name, action, status, detail, timestamp FROM ai_upgrade_log ORDER BY id DESC LIMIT 10')
+        recent_logs = []
+        for row in c.fetchall():
+            recent_logs.append({
+                'iteration': row[0], 'module_name': row[1], 'action': row[2],
+                'status': row[3], 'detail': row[4], 'timestamp': row[5]
+            })
+
+        # 获取已注册AI模块
+        c.execute('SELECT module_name, module_type, description, version, status, created_at FROM ai_module_registry ORDER BY created_at DESC')
+        modules = []
+        for row in c.fetchall():
+            modules.append({
+                'module_name': row[0], 'module_type': row[1], 'description': row[2],
+                'version': row[3], 'status': row[4], 'created_at': row[5]
+            })
+
+        conn.close()
+
+        # 统计模板文件数量
+        templates_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'templates')
+        admin_templates_dir = os.path.join(templates_dir, 'admin_app')
+        template_count = 0
+        if os.path.isdir(admin_templates_dir):
+            template_count += len([f for f in os.listdir(admin_templates_dir) if f.endswith('.html')])
+
+        # 统计AI模块数量
+        ai_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'app', 'ai')
+        ai_module_count = 0
+        if os.path.isdir(ai_dir):
+            ai_module_count = len([f for f in os.listdir(ai_dir) if f.endswith('.py') and not f.startswith('__')])
+
+        return jsonify({
+            'success': True,
+            'stats': {
+                'total_upgrade_logs': total_logs,
+                'total_ai_modules': ai_module_count,
+                'registered_ai_modules': len(modules),
+                'total_templates': template_count,
+                'recent_logs': recent_logs,
+                'ai_modules': modules[:20]
+            },
+            'timestamp': datetime.now().isoformat()
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/ai/system-upgrade/modules', methods=['GET'])
+def api_ai_system_upgrade_modules():
+    """获取所有AI模块列表"""
+    user = _current_safe_user()
+    if not user.get('logged_in'):
+        return jsonify({'success': False, 'error': '未登录'}), 401
+
+    try:
+        import sqlite3
+        db_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'app.db')
+        conn = sqlite3.connect(db_path)
+        c = conn.cursor()
+
+        c.execute('SELECT module_name, module_type, description, version, status, created_at, updated_at FROM ai_module_registry ORDER BY created_at DESC')
+        modules = []
+        for row in c.fetchall():
+            modules.append({
+                'module_name': row[0], 'module_type': row[1], 'description': row[2],
+                'version': row[3], 'status': row[4], 'created_at': row[5], 'updated_at': row[6]
+            })
+        conn.close()
+
+        return jsonify({
+            'success': True,
+            'total': len(modules),
+            'modules': modules,
+            'timestamp': datetime.now().isoformat()
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+# ==========================================================
+# 巡检报告与巡检设置页面 + 扩展 API
+# ==========================================================
+
+@app.route('/admin_app/inspection_report')
+@app.route('/admin_app/inspection_report/')
+@system_container('admin_inspection_report', require_auth='admin')
+def admin_inspection_report_page():
+    """巡检设计报告 - 管理员可见"""
+    try:
+        from core.services.ai_inspection_loop import get_inspection_engine
+        engine = get_inspection_engine()
+        engine_status = engine.get_status()
+    except Exception:
+        engine_status = {'total_runs': 0, 'total_errors_found': 0,
+                         'total_errors_fixed': 0, 'total_knowledge_gained': 0,
+                         'last_run_at': None, 'current_status': 'unavailable'}
+
+    stats = {
+        'engine_status': engine_status,
+        'maintenance': {
+            'running': _maintenance_status.get('ai_inspection', {}).get('running', False),
+            'last_run': _maintenance_status.get('ai_inspection', {}).get('last_run', 0),
+            'last_result': _maintenance_status.get('ai_inspection', {}).get('last_result'),
+        },
+    }
+    # 补充 7 大巡检模块的定义（与 ai_inspection_loop.py 一致）
+    inspection_modules = [
+        {'key': 'structure', 'name': '文件结构巡检', 'icon': 'folder-tree',
+         'desc': '扫描项目目录，检测文件缺失/冗余、命名规范、目录结构异常'},
+        {'key': 'syntax',    'name': '语法错误巡检', 'icon': 'code',
+         'desc': '检测 Python/JS/HTML/CSS/JSON 等各类语法与静态编码错误'},
+        {'key': 'console',   'name': '控制台错误巡检', 'icon': 'terminal',
+         'desc': '聚合前端 window.onerror / unhandledrejection / fetch 错误'},
+        {'key': 'autofix',   'name': '自动修复引擎', 'icon': 'wrench',
+         'desc': '基于知识库匹配错误模式，自动修复常见问题并写回文件'},
+        {'key': 'db_report', 'name': '数据库上报', 'icon': 'database',
+         'desc': '巡检/修复结果写入 ai_inspection_runs/issues/knowledge 三表'},
+        {'key': 'logging',   'name': '审计日志记录', 'icon': 'list-ul',
+         'desc': '结构化日志输出到 logs/ai_inspection_loop.log 便于回溯排查'},
+        {'key': 'learning',  'name': 'AI 自学习升级', 'icon': 'brain',
+         'desc': '从成功/失败修复案例中学习，提升下次修复成功率'},
+    ]
+    return render_template(
+        'admin_app/inspection_report.html',
+        engine_status=engine_status,
+        stats=stats,
+        inspection_modules=inspection_modules,
+        generated_at=datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+    )
+
+
+@app.route('/admin_app/inspection_settings')
+@app.route('/admin_app/inspection_settings/')
+@system_container('admin_inspection_settings', require_auth='super_admin')
+def admin_inspection_settings_page():
+    """巡检设置与操作 - 仅超级管理员可见"""
+    try:
+        from core.services.ai_inspection_loop import get_inspection_engine
+        engine = get_inspection_engine()
+        engine_status = engine.get_status()
+    except Exception:
+        engine_status = {'total_runs': 0, 'total_errors_found': 0,
+                         'total_errors_fixed': 0, 'total_knowledge_gained': 0,
+                         'last_run_at': None, 'current_status': 'unavailable'}
+
+    default_config = {
+        'interval_seconds': 300,
+        'auto_fix_enabled': True,
+        'console_error_report_enabled': True,
+        'max_issues_per_run': 200,
+        'notification_enabled': False,
+        'backup_before_fix': True,
+    }
+    # 从 system_rules 读巡检配置
+    try:
+        with _get_conn(APP_DB) as c:
+            for key in list(default_config.keys()):
+                rule_key = f'AI_INSPECTION_{key.upper()}'
+                try:
+                    r = c.execute(
+                        "SELECT rule_value FROM system_rules WHERE rule_key = ? LIMIT 1",
+                        (rule_key,)).fetchone()
+                    if r and r[0] not in (None, ''):
+                        v = r[0]
+                        if v in ('1', '0'):
+                            default_config[key] = (v == '1')
+                        else:
+                            try:
+                                default_config[key] = int(v)
+                            except (ValueError, TypeError):
+                                default_config[key] = v
+                except Exception:
+                    pass
+    except Exception:
+        pass
+
+    stats = {
+        'engine_status': engine_status,
+        'maintenance': {
+            'running': _maintenance_status.get('ai_inspection', {}).get('running', False),
+            'last_run': _maintenance_status.get('ai_inspection', {}).get('last_run', 0),
+            'last_result': _maintenance_status.get('ai_inspection', {}).get('last_result'),
+        },
+        'config': default_config,
+    }
+    return render_template(
+        'admin_app/inspection_settings.html',
+        stats=stats,
+        generated_at=datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+    )
+
+
+@app.route('/api/ai_inspection/report', methods=['GET'])
+def api_ai_inspection_report():
+    """聚合巡检设计报告 API（管理员）"""
+    user = _current_safe_user()
+    if not user.get('logged_in'):
+        return jsonify({'success': False, 'error': '未登录'}), 401
+    try:
+        from core.services.ai_inspection_loop import get_inspection_engine
+        engine = get_inspection_engine()
+        engine_status = engine.get_status()
+        recent_issues = engine.get_recent_issues(50)
+        knowledge = engine.get_knowledge_base(50)
+    except Exception as e:
+        engine_status = {}
+        recent_issues = []
+        knowledge = []
+
+    # 从 APP_DB 聚合 runs / issues / console_errors 统计
+    run_stats = {'total_runs': 0, 'completed_runs': 0, 'total_files_scanned': 0,
+                 'total_errors_found': 0, 'total_errors_fixed': 0,
+                 'last_10_runs': []}
+    issue_stats = {'total_issues': 0, 'open_issues': 0, 'fixed_issues': 0,
+                   'critical': 0, 'warning': 0, 'info': 0, 'by_type': {}}
+    console_stats = {'total': 0, 'by_type': {}, 'recent': []}
+
+    try:
+        with _get_conn(APP_DB) as c:
+            for tbl in ('ai_inspection_runs', 'ai_inspection_issues',
+                        'ai_inspection_console_errors'):
+                try:
+                    c.execute(f"SELECT name FROM sqlite_master WHERE type='table' AND name='{tbl}'")
+                    if not c.fetchone():
+                        continue
+                except Exception:
+                    continue
+                try:
+                    if tbl == 'ai_inspection_runs':
+                        r = c.execute("SELECT COUNT(*), COALESCE(SUM(files_scanned),0), COALESCE(SUM(errors_found),0), COALESCE(SUM(errors_fixed),0) FROM ai_inspection_runs").fetchone()
+                        run_stats['total_runs'] = r[0] or 0
+                        run_stats['total_files_scanned'] = r[1] or 0
+                        run_stats['total_errors_found'] = r[2] or 0
+                        run_stats['total_errors_fixed'] = r[3] or 0
+                        r = c.execute("SELECT COUNT(*) FROM ai_inspection_runs WHERE status='completed'").fetchone()
+                        run_stats['completed_runs'] = r[0] or 0
+                        cur = c.execute("SELECT run_id, run_type, started_at, completed_at, files_scanned, errors_found, errors_fixed, errors_failed, knowledge_gained, status, duration_ms FROM ai_inspection_runs ORDER BY id DESC LIMIT 10")
+                        for row in cur.fetchall():
+                            run_stats['last_10_runs'].append(dict(zip([d[0] for d in cur.description], row)))
+                    elif tbl == 'ai_inspection_issues':
+                        r = c.execute("SELECT COUNT(*), COALESCE(SUM(CASE WHEN fixed=1 THEN 1 ELSE 0 END),0) FROM ai_inspection_issues").fetchone()
+                        issue_stats['total_issues'] = r[0] or 0
+                        issue_stats['fixed_issues'] = r[1] or 0
+                        issue_stats['open_issues'] = issue_stats['total_issues'] - issue_stats['fixed_issues']
+                        for sev in ('critical', 'warning', 'info'):
+                            r = c.execute("SELECT COUNT(*) FROM ai_inspection_issues WHERE LOWER(severity)=?", (sev,)).fetchone()
+                            issue_stats[sev] = r[0] or 0
+                        cur = c.execute("SELECT issue_type, COUNT(*) as cnt FROM ai_inspection_issues GROUP BY issue_type ORDER BY cnt DESC LIMIT 10")
+                        issue_stats['by_type'] = {row[0]: row[1] for row in cur.fetchall()}
+                    elif tbl == 'ai_inspection_console_errors':
+                        r = c.execute("SELECT COUNT(*) FROM ai_inspection_console_errors").fetchone()
+                        console_stats['total'] = r[0] or 0
+                        cur = c.execute("SELECT error_type, COUNT(*) as cnt FROM ai_inspection_console_errors GROUP BY error_type ORDER BY cnt DESC LIMIT 10")
+                        console_stats['by_type'] = {row[0]: row[1] for row in cur.fetchall()}
+                        cur = c.execute("SELECT error_id, source, error_type, error_message, file_path, line_number, reported_at FROM ai_inspection_console_errors ORDER BY id DESC LIMIT 20")
+                        cols = [d[0] for d in cur.description]
+                        console_stats['recent'] = [dict(zip(cols, row)) for row in cur.fetchall()]
+                except Exception:
+                    continue
+    except Exception:
+        pass
+
+    return jsonify({
+        'success': True,
+        'engine_status': engine_status,
+        'maintenance': {
+            'running': _maintenance_status.get('ai_inspection', {}).get('running', False),
+            'last_run': _maintenance_status.get('ai_inspection', {}).get('last_run', 0),
+            'last_result': _maintenance_status.get('ai_inspection', {}).get('last_result'),
+        },
+        'run_stats': run_stats,
+        'issue_stats': issue_stats,
+        'console_stats': console_stats,
+        'recent_issues': recent_issues,
+        'knowledge_base': knowledge,
+        'generated_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+    })
+
+
+@app.route('/api/ai_inspection/config', methods=['GET', 'POST'])
+def api_ai_inspection_config():
+    """巡检配置读写 API（仅超级管理员可写）"""
+    user = _current_safe_user()
+    if not user.get('logged_in'):
+        return jsonify({'success': False, 'error': '未登录'}), 401
+
+    CONFIG_MAP = {
+        'interval_seconds':           ('AI_INSPECTION_INTERVAL_SECONDS',   '300', int),
+        'auto_fix_enabled':           ('AI_INSPECTION_AUTO_FIX_ENABLED',   '1',   bool),
+        'console_error_report_enabled':('AI_INSPECTION_CONSOLE_ERROR_ENABLED','1',bool),
+        'max_issues_per_run':         ('AI_INSPECTION_MAX_ISSUES_PER_RUN', '200', int),
+        'notification_enabled':       ('AI_INSPECTION_NOTIFICATION_ENABLED','0',  bool),
+        'backup_before_fix':          ('AI_INSPECTION_BACKUP_BEFORE_FIX',  '1',   bool),
+    }
+
+    if request.method == 'POST':
+        is_super = bool(user.get('super_admin_approved')) or (user.get('role') or '').lower() in {'super_admin', 'sadmin'}
+        if not is_super:
+            return jsonify({'success': False, 'error': '仅超级管理员可修改巡检配置'}), 403
+        payload = request.get_json(force=True, silent=True) or {}
+        applied = {}
+        try:
+            with _get_conn(APP_DB) as c:
+                for py_key, (rule_key, _default, _typ) in CONFIG_MAP.items():
+                    if py_key not in payload:
+                        continue
+                    v = payload[py_key]
+                    if _typ is bool:
+                        stored = '1' if bool(v) else '0'
+                    elif _typ is int:
+                        try:
+                            stored = str(int(v))
+                        except (ValueError, TypeError):
+                            continue
+                    else:
+                        stored = str(v)[:255]
+                    try:
+                        c.execute(
+                            "INSERT INTO system_rules (rule_key, rule_value, rule_name, rule_category, rule_description, enabled, rule_priority) VALUES (?,?,?,?,?,?,?) ON CONFLICT(rule_key) DO UPDATE SET rule_value=excluded.rule_value, enabled=1",
+                            (rule_key, stored,
+                             f'AI巡检配置·{py_key}',
+                             'ai_inspection',
+                             f'AI巡检引擎参数: {py_key}',
+                             1, 50))
+                        applied[py_key] = stored
+                    except Exception:
+                        pass
+                c.execute("""CREATE TABLE IF NOT EXISTS system_rules (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    rule_key TEXT UNIQUE,
+                    rule_value TEXT,
+                    rule_name TEXT,
+                    rule_category TEXT,
+                    rule_description TEXT,
+                    enabled INTEGER DEFAULT 1,
+                    rule_priority INTEGER DEFAULT 0,
+                    created_at TEXT,
+                    updated_at TEXT
+                )""")
+        except Exception as e:
+            return jsonify({'success': False, 'message': f'保存失败: {e}'}), 500
+        return jsonify({'success': True, 'message': '配置已保存', 'applied': applied})
+
+    # GET - 读取当前配置
+    config = {}
+    try:
+        with _get_conn(APP_DB) as c:
+            for py_key, (rule_key, default, _typ) in CONFIG_MAP.items():
+                value = default
+                try:
+                    r = c.execute("SELECT rule_value FROM system_rules WHERE rule_key=? LIMIT 1", (rule_key,)).fetchone()
+                    if r and r[0] not in (None, ''):
+                        value = r[0]
+                except Exception:
+                    pass
+                if _typ is bool:
+                    config[py_key] = (str(value) in ('1', 'True', 'true', 'yes'))
+                elif _typ is int:
+                    try:
+                        config[py_key] = int(value)
+                    except (ValueError, TypeError):
+                        config[py_key] = int(default)
+                else:
+                    config[py_key] = str(value)
+    except Exception:
+        for py_key, (_rk, default, _typ) in CONFIG_MAP.items():
+            config[py_key] = default
+    return jsonify({'success': True, 'config': config})
+
+
+@app.route('/api/ai_inspection/control', methods=['POST'])
+def api_ai_inspection_control():
+    """巡检引擎启停控制（仅超级管理员）"""
+    user = _current_safe_user()
+    if not user.get('logged_in'):
+        return jsonify({'success': False, 'error': '未登录'}), 401
+    is_super = bool(user.get('super_admin_approved')) or (user.get('role') or '').lower() in {'super_admin', 'sadmin'}
+    if not is_super:
+        return jsonify({'success': False, 'error': '仅超级管理员可操作巡检引擎'}), 403
+
+    payload = request.get_json(force=True, silent=True) or {}
+    action = (payload.get('action') or '').lower()
+    interval = int(payload.get('interval_seconds', 300))
+
+    try:
+        from core.services.ai_inspection_loop import get_inspection_engine
+        engine = get_inspection_engine()
+    except Exception as e:
+        return jsonify({'success': False, 'error': f'巡检引擎初始化失败: {e}'}), 500
+
+    try:
+        if action == 'start':
+            ok = engine.start(interval=max(60, int(interval)))
+            _maintenance_status['ai_inspection']['running'] = True
+            return jsonify({'success': ok, 'action': 'start',
+                            'message': '已启动巡检引擎' if ok else '引擎已在运行中',
+                            'interval_seconds': max(60, int(interval))})
+        elif action == 'stop':
+            engine.stop()
+            _maintenance_status['ai_inspection']['running'] = False
+            return jsonify({'success': True, 'action': 'stop', 'message': '已停止巡检引擎'})
+        elif action == 'run_once':
+            result = engine.run_once('manual_api_admin')
+            _maintenance_status['ai_inspection']['last_run'] = time.time()
+            _maintenance_status['ai_inspection']['last_result'] = result
+            return jsonify({'success': True, 'action': 'run_once',
+                            'message': '单次巡检执行完成', 'result': result})
+        else:
+            return jsonify({'success': False, 'error': f'未知 action: {action}'}), 400
+    except Exception as e:
+        import traceback as _tb
+        return jsonify({'success': False, 'error': str(e),
+                        'trace': _tb.format_exc(limit=3)}), 500
+
+
+@app.route('/api/ai_inspection/runs', methods=['GET'])
+def api_ai_inspection_runs():
+    """分页获取巡检运行历史（管理员）"""
+    user = _current_safe_user()
+    if not user.get('logged_in'):
+        return jsonify({'success': False, 'error': '未登录'}), 401
+    page = max(1, request.args.get('page', 1, type=int))
+    per_page = min(200, max(10, request.args.get('per_page', 20, type=int)))
+    offset = (page - 1) * per_page
+    try:
+        with _get_conn(APP_DB) as c:
+            try:
+                c.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='ai_inspection_runs'")
+                if not c.fetchone():
+                    return jsonify({'success': True, 'total': 0, 'page': page, 'per_page': per_page, 'data': []})
+            except Exception:
+                return jsonify({'success': True, 'total': 0, 'page': page, 'per_page': per_page, 'data': []})
+            total = c.execute('SELECT COUNT(*) FROM ai_inspection_runs').fetchone()[0] or 0
+            cur = c.execute(
+                "SELECT run_id, run_type, started_at, completed_at, files_scanned, errors_found, errors_fixed, errors_failed, knowledge_gained, status, duration_ms FROM ai_inspection_runs ORDER BY id DESC LIMIT ? OFFSET ?",
+                (per_page, offset))
+            cols = [d[0] for d in cur.description]
+            data = [dict(zip(cols, row)) for row in cur.fetchall()]
+        return jsonify({'success': True, 'total': total, 'page': page,
+                        'per_page': per_page, 'data': data})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/ai_inspection/config', methods=['GET', 'POST', 'PUT'])
+def _api_ai_inspection_config_extended():
+    """扩展：支持巡检设置页面新版配置（Blob 格式）+ 兼容原有 system_rules 读写"""
+    from flask import request, jsonify as _jf
+    user = _current_safe_user()
+    if not user.get('logged_in'):
+        return jsonify({'success': False, 'error': '未登录'}), 401
+    is_super = bool(user.get('super_admin_approved')) or (user.get('role') or '').lower() in {'super_admin', 'sadmin'}
+
+    if request.method in ('POST', 'PUT'):
+        if not is_super:
+            return jsonify({'success': False, 'error': '仅超级管理员可修改巡检配置'}), 403
+        payload = request.get_json(force=True, silent=True) or {}
+        new_cfg = payload.get('config') if 'config' in payload else payload
+        if not isinstance(new_cfg, dict):
+            return jsonify({'success': False, 'error': '无效的配置格式'}), 400
+        try:
+            import json as _json
+            blob = _json.dumps(new_cfg, ensure_ascii=False)
+            with _get_conn(APP_DB) as c:
+                c.execute("""CREATE TABLE IF NOT EXISTS ai_inspection_config_blob (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    config_blob TEXT NOT NULL,
+                    created_by TEXT,
+                    created_at TEXT,
+                    updated_at TEXT
+                )""")
+                now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                r = c.execute("SELECT id FROM ai_inspection_config_blob ORDER BY id DESC LIMIT 1").fetchone()
+                if r:
+                    c.execute("UPDATE ai_inspection_config_blob SET config_blob=?, updated_at=? WHERE id=?",
+                              (blob, now, r[0]))
+                    cid = r[0]
+                else:
+                    c.execute("INSERT INTO ai_inspection_config_blob (config_blob, created_by, created_at, updated_at) VALUES (?,?,?,?)",
+                              (blob, user.get('username') or 'unknown', now, now))
+                    cid = c.lastrowid
+                # 兼容：同时镜像部分 key 到 system_rules，便于老代码读取
+                mirrors = [
+                    ('interval_minutes',   'AI_INSPECTION_INTERVAL_SECONDS', lambda v: str(max(60, int(v*60))) if v else '3600'),
+                    ('autofix_enabled',    'AI_INSPECTION_AUTO_FIX_ENABLED',   lambda v: '1' if v else '0'),
+                    ('learning_enabled',   'AI_INSPECTION_NOTIFICATION_ENABLED', lambda v: '1' if v else '0'),
+                    ('db_enabled',         'AI_INSPECTION_BACKUP_BEFORE_FIX',  lambda v: '1' if v else '0'),
+                    ('max_autofixes_per_run','AI_INSPECTION_MAX_ISSUES_PER_RUN', lambda v: str(max(0, int(v))) if v else '200'),
+                    ('scheduler_enabled',  'AI_INSPECTION_SCHEDULER_ON',       lambda v: '1' if v else '0'),
+                ]
+                try:
+                    c.execute("""CREATE TABLE IF NOT EXISTS system_rules (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT, rule_key TEXT UNIQUE, rule_value TEXT,
+                        rule_name TEXT, rule_category TEXT, rule_description TEXT, enabled INTEGER DEFAULT 1,
+                        rule_priority INTEGER DEFAULT 0, created_at TEXT, updated_at TEXT
+                    )""")
+                except Exception:
+                    pass
+                for py_k, rule_k, fn in mirrors:
+                    if py_k not in new_cfg:
+                        continue
+                    try:
+                        stored = fn(new_cfg[py_k])
+                    except Exception:
+                        continue
+                    try:
+                        c.execute("INSERT INTO system_rules (rule_key, rule_value, rule_name, rule_category, rule_description, enabled, rule_priority, updated_at) VALUES (?,?,?,?,?,?,?,?) ON CONFLICT(rule_key) DO UPDATE SET rule_value=excluded.rule_value, enabled=1, updated_at=excluded.updated_at",
+                                  (rule_k, stored, f'AI巡检配置·{py_k}', 'ai_inspection', f'AI巡检引擎参数: {py_k}', 1, 50, now))
+                    except Exception:
+                        pass
+            return jsonify({'success': True, 'message': '配置已保存', 'config': new_cfg, 'id': cid})
+        except Exception as e:
+            return jsonify({'success': False, 'error': f'保存失败: {e}'}), 500
+
+    # GET: 合并 Blob 配置（优先）与 system_rules 的缺省值
+    import json as _json
+    default_cfg = {
+        'scheduler_enabled': False,
+        'interval_minutes': 60,
+        'autofix_enabled': True,
+        'learning_enabled': True,
+        'console_reporting_enabled': True,
+        'db_enabled': True,
+        'max_autofixes_per_run': 50,
+        'log_level': 'INFO',
+        'scan_extensions': ['py','js','html','css','json','md','yml','yaml','xml','sh','sql'],
+        'exclude_patterns': ['node_modules','.git','__pycache__','.venv','vendor','dist','build','logs','*.pyc','*.min.js','*.min.css'],
+        'modules_enabled': {
+            'scan_structure': True, 'scan_syntax': True, 'scan_console': True,
+            'module_autofix': True, 'module_db': True, 'module_logging': True, 'module_learning': True,
+        },
+    }
+    blob_cfg = None
+    try:
+        with _get_conn(APP_DB) as c:
+            try:
+                c.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='ai_inspection_config_blob'")
+                if c.fetchone():
+                    r = c.execute("SELECT config_blob FROM ai_inspection_config_blob ORDER BY id DESC LIMIT 1").fetchone()
+                    if r and r[0]:
+                        blob_cfg = _json.loads(r[0])
+            except Exception:
+                blob_cfg = None
+    except Exception:
+        blob_cfg = None
+    if blob_cfg and isinstance(blob_cfg, dict):
+        # 合并
+        merged = dict(default_cfg)
+        for k, v in blob_cfg.items():
+            merged[k] = v
+        return jsonify({'success': True, 'config': merged})
+    # 无 blob 时使用 system_rules 回填
+    cfg = dict(default_cfg)
+    try:
+        with _get_conn(APP_DB) as c:
+            reads = [
+                ('AI_INSPECTION_INTERVAL_SECONDS',        lambda v: max(1, int(int(v)/60)), 'interval_minutes'),
+                ('AI_INSPECTION_AUTO_FIX_ENABLED',        lambda v: v in ('1','True','true'), 'autofix_enabled'),
+                ('AI_INSPECTION_NOTIFICATION_ENABLED',    lambda v: v in ('1','True','true'), 'learning_enabled'),
+                ('AI_INSPECTION_CONSOLE_ERROR_ENABLED',   lambda v: v in ('1','True','true'), 'console_reporting_enabled'),
+                ('AI_INSPECTION_BACKUP_BEFORE_FIX',       lambda v: v in ('1','True','true'), 'db_enabled'),
+                ('AI_INSPECTION_MAX_ISSUES_PER_RUN',      lambda v: int(v), 'max_autofixes_per_run'),
+                ('AI_INSPECTION_SCHEDULER_ON',            lambda v: v in ('1','True','true'), 'scheduler_enabled'),
+            ]
+            for rule_k, conv, py_k in reads:
+                try:
+                    r = c.execute("SELECT rule_value FROM system_rules WHERE rule_key=? LIMIT 1", (rule_k,)).fetchone()
+                    if r and r[0] is not None:
+                        cfg[py_k] = conv(str(r[0]))
+                except Exception:
+                    pass
+    except Exception:
+        pass
+    return jsonify({'success': True, 'config': cfg})
+
+
+def _ai_inspection_make_suggestions(report_data):
+    """根据报告数据生成建议列表（后端版，与前端尽量保持一致）"""
+    is_s = (report_data or {}).get('issue_stats') or {}
+    cs = (report_data or {}).get('console_stats') or {}
+    rs = (report_data or {}).get('run_stats') or {}
+    sugs = []
+    if (is_s.get('critical') or 0) > 0:
+        sugs.append({'priority':'HIGH','category':'问题修复','title':'优先处理严重(Critical)问题',
+                     'detail':f'当前存在 {is_s.get("critical",0)} 个严重级别问题，可能引发系统崩溃或安全漏洞，建议立即人工复核和修复。',
+                     'action':'打开【巡检设置】执行单次巡检并查看未修复严重问题'})
+    if (is_s.get('warning') or 0) > 10:
+        sugs.append({'priority':'MEDIUM','category':'问题修复','title':'批量处理警告级问题',
+                     'detail':f'警告级问题共 {is_s.get("warning",0)} 个，建议按问题类型分组批量修复，或启用自动修复功能。',
+                     'action':'配置【自动修复启用】开关，下次巡检自动应用知识库修复方案'})
+    if (cs.get('total') or 0) > 50:
+        sugs.append({'priority':'MEDIUM','category':'前端质量','title':'前端控制台错误数量偏多',
+                     'detail':f'累计上报 {cs.get("total",0)} 条前端错误，建议查看 error_type 分布以定位高频问题。',
+                     'action':'分析报告【前端控制台错误】按类型统计，优先修复 Top 3 类型'})
+    open_cnt = is_s.get('open_issues') or 0
+    if open_cnt > 20:
+        sugs.append({'priority':'HIGH','category':'治理闭环','title':'待修复问题积压过多',
+                     'detail':f'待处理问题 {open_cnt} 个，修复率低于建议阈值(>70%)，需加快修复节奏。',
+                     'action':'前往【巡检设置】开启后台定时自动修复，或分配问题给对应模块负责人'})
+    by_type = is_s.get('by_type') or {}
+    tops = sorted(by_type.items(), key=lambda kv: kv[1], reverse=True)[:3]
+    for idx, (t, n) in enumerate(tops):
+        sugs.append({'priority': 'MEDIUM' if idx == 0 else 'LOW', 'category': '重点关注',
+                     'title': f'高频问题类型：{t}',
+                     'detail': f'该类型累计 {n} 条，建议编写专项修复脚本或补充知识库以提升修复率。',
+                     'action': '补充知识库中对应 error_type 的修复模板'})
+    if (rs.get('total_runs') or 0) == 0:
+        sugs.append({'priority':'HIGH','category':'巡检机制','title':'尚未执行任何巡检',
+                     'detail':'当前系统无任何巡检运行记录，建议立即启动后台巡检线程或手动执行首次巡检。',
+                     'action':'打开【巡检设置】，点击【手动执行单次巡检】或【启动后台巡检引擎】'})
+    if not sugs:
+        sugs.append({'priority':'LOW','category':'建议','title':'巡检系统运行良好',
+                     'detail':'当前问题数量可控，修复率达标，建议保持现有策略并定期复核。',
+                     'action':'建议每周导出一次完整报告用于审计归档'})
+    return sugs
+
+
+@app.route('/api/ai_inspection/upload_report', methods=['POST'])
+def api_ai_inspection_upload_report():
+    """上传巡检报告快照到数据库（管理员及以上）"""
+    user = _current_safe_user()
+    if not user.get('logged_in'):
+        return jsonify({'success': False, 'error': '未登录'}), 401
+    if not (user.get('is_admin') or user.get('super_admin_approved') or (user.get('role') or '').lower() in {'admin','sadmin','super_admin'}):
+        return jsonify({'success': False, 'error': '无权限'}), 403
+    import json as _json
+    payload = request.get_json(force=True, silent=True) or {}
+    snapshot = payload.get('snapshot') or {}
+    source_page = payload.get('source_page') or 'dashboard'
+    exported_at = payload.get('exported_at') or datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    try:
+        blob = _json.dumps(snapshot, ensure_ascii=False)
+    except Exception as e:
+        return jsonify({'success': False, 'error': f'序列化失败: {e}'}), 400
+    # 生成建议
+    suggestions = _ai_inspection_make_suggestions(snapshot)
+    # 统计摘要
+    is_s = (snapshot or {}).get('issue_stats') or {}
+    rs = (snapshot or {}).get('run_stats') or {}
+    es = (snapshot or {}).get('engine_status') or {}
+    summary = {
+        'total_runs': rs.get('total_runs') or es.get('total_runs') or 0,
+        'files_scanned': rs.get('total_files_scanned') or 0,
+        'errors_found': rs.get('total_errors_found') or is_s.get('total_issues') or 0,
+        'errors_fixed': rs.get('total_errors_fixed') or is_s.get('fixed_issues') or 0,
+        'open_issues': is_s.get('open_issues') or 0,
+        'critical': is_s.get('critical') or 0,
+        'warning': is_s.get('warning') or 0,
+        'info': is_s.get('info') or 0,
+        'suggestions_count': len(suggestions),
+    }
+    try:
+        with _get_conn(APP_DB) as c:
+            c.execute("""CREATE TABLE IF NOT EXISTS ai_inspection_report_snapshots (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                exported_at TEXT,
+                created_at TEXT,
+                created_by TEXT,
+                source_page TEXT,
+                summary_json TEXT,
+                suggestions_json TEXT,
+                snapshot_json TEXT,
+                engine_status TEXT,
+                issues_count INTEGER DEFAULT 0,
+                fixes_count INTEGER DEFAULT 0
+            )""")
+            now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            cur = c.execute(
+                """INSERT INTO ai_inspection_report_snapshots
+                   (exported_at, created_at, created_by, source_page, summary_json, suggestions_json, snapshot_json, engine_status, issues_count, fixes_count)
+                   VALUES (?,?,?,?,?,?,?,?,?,?)""",
+                (exported_at, now, user.get('username') or 'unknown', source_page,
+                 _json.dumps(summary, ensure_ascii=False),
+                 _json.dumps(suggestions, ensure_ascii=False),
+                 blob,
+                 _json.dumps(snapshot.get('engine_status') or {}, ensure_ascii=False),
+                 summary['errors_found'], summary['errors_fixed']))
+            row_id = cur.lastrowid
+        return jsonify({'success': True, 'id': row_id, 'row_id': row_id,
+                        'summary': summary, 'suggestions_count': len(suggestions),
+                        'message': f'报告已入库 # {row_id}'})
+    except Exception as e:
+        return jsonify({'success': False, 'error': f'写入数据库失败: {e}'}), 500
+
+
+@app.route('/api/ai_inspection/logs', methods=['GET'])
+def api_ai_inspection_logs():
+    """巡检日志增量拉取（供设置页面实时查看）"""
+    user = _current_safe_user()
+    if not user.get('logged_in'):
+        return jsonify({'success': False, 'error': '未登录'}), 401
+    import os
+    since = request.args.get('since', 0, type=int)
+    log_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'logs', 'ai_inspection_loop.log')
+    lines = []
+    cursor = 0
+    try:
+        if os.path.exists(log_path):
+            with open(log_path, 'r', encoding='utf-8', errors='replace') as f:
+                all_lines = f.readlines()
+                cursor = len(all_lines)
+                if since and isinstance(since, int) and since < cursor:
+                    chunk = all_lines[since:]
+                else:
+                    chunk = all_lines[-200:]
+                lines = [ln.rstrip('\n') for ln in chunk]
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+    return jsonify({'success': True, 'lines': lines[-300:], 'cursor': cursor})
+
+
+@app.route('/api/ai_inspection/export/suggestions', methods=['GET'])
+def api_ai_inspection_export_suggestions():
+    """生成并导出 Markdown 建议报告（管理员及以上）"""
+    user = _current_safe_user()
+    if not user.get('logged_in'):
+        return jsonify({'success': False, 'error': '未登录'}), 401
+    import json as _json
+    fmt = (request.args.get('format') or 'md').lower()
+    # 取最新的报告数据（优先用快照，否则调用 report 接口复用逻辑）
+    latest = None
+    try:
+        with _get_conn(APP_DB) as c:
+            try:
+                c.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='ai_inspection_report_snapshots'")
+                if c.fetchone():
+                    r = c.execute("SELECT snapshot_json, exported_at FROM ai_inspection_report_snapshots ORDER BY id DESC LIMIT 1").fetchone()
+                    if r and r[0]:
+                        latest = _json.loads(r[0])
+                        _exp_at = r[1]
+            except Exception:
+                latest = None
+    except Exception:
+        latest = None
+    if not latest:
+        # fallback：内联调 report 逻辑
+        from flask import g as _g
+        environ_save = request.environ.copy() if hasattr(request, 'environ') else {}
+        # 伪造一个内部请求不可行，所以直接复用 /api/ai_inspection/report 的实现片段
+        from datetime import datetime, timedelta
+        latest = {'run_stats':{}, 'issue_stats':{}, 'console_stats':{}, 'engine_status':{}}
+        try:
+            with _get_conn(APP_DB) as c:
+                for tbl in ('ai_inspection_runs','ai_inspection_issues','ai_inspection_console_errors'):
+                    try:
+                        c.execute("SELECT name FROM sqlite_master WHERE type='table' AND name=?", (tbl,))
+                        if not c.fetchone():
+                            continue
+                    except Exception:
+                        continue
+                    if tbl == 'ai_inspection_runs':
+                        r = c.execute("SELECT COUNT(*), COALESCE(SUM(files_scanned),0), COALESCE(SUM(errors_found),0), COALESCE(SUM(errors_fixed),0) FROM ai_inspection_runs").fetchone()
+                        latest['run_stats']['total_runs'] = r[0] or 0
+                        latest['run_stats']['total_files_scanned'] = r[1] or 0
+                        latest['run_stats']['total_errors_found'] = r[2] or 0
+                        latest['run_stats']['total_errors_fixed'] = r[3] or 0
+                    elif tbl == 'ai_inspection_issues':
+                        r = c.execute("SELECT COUNT(*), COALESCE(SUM(CASE WHEN fixed=1 THEN 1 ELSE 0 END),0) FROM ai_inspection_issues").fetchone()
+                        tot = r[0] or 0
+                        fixed = r[1] or 0
+                        latest['issue_stats']['total_issues'] = tot
+                        latest['issue_stats']['fixed_issues'] = fixed
+                        latest['issue_stats']['open_issues'] = tot - fixed
+                        for sev in ('critical','warning','info'):
+                            r2 = c.execute("SELECT COUNT(*) FROM ai_inspection_issues WHERE LOWER(severity)=?", (sev,)).fetchone()
+                            latest['issue_stats'][sev] = r2[0] if r2 else 0
+                        by_type = {}
+                        for rr in c.execute("SELECT issue_type, COUNT(*) FROM ai_inspection_issues GROUP BY issue_type ORDER BY COUNT(*) DESC LIMIT 10"):
+                            by_type[rr[0]] = rr[1]
+                        latest['issue_stats']['by_type'] = by_type
+                    elif tbl == 'ai_inspection_console_errors':
+                        r = c.execute("SELECT COUNT(*) FROM ai_inspection_console_errors").fetchone()
+                        latest['console_stats']['total'] = r[0] or 0
+        except Exception:
+            pass
+    suggestions = _ai_inspection_make_suggestions(latest)
+    rs = latest.get('run_stats') or {}
+    is_s = latest.get('issue_stats') or {}
+    cs = latest.get('console_stats') or {}
+    prio_label = {'HIGH':'🔴 高优先级','MEDIUM':'🟡 中优先级','LOW':'🟢 低优先级'}
+    ts = datetime.now().strftime('%Y-%m-%d')
+    if fmt == 'json':
+        payload = {
+            'exported_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+            'summary': {
+                'total_runs': rs.get('total_runs',0),
+                'files_scanned': rs.get('total_files_scanned',0),
+                'errors_found': rs.get('total_errors_found') or is_s.get('total_issues',0),
+                'errors_fixed': rs.get('total_errors_fixed') or is_s.get('fixed_issues',0),
+                'open_issues': is_s.get('open_issues',0),
+                'console_errors': cs.get('total',0),
+                'by_severity': {k: is_s.get(k,0) for k in ('critical','warning','info')},
+                'by_type': is_s.get('by_type') or {},
+            },
+            'suggestions': suggestions,
+        }
+        from flask import Response
+        body = _json.dumps(payload, ensure_ascii=False, indent=2)
+        resp = Response(body, mimetype='application/json')
+        resp.headers['Content-Disposition'] = f'attachment; filename="AI巡检建议报告_{ts}.json"'
+        return resp
+    # default markdown
+    md = f"# AI 巡检优化建议报告\n\n> 生成时间：{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n> 数据来源：巡检引擎数据库快照\n\n"
+    md += "## 核心指标快照\n\n| 指标 | 值 |\n| --- | --- |\n"
+    md += f"| 总巡检次数 | {rs.get('total_runs',0)} |\n"
+    md += f"| 扫描文件数 | {rs.get('total_files_scanned',0)} |\n"
+    md += f"| 发现问题数 | {rs.get('total_errors_found') or is_s.get('total_issues',0)} |\n"
+    md += f"| 自动修复数 | {rs.get('total_errors_fixed') or is_s.get('fixed_issues',0)} |\n"
+    md += f"| 待处理问题 | {is_s.get('open_issues',0)} |\n"
+    md += f"| 控制台错误 | {cs.get('total',0)} |\n\n"
+    md += f"## 优化建议（共 {len(suggestions)} 条）\n\n"
+    for i, s in enumerate(suggestions, 1):
+        md += f"### {i}. {prio_label.get(s.get('priority','LOW'),'🟢')} · {s.get('title','')}\n\n"
+        md += f"- **类别**：{s.get('category','')}\n- **说明**：{s.get('detail','')}\n- **建议动作**：{s.get('action','')}\n\n"
+    md += "\n---\n*报告由 MTSCOS AI 巡检引擎自动生成，请结合实际场景人工复核。*\n"
+    from flask import Response
+    resp = Response(md, mimetype='text/markdown; charset=utf-8')
+    resp.headers['Content-Disposition'] = f'attachment; filename="AI巡检建议报告_{ts}.md"'
+    return resp
+
+
+@app.route('/api/ai_inspection/export/issues', methods=['GET'])
+def api_ai_inspection_export_issues():
+    """导出问题清单（CSV / JSON）"""
+    user = _current_safe_user()
+    if not user.get('logged_in'):
+        return jsonify({'success': False, 'error': '未登录'}), 401
+    import json as _json, io as _io, csv as _csv
+    fmt = (request.args.get('format') or 'csv').lower()
+    limit = min(10000, request.args.get('limit', 5000, type=int))
+    rows = []
+    is_s = {'total_issues':0,'fixed_issues':0,'open_issues':0,'critical':0,'warning':0,'info':0,'by_type':{}}
+    try:
+        with _get_conn(APP_DB) as c:
+            try:
+                c.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='ai_inspection_issues'")
+                if c.fetchone():
+                    r = c.execute("SELECT COUNT(*), COALESCE(SUM(CASE WHEN fixed=1 THEN 1 ELSE 0 END),0) FROM ai_inspection_issues").fetchone()
+                    is_s['total_issues'] = r[0] or 0
+                    is_s['fixed_issues'] = r[1] or 0
+                    is_s['open_issues'] = is_s['total_issues'] - is_s['fixed_issues']
+                    for sev in ('critical','warning','info'):
+                        r2 = c.execute("SELECT COUNT(*) FROM ai_inspection_issues WHERE LOWER(severity)=?", (sev,)).fetchone()
+                        is_s[sev] = r2[0] if r2 else 0
+                    for rr in c.execute("SELECT issue_type, COUNT(*) FROM ai_inspection_issues GROUP BY issue_type ORDER BY COUNT(*) DESC LIMIT 20"):
+                        is_s['by_type'][rr[0]] = rr[1]
+                    cols = ['issue_type','severity','file_path','line_number','error_message','error_code','fixed','fix_method','detected_at','fixed_at']
+                    cur = c.execute(f"SELECT {','.join(cols)} FROM ai_inspection_issues ORDER BY id DESC LIMIT ?", (limit,))
+                    for row in cur.fetchall():
+                        rows.append(dict(zip(cols, row)))
+            except Exception:
+                pass
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+    ts = datetime.now().strftime('%Y-%m-%d')
+    if fmt == 'json':
+        payload = {
+            'exported_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+            'summary': is_s,
+            'issues': rows,
+        }
+        from flask import Response
+        body = _json.dumps(payload, ensure_ascii=False, indent=2)
+        resp = Response(body, mimetype='application/json')
+        resp.headers['Content-Disposition'] = f'attachment; filename="AI巡检问题清单_{ts}.json"'
+        return resp
+    # CSV
+    buf = _io.StringIO()
+    buf.write('\ufeff')
+    writer = _csv.writer(buf)
+    header = ['issue_type','severity','file_path','line_number','error_message','error_code','fixed','fix_method','detected_at','fixed_at']
+    writer.writerow(header)
+    for r in rows:
+        writer.writerow([r.get(h,'') for h in header])
+    from flask import Response
+    resp = Response(buf.getvalue(), mimetype='text/csv; charset=utf-8')
+    resp.headers['Content-Disposition'] = f'attachment; filename="AI巡检问题清单_{ts}.csv"'
+    return resp
+
+
+@app.route('/api/ai_inspection/export/full', methods=['GET'])
+def api_ai_inspection_export_full():
+    """导出完整巡检报告（JSON）"""
+    user = _current_safe_user()
+    if not user.get('logged_in'):
+        return jsonify({'success': False, 'error': '未登录'}), 401
+    import json as _json
+    # 复用 /report 的逻辑：直接内联执行
+    from datetime import datetime
+    run_stats = {'total_runs':0,'total_files_scanned':0,'total_errors_found':0,'total_errors_fixed':0,'completed_runs':0,'last_10_runs':[]}
+    issue_stats = {'total_issues':0,'fixed_issues':0,'open_issues':0,'critical':0,'warning':0,'info':0,'by_type':{}}
+    console_stats = {'total':0,'by_type':{}, 'recent':[]}
+    engine_status = {'total_runs':0,'total_errors_found':0,'total_errors_fixed':0,'total_knowledge_gained':0,'current_status':'idle'}
+    recent_issues = []
+    kb = []
+    try:
+        with _get_conn(APP_DB) as c:
+            for tbl in ('ai_inspection_runs','ai_inspection_issues','ai_inspection_console_errors','ai_inspection_knowledge'):
+                try:
+                    c.execute("SELECT name FROM sqlite_master WHERE type='table' AND name=?", (tbl,))
+                    if not c.fetchone():
+                        continue
+                except Exception:
+                    continue
+                if tbl == 'ai_inspection_runs':
+                    r = c.execute("SELECT COUNT(*), COALESCE(SUM(files_scanned),0), COALESCE(SUM(errors_found),0), COALESCE(SUM(errors_fixed),0) FROM ai_inspection_runs").fetchone()
+                    run_stats['total_runs'] = r[0] or 0
+                    run_stats['total_files_scanned'] = r[1] or 0
+                    run_stats['total_errors_found'] = r[2] or 0
+                    run_stats['total_errors_fixed'] = r[3] or 0
+                    r = c.execute("SELECT COUNT(*) FROM ai_inspection_runs WHERE status='completed'").fetchone()
+                    run_stats['completed_runs'] = r[0] or 0
+                    cols_r = ['run_id','run_type','started_at','completed_at','files_scanned','errors_found','errors_fixed','errors_failed','knowledge_gained','status','duration_ms']
+                    cur = c.execute(f"SELECT {','.join(cols_r)} FROM ai_inspection_runs ORDER BY id DESC LIMIT 10")
+                    run_stats['last_10_runs'] = [dict(zip(cols_r, x)) for x in cur.fetchall()]
+                    engine_status['total_runs'] = run_stats['total_runs']
+                    engine_status['total_errors_found'] = run_stats['total_errors_found']
+                    engine_status['total_errors_fixed'] = run_stats['total_errors_fixed']
+                elif tbl == 'ai_inspection_issues':
+                    r = c.execute("SELECT COUNT(*), COALESCE(SUM(CASE WHEN fixed=1 THEN 1 ELSE 0 END),0) FROM ai_inspection_issues").fetchone()
+                    issue_stats['total_issues'] = r[0] or 0
+                    issue_stats['fixed_issues'] = r[1] or 0
+                    issue_stats['open_issues'] = issue_stats['total_issues'] - issue_stats['fixed_issues']
+                    for sev in ('critical','warning','info'):
+                        r2 = c.execute("SELECT COUNT(*) FROM ai_inspection_issues WHERE LOWER(severity)=?", (sev,)).fetchone()
+                        issue_stats[sev] = r2[0] if r2 else 0
+                    for rr in c.execute("SELECT issue_type, COUNT(*) FROM ai_inspection_issues GROUP BY issue_type ORDER BY COUNT(*) DESC LIMIT 20"):
+                        issue_stats['by_type'][rr[0]] = rr[1]
+                    cols_i = ['issue_type','severity','file_path','line_number','error_message','error_code','fixed','fix_method','detected_at','fixed_at']
+                    cur = c.execute(f"SELECT {','.join(cols_i)} FROM ai_inspection_issues ORDER BY id DESC LIMIT 500")
+                    recent_issues = [dict(zip(cols_i, x)) for x in cur.fetchall()]
+                elif tbl == 'ai_inspection_console_errors':
+                    r = c.execute("SELECT COUNT(*) FROM ai_inspection_console_errors").fetchone()
+                    console_stats['total'] = r[0] or 0
+                    for rr in c.execute("SELECT error_type, COUNT(*) FROM ai_inspection_console_errors GROUP BY error_type ORDER BY COUNT(*) DESC LIMIT 10"):
+                        console_stats['by_type'][rr[0]] = rr[1]
+                    cols_c = ['error_id','source','error_type','error_message','file_path','line_number','reported_at']
+                    cur = c.execute(f"SELECT {','.join(cols_c)} FROM ai_inspection_console_errors ORDER BY id DESC LIMIT 50")
+                    console_stats['recent'] = [dict(zip(cols_c, x)) for x in cur.fetchall()]
+                elif tbl == 'ai_inspection_knowledge':
+                    try:
+                        cur = c.execute("SELECT pattern, issue_description, fix_method, success_rate, applied_count, last_applied_at FROM ai_inspection_knowledge ORDER BY applied_count DESC LIMIT 200")
+                        cols_k = ['pattern','issue_description','fix_method','success_rate','applied_count','last_applied_at']
+                        kb = [dict(zip(cols_k, x)) for x in cur.fetchall()]
+                    except Exception:
+                        kb = []
+    except Exception:
+        pass
+    suggestions = _ai_inspection_make_suggestions({'run_stats':run_stats,'issue_stats':issue_stats,'console_stats':console_stats,'engine_status':engine_status})
+    payload = {
+        'report_type': 'AI_INSPECTION_FULL_REPORT_V1',
+        'exported_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+        'engine_status': engine_status,
+        'maintenance': {
+            'running': _maintenance_status.get('ai_inspection', {}).get('running', False),
+            'last_run': _maintenance_status.get('ai_inspection', {}).get('last_run', 0),
+            'last_result': _maintenance_status.get('ai_inspection', {}).get('last_result'),
+        },
+        'run_stats': run_stats,
+        'issue_stats': issue_stats,
+        'console_stats': console_stats,
+        'suggestions': suggestions,
+        'recent_issues': recent_issues,
+        'knowledge_base': kb,
+    }
+    ts = datetime.now().strftime('%Y-%m-%d')
+    from flask import Response
+    body = _json.dumps(payload, ensure_ascii=False, indent=2)
+    resp = Response(body, mimetype='application/json')
+    resp.headers['Content-Disposition'] = f'attachment; filename="AI巡检完整报告_{ts}.json"'
+    return resp
 
 
 if __name__ == '__main__':

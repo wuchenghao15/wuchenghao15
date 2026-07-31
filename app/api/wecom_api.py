@@ -168,13 +168,11 @@ def send_message():
 
     client = _get_wecom_client()
     if not client:
-        # 模拟模式
         return jsonify({
-            "success": True,
-            "mode": "simulated",
-            "message": f"消息已发送给 {len(user_ids)} 人（模拟）",
-            "content": content
-        })
+            "success": False,
+            "error": "企业微信客户端不可用，无法获取真实数据",
+            "message": f"消息发送失败：{len(user_ids)} 人"
+        }), 503
 
     try:
         if msg_type == 'text':
@@ -232,13 +230,11 @@ def broadcast_message():
 
     client = _get_wecom_client()
     if not client:
-        # 模拟模式
         return jsonify({
-            "success": True,
-            "mode": "simulated",
-            "message": "广播已发出（模拟）",
+            "success": False,
+            "error": "企业微信客户端不可用，无法获取真实数据",
             "audience": "@all"
-        })
+        }), 503
 
     try:
         if msg_type == 'text':
@@ -299,18 +295,10 @@ def get_departments():
 
     client = _get_wecom_client()
     if not client:
-        # 模拟数据
         return jsonify({
-            "success": True,
-            "mode": "simulated",
-            "departments": [
-                {"id": 1, "name": "公司总部", "parent_id": 0, "member_count": 120},
-                {"id": 2, "name": "技术部", "parent_id": 1, "member_count": 45},
-                {"id": 3, "name": "产品部", "parent_id": 1, "member_count": 20},
-                {"id": 4, "name": "市场部", "parent_id": 1, "member_count": 15},
-                {"id": 5, "name": "人力资源部", "parent_id": 1, "member_count": 8},
-            ]
-        })
+            "success": False,
+            "error": "企业微信客户端不可用，无法获取真实数据"
+        }), 503
 
     try:
         result = client.get_department_list(int(department_id))
@@ -334,10 +322,9 @@ def create_department():
     client = _get_wecom_client()
     if not client:
         return jsonify({
-            "success": True,
-            "mode": "simulated",
-            "message": f"部门「{name}」已创建（模拟）"
-        })
+            "success": False,
+            "error": "企业微信客户端不可用，无法获取真实数据"
+        }), 503
 
     try:
         result = client.create_department(
@@ -359,23 +346,12 @@ def get_users():
 
     client = _get_wecom_client()
     if not client:
-        # 模拟数据
-        mock_users = [
-            {"userid": "lisi", "name": "李四", "department": [2], "position": "高级工程师"},
-            {"userid": "wangwu", "name": "王五", "department": [3], "position": "产品经理"},
-            {"userid": "zhaoliu", "name": "赵六", "department": [4], "position": "市场专员"},
-            {"userid": "sunqi", "name": "孙七", "department": [5], "position": "HRBP"},
-        ]
-        if keyword:
-            mock_users = [u for u in mock_users
-                          if keyword.lower() in u['name'].lower() or
-                          keyword.lower() in u['position'].lower()]
         return jsonify({
-            "success": True,
-            "mode": "simulated",
-            "userlist": mock_users,
-            "total": len(mock_users)
-        })
+            "success": False,
+            "error": "企业微信客户端不可用，无法获取真实数据",
+            "userlist": [],
+            "total": 0
+        }), 503
 
     try:
         result = client.get_user_list(int(department_id), key_word=keyword)
@@ -419,14 +395,9 @@ def get_tags():
     client = _get_wecom_client()
     if not client:
         return jsonify({
-            "success": True,
-            "mode": "simulated",
-            "tags": [
-                {"tagid": 1, "tagname": "技术团队", "count": 45},
-                {"tagid": 2, "tagname": "管理团队", "count": 15},
-                {"tagid": 3, "tagname": "新员工", "count": 8},
-            ]
-        })
+            "success": False,
+            "error": "企业微信客户端不可用，无法获取真实数据"
+        }), 503
 
     try:
         result = client.get_tag_list()
@@ -448,14 +419,10 @@ def get_approval_templates():
         return jsonify(result)
 
     return jsonify({
-        "success": True,
-        "templates": [
-            {"key": "leave", "name": "请假申请", "fields": 5},
-            {"key": "expense", "name": "报销申请", "fields": 4},
-            {"key": "travel", "name": "出差申请", "fields": 5},
-            {"key": "overtime", "name": "加班申请", "fields": 3},
-        ]
-    })
+        "success": False,
+        "error": "AI员工不可用，无法获取真实数据",
+        "templates": []
+    }), 503
 
 
 @wecom_api.route('/api/wecom/approval', methods=['POST'])
@@ -483,11 +450,9 @@ def create_approval():
         return jsonify(result)
 
     return jsonify({
-        "success": True,
-        "mode": "simulated",
-        "approval_id": f"APP{int(time.time())}",
-        "message": "审批已创建（模拟）"
-    })
+        "success": False,
+        "error": "AI员工不可用，无法获取真实数据"
+    }), 503
 
 
 @wecom_api.route('/api/wecom/approval/<approval_id>', methods=['GET'])
@@ -504,12 +469,9 @@ def get_approval_status(approval_id):
         return jsonify(result)
 
     return jsonify({
-        "success": True,
-        "mode": "simulated",
-        "approval_id": approval_id,
-        "status": "pending",
-        "message": "审批状态：等待审批中（模拟）"
-    })
+        "success": False,
+        "error": "AI员工不可用，无法获取真实数据"
+    }), 503
 
 
 @wecom_api.route('/api/wecom/approval/analyze', methods=['GET'])
@@ -523,11 +485,9 @@ def analyze_approvals():
         return jsonify(result)
 
     return jsonify({
-        "success": True,
-        "mode": "simulated",
-        "total": 0,
-        "message": "暂无审批数据"
-    })
+        "success": False,
+        "error": "AI员工不可用，无法获取真实数据"
+    }), 503
 
 
 # ==================== 日程管理 API ====================
@@ -550,12 +510,9 @@ def create_schedule():
     client = _get_wecom_client()
     if not client:
         return jsonify({
-            "success": True,
-            "mode": "simulated",
-            "schedule_id": f"SCH{int(time.time())}",
-            "title": title,
-            "message": f"日程「{title}」已创建（模拟）"
-        })
+            "success": False,
+            "error": "企业微信客户端不可用，无法获取真实数据"
+        }), 503
 
     try:
         result = client.create_schedule({
@@ -577,18 +534,9 @@ def get_schedules():
 
     if not client:
         return jsonify({
-            "success": True,
-            "mode": "simulated",
-            "schedules": [
-                {
-                    "id": "SCH001",
-                    "title": "团队周会",
-                    "start_time": "2026-07-29T14:00:00",
-                    "end_time": "2026-07-29T15:00:00",
-                    "attendees": ["lisi", "wangwu"]
-                }
-            ]
-        })
+            "success": False,
+            "error": "企业微信客户端不可用，无法获取真实数据"
+        }), 503
 
     try:
         result = client.get_schedule_list(user_id)

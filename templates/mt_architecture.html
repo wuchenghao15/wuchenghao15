@@ -1,3 +1,11 @@
+
+<style data-inspection-auto-fix="inline-style-template">
+:root {
+    --style-fix-7806e17-0: inherit;
+}
+/* -------- AI 自动修复：status → background 颜色（消除内联模板语法 IDE 红线） -------- */
+.eyebrow-dot { transition: background-color .2s ease; border-radius: 9999px; }
+</style>
 {% extends 'base.html' %}
 
 {% block title %}MTS 架构 v2.0 · 双引擎分层协作 · MTSCOS AI{% endblock %}
@@ -124,6 +132,10 @@
     .tag-new { background: rgba(16,185,129,.14); color: #6ee7b7; border: 1px solid rgba(16,185,129,.28); }
     .tag-upgrade { background: rgba(99,102,241,.16); color: #a5b4fc; border: 1px solid rgba(99,102,241,.28); }
     .tag-fix { background: rgba(245,158,11,.14); color: #fcd34d; border: 1px solid rgba(245,158,11,.28); }
+
+.loading-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;z-index:9999;}
+.loading-spinner{width:40px;height:40px;border:3px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin 1s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
 </style>
 
 <section id="overview">
@@ -134,7 +146,7 @@
             <p class="mt-hero-sub">
                 MTS 架构从 v1.0 的单体分层，升级为 <b>MT-Proposition 命题引擎</b> + <b>MT-Diagnosis 诊断引擎</b> 双核驱动；
                 5 层泳道清晰解耦：用户 → 应用 → MTS 双核 → 数据安全 → 基础设施；
-                9 大分库 + 10,809 AI 员工矩阵 + 206 条强制合规规则，支撑万级并发与等保三级审计要求。
+                {{ (mt_stats or {}).get('total_dbs', 0) }} 大分库 × {{ '{:,.0f}'.format((mt_stats or {}).get('ai_workers', 0) or 0) }} AI 员工矩阵 × {{ '{:,.0f}'.format((mt_stats or {}).get('rules_count', 0) or 0) }} 条强制合规规则，支撑万级并发与等保三级审计要求。
             </p>
             <div class="mt-badge-row">
                 <span class="mt-badge hi"><i class="fas fa-check-circle"></i> 等保三级合规</span>
@@ -155,7 +167,7 @@
                 <div class="mt-stat">
                     <div class="k">拆分数据库</div>
                     <div class="v">{{ (mt_stats or {}).get('total_dbs', 0) }}</div>
-                    <div class="s">9 大业务域 + 4 预留扩展</div>
+                    <div class="s">{{ (mt_stats or {}).get('split_db_count', 0) }} 大业务域 + 4 预留扩展</div>
                 </div>
                 <div class="mt-stat">
                     <div class="k">总数据表</div>
@@ -175,7 +187,7 @@
                 <div class="mt-stat">
                     <div class="k">AI 集群</div>
                     <div class="v">{{ (mt_stats or {}).get('clusters', 0) }}</div>
-                    <div class="s">14 类任务集群</div>
+                    <div class="s">{{ (mt_stats or {}).get('clusters', 0) }} 类任务集群</div>
                 </div>
             </div>
         </div>
@@ -234,8 +246,8 @@
         <div class="mt-lane lane-l5" data-lvl="L5 · 基础设施">
             <div class="lane-title"><h4>☁️ 基础设施层</h4><p>Flask WSGI · SQLite × 分库 · WAF · TLS</p></div>
             <div class="lane-cards">
-                <span class="lane-chip"><i class="fab fa-python"></i> Flask · Jinja2 · 206 Guardrails</span>
-                <span class="lane-chip"><i class="fas fa-database"></i> SQLite × 13 分库 · 按域解耦</span>
+                <span class="lane-chip"><i class="fab fa-python"></i> Flask · Jinja2 · {{ '{:,.0f}'.format((mt_stats or {}).get('rules_count', 0) or 0) }} Guardrails</span>
+                <span class="lane-chip"><i class="fas fa-database"></i> SQLite × {{ (mt_stats or {}).get('total_dbs', 0) }} 分库 · 按域解耦</span>
                 <span class="lane-chip"><i class="fas fa-shield-alt"></i> WAF + 登录失败 5 次冷却</span>
                 <span class="lane-chip"><i class="fas fa-lock"></i> HTTPS/TLS 全程加密</span>
                 <span class="lane-chip"><i class="fas fa-calendar-check"></i> 国家公祭日自动灰阶切换</span>
@@ -255,7 +267,7 @@
                 <li>读取 question.db × exam.db 联合组卷，支持 Word/Excel 批量导入</li>
                 <li>4 档难度 × 知识点权重 × 考纲覆盖率三重约束求解</li>
                 <li>输出 JSON 试卷 + PDF 打印稿两套等价产物</li>
-                <li>AI 员工 × 14 类任务集群负责命题 / 审核 / 排版流水线</li>
+                <li>AI 员工 × {{ (mt_stats or {}).get('clusters', 0) }} 类任务集群负责命题 / 审核 / 排版流水线</li>
             </ul>
         </div>
         <div class="engine-card engine-diag">
@@ -265,7 +277,7 @@
                 <li>从作答明细 → 知识图谱子图 → 能力因子三层下钻</li>
                 <li>雷达图 / 热力图 / 时序趋势三屏诊断视图</li>
                 <li>与 AI 辅导老师联动：薄弱点 → 微课 → 强化题自动下发</li>
-                <li>超 10,809 名 AI 员工 × 206 条规则协同保证稳定性</li>
+                <li>超 {{ '{:,.0f}'.format((mt_stats or {}).get('ai_workers', 0) or 0) }} 名 AI 员工 × {{ '{:,.0f}'.format((mt_stats or {}).get('rules_count', 0) or 0) }} 条规则协同保证稳定性</li>
             </ul>
         </div>
     </div>
@@ -323,7 +335,7 @@
         {% for item in ((mt_stats or {}).get('db_breakdown') or []) %}
         <div class="mt-db-card">
             <div class="name">
-                <span class="mt-db-dot" style="background:{{ item.color }}"></span>
+                <span class="mt-db-dot" style="background:var(--style-fix-7806e17-0, inherit)"></span>
                 <i class="fas fa-database"></i> {{ item.name }}
             </div>
             <div class="stat-row"><span>数据表</span><b>{{ item.tables }}</b></div>

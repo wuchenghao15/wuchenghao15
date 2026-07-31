@@ -26,8 +26,8 @@
 
 | 企业微信功能 | 系统适配模块 | 适配状态 | 说明 |
 |-------------|-------------|---------|------|
-| 应用消息推送 | `wecom_client.py` | ✅ 已适配 | 支持7种消息类型 |
-| 通讯录管理 | `wecom_client.py` + `wecom_ai_employee.py` | ✅ 已适配 | 部门/成员/标签CRUD |
+| 应用消息推送 | `wecom_client.py` | ✅ 已适配 | 支持 7 种消息类型 |
+| 通讯录管理 | `wecom_client.py` + `wecom_ai_employee.py` | ✅ 已适配 | 部门/成员/标签 CRUD |
 | 审批流管理 | `wecom_ai_employee.py` | ✅ 已适配 | 模板推荐/创建/查询 |
 | 日程管理 | `wecom_client.py` | ✅ 已适配 | 创建/查询日程 |
 | 会议管理 | `wecom_client.py` | ✅ 已适配 | 创建/查询会议 |
@@ -35,7 +35,7 @@
 | 消息撤回 | `wecom_client.py` | ✅ 已适配 | 撤回应用消息 |
 | 媒体上传 | `wecom_client.py` | ✅ 已适配 | 图片/文件上传 |
 | 身份验证 | `wecom_client.py` | ✅ 已适配 | code 换取用户信息 |
-| 回调接收 | `wecom_api.py` | ✅ 已适配 | URL验证/消息接收 |
+| 回调接收 | `wecom_api.py` | ✅ 已适配 | URL 验证/消息接收 |
 | 智能回复 | `wecom_ai_employee.py` | ✅ 已适配 | NLP + 多轮对话 |
 | 意图识别 | `wecom_ai_employee.py` | ✅ 已适配 | 20+意图类型 |
 | 工作流 | `wecom_ai_employee.py` | ✅ 已适配 | 定义/执行/监控 |
@@ -47,8 +47,8 @@
 企业微信消息类型 → 系统适配类型
 ├── text → send_text_message()
 ├── markdown → send_markdown_message()
-├── image → send_image_message() [需media_id]
-├── file → send_file_message() [需media_id]
+├── image → send_image_message() [需 media_id]
+├── file → send_file_message() [需 media_id]
 ├── textcard → send_textcard_message()
 ├── taskcard → send_taskcard_message()
 └── template_card → send_template_card()
@@ -56,7 +56,7 @@
 
 #### 通讯录适配
 ```
-企业微信API → 系统适配方法
+企业微信 API → 系统适配方法
 ├── /department/list → get_department_list()
 ├── /department/create → create_department()
 ├── /user/list → get_user_list()
@@ -67,7 +67,7 @@
 
 #### 审批适配
 ```
-企业微信API → 系统适配方法
+企业微信 API → 系统适配方法
 ├── /oa/template/list → get_approval_template_list()
 ├── /oa/applyevent → create_approval()
 ├── /oa/getapprovaldetail → get_approval_detail()
@@ -113,7 +113,7 @@
 
 | 企业微信接口 | 系统 API | 适配说明 |
 |-------------|---------|---------|
-| 发送应用消息 | `POST /api/wecom/message/send` | 封装了7种消息类型 |
+| 发送应用消息 | `POST /api/wecom/message/send` | 封装了 7 种消息类型 |
 | 发送广播消息 | `POST /api/wecom/message/broadcast` | 自动设置 @all |
 | 获取部门列表 | `GET /api/wecom/departments` | 支持分页 |
 | 创建部门 | `POST /api/wecom/departments` | 参数校验 |
@@ -271,8 +271,8 @@ if enable_sms_notification:
 ### 8.2 错误处理
 | 错误场景 | 处理方式 | 用户提示 |
 |---------|---------|---------|
-| access_token 失效 | 自动刷新（提前5分钟） | 无感知 |
-| 网络超时 | 重试3次（指数退避） | 暂时无法连接，请稍后重试 |
+| access_token 失效 | 自动刷新（提前 5 分钟） | 无感知 |
+| 网络超时 | 重试 3 次（指数退避） | 暂时无法连接，请稍后重试 |
 | 企业微信服务异常 | 降级处理 | 企业微信服务暂时不可用 |
 | 配置缺失 | 返回错误 | 请先完成企业微信配置 |
 
@@ -359,7 +359,7 @@ MTSCOS_AI_Project/
 ```json
 // wecom_config.json
 {
-    "corpid": "请填写企业ID",
+    "corpid": "请填写企业 ID",
     "corpsecret": "请填写应用密钥",
     "agentid": 0,
     "enabled": true,

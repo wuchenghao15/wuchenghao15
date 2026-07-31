@@ -45,6 +45,9 @@ def _register_blueprints(app):
         ('history_api', 'app.api.history_api'),
         ('ai_enterprise_api', 'app.api.ai_enterprise_api'),
         ('chinese_listening_api', 'app.api.chinese_listening_api'),
+        ('listening_api', 'app.api.listening_api'),
+        ('system_boost_api', 'app.api.system_boost_api'),
+        ('auto_mount_api', 'app.api.auto_mount_api'),
         ('unified_question_api', 'app.api.unified_question_api'),
         ('dynamic_question_api', 'app.api.dynamic_question_api'),
     ]

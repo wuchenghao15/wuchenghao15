@@ -11,7 +11,7 @@ from datetime import datetime
 from flask import Blueprint, jsonify, request
 from app.middlewares.access_control import require_login, require_admin
 
-ai_auto_upgrade_api = Bluelogger.info('ai_auto_upgrade_api', __name__)
+ai_auto_upgrade_api = Blueprint('ai_auto_upgrade_api', __name__)
 
 DATABASE_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), 'app.db')
 
