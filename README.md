@@ -4,10 +4,14 @@
 
 A distributed multi-agent intelligent education and exam platform driven by the MTS Architecture v2.0. It unifies AI-powered question generation, smart exam composition, weakness diagnosis, personalized learning paths, and enterprise-grade RBAC + ABAC governance, covering K12, adult education, and higher education scenarios.
 
-[![Version](https://img.shields.io/badge/version-v18.2.0-purple)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-v19.0.0-purple)](CHANGELOG.md)
 [![Python](https://img.shields.io/badge/python-3.9%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/downloads/)
 [![Flask](https://img.shields.io/badge/flask-3.x-000000?logo=flask&logoColor=white)](https://flask.palletsprojects.com/)
 [![License](https://img.shields.io/badge/license-MIT-yellow)](LICENSE)
+[![Stars](https://img.shields.io/github/stars/wuchenghao15/MTSCOS?style=social)](https://github.com/wuchenghao15/MTSCOS/stargazers)
+[![Forks](https://img.shields.io/github/forks/wuchenghao15/MTSCOS?style=social)](https://github.com/wuchenghao15/MTSCOS/network/members)
+[![Issues](https://img.shields.io/github/issues/wuchenghao15/MTSCOS)](https://github.com/wuchenghao15/MTSCOS/issues)
+[![Pull Requests](https://img.shields.io/github/issues-pr/wuchenghao15/MTSCOS)](https://github.com/wuchenghao15/MTSCOS/pulls)
 
 > The full documentation has been migrated to the [`docs/`](docs/) directory:
 > - English: [docs/README.md](docs/README.md)
@@ -30,6 +34,8 @@ A distributed multi-agent intelligent education and exam platform driven by the 
 | **User Container Security** | Mandatory container validation on all non-index pages; fields include user_group, permission_code, login_status, is_anomaly, is_valid, unique_login_timestamp |
 | **Super Admin vikey Iron Law** | Real-time vikey hardware detection (desktop) / fingerprint (mobile) required for ALL super admin operations — page access, backend config, debug, release activation, AI tools |
 | **Rule Approval Workflow** | Proposal → Multi-admin approval → AI firewall review → Super admin final approval → Adaptation period → Confidential withdrawal (memory-only, no DB logs) |
+| **Language Learning System v2.1.0** | 12 core features: English (vocab CET4-IELTS, grammar, reading, writing, speaking) + Japanese (kana, kanji N1-N5, grammar) + Exams (TOEFL/IELTS/CET/JLPT/BJT) + EigenFlux collective discussion + 1000-round self-strengthening |
+| **Education System v2.1.0** | K12 + higher ed + adult education: lecture generation, Ebbinghaus reminders, 7-step problem solving, speech training 4D scoring, adaptive practice, textbook sync, exam difficulty analysis, intelligent test paper composition |
 
 ---
 
