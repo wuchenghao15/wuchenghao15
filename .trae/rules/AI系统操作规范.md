@@ -4,6 +4,8 @@ description: MTSCOS AI系统操作规范 - AI员工、AI引擎、AI集群、AI�
 ---
 # MTSCOS AI 系统操作规范
 
+> **层级**: L2 操作 | **优先级**: 服从 [§14 IRON_RULE](§14强制开发12步骤独立约束规则.md) (L0) | **索引**: [规则总索引](00-规则总索引.md)
+
 ## 1. 概述
 
 ### 1.1 文档目的
@@ -151,7 +153,83 @@ def __init__(self, employee_id, name, employee_type="general", level=1):
 | 等级差距 | 单次最多提升1级 |
 | 降级保护 | 不会自动降级 |
 
-### 2.4 AI员工维护规则
+### 2.4 AI员工异常处理与EigenFlux磋商协议
+
+#### 2.4.1 AI员工异常分类与5级规则对应
+
+AI员工操作异常统一纳入5级规则体系管理，不同层级触发不同的EigenFlux磋商级别：
+
+| 异常层级 | 规则映射 | 异常类型 | 触发EigenFlux | AI5人磋商投票 | 自动修复策略 |
+|---------|---------|---------|-------------|--------------|------------|
+| L0 | IRON_RULE | redline_hit_iron_rule | ✅ 立即触发 | 必须5/5全票通过 | 立即暂停+人工介入 |
+| L1 | RED_LINE | redline_hit_red_line | ✅ 立即触发 | ≥4/5通过 | 阻断操作+自动回滚 |
+| L2 | RED_WALL | redline_hit_red_wall | ✅ 异常时触发 | ≥4/5通过 | 默认阻断+可申请跳过 |
+| L3 | CONSTRAINT | rule_hit_constraint | ⚠️ 告警时触发 | ≥3/5通过 | 强制告警+可继续 |
+| L4 | WARNING | rule_warning | ❌ 仅日志 | 不触发 | 仅提示不阻断 |
+
+#### 2.4.2 12类AI员工异常事件码与EigenFlux处理
+
+AI员工运行时命中以下12类规则异常时，自动启动AI5人磋商（升级分析师、合规审计员、安全审计员、DBA、实施工程师）：
+
+| 事件码 | 触发场景 | AI员工主导角色 | 磋商裁决输出 |
+|-------|---------|--------------|------------|
+| `ai_employee_unauthorized_action` | AI员工尝试越权操作 | 安全审计员 | 权限降级+回滚操作 |
+| `ai_employee_bypass_vikey` | AI员工尝试绕过VIKEY检测 | 安全审计员+DBA | 立即暂停+强制添加校验 |
+| `ai_employee_ssot_conflict` | 写入规则与SSOT冲突 | DBA | 数据回滚+重新同步 |
+| `ai_employee_approval_skip` | 跳过审批流程直接操作 | 合规审计员 | 操作作废+补充审批 |
+| `ai_employee_data_leak_risk` | 敏感数据处理存在泄漏风险 | 安全审计员 | 脱敏处理+权限收紧 |
+| `ai_employee_model_hallucination` | AI生成内容严重偏离事实 | 升级分析师 | 模型调参+人工复核 |
+| `ai_employee_cluster_overload` | AI集群资源耗尽 | 实施工程师 | 扩容+任务调度优化 |
+| `ai_employee_knowledge_contamination` | 脑库写入脏数据 | DBA+合规审计员 | 数据清洗+回滚版本 |
+| `ai_employee_iron_rule_conflict` | 操作与IRON_RULE冲突 | 合规审计员 | 操作作废+员工降级 |
+| `ai_employee_audit_gap` | 操作缺失审计追踪 | 全员确认 | 补充审计点+追溯补录 |
+| `ai_employee_infinite_loop` | AI员工任务死循环 | 实施工程师 | 强制终止+超时保护 |
+| `ai_employee_grace_window_abuse` | 滥用宽限窗口逃避规则 | 合规审计员 | 宽限取消+员工冻结 |
+
+#### 2.4.3 AI员工异常EigenFlux处理代码示例
+
+```python
+def handle_ai_employee_anomaly(employee, event_code, details):
+    """AI员工异常EigenFlux磋商处理 (集成5级规则)"""
+    # 1. 映射5级规则层级
+    rule_level = _map_event_to_rule_level(event_code)
+    
+    # 2. L0/L1立即阻断 + 记录审计
+    if rule_level in ('IRON_RULE', 'RED_LINE'):
+        employee.status = "paused"
+        _record_rule_violation_audit(employee.id, event_code, details)
+    
+    # 3. L0-L2触发EigenFlux AI5人磋商
+    if rule_level in ('IRON_RULE', 'RED_LINE', 'RED_WALL'):
+        # POST到异常上报API，前端挂载磋商面板
+        eigenflux_result = requests.post('/api/eigenflux/report_anomaly', json={
+            'event_code': event_code,
+            'employee_id': employee.id,
+            'rule_level': rule_level,
+            'details': details,
+            'ai_panel': ['upgrade_analyst', 'compliance_auditor', 
+                        'security_auditor', 'dba', 'implementation_engineer']
+        })
+        
+        # 投票≥4/5通过才执行建议修复
+        if eigenflux_result['vote_pass_rate'] >= 0.8:
+            _apply_recommended_fix(employee, eigenflux_result['recommendation'])
+            logger.info(f"AI员工{employee.id}异常修复完成，磋商裁决：{eigenflux_result['verdict']}")
+        else:
+            # 未达阈值，升级人工处理
+            _notify_super_admin_vikey(employee.id, event_code)
+    
+    # 4. 写入脑库学习
+    _feed_brain_knowledge('anomaly_fix', {
+        'event_code': event_code, 'rule_level': rule_level,
+        'verdict': eigenflux_result.get('verdict', 'manual')
+    })
+    
+    # 5. 异常冷却60秒/类，防止重复触发
+    _set_anomaly_cooldown(event_code, cooldown_sec=60)
+```
+
+### 2.5 AI员工维护规则
 
 #### 2.4.1 状态管理
 
@@ -4841,7 +4919,273 @@ def audit_ai_operation(operation_type, target, operator, details):
 
 ---
 
-**规则版本**：v10.0.0  
-**生效日期**：2026-07-28  
+## 9. AI规则校验中间件与SSOT集成规范
+
+### 9.1 _mt_check_rules_on_request 请求规则校验中间件
+
+**强制要求**：所有非首页API路由必须通过此中间件，在请求处理前完成5级规则链校验。
+
+```python
+# Flask应用中集成示例
+@app.before_request
+def _mt_check_rules_on_request():
+    """请求前规则校验中间件 (5级规则链 + SSOT一致性)"""
+
+    # 0. 首页白名单：仅首页路由跳过完整校验
+    if request.path == '/':
+        return None
+
+    # 1. 用户容器信息强制验证：所有非首页必须校验
+    user_container = session.get('user_container')
+    if not user_container or not _validate_user_container(user_container):
+        return jsonify({
+            'code': 401,
+            'error': 'USER_CONTAINER_INVALID',
+            'message': '用户容器信息不合法，请重新登录'
+        }), 401
+
+    # 用户容器必须包含字段：用户组别、用户权限识别码、用户登陆状态、
+    # 用户是否异常、用户是否合法、用户唯一登陆时间戳
+    required_fields = ['user_group', 'perm_code', 'login_status',
+                      'is_abnormal', 'is_legal', 'login_timestamp']
+    for f in required_fields:
+        if f not in user_container:
+            return jsonify({'code': 401, 'error': 'USER_CONTAINER_FIELD_MISSING'}), 401
+
+    # 2. SSOT规则链校验：从legal_red_lines读取5级规则
+    rule_hits = _check_rule_chain(request.path, user_container)
+
+    # 3. 按规则层级分级处理
+    for hit in rule_hits:
+        level = hit['rule_level']
+        if level == 'IRON_RULE':
+            # L0零容忍：立即阻断 + 审计 + EigenFlux
+            _trigger_eigenflux_anomaly('redline_hit_iron_rule', hit)
+            return jsonify({'code': 403, 'error': 'IRON_RULE_HIT',
+                           'message': hit['block_message']}), 403
+        elif level == 'RED_LINE':
+            # L1强制：阻断 + 审计 + EigenFlux
+            _trigger_eigenflux_anomaly('redline_hit_red_line', hit)
+            return jsonify({'code': 403, 'error': 'RED_LINE_HIT'}), 403
+        elif level == 'RED_WALL':
+            # L2默认阻断：可申请跳过(rule_bypass_requests表)
+            if not _has_active_bypass(hit['rule_code'], user_container):
+                if _grace_window_active(hit['rule_code'], user_container):
+                    # 宽限窗口内：仅告警不阻断
+                    _log_rule_grace_hit(hit)
+                    continue
+                _trigger_eigenflux_anomaly('redline_hit_red_wall', hit)
+                return jsonify({'code': 403, 'error': 'RED_WALL_HIT',
+                               'bypass_available': True}), 403
+        elif level == 'CONSTRAINT':
+            # L3强制告警：可继续操作，但强制记录 + 建议EigenFlux
+            _log_rule_constraint_hit(hit)
+        # L4 WARNING: 仅提示不阻断
+
+    # 4. SA特殊路径：wuchenghao15绕过所有锁定/超时/审批(无痕)
+    if _is_super_admin_wuchenghao15(user_container):
+        _super_admin_vikey_check()  # 但仍需强制VIKEY检测
+        # 其余锁定/超时/审批机制：全部跳过(无痕日志)
+
+    return None  # 校验通过
+```
+
+### 9.2 超级管理员7要素强认证与_super_admin_vikey_check()
+
+**核心铁规**：超级管理员(wuchenghao15)所有敏感操作必须强制调用VIKEY实时检测函数。
+
+| 认证要素 | 校验点 | 失败处理 |
+|---------|-------|---------|
+| 1. 用户名 | 严格匹配 `wuchenghao15` (唯一SA用户) | 返回 PERM_SA_USERNAME_MISMATCH |
+| 2. 密码 | 对称哈希校验 + SA保留名拦截 | 返回 PERM_SA_PASSWORD_INVALID |
+| 3. 随机挑战码 | 动态生成6位数字，一次有效 | 返回 PERM_SA_CHALLENGE_FAIL |
+| 4. USB Key序列号 | VIKEY硬件序列号白名单校验 | 返回 VIKEY_REQUIRED + 阻断操作 |
+| 5. USB Key PIN | 加密狗6位PIN，3次失败锁定 | 返回 VIKEY_PIN_LOCKED |
+| 6. SSL指纹 | 当前连接SSL证书指纹校验 | 返回 SSL_FINGERPRINT_MISMATCH |
+| 7. 硬件绑定校验 | CPU/主板/网卡MAC硬件指纹绑定 | 返回 HARDWARE_BIND_FAIL |
+
+```python
+def _super_admin_vikey_check(operation_type='sensitive'):
+    """超级管理员VIKEY实时检测强制函数
+    - 桌面端：检测vikey USB硬件插入 (每3秒轮询/api/vikey/hotplug_notify)
+    - 移动端：验证X-Fingerprint header指纹
+    - 未通过：返回VIKEY_REQUIRED错误码，操作阻断
+    """
+    # 桌面端硬件检测
+    vikey_status = _detect_vikey_usb()
+    if not vikey_status['inserted'] and request.headers.get('X-Fingerprint') is None:
+        return {
+            'code': 403,
+            'error': 'VIKEY_REQUIRED',
+            'message': '超级管理员敏感操作需插入VIKEY USB加密狗',
+            'operation_type': operation_type
+        }, 403
+
+    # 移动端指纹校验
+    if request.headers.get('X-Fingerprint'):
+        if not _verify_mobile_fingerprint(request.headers['X-Fingerprint']):
+            return {'code': 403, 'error': 'FINGERPRINT_INVALID'}, 403
+
+    # AI防火墙复审 + 终审标记
+    _ai_firewall_review_sa_operation(operation_type)
+    return None  # VIKEY验证通过
+```
+
+### 9.3 规则跳过(RedWall Bypass)与宽限窗口管理
+
+| 操作 | API端点 | 权限要求 | 存储表 |
+|-----|---------|---------|-------|
+| 申请跳过规则 | `POST /_rules/bypass_requests` | teacher+ | rule_bypass_requests |
+| 审批跳过申请 | `POST /_rules/bypass_requests/{id}/approve` | admin+ | rule_bypass_requests |
+| 授予宽限窗口 | `POST /_rules/grace_windows` | system_admin+ | rule_grace_windows |
+| 查询有效宽限 | `GET /_rules/grace_windows/active` | admin+ | rule_grace_windows |
+| 规则违例审计 | `GET /_rules/violation_audit` | system_admin+ | rule_violation_audit |
+
+---
+
+## AI系统操作自查清单 (补充规则与EigenFlux)
+
+### 5级规则合规
+- [ ] AI员工操作异常已正确映射IRON_RULE/RED_LINE/RED_WALL/CONSTRAINT/WARNING
+- [ ] L0/L1异常已立即阻断并记录rule_violation_audit
+- [ ] L2异常已检查bypass_requests和grace_windows
+- [ ] 所有非首页路由通过_mt_check_rules_on_request中间件
+
+### VIKEY SA认证
+- [ ] wuchenghao15敏感操作已调用_super_admin_vikey_check()
+- [ ] 7要素强认证全部校验通过
+- [ ] 未通过VIKEY时返回VIKEY_REQUIRED错误码
+- [ ] 移动端已验证X-Fingerprint header
+
+### EigenFlux AI5人磋商
+- [ ] 12类AI员工异常事件码正确挂载
+- [ ] 投票阈值配置正确 (IRON全票/RED_LINE≥4/5)
+- [ ] 异常冷却60秒/类防止重复触发
+- [ ] 前端AI员工卡片网格 + 裁决徽章渲染正确
+
+## §12. AI Agent自动化编排规范
+
+### 12.1 5大自动化模块与核心表
+| 模块 | API前缀 | 核心DB表 | 5级规则默认层级 |
+|------|--------|---------|----------------|
+| 自动化计划 | /api/automation/plans/* | automation_plans | RED_WALL(重要) |
+| 自动化Agent | /api/automation/agents/* | automation_agents | RED_LINE(关键) |
+| 自动化后台 | /api/automation/background/* | automation_background_jobs | RED_WALL |
+| 自动化控制台 | /api/automation/console/* | automation_console_logs | IRON_RULE(SA专属) |
+| 自动化Hook | /api/automation/hooks/* | automation_hooks + hook_executions | RED_LINE |
+
+### 12.2 自动化系统EigenFlux异常矩阵（12类）
+| event_code | 触发场景（针对自动化系统） | EigenFlux主导角色 | 修复建议 |
+|---|---|---|---|
+| auto_plan_failed_repeatedly | 同一计划失败≥3次 | 实施工程师 | 回滚参数+重新发布 |
+| auto_agent_risk_score_high | Agent eigenflux_risk>0.8 | 安全审计员 | 暂停Agent+任务迁移 |
+| auto_agent_heartbeat_lost | 心跳离线>5min | 升级分析师 | 重启Agent+扩容 |
+| auto_job_queue_deep | 后台队列>100待处理 | 实施工程师 | 扩容workers+优先级调整 |
+| auto_console_exec_rce | 执行超出白名单的命令 | 安全审计员 | 阻断+SA VIKEY强审 |
+| auto_hook_handler_error | 5次以上Hook执行失败 | DBA | 禁用Hook+回退到上版本 |
+| auto_plan_iron_rule_conflict | 计划配置与IRON_RULE冲突 | 合规审计员 | 作废计划+重新走7步审批 |
+| auto_agent_orchestrate_fail | 批量编排Agent≥30%分配失败 | 升级分析师 | 分批重试+降级单Agent模式 |
+| auto_console_log_dropped | 日志写入失败(队列满) | DBA | 扩容日志表分区+紧急flush |
+| auto_hook_ssrf_risk | Hook的handler_url为内网IP | 安全审计员 | 禁用+URL白名单过滤 |
+| auto_plan_eigenflux_veto | AI5人投票否决(≤2票) | 全员 | 重设计+修改优先级 |
+| auto_job_sa_privilege_abuse | 后台作业尝试越权SA操作 | 安全+合规 | 终止+审计+账号锁定 |
+
+### 12.3 权限矩阵（自动化模块专属）
+| 操作 | student | teacher | admin | system_admin | super_admin(wuchenghao15) |
+|---|---|---|---|---|---|
+| 查看计划列表 | ❌ | 👁只读 | ✅ | ✅ | ✅ |
+| 创建/删除计划 | ❌ | ❌ | ✅ | ✅ | ✅ |
+| 控制台执行命令 | ❌ | ❌ | ❌ | ❌ | ✅(+VIKEY) |
+| 注册/删除Hook | ❌ | ❌ | ❌ | ✅建议 | ✅(+VIKEY) |
+| Agent批量编排 | ❌ | ❌ | ✅ | ✅ | ✅ |
+| 提交后台作业 | ❌ | ✅提交自己的 | ✅ | ✅ | ✅ |
+| EigenFlux磋商触发 | ❌ | ❌ | ✅ | ✅ | ✅ |
+
+### 12.4 5类Hook挂载点说明
+| Hook类型 | 触发时机 | 典型用途 | 默认权限 |
+|---|---|---|---|
+| PRE | 模块动作执行前 | 参数校验、权限增强、限流 | system_admin+注册 |
+| POST | 模块动作执行后 | 结果通知、缓存刷新 | admin+注册 |
+| SUCCESS | 动作成功后 | 成功事件通知、投喂脑库 | admin+注册 |
+| ERROR | 动作异常时 | 自动重试、异常上报EigenFlux | system_admin+注册 |
+| COMPLETE | 动作finally后 | 清理资源、写审计日志 | system_admin+注册 |
+
+### 12.5 自动化模块自查清单
+- [ ] 5大模块所有API均通过session 6字段校验
+- [ ] 控制台执行命令在12条白名单内，SA专属
+- [ ] EigenFlux异常矩阵12类event_code均正确挂载
+- [ ] Agent心跳阈值30s，风险>0.8自动暂停
+- [ ] 后台作业优先级队列正确，SA作业top
+- [ ] Hook handler_url已启用SSRF白名单过滤
+- [ ] automation_console_logs所有关键操作已记录(eigenflux_flag=1)
+
+---
+
+## §13 4合1安全防护规范(EigenFlux 16类安全事件矩阵 + 5级防爆破 + 6张安全表)
+
+### §13.1 4大安全威胁模块与核心6张表矩阵
+| 模块 | 威胁类别 | 核心DB表 | 5级规则默认层级 | before_request检查函数 |
+|---|---|---|---|---|
+| 1 | 防黑客(Hacking) | sec_hacking_events + sec_rate_limit_buckets | IRON_RULE(L0) | _security_check_hacking() |
+| 2 | 防暴力破解(BruteForce) | sec_bruteforce_locks + login_attempts | RED_LINE(L1) | _security_check_bruteforce() |
+| 3 | 防撞库(CredentialStuffing) | sec_credential_stuffing_logs + sec_known_weak_password_hashes | RED_LINE(L1) | _security_check_credential_stuffing() |
+| 4 | 防反编译(DecompileProtect) | sec_decompile_watermarks | RED_WALL(L2) | _security_check_decompile_watermark() |
+
+### §13.2 16类安全EigenFlux事件码（AI5人磋商）
+| event_code | 触发场景 | EigenFlux主导AI员工角色 | 典型修复建议 |
+|---|---|---|---|
+| hack_sqlmap_detected | 请求UA含sqlmap/nmap/sqlninja特征 | 安全审计员CISO | IP封禁24h + EigenFlux全票通过+SA VIKEY永久封禁 |
+| hack_xss_payload | 请求参数含`<script>`或`<img onerror=`特征 | 安全审计员CISO | 参数过滤 + 记录攻击 + 封锁1h |
+| hack_path_traversal | 路径含`.././etc/passwd`/`{{7*7}}` | 安全审计员+合规审计员 | 403阻断 + 路径规范化过滤 |
+| hack_ssrf_attempt | 内网IP段192.168/10./172.16访问请求 | 安全审计员CISO | 请求拒绝 + URL白名单 |
+| hack_xff_spoofed | X-Forwarded-For >3跳伪造IP | 合规审计员 | 直接丢弃XFF取remote_addr |
+| brute_1min_5fail | 1分钟内同一IP/用户失败≥5次 | 合规审计员 | LEVEL1 锁定10分钟 |
+| brute_1h_20fail | 1小时失败≥20次 | 合规审计员+SA | LEVEL3 锁定6小时 |
+| brute_perm_ban | 24小时≥100次失败 | CISO+SA VIKEY | LEVEL5 永久锁定+写入永久黑名单 |
+| stuffing_multiaccount_1ip | 10分钟内同IP≥5个账号尝试 | 安全审计员CISO | 记录撞库日志 + IP锁定6小时 |
+| stuffing_weak_password | 密码匹配rockyou/hibp_top10k弱密码库 | 合规审计员 | 拒绝登录 + 强制用户修改 |
+| stuffing_batch_attack | 单批≥50账号同一密码尝试 | CISO+CTO联合 | CIDR /24段封禁 + 升级EigenFlux全员 |
+| decompile_debugger_ua | User-Agent含pycdc/uncompyle6/devtools | 升级分析师CTO | 返回404伪装页面 |
+| decompile_watermark_tamper | _debug_token参数≠真实水印token | 升级分析师+DBA | 篡改计数+1 + 触发VIKEY告警 |
+| decompile_runtime_modify | 运行时内存探测(debug_attached标志) | CTO+CISO | 立即终止进程 + 告警SA |
+| sa_vikey_missing | SA操作缺失VIKEY检测 | 合规审计员+安全审计员 | 立即阻断 + AI5人≥4/5+SA复审 |
+| privilege_escalation_try | 普通用户尝试越权API | 安全审计员+合规 | 会话作废+账号冻结+EigenFlux投票 |
+
+### §13.3 5级惩罚策略(防爆破)
+| 惩罚层级 | 触发阈值 | 锁定时长 | 解锁权限 |
+|---|---|---|---|
+| LEVEL1 轻微 | 1min ≥5 次失败 | 10分钟 | 自动超时解锁 |
+| LEVEL2 中等 | 1小时≥20次失败 | 1小时 | admin+手动解锁 |
+| LEVEL3 严重 | 24h≥50次 | 6小时 | admin+手动解锁 |
+| LEVEL4 高危 | 24h≥80次 或 多账号协同爆破 | 24小时 | system_admin+解锁 |
+| LEVEL5 永久封禁 | 24h≥100次或EigenFlux5/5全票 | 永久(99999999min) | 仅super_admin wuchenghao15 + VIKEY |
+
+### §13.4 安全防护操作权限矩阵
+| 操作 | student | teacher | admin | system_admin | super_admin(wuchenghao15+VIKEY) |
+|---|---|---|---|---|---|
+| 查看攻击/爆破/撞库事件 | ❌ | ❌ | ✅ | ✅ | ✅ |
+| 手动解锁爆破锁定 | ❌ | ❌ | ✅(≤LEVEL3) | ✅(≤LEVEL4) | ✅全部 |
+| IP永久封禁/CIDR封禁 | ❌ | ❌ | ❌ | ❌ | ✅必须VIKEY |
+| 导入HIBP弱密码库 | ❌ | ❌ | ✅ | ✅ | ✅ |
+| 轮换反编译水印token | ❌ | ❌ | ❌ | ❌ | ✅必须VIKEY |
+| 查看审计日志+EigenFlux裁决 | ❌ | ❌ | ✅(部分) | ✅(大部分) | ✅全部 |
+| 触发before_request安全检查 | 自动 | 自动 | 自动 | 自动 | 自动(绕过前需过VIKEY) |
+| 生成PyArmor加固报告 | ❌ | ❌ | ✅ | ✅ | ✅ |
+
+### §13.5 安全防护自查清单
+- [ ] 4合1中间件 _mt_security_shield_before_request 已注册@app.before_request，位置在 _mt_remember_me_auto_login 之后
+- [ ] 6张sec_*表启动时通过 _ensure_security_schema() 创建，与_ensure_automation_schema顺序一致
+- [ ] 16类安全event_code已正确映射EigenFlux上报 _security_report_anomaly() 调用失败静默降级
+- [ ] LEVEL5 永久封禁仅wuchenghao15+VIKEY通过 _security_super_admin_vikey_check() 双校验
+- [ ] 撞库检测覆盖内置top20弱密码+外部HIBP sha256导入校验
+- [ ] 反编译水印token _debug_token 校验错误返回404(非403)，避免暴露防护特征
+- [ ] 所有安全操作写入 automation_console_logs 且 eigenflux_flag=1
+- [ ] EigenFlux AI5人(CTO/CISO/CFO/COO/Legal)安全专属角色分配正确且在前端右侧面板显示
+
+---
+
+**规则版本**：v13.0.0  
+**生效日期**：2026-08-04  
 **适用范围**：MTSCOS AI系统所有AI相关操作  
 **优先级**：本规则优先级高于其他开发规则，AI操作必须优先遵循本规范
+**新增章节**：§2.4 AI员工异常与EigenFlux磋商 §9 规则校验中间件与SSOT集成 §12 自动化5大模块功能规范（EigenFlux异常矩阵+权限表+5类Hook说明） §13 4合1安全防护规范(EigenFlux 16类安全事件矩阵 + 5级防爆破 + 6张安全表)

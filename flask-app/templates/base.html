@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow">
+    <meta name="description" content="MTSCOS AI System">
+    <meta name="keywords" content="AI, education, exam system">
+    <title>{% block title %}MTSCOS AI{% endblock %}</title>
+    <link rel="stylesheet" href="/assets/css/mtscos-design-system.css">
+    <link rel="stylesheet" href="/assets/font-awesome/css/all.min.css">
+    <link rel="stylesheet" href="/assets/tailwind.min.css">
+    {% block head %}{% endblock %}
+    <style>
+        body {
+            user-select: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+        }
+        .mtscos-lock-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            z-index: 9999;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 18px;
+        }
+        .mtscos-timeout-warning {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #ff6b6b;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            z-index: 9998;
+            display: none;
+            font-size: 14px;
+        }
+        .mtscos-permission-denied {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="mtscos-lock-overlay" class="mtscos-lock-overlay">
+        <div style="text-align:center">
+            <div style="font-size:64px;margin-bottom:20px">🔒</div>
+            <div>系统锁定中...</div>
+            <div id="lock-countdown" style="font-size:24px;margin-top:10px"></div>
+        </div>
+    </div>
+    <div id="mtscos-timeout-warning" class="mtscos-timeout-warning">
+        ⚠️ 会话即将超时，请点击任意位置继续
+    </div>
+
+    {% block content %}{% endblock %}
+
+    <script src="/assets/layout_adapter.js"></script>
+    <script>
+        (function() {
+            var MTSCOS = {
+                sessionTimeout: 1800,
+                warningTimeout: 300,
+                lastActivity: Date.now(),
+                timeoutTimer: null,
+                warningTimer: null,
+                isLocked: false,
+                lockDuration: 60,
+                lockTimer: null,
+                maxRetries: 5,
+                retryCount: 0,
+                
+                init: function() {
+                    this.bindSecurityEvents();
+                    this.bindNavigationEvents();
+                    this.startTimeoutMonitor();
+                    this.startActivityMonitor();
+                    this.validateUserContainer();
+                    this.bindPermissionEvents();
+                    this.startGlobalListener();
+                },
+                
+                bindSecurityEvents: function() {
+                    document.addEventListener('contextmenu', function(e) {
+                        e.preventDefault();
+                    });
+                    
+                    document.addEventListener('keydown', function(e) {
+                        if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && e.key === 'I') || 
+                            (e.ctrlKey && e.key === 'U') || (e.ctrlKey && e.key === 'S') ||
+                            (e.metaKey && e.key === 'S')) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                        }
+                        if (e.key === 'F5' || (e.ctrlKey && e.key === 'R') || (e.metaKey && e.key === 'R')) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                        }
+                    });
+                    
+                    document.addEventListener('keypress', function(e) {
+                        if (e.key === 'F12') {
+                            e.preventDefault();
+                        }
+                    });
+                },
+                
+                bindNavigationEvents: function() {
+                    window.history.pushState(null, null, window.location.href);
+                    window.addEventListener('popstate', function() {
+                        window.history.pushState(null, null, window.location.href);
+                    });
+                },
+                
+                startActivityMonitor: function() {
+                    var events = ['mousedown', 'mousemove', 'keydown', 'scroll', 'touchstart'];
+                    events.forEach(function(evt) {
+                        document.addEventListener(evt, function() {
+                            MTSCOS.resetTimeout();
+                        });
+                    });
+                },
+                
+                startTimeoutMonitor: function() {
+                    this.stopTimeoutMonitor();
+                    this.timeoutTimer = setTimeout(function() {
+                        MTSCOS.showTimeoutWarning();
+                    }, (this.sessionTimeout - this.warningTimeout) * 1000);
+                },
+                
+                stopTimeoutMonitor: function() {
+                    if (this.timeoutTimer) {
+                        clearTimeout(this.timeoutTimer);
+                        this.timeoutTimer = null;
+                    }
+                    if (this.warningTimer) {
+                        clearTimeout(this.warningTimer);
+                        this.warningTimer = null;
+                    }
+                },
+                
+                resetTimeout: function() {
+                    this.lastActivity = Date.now();
+                    this.hideTimeoutWarning();
+                    this.startTimeoutMonitor();
+                },
+                
+                showTimeoutWarning: function() {
+                    document.getElementById('mtscos-timeout-warning').style.display = 'block';
+                    this.warningTimer = setTimeout(function() {
+                        MTSCOS.lockSystem();
+                    }, this.warningTimeout * 1000);
+                },
+                
+                hideTimeoutWarning: function() {
+                    document.getElementById('mtscos-timeout-warning').style.display = 'none';
+                },
+                
+                lockSystem: function() {
+                    if (this.isLocked) return;
+                    this.isLocked = true;
+                    document.getElementById('mtscos-lock-overlay').style.display = 'flex';
+                    var countdown = this.lockDuration;
+                    this.lockTimer = setInterval(function() {
+                        countdown--;
+                        document.getElementById('lock-countdown').textContent = countdown + '秒后解锁';
+                        if (countdown <= 0) {
+                            MTSCOS.unlockSystem();
+                        }
+                    }, 1000);
+                },
+                
+                unlockSystem: function() {
+                    this.isLocked = false;
+                    document.getElementById('mtscos-lock-overlay').style.display = 'none';
+                    if (this.lockTimer) {
+                        clearInterval(this.lockTimer);
+                        this.lockTimer = null;
+                    }
+                    this.resetTimeout();
+                },
+                
+                validateUserContainer: function() {
+                    var xhr = new XMLHttpRequest();
+                    xhr.open('GET', '/api/user/info', true);
+                    xhr.onreadystatechange = function() {
+                        if (xhr.readyState === 4) {
+                            if (xhr.status === 401) {
+                                if (!window.location.pathname.includes('/login') && !window.location.pathname.includes('/register')) {
+                                    window.location.href = '/auth/login';
+                                }
+                            }
+                        }
+                    };
+                    xhr.send();
+                },
+                
+                bindPermissionEvents: function() {
+                    document.querySelectorAll('[data-role]').forEach(function(el) {
+                        var requiredRole = el.getAttribute('data-role');
+                        MTSCOS.checkPermission(el, requiredRole);
+                    });
+                },
+                
+                checkPermission: function(element, requiredRole) {
+                    var xhr = new XMLHttpRequest();
+                    xhr.open('GET', '/api/user/info', true);
+                    xhr.onreadystatechange = function() {
+                        if (xhr.readyState === 4 && xhr.status === 200) {
+                            try {
+                                var data = JSON.parse(xhr.responseText);
+                                var userRole = data.user ? data.user.role : 'guest';
+                                var allowedRoles = ['admin', 'super_admin', 'teacher', 'student', 'designer'];
+                                if (requiredRole && !allowedRoles.includes(userRole) && requiredRole !== userRole) {
+                                    element.style.display = 'none';
+                                }
+                            } catch(e) {}
+                        }
+                    };
+                    xhr.send();
+                },
+                
+                startGlobalListener: function() {
+                    var errorHandler = window.onerror;
+                    window.onerror = function(msg, url, line, col, error) {
+                        MTSCOS.reportError(msg, url, line, col, error);
+                        if (errorHandler) {
+                            return errorHandler(msg, url, line, col, error);
+                        }
+                        return false;
+                    };
+                    
+                    var rejectionHandler = window.onunhandledrejection;
+                    window.onunhandledrejection = function(event) {
+                        MTSCOS.reportError('Promise rejection: ' + event.reason);
+                        if (rejectionHandler) {
+                            rejectionHandler(event);
+                        }
+                    };
+                },
+                
+                reportError: function(msg, url, line, col, error) {
+                    var errorData = {
+                        message: msg,
+                        url: url || window.location.href,
+                        line: line || 0,
+                        column: col || 0,
+                        error: error ? error.stack : '',
+                        timestamp: Date.now(),
+                        userAgent: navigator.userAgent
+                    };
+                    try {
+                        var xhr = new XMLHttpRequest();
+                        xhr.open('POST', '/api/error/report', true);
+                        xhr.setRequestHeader('Content-Type', 'application/json');
+                        xhr.send(JSON.stringify(errorData));
+                    } catch(e) {}
+                },
+                
+                apiCall: function(url, method, data, callback) {
+                    this.retryCount = 0;
+                    this._apiCall(url, method, data, callback);
+                },
+                
+                _apiCall: function(url, method, data, callback) {
+                    var xhr = new XMLHttpRequest();
+                    xhr.open(method, url, true);
+                    xhr.setRequestHeader('Content-Type', 'application/json');
+                    xhr.onreadystatechange = function() {
+                        if (xhr.readyState === 4) {
+                            if (xhr.status === 200) {
+                                try {
+                                    var response = JSON.parse(xhr.responseText);
+                                    callback(null, response);
+                                } catch(e) {
+                                    callback(e, null);
+                                }
+                            } else if (xhr.status === 401) {
+                                window.location.href = '/auth/login';
+                            } else if (xhr.status === 500 && MTSCOS.retryCount < MTSCOS.maxRetries) {
+                                MTSCOS.retryCount++;
+                                setTimeout(function() {
+                                    MTSCOS._apiCall(url, method, data, callback);
+                                }, Math.pow(2, MTSCOS.retryCount) * 1000);
+                            } else {
+                                callback(new Error('API Error: ' + xhr.status), null);
+                            }
+                        }
+                    };
+                    xhr.send(data ? JSON.stringify(data) : null);
+                }
+            };
+            
+            document.addEventListener('DOMContentLoaded', function() {
+                MTSCOS.init();
+                window.MTSCOS = MTSCOS;
+            });
+        })();
+    </script>
+    <script src="/static/js/utils/apiRequest.js"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

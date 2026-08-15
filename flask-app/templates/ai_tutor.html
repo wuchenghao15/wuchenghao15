@@ -1,0 +1,167 @@
+{% extends "base.html" %}
+
+{% block title %}AI智能辅导{% endblock %}
+
+{% block head %}
+<style>
+    .tutor-container {
+        max-width: 900px;
+        margin: 30px auto;
+        background: white;
+        border-radius: 12px;
+        padding: 30px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    .tutor-header {
+        text-align: center;
+        margin-bottom: 30px;
+    }
+    .tutor-header h1 {
+        color: #333;
+        font-size: 28px;
+        margin-bottom: 10px;
+    }
+    .tutor-header p {
+        color: #666;
+        font-size: 14px;
+    }
+    .chat-box {
+        background: #f8f9fa;
+        border-radius: 12px;
+        padding: 20px;
+        height: 400px;
+        overflow-y: auto;
+        margin-bottom: 20px;
+    }
+    .chat-message {
+        margin-bottom: 15px;
+        padding: 12px 16px;
+        border-radius: 8px;
+        max-width: 80%;
+    }
+    .chat-message.user {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        margin-left: auto;
+    }
+    .chat-message.ai {
+        background: white;
+        color: #333;
+        border: 1px solid #e0e0e0;
+    }
+    .chat-input {
+        display: flex;
+        gap: 10px;
+    }
+    .chat-input input {
+        flex: 1;
+        padding: 12px;
+        border: 2px solid #e0e0e0;
+        border-radius: 8px;
+        font-size: 14px;
+    }
+    .chat-input button {
+        padding: 12px 24px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: 600;
+    }
+    .tutor-features {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 15px;
+        margin-bottom: 20px;
+    }
+    .feature-card {
+        padding: 15px;
+        background: #f0f4ff;
+        border-radius: 8px;
+        text-align: center;
+    }
+    .feature-card .icon {
+        font-size: 24px;
+        margin-bottom: 8px;
+    }
+    .feature-card h4 {
+        color: #333;
+        font-size: 14px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="tutor-container">
+    <div class="tutor-header">
+        <h1>🤖 AI智能辅导</h1>
+        <p>智能学习助手，随时为您解答问题</p>
+    </div>
+
+    <div class="tutor-features">
+        <div class="feature-card">
+            <div class="icon">📖</div>
+            <h4>知识解答</h4>
+        </div>
+        <div class="feature-card">
+            <div class="icon">💡</div>
+            <h4>学习建议</h4>
+        </div>
+        <div class="feature-card">
+            <div class="icon">🎯</div>
+            <h4>个性化辅导</h4>
+        </div>
+    </div>
+
+    <div class="chat-box" id="chatBox">
+        <div class="chat-message ai">您好！我是AI智能辅导助手，有什么可以帮您的吗？</div>
+    </div>
+
+    <div class="chat-input">
+        <input type="text" id="chatInput" placeholder="请输入您的问题..." onkeypress="if(event.key==='Enter') sendMessage()">
+        <button onclick="sendMessage()">发送</button>
+    </div>
+</div>
+
+<script>
+function sendMessage() {
+    var input = document.getElementById('chatInput');
+    var chatBox = document.getElementById('chatBox');
+    var message = input.value.trim();
+
+    if (!message) return;
+
+    // 添加用户消息
+    var userMsg = document.createElement('div');
+    userMsg.className = 'chat-message user';
+    userMsg.textContent = message;
+    chatBox.appendChild(userMsg);
+
+    input.value = '';
+    chatBox.scrollTop = chatBox.scrollHeight;
+
+    // 发送到AI
+    fetch('/ai-chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: message })
+    })
+    .then(function(res) { return res.json(); })
+    .then(function(data) {
+        var aiMsg = document.createElement('div');
+        aiMsg.className = 'chat-message ai';
+        aiMsg.textContent = data.response || data.message || '抱歉，我暂时无法回答这个问题。';
+        chatBox.appendChild(aiMsg);
+        chatBox.scrollTop = chatBox.scrollHeight;
+    })
+    .catch(function(err) {
+        var aiMsg = document.createElement('div');
+        aiMsg.className = 'chat-message ai';
+        aiMsg.textContent = '网络错误，请稍后重试。';
+        chatBox.appendChild(aiMsg);
+        chatBox.scrollTop = chatBox.scrollHeight;
+    });
+}
+</script>
+{% endblock %}
