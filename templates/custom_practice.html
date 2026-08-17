@@ -1,0 +1,824 @@
+{% extends 'student_base.html' %}
+
+{% block title %}智能出题 - MTSCOS AI{% endblock %}
+{% block page_title %}智能出题{% endblock %}
+
+{% block extra_styles %}
+<style>
+    .config-section {
+        background: rgba(20, 20, 40, 0.9);
+        border: 1px solid var(--dark-border);
+        border-radius: var(--radius-lg);
+        padding: 24px;
+        margin-bottom: 24px;
+        box-shadow: 0 0 20px rgba(99, 102, 241, 0.08);
+    }
+
+    .config-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 20px;
+    }
+
+    .config-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: var(--radius-md);
+        background: rgba(99, 102, 241, 0.15);
+        color: var(--dark-primary-color);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 18px;
+    }
+
+    .config-header h3 {
+        font-size: 16px;
+        font-weight: 600;
+        margin: 0;
+    }
+
+    .config-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 16px;
+    }
+
+    @media (max-width: 768px) {
+        .config-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    .form-group {
+        margin-bottom: 16px;
+    }
+
+    .form-group label {
+        display: block;
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--dark-text-secondary);
+        margin-bottom: 8px;
+    }
+
+    .form-group select,
+    .form-group input {
+        width: 100%;
+        padding: 10px 14px;
+        border: 1px solid var(--dark-border);
+        border-radius: var(--radius-md);
+        background: rgba(30, 30, 60, 0.6);
+        color: var(--dark-text-primary);
+        font-size: 14px;
+        outline: none;
+        transition: all 0.2s;
+    }
+
+    .form-group select:focus,
+    .form-group input:focus {
+        border-color: var(--dark-primary-color);
+        background: rgba(30, 30, 60, 0.8);
+        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+    }
+
+    .form-group select option {
+        background: #1a1a3e;
+        color: #fff;
+    }
+
+    .form-group input[type="range"] {
+        padding: 0;
+        height: 6px;
+        -webkit-appearance: none;
+        appearance: none;
+        background: rgba(30, 30, 60, 0.6);
+        border-radius: 999px;
+    }
+
+    .form-group input[type="range"]::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: var(--dark-primary-color);
+        cursor: pointer;
+        border: 2px solid #fff;
+        box-shadow: 0 0 10px rgba(99, 102, 241, 0.4);
+    }
+
+    .range-value {
+        font-size: 13px;
+        color: var(--dark-primary-color);
+        font-weight: 600;
+        margin-top: 4px;
+    }
+
+    .toggle-group {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+
+    .toggle-btn {
+        padding: 8px 16px;
+        border: 1px solid var(--dark-border);
+        border-radius: var(--radius-md);
+        background: rgba(30, 30, 60, 0.6);
+        color: var(--dark-text-secondary);
+        font-size: 13px;
+        cursor: pointer;
+        transition: all 0.2s;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .toggle-btn.active {
+        border-color: var(--dark-primary-color);
+        background: rgba(99, 102, 241, 0.15);
+        color: var(--dark-primary-color);
+    }
+
+    .toggle-btn:hover {
+        border-color: var(--dark-primary-color);
+    }
+
+    .mode-section {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 16px;
+        margin-bottom: 24px;
+    }
+
+    @media (max-width: 900px) {
+        .mode-section {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+
+    @media (max-width: 600px) {
+        .mode-section {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    .mode-card {
+        background: rgba(20, 20, 40, 0.9);
+        border: 1px solid var(--dark-border);
+        border-radius: var(--radius-lg);
+        padding: 20px;
+        cursor: pointer;
+        transition: all 0.3s;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .mode-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 0 30px rgba(99, 102, 241, 0.15);
+    }
+
+    .mode-card.active {
+        border-color: var(--dark-primary-color);
+        background: rgba(99, 102, 241, 0.1);
+    }
+
+    .mode-card.active::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: linear-gradient(90deg, var(--dark-primary-color), var(--dark-primary-light));
+    }
+
+    .mode-icon {
+        width: 44px;
+        height: 44px;
+        border-radius: var(--radius-md);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 18px;
+        margin-bottom: 12px;
+    }
+
+    .mode-icon.normal {
+        background: rgba(59, 130, 246, 0.15);
+        color: var(--dark-info);
+    }
+
+    .mode-icon.adaptive {
+        background: rgba(168, 85, 247, 0.15);
+        color: var(--dark-primary-light);
+    }
+
+    .mode-icon.review {
+        background: rgba(249, 115, 22, 0.15);
+        color: var(--dark-warning);
+    }
+
+    .mode-title {
+        font-size: 15px;
+        font-weight: 600;
+        margin-bottom: 4px;
+    }
+
+    .mode-desc {
+        font-size: 12px;
+        color: var(--dark-text-secondary);
+        line-height: 1.5;
+    }
+
+    .generate-btn {
+        width: 100%;
+        padding: 16px;
+        background: linear-gradient(135deg, var(--dark-primary-color), var(--dark-primary-light));
+        border: none;
+        border-radius: var(--radius-lg);
+        color: #fff;
+        font-size: 16px;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.3s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        margin-bottom: 24px;
+    }
+
+    .generate-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(99, 102, 241, 0.4);
+    }
+
+    .generate-btn:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        transform: none;
+        box-shadow: none;
+    }
+
+    .loading-overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.8);
+        backdrop-filter: blur(5px);
+        z-index: 1000;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .loading-overlay.show {
+        display: flex;
+    }
+
+    .loading-content {
+        text-align: center;
+    }
+
+    .loading-spinner {
+        width: 50px;
+        height: 50px;
+        border: 3px solid rgba(99, 102, 241, 0.3);
+        border-top-color: var(--dark-primary-color);
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin: 0 auto 16px;
+    }
+
+    @keyframes spin {
+        to {
+            transform: rotate(360deg);
+        }
+    }
+
+    .loading-text {
+        font-size: 14px;
+        color: var(--dark-text-secondary);
+    }
+
+    .questions-preview {
+        background: rgba(20, 20, 40, 0.9);
+        border: 1px solid var(--dark-border);
+        border-radius: var(--radius-lg);
+        padding: 24px;
+        display: none;
+    }
+
+    .questions-preview.show {
+        display: block;
+    }
+
+    .preview-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 20px;
+    }
+
+    .preview-header h3 {
+        font-size: 16px;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .preview-stats {
+        display: flex;
+        gap: 16px;
+        font-size: 12px;
+        color: var(--dark-text-secondary);
+    }
+
+    .preview-stat {
+        padding: 4px 12px;
+        background: rgba(30, 30, 60, 0.6);
+        border-radius: 999px;
+    }
+
+    .question-preview-card {
+        background: rgba(30, 30, 60, 0.4);
+        border-radius: var(--radius-md);
+        padding: 16px;
+        margin-bottom: 12px;
+        border-left: 3px solid var(--dark-primary-color);
+    }
+
+    .question-preview-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 8px;
+    }
+
+    .question-number {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        background: rgba(99, 102, 241, 0.15);
+        color: var(--dark-primary-color);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+        font-weight: 600;
+    }
+
+    .question-meta {
+        font-size: 12px;
+        color: var(--dark-text-secondary);
+    }
+
+    .question-preview-text {
+        font-size: 14px;
+        color: var(--dark-text-primary);
+        line-height: 1.6;
+        margin-bottom: 10px;
+    }
+
+    .question-preview-options {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 8px;
+        font-size: 13px;
+    }
+
+    .preview-option {
+        padding: 6px 10px;
+        background: rgba(30, 30, 60, 0.6);
+        border-radius: 4px;
+        color: var(--dark-text-secondary);
+    }
+
+    .start-practice-btn {
+        padding: 14px 32px;
+        background: linear-gradient(135deg, var(--dark-success), #16a34a);
+        border: none;
+        border-radius: var(--radius-md);
+        color: #fff;
+        font-size: 15px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        margin-top: 20px;
+    }
+
+    .start-practice-btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 5px 20px rgba(34, 197, 94, 0.3);
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 40px;
+        background: rgba(20, 20, 40, 0.9);
+        border: 1px solid var(--dark-border);
+        border-radius: var(--radius-lg);
+    }
+
+    .empty-state i {
+        font-size: 48px;
+        margin-bottom: 16px;
+        color: var(--dark-border);
+    }
+
+    .empty-state h3 {
+        font-size: 18px;
+        margin-bottom: 8px;
+    }
+
+    .empty-state p {
+        font-size: 14px;
+        color: var(--dark-text-secondary);
+    }
+
+    .tips-section {
+        background: rgba(249, 115, 22, 0.1);
+        border: 1px solid rgba(249, 115, 22, 0.2);
+        border-radius: var(--radius-md);
+        padding: 16px;
+        margin-top: 16px;
+    }
+
+    .tips-header {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 12px;
+    }
+
+    .tips-icon {
+        font-size: 14px;
+        color: var(--dark-warning);
+    }
+
+    .tips-text {
+        font-size: 13px;
+        color: var(--dark-text-secondary);
+        line-height: 1.6;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="mode-section">
+    <div class="mode-card active" onclick="selectMode('normal')" id="mode-normal">
+        <div class="mode-icon normal"><i class="fas fa-book-open"></i></div>
+        <div class="mode-title">标准练习</div>
+        <div class="mode-desc">手动选择科目和难度，生成固定难度的题目集</div>
+    </div>
+    <div class="mode-card" onclick="selectMode('adaptive')" id="mode-adaptive">
+        <div class="mode-icon adaptive"><i class="fas fa-chart-line"></i></div>
+        <div class="mode-title">自适应练习</div>
+        <div class="mode-desc">系统根据您的答题情况自动调整题目难度</div>
+    </div>
+    <div class="mode-card" onclick="selectMode('review')" id="mode-review">
+        <div class="mode-icon review"><i class="fas fa-redo"></i></div>
+        <div class="mode-title">错题复习</div>
+        <div class="mode-desc">针对您的薄弱环节生成针对性复习题目</div>
+    </div>
+</div>
+
+<div class="config-section">
+    <div class="config-header">
+        <div class="config-icon"><i class="fas fa-cog"></i></div>
+        <h3>题目配置</h3>
+    </div>
+
+    <div class="config-grid">
+        <div class="form-group">
+            <label>选择科目 <span style="color:var(--dark-danger)">*</span></label>
+            <select id="subject" onchange="loadTopics()">
+                <option value="">请选择科目</option>
+                <option value="数学">数学</option>
+                <option value="英语">英语</option>
+                <option value="语文">语文</option>
+                <option value="物理">物理</option>
+                <option value="化学">化学</option>
+                <option value="生物">生物</option>
+                <option value="历史">历史</option>
+                <option value="地理">地理</option>
+                <option value="政治">政治</option>
+                <option value="日语">日语</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label>知识点/主题</label>
+            <select id="topic">
+                <option value="">全部知识点</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label>题目数量 <span id="count-value" class="range-value">10</span></label>
+            <input type="range" id="count" min="5" max="30" step="5" value="10" oninput="updateCount()">
+        </div>
+
+        <div class="form-group" id="difficulty-group">
+            <label>题目难度</label>
+            <select id="difficulty">
+                <option value="low">初级</option>
+                <option value="medium" selected>中级</option>
+                <option value="high">高级</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="toggle-group">
+        <button class="toggle-btn" onclick="toggleAI()" id="ai-toggle">
+            <i class="fas fa-brain"></i> AI智能生成
+        </button>
+        <button class="toggle-btn" onclick="toggleDetailed()" id="detailed-toggle">
+            <i class="fas fa-list"></i> 显示题目预览
+        </button>
+    </div>
+</div>
+
+<button class="generate-btn" onclick="generateQuestions()" id="generate-btn">
+    <i class="fas fa-magic"></i> 生成题目
+</button>
+
+<div class="loading-overlay" id="loading-overlay">
+    <div class="loading-content">
+        <div class="loading-spinner"></div>
+        <div class="loading-text">AI正在生成题目，请稍候...</div>
+    </div>
+</div>
+
+<div class="questions-preview" id="questions-preview">
+    <div class="preview-header">
+        <h3><i class="fas fa-list-check"></i> 题目预览</h3>
+        <div class="preview-stats">
+            <span class="preview-stat" id="preview-subject">科目: 数学</span>
+            <span class="preview-stat" id="preview-count">数量: 10</span>
+            <span class="preview-stat" id="preview-difficulty">难度: 中级</span>
+        </div>
+    </div>
+    <div id="questions-container"></div>
+    <button class="start-practice-btn" onclick="startPractice()">
+        <i class="fas fa-play"></i> 开始练习
+    </button>
+</div>
+
+<div class="tips-section">
+    <div class="tips-header">
+        <i class="fas fa-lightbulb tips-icon"></i>
+        <span style="font-size:13px;font-weight:600;color:var(--dark-warning)">使用提示</span>
+    </div>
+    <div class="tips-text">
+        <strong>标准练习</strong>：适合有明确学习目标的用户，可自由选择科目和难度。<br>
+        <strong>自适应练习</strong>：系统会根据您的历史答题记录，智能调整题目难度，帮助您高效提升。<br>
+        <strong>错题复习</strong>：针对您之前做错的题目，生成相似知识点的复习题目，巩固薄弱环节。<br>
+        <strong>AI智能生成</strong>：开启后使用AI引擎生成高质量题目，题目更加多样化和贴近真实考试。
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    let currentMode = 'normal';
+    let useAI = false;
+    let showPreview = false;
+    let generatedQuestions = [];
+    let currentSetId = '';
+
+    const subjects = {
+        '数学': ['函数基础', '导数', '概率统计', '三角函数', '立体几何', '解析几何'],
+        '英语': ['词汇', '语法', '阅读', '写作', '听力'],
+        '语文': ['文言文', '现代文', '诗词鉴赏', '写作'],
+        '物理': ['力学', '电磁学', '热学'],
+        '化学': ['无机化学', '有机化学'],
+        '生物': ['细胞生物学', '遗传学'],
+        '历史': ['中国古代史', '中国近现代史'],
+        '地理': ['自然地理', '人文地理'],
+        '政治': ['哲学', '经济学'],
+        '日语': ['词汇', '语法']
+    };
+
+    function selectMode(mode) {
+        currentMode = mode;
+        document.querySelectorAll('.mode-card').forEach(card => card.classList.remove('active'));
+        document.getElementById('mode-' + mode).classList.add('active');
+
+        const difficultyGroup = document.getElementById('difficulty-group');
+        if (mode === 'adaptive') {
+            difficultyGroup.style.display = 'none';
+        } else {
+            difficultyGroup.style.display = 'block';
+        }
+    }
+
+    function loadTopics() {
+        const subject = document.getElementById('subject').value;
+        const topicSelect = document.getElementById('topic');
+        
+        topicSelect.innerHTML = '<option value="">全部知识点</option>';
+        
+        if (subjects[subject]) {
+            subjects[subject].forEach(topic => {
+                const option = document.createElement('option');
+                option.value = topic;
+                option.textContent = topic;
+                topicSelect.appendChild(option);
+            });
+        }
+    }
+
+    function updateCount() {
+        document.getElementById('count-value').textContent = document.getElementById('count').value;
+    }
+
+    function toggleAI() {
+        useAI = !useAI;
+        const btn = document.getElementById('ai-toggle');
+        if (useAI) {
+            btn.classList.add('active');
+        } else {
+            btn.classList.remove('active');
+        }
+    }
+
+    function toggleDetailed() {
+        showPreview = !showPreview;
+        const btn = document.getElementById('detailed-toggle');
+        if (showPreview) {
+            btn.classList.add('active');
+        } else {
+            btn.classList.remove('active');
+        }
+    }
+
+    async function generateQuestions() {
+        const subject = document.getElementById('subject').value;
+        const topic = document.getElementById('topic').value;
+        const count = parseInt(document.getElementById('count').value);
+        const difficulty = document.getElementById('difficulty').value;
+
+        if (!subject) {
+            showToast('请选择科目', 'error');
+            return;
+        }
+
+        const btn = document.getElementById('generate-btn');
+        btn.disabled = true;
+        btn.innerHTML = '<span class="loading-spinner" style="width:20px;height:20px;border-width:2px;"></span> 生成中...';
+        
+        document.getElementById('loading-overlay').classList.add('show');
+
+        try {
+            let url = '';
+            let params = {};
+
+            if (currentMode === 'review') {
+                url = '/api/ai/question/review';
+                params = {
+                    user_id: '{{ session.get("user_id", "") }}',
+                    subject: subject,
+                    count: count
+                };
+            } else if (currentMode === 'adaptive') {
+                url = '/api/ai/question/adaptive';
+                params = {
+                    user_id: '{{ session.get("user_id", "") }}',
+                    subject: subject,
+                    count: count,
+                    use_ai: useAI
+                };
+            } else {
+                url = '/api/ai/question/generate';
+                params = {
+                    user_id: '{{ session.get("user_id", "") }}',
+                    subject: subject,
+                    count: count,
+                    difficulty: difficulty,
+                    topic: topic || null,
+                    use_ai: useAI
+                };
+            }
+
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(params)
+            });
+
+            const data = await response.json();
+
+            if (data.success && data.data) {
+                generatedQuestions = data.data.questions || [];
+                currentSetId = data.data.set_id || '';
+
+                if (showPreview && generatedQuestions.length > 0) {
+                    renderPreview(data.data);
+                } else if (generatedQuestions.length > 0) {
+                    startPractice();
+                } else {
+                    showToast('未生成任何题目', 'warning');
+                }
+            } else {
+                showToast(data.error || '生成题目失败', 'error');
+            }
+        } catch (error) {
+            console.error('生成题目失败:', error);
+            showToast('网络错误，生成失败', 'error');
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-magic"></i> 生成题目';
+            document.getElementById('loading-overlay').classList.remove('show');
+        }
+    }
+
+    function renderPreview(data) {
+        const container = document.getElementById('questions-container');
+        container.innerHTML = '';
+
+        document.getElementById('preview-subject').textContent = '科目: ' + data.subject;
+        document.getElementById('preview-count').textContent = '数量: ' + data.question_count;
+        document.getElementById('preview-difficulty').textContent = '难度: ' + 
+            (data.difficulty === 'low' ? '初级' : data.difficulty === 'high' ? '高级' : '中级');
+
+        generatedQuestions.forEach((q, index) => {
+            const card = document.createElement('div');
+            card.className = 'question-preview-card';
+            card.innerHTML = `
+                <div class="question-preview-header">
+                    <div class="question-number">${index + 1}</div>
+                    <div class="question-meta">
+                        <span style="color:var(--dark-primary-color)">${q.topic}</span>
+                        <span style="margin:0 8px;">·</span>
+                        <span>${q.difficulty === 'low' ? '初级' : q.difficulty === 'high' ? '高级' : '中级'}</span>
+                    </div>
+                </div>
+                <div class="question-preview-text">${q.question_text}</div>
+                <div class="question-preview-options">
+                    ${q.options.map(opt => 
+                        `<div class="preview-option">${opt.key}. ${opt.text}</div>`
+                    ).join('')}
+                </div>
+            `;
+            container.appendChild(card);
+        });
+
+        document.getElementById('questions-preview').classList.add('show');
+    }
+
+    function startPractice() {
+        if (!currentSetId) {
+            showToast('请先生成题目', 'error');
+            return;
+        }
+
+        window.location.href = `/exam_system/practice/start?set_id=${currentSetId}`;
+    }
+
+    function showToast(message, type) {
+        const toast = document.createElement('div');
+        toast.className = 'toast ' + (type || 'info');
+        toast.innerHTML = `<i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'times-circle' : 'info-circle'}"></i> ${message}`;
+        toast.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 12px 20px;
+            border-radius: 8px;
+            color: #fff;
+            font-size: 14px;
+            z-index: 2000;
+            animation: slideIn 0.3s ease-out;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            background: ${type === 'success' ? '#22c55e' : type === 'error' ? '#ef4444' : '#6366f1'};
+        `;
+        document.body.appendChild(toast);
+        
+        setTimeout(() => {
+            toast.style.opacity = '0';
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
+    }
+
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes slideIn {
+            from { transform: translateX(120%); }
+            to { transform: translateX(0); }
+        }
+    `;
+    document.head.appendChild(style);
+</script>
+{% endblock %}

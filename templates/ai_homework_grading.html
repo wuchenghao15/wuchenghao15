@@ -1,0 +1,1052 @@
+{% extends "base.html" %}
+
+{% block title %}AI智能作业批改{% endblock %}
+
+{% block head %}
+<style>
+    .grading-container {
+        max-width: 1200px;
+        margin: 30px auto;
+        padding: 0 20px;
+    }
+    .grading-header {
+        text-align: center;
+        margin-bottom: 30px;
+    }
+    .grading-header h1 {
+        color: #333;
+        font-size: 32px;
+        margin-bottom: 10px;
+    }
+    .grading-header p {
+        color: #666;
+        font-size: 14px;
+    }
+    .tabs {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 20px;
+        border-bottom: 2px solid #eee;
+    }
+    .tab {
+        padding: 12px 24px;
+        border: none;
+        background: none;
+        color: #666;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        border-bottom: 3px solid transparent;
+        transition: all 0.3s;
+    }
+    .tab.active {
+        color: #667eea;
+        border-bottom-color: #667eea;
+    }
+    .tab:hover {
+        color: #667eea;
+    }
+    .form-section {
+        background: white;
+        border-radius: 12px;
+        padding: 25px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        margin-bottom: 20px;
+    }
+    .form-row {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 15px;
+        margin-bottom: 20px;
+    }
+    .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+    .form-group label {
+        font-size: 13px;
+        color: #555;
+        font-weight: 500;
+    }
+    .form-group select,
+    .form-group input {
+        padding: 10px 12px;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        font-size: 14px;
+        background: #fafafa;
+    }
+    .form-group select:focus,
+    .form-group input:focus {
+        outline: none;
+        border-color: #667eea;
+        background: white;
+    }
+    .form-group.full {
+        grid-column: span 4;
+    }
+    .form-group.half {
+        grid-column: span 2;
+    }
+    textarea {
+        width: 100%;
+        padding: 15px;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        font-size: 14px;
+        min-height: 150px;
+        resize: vertical;
+        font-family: inherit;
+        background: #fafafa;
+    }
+    textarea:focus {
+        outline: none;
+        border-color: #667eea;
+        background: white;
+    }
+    .btn-group {
+        display: flex;
+        gap: 12px;
+        margin-top: 20px;
+    }
+    .btn {
+        padding: 12px 24px;
+        border: none;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+    .btn-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    }
+    .btn-secondary {
+        background: #f0f0f0;
+        color: #666;
+    }
+    .btn-secondary:hover {
+        background: #e0e0e0;
+    }
+    .btn-success {
+        background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+        color: white;
+    }
+    .btn-success:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(17, 153, 142, 0.4);
+    }
+    .btn-warning {
+        background: linear-gradient(135deg, #fc4a1a 0%, #f7b733 100%);
+        color: white;
+    }
+    .btn-warning:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(252, 74, 26, 0.4);
+    }
+    .question-item {
+        border: 1px solid #eee;
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 15px;
+        background: #fafafa;
+    }
+    .question-item:hover {
+        border-color: #667eea;
+        background: white;
+    }
+    .question-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 10px;
+    }
+    .question-type {
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 500;
+        background: #e8f4fd;
+        color: #0c5460;
+    }
+    .question-score {
+        font-size: 12px;
+        color: #888;
+    }
+    .question-content {
+        font-size: 14px;
+        color: #333;
+        margin-bottom: 10px;
+    }
+    .options-list {
+        margin-bottom: 10px;
+    }
+    .option-item {
+        padding: 8px 12px;
+        border-radius: 6px;
+        margin-bottom: 5px;
+        font-size: 13px;
+        background: white;
+        border: 1px solid #ddd;
+    }
+    .answer-section {
+        margin-top: 15px;
+        padding-top: 15px;
+        border-top: 1px dashed #ddd;
+    }
+    .answer-section label {
+        display: block;
+        font-size: 13px;
+        color: #555;
+        margin-bottom: 6px;
+    }
+    .answer-input {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 6px;
+        font-size: 13px;
+    }
+    .grading-result {
+        margin-top: 15px;
+        padding: 15px;
+        border-radius: 8px;
+    }
+    .grading-result.correct {
+        background: #d4edda;
+        border-left: 4px solid #155724;
+    }
+    .grading-result.partial {
+        background: #fff3cd;
+        border-left: 4px solid #856404;
+    }
+    .grading-result.wrong {
+        background: #f8d7da;
+        border-left: 4px solid #721c24;
+    }
+    .result-score {
+        font-size: 18px;
+        font-weight: bold;
+        margin-bottom: 5px;
+    }
+    .result-feedback {
+        font-size: 13px;
+    }
+    .analytics-card {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 15px;
+        margin-top: 20px;
+    }
+    .analytics-item {
+        background: #f8f9fa;
+        padding: 20px;
+        border-radius: 10px;
+        text-align: center;
+    }
+    .analytics-item .value {
+        font-size: 24px;
+        font-weight: bold;
+        color: #667eea;
+        margin-bottom: 5px;
+    }
+    .analytics-item .label {
+        font-size: 12px;
+        color: #888;
+    }
+    .assignment-list {
+        margin-top: 15px;
+    }
+    .assignment-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 15px;
+        border-bottom: 1px solid #eee;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+    .assignment-item:hover {
+        background: #f8f9fa;
+    }
+    .assignment-info {
+        flex: 1;
+    }
+    .assignment-title {
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 4px;
+    }
+    .assignment-meta {
+        font-size: 12px;
+        color: #888;
+    }
+    .assignment-status {
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 500;
+    }
+    .status-active {
+        background: #d4edda;
+        color: #155724;
+    }
+    .status-pending {
+        background: #fff3cd;
+        color: #856404;
+    }
+    .status-completed {
+        background: #d1ecf1;
+        color: #0c5460;
+    }
+    .submission-list {
+        margin-top: 15px;
+    }
+    .submission-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 15px;
+        border-bottom: 1px solid #eee;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+    .submission-item:hover {
+        background: #f8f9fa;
+    }
+    .submission-info {
+        flex: 1;
+    }
+    .submission-user {
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 4px;
+    }
+    .submission-meta {
+        font-size: 12px;
+        color: #888;
+    }
+    .submission-score {
+        font-size: 16px;
+        font-weight: bold;
+    }
+    .submission-score.excellent {
+        color: #155724;
+    }
+    .submission-score.good {
+        color: #0c5460;
+    }
+    .submission-score.fair {
+        color: #856404;
+    }
+    .submission-score.poor {
+        color: #721c24;
+    }
+    .loading {
+        display: inline-block;
+        width: 20px;
+        height: 20px;
+        border: 2px solid #f3f3f3;
+        border-top: 2px solid #667eea;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin-right: 8px;
+    }
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+    .score-bar {
+        height: 8px;
+        background: #eee;
+        border-radius: 4px;
+        margin-top: 10px;
+        overflow: hidden;
+    }
+    .score-fill {
+        height: 100%;
+        border-radius: 4px;
+        transition: width 0.5s;
+    }
+    .score-fill.excellent {
+        background: linear-gradient(90deg, #11998e, #38ef7d);
+    }
+    .score-fill.good {
+        background: linear-gradient(90deg, #36b9cc, #11998e);
+    }
+    .score-fill.fair {
+        background: linear-gradient(90deg, #f7b733, #fc4a1a);
+    }
+    .score-fill.poor {
+        background: linear-gradient(90deg, #fc4a1a, #ff6b6b);
+    }
+
+@media (max-width: 768px) {
+    .stats-grid, .section-grid, .feature-grid { grid-template-columns: 1fr !important; }
+    .sidebar { width: 60px !important; }
+    .main-content { padding: 12px !important; }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="grading-container">
+    <div class="grading-header">
+        <h1><i class="fas fa-file-alt"></i> AI智能作业批改</h1>
+        <p>自动批改各种题型，提供详细评分和个性化反馈</p>
+    </div>
+
+    <div class="tabs">
+        <button class="tab active" onclick="switchTab('create')">➕ 创建作业</button>
+        <button class="tab" onclick="switchTab('submit')">📤 提交作业</button>
+        <button class="tab" onclick="switchTab('grade')">✅ 批改作业</button>
+        <button class="tab" onclick="switchTab('results')"><i class="fas fa-chart-bar"></i> 批改结果</button>
+        <button class="tab" onclick="switchTab('analytics')"><i class="fas fa-chart-line"></i> 统计分析</button>
+    </div>
+
+    <div id="tab-create" class="form-section">
+        <h3>创建新作业</h3>
+        <div class="form-row">
+            <div class="form-group">
+                <label>作业标题</label>
+                <input type="text" id="create-title" placeholder="请输入作业标题">
+            </div>
+            <div class="form-group">
+                <label>科目</label>
+                <select id="create-subject">
+                    <option value="语文">语文</option>
+                    <option value="数学">数学</option>
+                    <option value="英语">英语</option>
+                    <option value="物理">物理</option>
+                    <option value="化学">化学</option>
+                    <option value="生物">生物</option>
+                    <option value="历史">历史</option>
+                    <option value="地理">地理</option>
+                    <option value="政治">政治</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>年级</label>
+                <select id="create-grade" onchange="onGradeChange(this)">
+                    <option value="小学">小学</option>
+                    <option value="初中">初中</option>
+                    <option value="高中">高中</option>
+                    <option value="成人教育">成人教育</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>总分</label>
+                <input type="number" id="create-total-score" value="100" min="10" max="500">
+            </div>
+        </div>
+        <div class="form-group half">
+            <label>截止日期</label>
+            <input type="date" id="create-deadline">
+        </div>
+        <div id="questions-container"></div>
+        <div class="btn-group">
+            <button class="btn btn-secondary" onclick="addQuestion()">➕ 添加题目</button>
+            <button class="btn btn-primary" onclick="createAssignment()">
+                <span class="loading" id="loading-create" style="display:none"></span>
+                创建作业
+            </button>
+        </div>
+    </div>
+
+    <div id="tab-submit" class="form-section" style="display:none">
+        <h3>提交作业</h3>
+        <div class="form-row">
+            <div class="form-group">
+                <label>选择作业</label>
+                <select id="submit-assignment">
+                    <option value="">请选择作业</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>用户ID</label>
+                <input type="text" id="submit-user-id" placeholder="请输入用户ID">
+            </div>
+        </div>
+        <div id="submit-questions-container"></div>
+        <div class="btn-group">
+            <button class="btn btn-primary" onclick="submitHomework()">
+                <span class="loading" id="loading-submit" style="display:none"></span>
+                提交作业
+            </button>
+        </div>
+    </div>
+
+    <div id="tab-grade" class="form-section" style="display:none">
+        <h3>批改作业</h3>
+        <div class="form-row">
+            <div class="form-group">
+                <label>选择提交记录</label>
+                <select id="grade-submission">
+                    <option value="">请选择提交记录</option>
+                </select>
+            </div>
+        </div>
+        <div class="btn-group">
+            <button class="btn btn-primary" onclick="gradeSubmission()">
+                <span class="loading" id="loading-grade" style="display:none"></span>
+                开始批改
+            </button>
+        </div>
+        <div id="grading-result-container" style="display:none">
+            <h4>批改结果</h4>
+            <div id="grading-details"></div>
+        </div>
+    </div>
+
+    <div id="tab-results" class="form-section" style="display:none">
+        <h3>批改结果</h3>
+        <div class="form-row">
+            <div class="form-group">
+                <label>作业ID（可选）</label>
+                <input type="text" id="results-assignment-id" placeholder="输入作业ID筛选">
+            </div>
+            <div class="form-group">
+                <label>用户ID（可选）</label>
+                <input type="text" id="results-user-id" placeholder="输入用户ID筛选">
+            </div>
+        </div>
+        <button class="btn btn-primary" onclick="loadResults()">查询结果</button>
+        <div class="submission-list" id="results-list">
+            <p style="color:#888; text-align:center; padding:20px">暂无结果</p>
+        </div>
+    </div>
+
+    <div id="tab-analytics" class="form-section" style="display:none">
+        <h3>统计分析</h3>
+        <div class="form-row">
+            <div class="form-group">
+                <label>选择作业</label>
+                <select id="analytics-assignment">
+                    <option value="">请选择作业</option>
+                </select>
+            </div>
+        </div>
+        <button class="btn btn-primary" onclick="loadAnalytics()">查看分析</button>
+        <div class="analytics-card" id="analytics-data" style="display:none">
+            <div class="analytics-item">
+                <div class="value" id="analytics-submission-count">0</div>
+                <div class="label">提交人数</div>
+            </div>
+            <div class="analytics-item">
+                <div class="value" id="analytics-graded-count">0</div>
+                <div class="label">已批改人数</div>
+            </div>
+            <div class="analytics-item">
+                <div class="value" id="analytics-avg-score">0</div>
+                <div class="label">平均分</div>
+            </div>
+            <div class="analytics-item">
+                <div class="value" id="analytics-pass-rate">0%</div>
+                <div class="label">及格率</div>
+            </div>
+        </div>
+        <div id="score-distribution" style="display:none; margin-top:20px">
+            <h4>成绩分布</h4>
+            <div style="display:flex; gap:10px; height:100px; align-items:flex-end">
+                <div style="flex:1; display:flex; flex-direction:column; align-items:center">
+                    <div class="score-fill excellent" id="dist-excellent" style="width:100%; margin-bottom:5px"></div>
+                    <span style="font-size:12px">优秀</span>
+                </div>
+                <div style="flex:1; display:flex; flex-direction:column; align-items:center">
+                    <div class="score-fill good" id="dist-good" style="width:100%; margin-bottom:5px"></div>
+                    <span style="font-size:12px">良好</span>
+                </div>
+                <div style="flex:1; display:flex; flex-direction:column; align-items:center">
+                    <div class="score-fill fair" id="dist-fair" style="width:100%; margin-bottom:5px"></div>
+                    <span style="font-size:12px">中等</span>
+                </div>
+                <div style="flex:1; display:flex; flex-direction:column; align-items:center">
+                    <div class="score-fill poor" id="dist-poor" style="width:100%; margin-bottom:5px"></div>
+                    <span style="font-size:12px">不及格</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let currentTab = 'create';
+    let questions = [];
+
+    function switchTab(tab) {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('[id^="tab-"]').forEach(t => t.style.display = 'none');
+        
+        event.target.classList.add('active');
+        document.getElementById('tab-' + tab).style.display = 'block';
+        currentTab = tab;
+
+        if (tab === 'submit') {
+            loadAssignmentsForSubmit();
+        }
+        if (tab === 'grade') {
+            loadSubmissionsForGrade();
+        }
+        if (tab === 'analytics') {
+            loadAssignmentsForAnalytics();
+        }
+    }
+
+    function onGradeChange(select) {
+        const selectedValue = select.value;
+        const subjectSelect = document.getElementById('create-subject');
+        
+        const nonAcademicTypes = ['成人教育'];
+        
+        if (nonAcademicTypes.includes(selectedValue)) {
+            const limitedSubjects = ['语文', '数学', '英语', '信息技术'];
+            Array.from(subjectSelect.options).forEach(option => {
+                option.disabled = !limitedSubjects.includes(option.value);
+            });
+            if (!limitedSubjects.includes(subjectSelect.value)) {
+                subjectSelect.value = '语文';
+            }
+        } else {
+            Array.from(subjectSelect.options).forEach(option => {
+                option.disabled = false;
+            });
+        }
+    }
+
+    function addQuestion() {
+        const index = questions.length + 1;
+        const container = document.getElementById('questions-container');
+        
+        const html = `
+            <div class="question-item" id="question-${index}">
+                <div class="question-header">
+                    <span class="question-type">第${index}题</span>
+                    <span class="question-score">分值: <input type="number" id="q-${index}-score" value="10" style="width:50px"></span>
+                    <button onclick="removeQuestion(${index})" style="border:none; background:none; color:#ff6b6b; cursor:pointer">×</button>
+                </div>
+                <div class="form-group full">
+                    <label>题型</label>
+                    <select id="q-${index}-type" onchange="toggleQuestionOptions(${index})">
+                        <option value="single_choice">单选题</option>
+                        <option value="multiple_choice">多选题</option>
+                        <option value="true_false">判断题</option>
+                        <option value="fill_blank">填空题</option>
+                        <option value="short_answer">简答题</option>
+                        <option value="essay">作文</option>
+                    </select>
+                </div>
+                <div class="form-group full">
+                    <label>题目内容</label>
+                    <textarea id="q-${index}-content" placeholder="请输入题目内容"></textarea>
+                </div>
+                <div id="q-${index}-options" class="options-list"></div>
+                <div class="form-group full">
+                    <label>正确答案</label>
+                    <textarea id="q-${index}-answer" placeholder="请输入正确答案（多选题用逗号分隔，填空题用|分隔多个关键词）"></textarea>
+                </div>
+            </div>
+        `;
+        
+        container.insertAdjacentHTML('beforeend', html);
+        toggleQuestionOptions(index);
+        questions.push(index);
+    }
+
+    function toggleQuestionOptions(index) {
+        const type = document.getElementById(`q-${index}-type`).value;
+        const optionsContainer = document.getElementById(`q-${index}-options`);
+        
+        if (type === 'single_choice' || type === 'multiple_choice') {
+            optionsContainer.innerHTML = `
+                <label>选项（每行一个）</label>
+                <textarea id="q-${index}-options-text" placeholder="A. 选项1\nB. 选项2\nC. 选项3\nD. 选项4"></textarea>
+            `;
+        } else {
+            optionsContainer.innerHTML = '';
+        }
+    }
+
+    function removeQuestion(index) {
+        document.getElementById(`question-${index}`).remove();
+        questions = questions.filter(q => q !== index);
+    }
+
+    async function createAssignment() {
+        const title = document.getElementById('create-title').value;
+        const subject = document.getElementById('create-subject').value;
+        const gradeLevel = document.getElementById('create-grade').value;
+        const totalScore = document.getElementById('create-total-score').value;
+        const deadline = document.getElementById('create-deadline').value;
+
+        if (!title) {
+            alert('请输入作业标题');
+            return;
+        }
+
+        const qs = [];
+        questions.forEach(idx => {
+            const type = document.getElementById(`q-${idx}-type`).value;
+            const content = document.getElementById(`q-${idx}-content`).value;
+            const answer = document.getElementById(`q-${idx}-answer`).value;
+            const score = document.getElementById(`q-${idx}-score`).value;
+            
+            if (content && answer) {
+                const optionsText = document.getElementById(`q-${idx}-options-text`)?.value || '';
+                const options = optionsText.split('\n').filter(o => o.trim());
+                
+                qs.push({
+                    type,
+                    content,
+                    options,
+                    correct_answer: answer,
+                    score: parseInt(score)
+                });
+            }
+        });
+
+        if (qs.length === 0) {
+            alert('请至少添加一道题目');
+            return;
+        }
+
+        document.getElementById('loading-create').style.display = 'inline-block';
+
+        try {
+            const response = await fetch('/api/ai/homework/create', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ title, subject, grade_level: gradeLevel, total_score: parseInt(totalScore), deadline, questions: qs })
+            });
+            const result = await response.json();
+            
+            if (result.success) {
+                alert('作业创建成功！作业ID: ' + result.data.assignment_id);
+                document.getElementById('questions-container').innerHTML = '';
+                questions = [];
+                document.getElementById('create-title').value = '';
+            } else {
+                alert('创建失败: ' + result.error);
+            }
+        } catch (error) {
+            alert('创建失败: ' + error.message);
+        } finally {
+            document.getElementById('loading-create').style.display = 'none';
+        }
+    }
+
+    async function loadAssignmentsForSubmit() {
+        try {
+            const response = await fetch('/api/ai/homework/assignments');
+            const result = await response.json();
+            
+            if (result.success) {
+                const select = document.getElementById('submit-assignment');
+                select.innerHTML = '<option value="">请选择作业</option>' + 
+                    result.data.assignments.map(a => 
+                        `<option value="${a.assignment_id}">${a.title} (${a.subject})</option>`
+                    ).join('');
+            }
+        } catch (error) {
+            console.error('加载作业失败:', error);
+        }
+    }
+
+    document.getElementById('submit-assignment').addEventListener('change', async function() {
+        const assignmentId = this.value;
+        if (!assignmentId) {
+            document.getElementById('submit-questions-container').innerHTML = '';
+            return;
+        }
+
+        try {
+            const response = await fetch(`/api/ai/homework/assignment/${assignmentId}`);
+            const result = await response.json();
+            
+            if (result.success) {
+                const container = document.getElementById('submit-questions-container');
+                container.innerHTML = result.data.questions.map((q, idx) => {
+                    let optionsHtml = '';
+                    if (q.options.length > 0) {
+                        optionsHtml = `<div class="options-list">${q.options.map(o => 
+                            `<div class="option-item">${o}</div>`
+                        ).join('')}</div>`;
+                    }
+                    
+                    let inputHtml = '';
+                    if (q.question_type === 'single_choice') {
+                        inputHtml = `<input type="text" class="answer-input" id="ans-${q.question_id}" placeholder="请输入答案（如A）">`;
+                    } else if (q.question_type === 'multiple_choice') {
+                        inputHtml = `<input type="text" class="answer-input" id="ans-${q.question_id}" placeholder="请输入答案（如A,B,C）">`;
+                    } else if (q.question_type === 'true_false') {
+                        inputHtml = `<select class="answer-input" id="ans-${q.question_id}"><option value="">请选择</option><option value="正确">正确</option><option value="错误">错误</option></select>`;
+                    } else {
+                        inputHtml = `<textarea class="answer-input" id="ans-${q.question_id}" placeholder="请输入答案"></textarea>`;
+                    }
+                    
+                    return `
+                        <div class="question-item">
+                            <div class="question-header">
+                                <span class="question-type">第${idx + 1}题 - ${getTypeLabel(q.question_type)}</span>
+                                <span class="question-score">${q.score}分</span>
+                            </div>
+                            <div class="question-content">${q.content}</div>
+                            ${optionsHtml}
+                            <div class="answer-section">
+                                <label>你的答案</label>
+                                ${inputHtml}
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+        } catch (error) {
+            console.error('加载作业详情失败:', error);
+        }
+    });
+
+    function getTypeLabel(type) {
+        const labels = {
+            'single_choice': '单选',
+            'multiple_choice': '多选',
+            'true_false': '判断',
+            'fill_blank': '填空',
+            'short_answer': '简答',
+            'essay': '作文'
+        };
+        return labels[type] || type;
+    }
+
+    async function submitHomework() {
+        const assignmentId = document.getElementById('submit-assignment').value;
+        const userId = document.getElementById('submit-user-id').value;
+
+        if (!assignmentId || !userId) {
+            alert('请选择作业并输入用户ID');
+            return;
+        }
+
+        const answers = {};
+        const inputs = document.querySelectorAll('.answer-input');
+        inputs.forEach(input => {
+            const id = input.id.replace('ans-', '');
+            answers[id] = input.value;
+        });
+
+        document.getElementById('loading-submit').style.display = 'inline-block';
+
+        try {
+            const response = await fetch('/api/ai/homework/submit', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ assignment_id: assignmentId, user_id: userId, answers })
+            });
+            const result = await response.json();
+            
+            if (result.success) {
+                alert('作业提交成功！提交ID: ' + result.data.submission_id);
+                document.getElementById('submit-user-id').value = '';
+                document.querySelectorAll('.answer-input').forEach(i => i.value = '');
+            } else {
+                alert('提交失败: ' + result.error);
+            }
+        } catch (error) {
+            alert('提交失败: ' + error.message);
+        } finally {
+            document.getElementById('loading-submit').style.display = 'none';
+        }
+    }
+
+    async function loadSubmissionsForGrade() {
+        try {
+            const response = await fetch('/api/ai/homework/submissions');
+            const result = await response.json();
+            
+            if (result.success) {
+                const select = document.getElementById('grade-submission');
+                select.innerHTML = '<option value="">请选择提交记录</option>' + 
+                    result.data.submissions.filter(s => s.status === 'submitted').map(s => 
+                        `<option value="${s.submission_id}">用户${s.user_id} - ${s.submitted_at}</option>`
+                    ).join('');
+            }
+        } catch (error) {
+            console.error('加载提交记录失败:', error);
+        }
+    }
+
+    async function gradeSubmission() {
+        const submissionId = document.getElementById('grade-submission').value;
+        
+        if (!submissionId) {
+            alert('请选择提交记录');
+            return;
+        }
+
+        document.getElementById('loading-grade').style.display = 'inline-block';
+
+        try {
+            const response = await fetch(`/api/ai/homework/grade/${submissionId}`, {
+                method: 'POST'
+            });
+            const result = await response.json();
+            
+            if (result.success) {
+                document.getElementById('grading-result-container').style.display = 'block';
+                const details = document.getElementById('grading-details');
+                
+                details.innerHTML = `
+                    <div style="background:#f8f9fa; padding:20px; border-radius:10px; margin-bottom:20px">
+                        <div style="font-size:18px; font-weight:bold; color:#333">总分: ${result.data.total_score} / ${result.data.max_score}</div>
+                        <div style="font-size:14px; color:#667eea; margin-top:5px">等级: ${result.data.grade}</div>
+                        <div class="score-bar">
+                            <div class="score-fill ${getScoreClass(result.data.total_score / result.data.max_score)}" 
+                                 style="width:${(result.data.total_score / result.data.max_score * 100)}%"></div>
+                        </div>
+                    </div>
+                    ${result.data.grading_results.map((r, idx) => `
+                        <div class="question-item">
+                            <div class="question-header">
+                                <span class="question-type">第${idx + 1}题 - ${getTypeLabel(r.question_type)}</span>
+                                <span class="question-score">得分: ${r.score} / ${r.max_score}</span>
+                            </div>
+                            <div class="grading-result ${getResultClass(r.score, r.max_score)}">
+                                <div class="result-score">${r.score}分</div>
+                                <div class="result-feedback">${r.feedback}</div>
+                            </div>
+                            <div style="margin-top:10px; font-size:13px">
+                                <div style="color:#666">你的答案: <span style="color:#333">${r.user_answer || '未作答'}</span></div>
+                                <div style="color:#666">正确答案: <span style="color:#11998e">${r.correct_answer}</span></div>
+                            </div>
+                        </div>
+                    `).join('')}
+                `;
+            } else {
+                alert('批改失败: ' + result.error);
+            }
+        } catch (error) {
+            alert('批改失败: ' + error.message);
+        } finally {
+            document.getElementById('loading-grade').style.display = 'none';
+        }
+    }
+
+    function getResultClass(score, maxScore) {
+        const ratio = score / maxScore;
+        if (ratio === 1) return 'correct';
+        if (ratio > 0) return 'partial';
+        return 'wrong';
+    }
+
+    function getScoreClass(ratio) {
+        if (ratio >= 0.9) return 'excellent';
+        if (ratio >= 0.75) return 'good';
+        if (ratio >= 0.6) return 'fair';
+        return 'poor';
+    }
+
+    async function loadResults() {
+        const assignmentId = document.getElementById('results-assignment-id').value;
+        const userId = document.getElementById('results-user-id').value;
+        
+        let url = '/api/ai/homework/submissions';
+        const params = [];
+        if (assignmentId) params.push(`assignment_id=${assignmentId}`);
+        if (userId) params.push(`user_id=${userId}`);
+        if (params.length > 0) url += '?' + params.join('&');
+
+        try {
+            const response = await fetch(url);
+            const result = await response.json();
+            
+            if (result.success) {
+                const container = document.getElementById('results-list');
+                container.innerHTML = result.data.submissions.map(s => {
+                    const scoreClass = getScoreClass(s.total_score / s.max_score);
+                    return `
+                        <div class="submission-item" onclick="viewSubmission('${s.submission_id}')">
+                            <div class="submission-info">
+                                <div class="submission-user">用户${s.user_id}</div>
+                                <div class="submission-meta">作业ID: ${s.assignment_id} | ${s.submitted_at}</div>
+                            </div>
+                            <div class="submission-score ${scoreClass}">${s.total_score || '-'}分</div>
+                        </div>
+                    `;
+                }).join('');
+            }
+        } catch (error) {
+            console.error('加载结果失败:', error);
+        }
+    }
+
+    async function viewSubmission(submissionId) {
+        try {
+            const response = await fetch(`/api/ai/homework/submission/${submissionId}`);
+            const result = await response.json();
+            
+            if (result.success) {
+                const s = result.data.submission;
+                alert(`用户${s.user_id}\n得分: ${s.total_score} / ${s.max_score}\n状态: ${s.status}`);
+            }
+        } catch (error) {
+            alert('查看失败: ' + error.message);
+        }
+    }
+
+    async function loadAssignmentsForAnalytics() {
+        try {
+            const response = await fetch('/api/ai/homework/assignments');
+            const result = await response.json();
+            
+            if (result.success) {
+                const select = document.getElementById('analytics-assignment');
+                select.innerHTML = '<option value="">请选择作业</option>' + 
+                    result.data.assignments.map(a => 
+                        `<option value="${a.assignment_id}">${a.title}</option>`
+                    ).join('');
+            }
+        } catch (error) {
+            console.error('加载作业失败:', error);
+        }
+    }
+
+    async function loadAnalytics() {
+        const assignmentId = document.getElementById('analytics-assignment').value;
+        
+        if (!assignmentId) {
+            alert('请选择作业');
+            return;
+        }
+
+        try {
+            const response = await fetch(`/api/ai/homework/analytics/${assignmentId}`);
+            const result = await response.json();
+            
+            if (result.success) {
+                const a = result.data.analytics;
+                document.getElementById('analytics-data').style.display = 'grid';
+                document.getElementById('analytics-submission-count').textContent = a.submission_count;
+                document.getElementById('analytics-graded-count').textContent = a.graded_count;
+                document.getElementById('analytics-avg-score').textContent = a.avg_score;
+                document.getElementById('analytics-pass-rate').textContent = a.pass_rate + '%';
+                
+                const dist = a.score_distribution;
+                const maxCount = Math.max(...Object.values(dist));
+                document.getElementById('score-distribution').style.display = 'block';
+                document.getElementById('dist-excellent').style.height = maxCount ? (dist.excellent / maxCount * 100) + '%' : '0%';
+                document.getElementById('dist-good').style.height = maxCount ? (dist.good / maxCount * 100) + '%' : '0%';
+                document.getElementById('dist-fair').style.height = maxCount ? (dist.fair / maxCount * 100) + '%' : '0%';
+                document.getElementById('dist-poor').style.height = maxCount ? (dist.poor / maxCount * 100) + '%' : '0%';
+            }
+        } catch (error) {
+            alert('加载分析失败: ' + error.message);
+        }
+    }
+
+    addQuestion();
+</script>
+{% endblock %}

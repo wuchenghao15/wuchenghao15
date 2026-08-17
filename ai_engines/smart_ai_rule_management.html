@@ -1,0 +1,956 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智能AI规则管理</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome -->
+    <!-- FontAwesome CDN removed -->
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+    <style>
+        /* 自定义样式 */
+        .card {
+            @apply bg-white rounded-lg shadow-md p-6 transition-all duration-300 hover:shadow-lg;
+        }
+        .btn {
+            @apply px-4 py-2 rounded-md font-medium transition-all duration-300;
+        }
+        .btn-primary {
+            @apply bg-blue-600 text-white hover:bg-blue-700;
+        }
+        .btn-secondary {
+            @apply bg-gray-200 text-gray-800 hover:bg-gray-300;
+        }
+        .btn-danger {
+            @apply bg-red-600 text-white hover:bg-red-700;
+        }
+        .btn-success {
+            @apply bg-green-600 text-white hover:bg-green-700;
+        }
+        .input {
+            @apply border border-gray-300 rounded-md px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all;
+        }
+        .badge {
+            @apply px-2 py-1 rounded-full text-xs font-medium;
+        }
+        .badge-active {
+            @apply bg-green-100 text-green-800;
+        }
+        .badge-inactive {
+            @apply bg-gray-100 text-gray-800;
+        }
+        .badge-high {
+            @apply bg-red-100 text-red-800;
+        }
+        .badge-medium {
+            @apply bg-yellow-100 text-yellow-800;
+        }
+        .badge-low {
+            @apply bg-blue-100 text-blue-800;
+        }
+    </style>
+
+<style>
+.svg-icon {
+    display: inline-block;
+    width: 1em;
+    height: 1em;
+    vertical-align: -0.125em;
+    fill: currentColor;
+}
+</style>
+</head>
+<body class="bg-gray-50 font-sans">
+    <!-- 顶部导航栏 -->
+    <header class="bg-white shadow-sm">
+        <div class="container mx-auto px-4 py-4 flex justify-between items-center">
+            <div class="flex items-center">
+                <svg class="svg-icon" viewBox="0 0 512 512" width="16" height="16"><path d="M487.4 315.7l-43.4-7.5c-1.3-3.2-2.8-6.3-4.5-9.3l19.9-39.8c3.6-7.2 2-16.1-3.8-21.6l-50-47.6c-5.8-5.5-14.9-6.5-21.9-2.4l-41.9 24.5c-11.4-8.8-23.9-16.2-37.2-21.8l-8.4-47.4C292.1 35 283.7 32 274.7 32h-37.5c-9 0-17.4 3-24.3 8.3l-8.4 47.4c-13.3 5.6-25.8 13-37.2 21.8l-41.9-24.5c-7-4.1-16.1-3.1-21.9 2.4l-50 47.6c-5.8 5.5-7.4 14.4-3.8 21.6l19.9 39.8c-1.7 3-3.2 6.1-4.5 9.3l-43.4 7.5C10.1 320.6 0 331.8 0 344.9v34.3c0 13.1 10.1 24.3 22.6 29.2l43.4 7.5c1.3 3.2 2.8 6.3 4.5 9.3l-19.9 39.8c-3.6 7.2-2 16.1 3.8 21.6l50 47.6c5.8 5.5 14.9 6.5 21.9 2.4l41.9-24.5c11.4 8.8 23.9 16.2 37.2 21.8l8.4 47.4c6.9 5.3 15.3 8.3 24.3 8.3h37.5c9 0 17.4-3 24.3-8.3l8.4-47.4c13.3-5.6 25.8-13 37.2-21.8l41.9 24.5c7 4.1 16.1 3.1 21.9-2.4l50-47.6c5.8-5.5 7.4-14.4 3.8-21.6l-19.9-39.8c1.7-3 3.2-6.1 4.5-9.3l43.4-7.5c12.5-4.9 22.6-16 22.6-29.2v-34.3c0-13.1-10.1-24.3-22.6-29.2zM256 384c-70.7 0-128-57.3-128-128s57.3-128 128-128 128 57.3 128 128-57.3 128-128 128z"/></svg>
+                <h1 class="text-xl font-bold text-gray-800">智能AI规则管理</h1>
+            </div>
+            <div class="flex items-center space-x-4">
+                <span class="text-gray-600">欢迎, {{ user.username }}</span>
+                <div class="relative">
+                    <svg class="svg-icon" viewBox="0 0 448 512" width="16" height="16"><path d="M224 512c35.3 0 64-28.7 64-64H160c0 35.3 28.7 64 64 64zm215.3-149.7c-14.6-14.6-46.1-29.8-67.4-59.3-24-33.5-35.3-72.8-35.3-110.4 0-77.4-57.6-141.6-133-150.7-2.6-15.4-17.6-25.6-33.6-25.6s-31 10.2-33.6 25.6C91.6 91 34 155.2 34 232.6c0 37.6-11.3 76.9-35.3 110.4C-22.6 372.5-68.9 387.7-83.5 402.3c-14.6 14.6-14.6 38.2 0 52.8 7.3 7.3 17.1 10.9 26.8 10.9h369.5c9.7 0 19.5-3.7 26.8-10.9 14.5-14.6 14.5-38.2 0-52.8z"/></svg>
+                    <span class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">3</span>
+                </div>
+                <button class="btn btn-secondary">
+                    <i class="fa fa-sign-out mr-1"></i> 退出
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- 主要内容 -->
+    <main class="container mx-auto px-4 py-6">
+        <!-- 概览卡片 -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+            <div class="card">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-600 text-sm">规则总数</p>
+                        <h3 class="text-2xl font-bold text-gray-800" id="totalRules">0</h3>
+                    </div>
+                    <div class="bg-blue-100 p-3 rounded-full">
+                        <i class="fa fa-list text-blue-600 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="card">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-600 text-sm">活跃规则</p>
+                        <h3 class="text-2xl font-bold text-gray-800" id="activeRules">0</h3>
+                    </div>
+                    <div class="bg-green-100 p-3 rounded-full">
+                        <svg class="svg-icon" viewBox="0 0 512 512" fill="#28a745" width="16" height="16"><path d="M256 8C119 8 8 119 8 256s111 248 248 248 248-111 248-248S393 8 256 8zm-24 336l-112-112 17-17 95 95 207-207 17 17z"/></svg>
+                    </div>
+                </div>
+            </div>
+            <div class="card">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-600 text-sm">平均效果评分</p>
+                        <h3 class="text-2xl font-bold text-gray-800" id="avgEffectiveness">0</h3>
+                    </div>
+                    <div class="bg-purple-100 p-3 rounded-full">
+                        <i class="fa fa-star text-purple-600 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="card">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-600 text-sm">待优化规则</p>
+                        <h3 class="text-2xl font-bold text-gray-800" id="rulesToOptimize">0</h3>
+                    </div>
+                    <div class="bg-yellow-100 p-3 rounded-full">
+                        <i class="fa fa-wrench text-yellow-600 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 主要内容区域 -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- 左侧：规则列表 -->
+            <div class="lg:col-span-2">
+                <!-- 操作栏 -->
+                <div class="card mb-6">
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                        <div class="flex items-center gap-4">
+                            <button class="btn btn-primary" onclick="openAddRuleModal()">
+                                <i class="fa fa-plus mr-1"></i> 新建规则
+                            </button>
+                            <button class="btn btn-primary" onclick="openGenerateRuleModal()">
+                                <i class="fa fa-magic mr-1"></i> AI生成规则
+                            </button>
+                            <div class="relative">
+                                <input type="text" placeholder="搜索规则..." class="input pl-10 w-64" id="searchInput">
+                                <svg class="svg-icon" viewBox="0 0 512 512" width="16" height="16"><path d="M505 442.7L405.3 343c-4.5-4.5-10.6-7-17-7H372c27.6-35.3 44-79.7 44-128C416 93.1 322.9 0 208 0S0 93.1 0 208s93.1 208 208 208c48.3 0 92.7-16.4 128-44v16.3c0 6.4 2.5 12.5 7 17l99.7 99.7c9.4 9.4 24.6 9.4 33.9 0l28.3-28.3c9.4-9.4 9.4-24.6.1-34zM208 336c-70.7 0-128-57.3-128-128s57.3-128 128-128 128 57.3 128 128-57.3 128-128 128z"/></svg>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <select class="input w-40" id="filterStatus">
+                                <option value="all">全部状态</option>
+                                <option value="active">活跃</option>
+                                <option value="inactive">非活跃</option>
+                            </select>
+                            <select class="input w-40" id="filterType">
+                                <option value="all">全部类型</option>
+                                <option value="user_behavior">用户行为</option>
+                                <option value="system_monitoring">系统监控</option>
+                                <option value="security">安全防护</option>
+                                <option value="other">其他</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 规则列表 -->
+                <div class="card">
+                    <h2 class="text-lg font-semibold text-gray-800 mb-4">规则列表</h2>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead>
+                                <tr>
+                                    <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">规则名称</th>
+                                    <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">类型</th>
+                                    <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">优先级</th>
+                                    <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">状态</th>
+                                    <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">效果评分</th>
+                                    <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">操作</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200" id="rulesTableBody">
+                                <!-- 规则列表将通过JavaScript动态生成 -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <!-- 分页 -->
+                    <div class="mt-4 flex justify-center">
+                        <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                            <button type="button" class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                                <span class="sr-only">上一页</span>
+                                <svg class="svg-icon" viewBox="0 0 320 512" width="16" height="16"><path d="M34.5 239L222.1 51.4c4.7-4.7 4.7-12.3 0-17l-19.8-19.8c-4.7-4.7-12.3-4.7-17 0L7.2 232.6c-4.7 4.7-4.7 12.3 0 17l178.1 218c4.7 4.7 12.3 4.7 17 0l19.8-19.8c4.7-4.7 4.7-12.3 0-17L34.5 273c-4.8-4.7-4.8-12.3-.1-17z"/></svg>
+                            </button>
+                            <button type="button" class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-blue-50 text-sm font-medium text-blue-600">
+                                1
+                            </button>
+                            <button type="button" class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">
+                                2
+                            </button>
+                            <button type="button" class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">
+                                3
+                            </button>
+                            <button type="button" class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                                <span class="sr-only">下一页</span>
+                                <svg class="svg-icon" viewBox="0 0 320 512" width="16" height="16"><path d="M285.5 239L97.9 51.4c-4.7-4.7-4.7-12.3 0-17l19.8-19.8c4.7-4.7 12.3-4.7 17 0l178.1 218c4.7 4.7 4.7 12.3 0 17l-178.1 218c-4.7 4.7-12.3 4.7-17 0l-19.8-19.8c-4.7-4.7-4.7-12.3 0-17l187.6-187.6c4.8-4.7 4.8-12.3.1-17z"/></svg>
+                            </button>
+                        </nav>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 右侧：规则详情和建议 -->
+            <div class="lg:col-span-1">
+                <!-- 规则详情卡片 -->
+                <div class="card mb-6" id="ruleDetailsCard" style="display: none;">
+                    <h2 class="text-lg font-semibold text-gray-800 mb-4">规则详情</h2>
+                    <div class="space-y-4" id="ruleDetailsContent">
+                        <!-- 规则详情将通过JavaScript动态生成 -->
+                    </div>
+                </div>
+
+                <!-- 规则性能图表 -->
+                <div class="card mb-6" id="rulePerformanceCard" style="display: none;">
+                    <h2 class="text-lg font-semibold text-gray-800 mb-4">规则性能</h2>
+                    <canvas id="rulePerformanceChart" height="200"></canvas>
+                </div>
+
+                <!-- AI规则建议 -->
+                <div class="card">
+                    <h2 class="text-lg font-semibold text-gray-800 mb-4">AI规则建议</h2>
+                    <div class="space-y-3" id="ruleSuggestions">
+                        <!-- 规则建议将通过JavaScript动态生成 -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- 添加规则模态框 -->
+    <div id="addRuleModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-lg p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-bold text-gray-800">新建AI规则</h2>
+                <button class="text-gray-400 hover:text-gray-600" onclick="closeAddRuleModal()">
+                    <svg class="svg-icon" viewBox="0 0 352 512" width="16" height="16"><path d="M242.7 256l100.1-100.1c4.7-4.7 4.7-12.3 0-17l-22.6-22.6c-4.7-4.7-12.3-4.7-17 0L203.1 216.4 103 116.3c-4.7-4.7-12.3-4.7-17 0L63.4 138.9c-4.7 4.7-4.7 12.3 0 17L163.5 256 63.4 356.1c-4.7 4.7-4.7 12.3 0 17l22.6 22.6c4.7 4.7 12.3 4.7 17 0l100.1-100.1 100.1 100.1c4.7 4.7 12.3 4.7 17 0l22.6-22.6c4.7-4.7 4.7-12.3 0-17L242.7 256z"/></svg>
+                </button>
+            </div>
+            <form id="addRuleForm">
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">规则名称</label>
+                        <input type="text" name="name" class="input" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">描述</label>
+                        <textarea name="description" rows="3" class="input" required></textarea>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">规则类型</label>
+                        <select name="rule_type" class="input" required>
+                            <option value="user_behavior">用户行为</option>
+                            <option value="system_monitoring">系统监控</option>
+                            <option value="security">安全防护</option>
+                            <option value="other">其他</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">优先级</label>
+                        <select name="priority" class="input" required>
+                            <option value="high">高</option>
+                            <option value="medium">中</option>
+                            <option value="low">低</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">状态</label>
+                        <select name="status" class="input" required>
+                            <option value="active">活跃</option>
+                            <option value="inactive">非活跃</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">规则内容</label>
+                        <textarea name="rule_content" rows="5" class="input" required placeholder="请输入规则内容..."></textarea>
+                    </div>
+                </div>
+                <div class="mt-6 flex justify-end gap-3">
+                    <button type="button" class="btn btn-secondary" onclick="closeAddRuleModal()">取消</button>
+                    <button type="submit" class="btn btn-primary">创建规则</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- AI生成规则模态框 -->
+    <div id="generateRuleModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-lg p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-bold text-gray-800">AI生成规则</h2>
+                <button class="text-gray-400 hover:text-gray-600" onclick="closeGenerateRuleModal()">
+                    <svg class="svg-icon" viewBox="0 0 352 512" width="16" height="16"><path d="M242.7 256l100.1-100.1c4.7-4.7 4.7-12.3 0-17l-22.6-22.6c-4.7-4.7-12.3-4.7-17 0L203.1 216.4 103 116.3c-4.7-4.7-12.3-4.7-17 0L63.4 138.9c-4.7 4.7-4.7 12.3 0 17L163.5 256 63.4 356.1c-4.7 4.7-4.7 12.3 0 17l22.6 22.6c4.7 4.7 12.3 4.7 17 0l100.1-100.1 100.1 100.1c4.7 4.7 12.3 4.7 17 0l22.6-22.6c4.7-4.7 4.7-12.3 0-17L242.7 256z"/></svg>
+                </button>
+            </div>
+            <form id="generateRuleForm">
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">规则类型</label>
+                        <select name="rule_type" class="input" required>
+                            <option value="user_behavior">用户行为</option>
+                            <option value="system_monitoring">系统监控</option>
+                            <option value="security">安全防护</option>
+                            <option value="other">其他</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">规则描述</label>
+                        <textarea name="description" rows="3" class="input" required placeholder="请描述您想要生成的规则..."></textarea>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">特殊要求（可选）</label>
+                        <textarea name="requirements" rows="2" class="input" placeholder="请输入任何特殊要求..."></textarea>
+                    </div>
+                </div>
+                <div class="mt-6 flex justify-end gap-3">
+                    <button type="button" class="btn btn-secondary" onclick="closeGenerateRuleModal()">取消</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fa fa-magic mr-1"></i> 生成规则
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 优化规则模态框 -->
+    <div id="optimizeRuleModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-lg p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-bold text-gray-800">优化AI规则</h2>
+                <button class="text-gray-400 hover:text-gray-600" onclick="closeOptimizeRuleModal()">
+                    <svg class="svg-icon" viewBox="0 0 352 512" width="16" height="16"><path d="M242.7 256l100.1-100.1c4.7-4.7 4.7-12.3 0-17l-22.6-22.6c-4.7-4.7-12.3-4.7-17 0L203.1 216.4 103 116.3c-4.7-4.7-12.3-4.7-17 0L63.4 138.9c-4.7 4.7-4.7 12.3 0 17L163.5 256 63.4 356.1c-4.7 4.7-4.7 12.3 0 17l22.6 22.6c4.7 4.7 12.3 4.7 17 0l100.1-100.1 100.1 100.1c4.7 4.7 12.3 4.7 17 0l22.6-22.6c4.7-4.7 4.7-12.3 0-17L242.7 256z"/></svg>
+                </button>
+            </div>
+            <div id="optimizeRuleContent">
+                <!-- 优化规则内容将通过JavaScript动态生成 -->
+            </div>
+            <div class="mt-6 flex justify-end gap-3">
+                <button type="button" class="btn btn-secondary" onclick="closeOptimizeRuleModal()">取消</button>
+                <button type="button" class="btn btn-primary" onclick="confirmOptimizeRule()">确认优化</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 全局变量
+        let rules = [];
+        let currentSelectedRule = null;
+        let rulePerformanceChart = null;
+
+        // 页面加载时初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            loadAIData();
+            loadRuleSuggestions();
+            
+            // 添加事件监听器
+            document.getElementById('addRuleForm').addEventListener('submit', handleAddRule);
+            document.getElementById('generateRuleForm').addEventListener('submit', handleGenerateRule);
+            document.getElementById('searchInput').addEventListener('input', handleSearch);
+            document.getElementById('filterStatus').addEventListener('change', handleFilterChange);
+            document.getElementById('filterType').addEventListener('change', handleFilterChange);
+        });
+
+        // 加载AI规则数据
+        function loadAIData() {
+            fetch('/api/smart-ai-rule-management/rules')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        rules = data.rules;
+                        renderRulesTable(rules);
+                        updateOverviewCards(rules);
+                    } else {
+                        alert('加载规则数据失败: ' + data.error);
+                    }
+                })
+                .catch(error => {
+                    console.error('加载规则数据失败:', error);
+                    alert('加载规则数据失败，请刷新页面重试');
+                });
+        }
+
+        // 更新概览卡片
+        function updateOverviewCards(rules) {
+            const totalRules = rules.length;
+            const activeRules = rules.filter(rule => rule.status === 'active').length;
+            const avgEffectiveness = rules.length > 0 
+                ? Math.round(rules.reduce((sum, rule) => sum + rule.performance.effectiveness_score, 0) / rules.length)
+                : 0;
+            const rulesToOptimize = rules.filter(rule => rule.performance.effectiveness_score < 70).length;
+
+            document.getElementById('totalRules').textContent = totalRules;
+            document.getElementById('activeRules').textContent = activeRules;
+            document.getElementById('avgEffectiveness').textContent = avgEffectiveness;
+            document.getElementById('rulesToOptimize').textContent = rulesToOptimize;
+        }
+
+        // 渲染规则列表
+        function renderRulesTable(rulesList) {
+            const tbody = document.getElementById('rulesTableBody');
+            tbody.innerHTML = '';
+
+            if (rulesList.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="px-6 py-4 text-center text-gray-500">没有找到规则</td></tr>';
+                return;
+            }
+
+            rulesList.forEach(rule => {
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-gray-50 transition-colors';
+                
+                tr.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm font-medium text-gray-900">${rule.name}</div>
+                        <div class="text-xs text-gray-500">${rule.description}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="badge ${getTypeBadgeClass(rule.rule_type)}">${getRuleTypeText(rule.rule_type)}</span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="badge ${getPriorityBadgeClass(rule.priority)}">${getPriorityText(rule.priority)}</span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="badge ${rule.status === 'active' ? 'badge-active' : 'badge-inactive'}">${rule.status === 'active' ? '活跃' : '非活跃'}</span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="flex items-center">
+                            <div class="w-24 bg-gray-200 rounded-full h-2.5">
+                                <div class="bg-blue-600 h-2.5 rounded-full" style="width: ${rule.performance.effectiveness_score}%"></div>
+                            </div>
+                            <span class="ml-2 text-sm font-medium text-gray-900">${rule.performance.effectiveness_score}</span>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <div class="flex space-x-2">
+                            <button class="text-blue-600 hover:text-blue-900" onclick="viewRuleDetails(${rule.id})" title="查看详情">
+                                <i class="fa fa-eye"></i>
+                            </button>
+                            <button class="text-green-600 hover:text-green-900" onclick="toggleRuleStatus(${rule.id}, '${rule.status}')" title="${rule.status === 'active' ? '停用' : '启用'}">
+                                <i class="fa fa-${rule.status === 'active' ? 'pause' : 'play'}"></i>
+                            </button>
+                            <button class="text-purple-600 hover:text-purple-900" onclick="openOptimizeRuleModal(${rule.id})" title="优化规则">
+                                <i class="fa fa-wrench"></i>
+                            </button>
+                            <button class="text-red-600 hover:text-red-900" onclick="deleteRule(${rule.id})" title="删除规则">
+                                <i class="fa fa-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                `;
+                
+                tbody.appendChild(tr);
+            });
+        }
+
+        // 查看规则详情
+        function viewRuleDetails(ruleId) {
+            const rule = rules.find(r => r.id === ruleId);
+            if (!rule) return;
+            
+            currentSelectedRule = rule;
+            renderRuleDetails(rule);
+            renderRulePerformanceChart(rule);
+            
+            // 显示详情卡片
+            document.getElementById('ruleDetailsCard').style.display = 'block';
+            document.getElementById('rulePerformanceCard').style.display = 'block';
+        }
+
+        // 渲染规则详情
+        function renderRuleDetails(rule) {
+            const detailsContent = document.getElementById('ruleDetailsContent');
+            detailsContent.innerHTML = `
+                <div>
+                    <h3 class="text-lg font-semibold text-gray-800">${rule.name}</h3>
+                    <p class="text-sm text-gray-600 mt-1">${rule.description}</p>
+                </div>
+                <div class="grid grid-cols-2 gap-4 mt-4">
+                    <div>
+                        <p class="text-sm text-gray-500">规则类型</p>
+                        <p class="text-sm font-medium text-gray-800">${getRuleTypeText(rule.rule_type)}</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-500">优先级</p>
+                        <p class="text-sm font-medium text-gray-800">${getPriorityText(rule.priority)}</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-500">状态</p>
+                        <p class="text-sm font-medium text-gray-800">${rule.status === 'active' ? '活跃' : '非活跃'}</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-500">效果评分</p>
+                        <p class="text-sm font-medium text-gray-800">${rule.performance.effectiveness_score}/100</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-500">执行次数</p>
+                        <p class="text-sm font-medium text-gray-800">${rule.performance.execution_count}</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-500">成功率</p>
+                        <p class="text-sm font-medium text-gray-800">${(rule.performance.success_rate * 100).toFixed(1)}%</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-500">误报率</p>
+                        <p class="text-sm font-medium text-gray-800">${(rule.performance.false_positive_rate * 100).toFixed(1)}%</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-500">平均响应时间</p>
+                        <p class="text-sm font-medium text-gray-800">${(rule.performance.average_response_time * 1000).toFixed(1)}ms</p>
+                    </div>
+                </div>
+                <div class="mt-4">
+                    <p class="text-sm text-gray-500 mb-1">规则内容</p>
+                    <pre class="bg-gray-50 p-3 rounded-md text-sm text-gray-800 overflow-x-auto whitespace-pre-wrap">${rule.rule_content}</pre>
+                </div>
+            `;
+        }
+
+        // 渲染规则性能图表
+        function renderRulePerformanceChart(rule) {
+            const ctx = document.getElementById('rulePerformanceChart').getContext('2d');
+            
+            // 如果已有图表，销毁它
+            if (rulePerformanceChart) {
+                rulePerformanceChart.destroy();
+            }
+            
+            const performance = rule.performance;
+            
+            rulePerformanceChart = new Chart(ctx, {
+                type: 'radar',
+                data: {
+                    labels: ['效果评分', '执行次数', '成功率', '误报率', '响应时间'],
+                    datasets: [{
+                        label: rule.name + ' - 性能指标',
+                        data: [
+                            performance.effectiveness_score,
+                            Math.min(100, (performance.execution_count / 10000) * 100), // 归一化到0-100
+                            performance.success_rate * 100,
+                            (1 - performance.false_positive_rate) * 100, // 误报率越低越好
+                            (1 - performance.average_response_time / 0.1) * 100 // 响应时间越短越好
+                        ],
+                        backgroundColor: 'rgba(59, 130, 246, 0.2)',
+                        borderColor: 'rgba(59, 130, 246, 1)',
+                        borderWidth: 2,
+                        pointBackgroundColor: 'rgba(59, 130, 246, 1)',
+                        pointBorderColor: '#fff',
+                        pointHoverBackgroundColor: '#fff',
+                        pointHoverBorderColor: 'rgba(59, 130, 246, 1)'
+                    }]
+                },
+                options: {
+                    scales: {
+                        r: {
+                            beginAtZero: true,
+                            max: 100,
+                            ticks: {
+                                stepSize: 20
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    }
+                }
+            });
+        }
+
+        // 加载规则建议
+        function loadRuleSuggestions() {
+            fetch('/api/smart-ai-rule-management/rule-suggestions')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        renderRuleSuggestions(data.suggestions);
+                    } else {
+                        console.error('加载规则建议失败:', data.error);
+                    }
+                })
+                .catch(error => {
+                    console.error('加载规则建议失败:', error);
+                });
+        }
+
+        // 渲染规则建议
+        function renderRuleSuggestions(suggestions) {
+            const container = document.getElementById('ruleSuggestions');
+            container.innerHTML = '';
+
+            if (suggestions.length === 0) {
+                container.innerHTML = '<div class="text-sm text-gray-500 text-center py-4">没有规则建议</div>';
+                return;
+            }
+
+            suggestions.forEach(suggestion => {
+                const suggestionDiv = document.createElement('div');
+                suggestionDiv.className = 'bg-gray-50 p-3 rounded-md border-l-4 ' + 
+                    (suggestion.type === 'new_rule' ? 'border-green-500' : 'border-yellow-500');
+                
+                suggestionDiv.innerHTML = `
+                    <div class="flex justify-between items-start">
+                        <div class="flex items-center">
+                            <i class="fa ${suggestion.type === 'new_rule' ? 'fa-plus-circle text-green-500' : 'fa-wrench text-yellow-500'} mr-2"></i>
+                            <span class="text-sm font-medium text-gray-900">${suggestion.description}</span>
+                        </div>
+                        <span class="badge ${suggestion.priority === 'high' ? 'badge-high' : 'badge-medium'} text-xs">${suggestion.priority}</span>
+                    </div>
+                    ${suggestion.rule_type ? `<div class="text-xs text-gray-500 mt-1">类型: ${getRuleTypeText(suggestion.rule_type)}</div>` : ''}
+                    ${suggestion.suggested_content ? `<div class="text-xs text-gray-600 mt-1 pl-6">${suggestion.suggested_content}</div>` : ''}
+                    <div class="mt-2 flex justify-end">
+                        <button class="text-xs text-blue-600 hover:text-blue-900" onclick="applyRuleSuggestion(${JSON.stringify(suggestion).replace(/"/g, '&quot;')})">
+                            <i class="fa fa-check mr-1"></i> 应用建议
+                        </button>
+                    </div>
+                `;
+                
+                container.appendChild(suggestionDiv);
+            });
+        }
+
+        // 打开添加规则模态框
+        function openAddRuleModal() {
+            document.getElementById('addRuleModal').classList.remove('hidden');
+        }
+
+        // 关闭添加规则模态框
+        function closeAddRuleModal() {
+            document.getElementById('addRuleModal').classList.add('hidden');
+            document.getElementById('addRuleForm').reset();
+        }
+
+        // 打开生成规则模态框
+        function openGenerateRuleModal() {
+            document.getElementById('generateRuleModal').classList.remove('hidden');
+        }
+
+        // 关闭生成规则模态框
+        function closeGenerateRuleModal() {
+            document.getElementById('generateRuleModal').classList.add('hidden');
+            document.getElementById('generateRuleForm').reset();
+        }
+
+        // 打开优化规则模态框
+        function openOptimizeRuleModal(ruleId) {
+            const rule = rules.find(r => r.id === ruleId);
+            if (!rule) return;
+            
+            const content = document.getElementById('optimizeRuleContent');
+            content.innerHTML = `
+                <div class="mb-4">
+                    <h3 class="text-lg font-semibold text-gray-800">优化规则: ${rule.name}</h3>
+                    <p class="text-sm text-gray-600 mt-1">当前效果评分: ${rule.performance.effectiveness_score}/100</p>
+                </div>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">当前规则内容</label>
+                        <pre class="bg-gray-50 p-3 rounded-md text-sm text-gray-800 overflow-x-auto whitespace-pre-wrap">${rule.rule_content}</pre>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">优化建议</label>
+                        <p class="text-sm text-gray-600 p-3 bg-blue-50 rounded-md">
+                            <i class="fa fa-lightbulb-o mr-2 text-yellow-500"></i>
+                            AI系统将分析当前规则的性能数据，并生成优化建议。优化后的规则可能会提高执行效率、降低误报率或增强检测能力。
+                        </p>
+                    </div>
+                    <input type="hidden" id="optimizeRuleId" value="${rule.id}">
+                </div>
+            `;
+            
+            document.getElementById('optimizeRuleModal').classList.remove('hidden');
+        }
+
+        // 关闭优化规则模态框
+        function closeOptimizeRuleModal() {
+            document.getElementById('optimizeRuleModal').classList.add('hidden');
+        }
+
+        // 处理添加规则
+        function handleAddRule(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            const ruleData = {
+                name: formData.get('name'),
+                description: formData.get('description'),
+                rule_type: formData.get('rule_type'),
+                priority: formData.get('priority'),
+                status: formData.get('status'),
+                rule_content: formData.get('rule_content')
+            };
+            
+            fetch('/api/smart-ai-rule-management/rules', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(ruleData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    closeAddRuleModal();
+                    loadAIData();
+                    alert('规则创建成功');
+                } else {
+                    alert('规则创建失败: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('创建规则失败:', error);
+                alert('创建规则失败，请重试');
+            });
+        }
+
+        // 处理生成规则
+        function handleGenerateRule(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            const generateData = {
+                rule_type: formData.get('rule_type'),
+                description: formData.get('description'),
+                requirements: formData.get('requirements').split(',').map(req => req.trim()).filter(req => req)
+            };
+            
+            fetch('/api/smart-ai-rule-management/generate-rule', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(generateData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // 自动填充生成的规则内容到添加规则表单
+                    document.getElementById('generateRuleModal').classList.add('hidden');
+                    document.getElementById('addRuleModal').classList.remove('hidden');
+                    
+                    // 填充生成的规则内容
+                    const addRuleForm = document.getElementById('addRuleForm');
+                    addRuleForm.querySelector('[name="rule_type"]').value = generateData.rule_type;
+                    addRuleForm.querySelector('[name="description"]').value = generateData.description;
+                    addRuleForm.querySelector('[name="rule_content"]').value = data.generated_rule;
+                    
+                    alert('规则生成成功，请检查并保存');
+                } else {
+                    alert('规则生成失败: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('生成规则失败:', error);
+                alert('生成规则失败，请重试');
+            });
+        }
+
+        // 切换规则状态
+        function toggleRuleStatus(ruleId, currentStatus) {
+            const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
+            
+            fetch(`/api/smart-ai-rule-management/rules/${ruleId}/status`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    loadAIData();
+                    if (currentSelectedRule && currentSelectedRule.id === ruleId) {
+                        currentSelectedRule.status = newStatus;
+                        renderRuleDetails(currentSelectedRule);
+                    }
+                    alert(`规则已${newStatus === 'active' ? '启用' : '停用'}`);
+                } else {
+                    alert('切换规则状态失败: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('切换规则状态失败:', error);
+                alert('切换规则状态失败，请重试');
+            });
+        }
+
+        // 确认优化规则
+        function confirmOptimizeRule() {
+            const ruleId = parseInt(document.getElementById('optimizeRuleId').value);
+            
+            fetch(`/api/smart-ai-rule-management/rules/${ruleId}/optimize`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    closeOptimizeRuleModal();
+                    loadAIData();
+                    if (currentSelectedRule && currentSelectedRule.id === ruleId) {
+                        viewRuleDetails(ruleId);
+                    }
+                    alert('规则优化成功');
+                } else {
+                    alert('规则优化失败: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('优化规则失败:', error);
+                alert('优化规则失败，请重试');
+            });
+        }
+
+        // 应用规则建议
+        function applyRuleSuggestion(suggestion) {
+            if (suggestion.type === 'new_rule') {
+                // 打开添加规则模态框并填充建议内容
+                document.getElementById('addRuleModal').classList.remove('hidden');
+                const addRuleForm = document.getElementById('addRuleForm');
+                addRuleForm.querySelector('[name="rule_type"]').value = suggestion.rule_type;
+                addRuleForm.querySelector('[name="description"]').value = suggestion.description;
+                addRuleForm.querySelector('[name="rule_content"]').value = suggestion.suggested_content;
+            } else {
+                // 优化现有规则
+                openOptimizeRuleModal(suggestion.rule_id);
+            }
+        }
+
+        // 处理搜索
+        function handleSearch(e) {
+            const searchTerm = e.target.value.toLowerCase();
+            filterRules(searchTerm);
+        }
+
+        // 处理筛选变化
+        function handleFilterChange() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            filterRules(searchTerm);
+        }
+
+        // 筛选规则
+        function filterRules(searchTerm) {
+            const statusFilter = document.getElementById('filterStatus').value;
+            const typeFilter = document.getElementById('filterType').value;
+            
+            let filteredRules = rules;
+            
+            // 应用搜索筛选
+            if (searchTerm) {
+                filteredRules = filteredRules.filter(rule => 
+                    rule.name.toLowerCase().includes(searchTerm) || 
+                    rule.description.toLowerCase().includes(searchTerm)
+                );
+            }
+            
+            // 应用状态筛选
+            if (statusFilter !== 'all') {
+                filteredRules = filteredRules.filter(rule => rule.status === statusFilter);
+            }
+            
+            // 应用类型筛选
+            if (typeFilter !== 'all') {
+                filteredRules = filteredRules.filter(rule => rule.rule_type === typeFilter);
+            }
+            
+            renderRulesTable(filteredRules);
+        }
+
+        // 删除规则
+        function deleteRule(ruleId) {
+            if (confirm('确定要删除这条规则吗？')) {
+                fetch(`/api/smart-ai-rule-management/rules/${ruleId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        loadAIData();
+                        if (currentSelectedRule && currentSelectedRule.id === ruleId) {
+                            document.getElementById('ruleDetailsCard').style.display = 'none';
+                            document.getElementById('rulePerformanceCard').style.display = 'none';
+                            currentSelectedRule = null;
+                        }
+                        alert('规则删除成功');
+                    } else {
+                        alert('规则删除失败: ' + data.error);
+                    }
+                })
+                .catch(error => {
+                    console.error('删除规则失败:', error);
+                    alert('删除规则失败，请重试');
+                });
+            }
+        }
+
+        // 辅助函数
+        function getRuleTypeText(type) {
+            const typeMap = {
+                'user_behavior': '用户行为',
+                'system_monitoring': '系统监控',
+                'security': '安全防护',
+                'other': '其他'
+            };
+            return typeMap[type] || type;
+        }
+
+        function getPriorityText(priority) {
+            const priorityMap = {
+                'high': '高',
+                'medium': '中',
+                'low': '低'
+            };
+            return priorityMap[priority] || priority;
+        }
+
+        function getTypeBadgeClass(type) {
+            const typeMap = {
+                'user_behavior': 'badge-blue',
+                'system_monitoring': 'badge-green',
+                'security': 'badge-red',
+                'other': 'badge-gray'
+            };
+            return typeMap[type] || 'badge-gray';
+        }
+
+        function getPriorityBadgeClass(priority) {
+            const priorityMap = {
+                'high': 'badge-high',
+                'medium': 'badge-medium',
+                'low': 'badge-low'
+            };
+            return priorityMap[priority] || 'badge-medium';
+        }
+    </script>
+</body>
+</html>

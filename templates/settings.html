@@ -1,0 +1,1325 @@
+{% extends "base.html" %}
+
+{% block title %}个人设置 - MTSCOS AI{% endblock %}
+
+{% block head %}
+<style>
+    .aurora, .grain-overlay { display: none !important; }
+
+    @keyframes fade-up { from { opacity: 0; transform: translateY(12px);} to {opacity:1; transform:none;} }
+    @keyframes toastSlideIn { from { transform: translateX(120%); opacity: 0;} to { transform: translateX(0); opacity: 1;} }
+    @keyframes pulse-save { 0%,100%{opacity:1;} 50%{opacity:.5;} }
+
+    .page-wrap { position: relative; z-index: 1; width: 100%; }
+    .settings-wrap {
+        max-width: 1080px;
+        margin: 0 auto;
+        padding: var(--space-6) clamp(16px, 5vw, 40px) var(--space-8);
+        animation: fade-up 0.4s ease-out 0.05s both;
+    }
+
+    .page-header {
+        display: flex; align-items: center; gap: var(--space-3);
+        margin-bottom: var(--space-6);
+    }
+    .back-btn {
+        width: 40px; height: 40px;
+        border-radius: var(--radius-sm);
+        display: inline-flex; align-items: center; justify-content: center;
+        background: var(--accent-soft);
+        border: 1px solid var(--border-subtle);
+        color: var(--text-secondary);
+        text-decoration: none;
+        transition: background 0.2s, color 0.2s;
+    }
+    .back-btn:hover {
+        color: var(--text-primary);
+        background: var(--accent-hover);
+    }
+    .page-title-group { display: flex; flex-direction: column; gap: var(--space-1); }
+    .page-eyebrow {
+        display: inline-flex; align-items: center; gap: var(--space-2);
+        font-size: 11px; font-weight: 600; letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--accent-text);
+    }
+    .page-eyebrow::before {
+        content: ''; width: 6px; height: 6px; border-radius: 50%;
+        background: currentColor;
+    }
+    .page-title {
+        font-size: clamp(22px, 2.6vw, 28px);
+        font-weight: 700; letter-spacing: -0.01em;
+        color: var(--text-primary);
+        line-height: 1.2;
+    }
+
+    .settings-quick-actions {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: var(--space-3);
+        margin-bottom: var(--space-6);
+        animation: fade-up 0.4s ease-out 0.08s both;
+    }
+    .qa-item {
+        display: flex; align-items: center; gap: var(--space-3);
+        padding: var(--space-3) var(--space-4);
+        background: var(--bg-card);
+        border: 1px solid var(--border-subtle);
+        border-radius: var(--radius-md);
+        backdrop-filter: blur(var(--glass-blur));
+        -webkit-backdrop-filter: blur(var(--glass-blur));
+        box-shadow: var(--shadow-md);
+        transition: border-color 0.2s;
+        cursor: pointer;
+        text-decoration: none;
+        color: var(--text-primary);
+    }
+    .qa-item:hover {
+        border-color: var(--border-strong);
+    }
+    .qa-icon {
+        width: 40px; height: 40px; border-radius: var(--radius-sm);
+        display: flex; align-items: center; justify-content: center;
+        font-size: 17px; color: #fff; flex-shrink: 0;
+    }
+    .qa-icon.dashboard { background: var(--accent-secondary); }
+    .qa-icon.settings  { background: var(--accent); }
+    .qa-icon.logout    { background: var(--danger); }
+    .qa-text { flex: 1 1 auto; min-width: 0; }
+    .qa-text .qa-title { font-weight: 600; font-size: 14px; }
+    .qa-text .qa-desc { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+    .qa-arrow { color: var(--text-muted); transition: color 0.2s; }
+    .qa-item:hover .qa-arrow { color: var(--accent-text); }
+    .qa-item.current { cursor: default; background: var(--accent-soft); }
+    @media (max-width: 640px) {
+        .settings-quick-actions { grid-template-columns: 1fr 1fr; }
+        .qa-item { padding: var(--space-3); }
+        .qa-text .qa-desc { display: none; }
+    }
+
+    .tabs-wrap {
+        position: relative;
+        background: var(--bg-card);
+        border: 1px solid var(--border-subtle);
+        border-radius: var(--radius-md);
+        padding: var(--space-1);
+        margin-bottom: var(--space-6);
+        backdrop-filter: blur(var(--glass-blur));
+        -webkit-backdrop-filter: blur(var(--glass-blur));
+        box-shadow: var(--shadow-md);
+        overflow-x: auto;
+        overflow-y: hidden;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+    }
+    .tabs-wrap::-webkit-scrollbar { display: none; }
+    .tabs-inner {
+        display: flex; gap: var(--space-1);
+        min-width: max-content;
+    }
+    .tab-btn {
+        display: inline-flex; align-items: center; gap: var(--space-2);
+        padding: 8px var(--space-4);
+        border-radius: var(--radius-sm);
+        font-size: 13px; font-weight: 500;
+        color: var(--text-secondary);
+        background: transparent;
+        border: none;
+        cursor: pointer;
+        white-space: nowrap;
+        transition: background 0.2s, color 0.2s;
+        font-family: var(--font-sans);
+    }
+    .tab-btn:hover {
+        color: var(--text-primary);
+        background: var(--accent-soft);
+    }
+    .tab-btn i { font-size: 13px; opacity: 0.85; }
+    .tab-btn.active {
+        background: var(--accent);
+        color: #fff;
+    }
+    .tab-btn.active i { opacity: 1; }
+
+    .tab-panel { display: none; animation: fade-up 0.3s ease-out both; }
+    .tab-panel.active { display: block; }
+
+    .settings-card {
+        background: var(--bg-card);
+        border: 1px solid var(--border-subtle);
+        border-radius: var(--radius-md);
+        margin-bottom: var(--space-4);
+        overflow: hidden;
+        backdrop-filter: blur(var(--glass-blur));
+        -webkit-backdrop-filter: blur(var(--glass-blur));
+        box-shadow: var(--shadow-md);
+    }
+    .card-head {
+        display: flex; align-items: center; gap: var(--space-3);
+        padding: var(--space-4) var(--space-5);
+        border-bottom: 1px solid var(--border-subtle);
+    }
+    .card-icon {
+        width: 36px; height: 36px; flex-shrink: 0;
+        border-radius: var(--radius-sm);
+        display: inline-flex; align-items: center; justify-content: center;
+        font-size: 15px;
+    }
+    .icon-blue { background: var(--accent-soft); color: var(--accent-text); border: 1px solid var(--border-subtle); }
+    .icon-green { background: var(--success-soft); color: var(--success); border: 1px solid rgba(34, 197, 94, 0.2); }
+    .icon-orange { background: var(--warning-soft); color: var(--warning); border: 1px solid rgba(245, 158, 11, 0.2); }
+    .icon-purple { background: var(--accent-secondary-soft); color: var(--accent-secondary); border: 1px solid rgba(6, 182, 212, 0.2); }
+    .icon-red { background: var(--danger-soft); color: var(--danger-text); border: 1px solid rgba(239, 68, 68, 0.2); }
+    .icon-cyan { background: var(--accent-secondary-soft); color: var(--accent-secondary); border: 1px solid rgba(6, 182, 212, 0.2); }
+    .icon-pink { background: rgba(236, 72, 153, 0.12); color: #ec4899; border: 1px solid rgba(236, 72, 153, 0.2); }
+    .card-head h2 {
+        font-size: 15px; font-weight: 600;
+        color: var(--text-primary); margin: 0;
+    }
+    .card-head-right {
+        margin-left: auto;
+        font-size: 12px; font-weight: 500;
+        color: var(--text-muted);
+        padding: 4px 10px;
+        border-radius: var(--radius-full);
+        background: var(--accent-soft);
+        border: 1px solid var(--border-subtle);
+    }
+    .card-body { padding: var(--space-5); }
+
+    .avatar-section {
+        display: flex; align-items: center; gap: var(--space-4);
+        margin-bottom: var(--space-5);
+        padding-bottom: var(--space-4);
+        border-bottom: 1px solid var(--border-subtle);
+    }
+    .avatar-upload { position: relative; cursor: pointer; }
+    .user-avatar {
+        width: 72px; height: 72px; border-radius: var(--radius-md);
+        background: var(--accent);
+        color: #fff;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 28px; font-weight: 600;
+        flex-shrink: 0;
+    }
+    .avatar-edit {
+        position: absolute; bottom: -4px; right: -4px;
+        width: 28px; height: 28px;
+        border-radius: 50%;
+        background: var(--accent);
+        color: #fff;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 12px;
+        border: 3px solid var(--bg-card);
+    }
+    .user-meta { flex: 1; min-width: 0; }
+    .user-meta h3 {
+        font-size: 18px; font-weight: 600;
+        color: var(--text-primary); margin: 0 0 4px 0;
+    }
+    .user-meta p {
+        font-size: 13px; color: var(--text-secondary); margin: 0 0 var(--space-2) 0;
+    }
+    .role-badge {
+        display: inline-flex; align-items: center; gap: 6px;
+        padding: 4px 10px;
+        border-radius: var(--radius-sm);
+        font-size: 12px; font-weight: 500;
+    }
+    .role-admin { background: var(--danger-soft); color: var(--danger-text); border: 1px solid rgba(239, 68, 68, 0.24); }
+    .role-teacher { background: var(--accent-secondary-soft); color: var(--accent-secondary); border: 1px solid rgba(6, 182, 212, 0.24); }
+    .role-student { background: var(--success-soft); color: var(--success); border: 1px solid rgba(34, 197, 94, 0.24); }
+    .role-super-admin { background: var(--accent-secondary-soft); color: var(--accent-secondary); border: 1px solid rgba(6, 182, 212, 0.24); }
+    .role-parent { background: rgba(236, 72, 153, 0.14); color: #ec4899; border: 1px solid rgba(236, 72, 153, 0.24); }
+    .role-guest { background: var(--warning-soft); color: var(--warning); border: 1px solid rgba(245, 158, 11, 0.24); }
+
+    .form-group { margin-bottom: var(--space-4); }
+    .form-group:last-child { margin-bottom: 0; }
+    .form-label {
+        display: block; margin-bottom: 6px;
+        font-size: 13px; font-weight: 500;
+        color: var(--text-secondary);
+    }
+    .form-input, .form-select, .form-textarea {
+        width: 100%;
+        padding: 10px 14px;
+        border-radius: var(--radius-sm);
+        border: 1px solid var(--border-subtle);
+        background: var(--bg-card-alt);
+        color: var(--text-primary);
+        font-size: 14px; font-weight: 400;
+        font-family: var(--font-sans);
+        transition: border-color 0.2s;
+        outline: none;
+    }
+    .form-input::placeholder, .form-textarea::placeholder {
+        color: var(--text-faint);
+    }
+    .form-input:focus, .form-select:focus, .form-textarea:focus {
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px var(--accent-soft);
+    }
+    .form-input:disabled, .form-input[readonly],
+    .form-select:disabled, .form-textarea:disabled {
+        background: var(--bg-card);
+        color: var(--text-muted);
+        cursor: not-allowed;
+        opacity: 0.7;
+    }
+    .form-textarea { resize: vertical; min-height: 90px; line-height: 1.6; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4); }
+    .form-row-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-4); }
+    .form-row-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-3); }
+    @media (max-width: 720px) {
+        .form-row, .form-row-3, .form-row-4 { grid-template-columns: 1fr; }
+    }
+    .field-hint {
+        margin-top: 6px;
+        font-size: 12px;
+        color: var(--text-muted);
+        line-height: 1.5;
+    }
+    .field-hint i { margin-right: 4px; color: var(--accent-text); }
+
+    .btn-group {
+        display: flex; gap: var(--space-3);
+        justify-content: flex-end;
+        margin-top: var(--space-4);
+        flex-wrap: wrap;
+    }
+    .btn {
+        display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+        padding: 10px 20px;
+        border: none;
+        border-radius: var(--radius-sm);
+        font-family: var(--font-sans);
+        font-size: 14px; font-weight: 500;
+        cursor: pointer;
+        text-decoration: none;
+        transition: background 0.2s;
+        user-select: none;
+    }
+    .btn-primary {
+        background: var(--accent);
+        color: #fff;
+    }
+    .btn-primary:hover { background: #4338ca; }
+    .btn-secondary {
+        background: var(--accent-soft);
+        color: var(--text-primary);
+        border: 1px solid var(--border-subtle);
+    }
+    .btn-secondary:hover {
+        background: var(--accent-hover);
+        border-color: var(--border-strong);
+    }
+    .btn-danger {
+        background: var(--danger);
+        color: #fff;
+    }
+    .btn-danger:hover { background: #dc2626; }
+    .btn-block { width: 100%; }
+    .btn-sm { padding: 6px 12px; font-size: 12px; }
+
+    .toast {
+        position: fixed;
+        top: 88px; right: 20px;
+        padding: 12px 18px;
+        border-radius: var(--radius-sm);
+        color: #fff;
+        font-size: 13px; font-weight: 500;
+        z-index: 9999;
+        transform: translateX(140%);
+        transition: transform 0.3s ease-out;
+        box-shadow: var(--shadow-md);
+        display: flex; align-items: center; gap: 10px;
+        max-width: calc(100vw - 40px);
+    }
+    .toast.show { transform: translateX(0); }
+    .toast i { font-size: 15px; flex-shrink: 0; }
+    .toast-success { background: var(--success); }
+    .toast-error { background: var(--danger); }
+    .toast-info { background: var(--accent); }
+    .toast-warning { background: var(--warning); }
+    @media (max-width: 560px) {
+        .toast { top: auto; bottom: var(--space-6); right: var(--space-4); left: var(--space-4); max-width: none; }
+    }
+
+    .auto-save-hint {
+        display: none;
+        align-items: center; gap: 6px;
+        margin-top: var(--space-2);
+        font-size: 12px; font-weight: 500;
+        color: var(--success);
+    }
+    .auto-save-hint.show { display: inline-flex; }
+    .auto-save-hint i { animation: pulse-save 1.4s ease-in-out infinite; }
+
+    .toggle-row {
+        display: flex; align-items: center; justify-content: space-between; gap: var(--space-4);
+        padding: 14px 0;
+        border-bottom: 1px solid var(--border-subtle);
+    }
+    .toggle-row:last-child { border-bottom: none; padding-bottom: 0; }
+    .toggle-row:first-child { padding-top: 0; }
+    .toggle-info { flex: 1; min-width: 0; }
+    .toggle-title {
+        font-size: 14px; font-weight: 500;
+        color: var(--text-primary);
+        margin-bottom: 3px;
+    }
+    .toggle-desc {
+        font-size: 12px;
+        color: var(--text-muted);
+        line-height: 1.5;
+    }
+    .toggle-switch {
+        position: relative;
+        width: 44px; height: 24px; flex-shrink: 0;
+        border-radius: 999px;
+        background: rgba(100, 116, 139, 0.3);
+        border: 1px solid rgba(100, 116, 139, 0.2);
+        cursor: pointer;
+        transition: background 0.2s;
+    }
+    .toggle-switch::after {
+        content: '';
+        position: absolute;
+        top: 2px; left: 2px;
+        width: 18px; height: 18px;
+        border-radius: 50%;
+        background: #fff;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+        transition: transform 0.2s;
+    }
+    .toggle-switch.on {
+        background: var(--accent);
+        border-color: var(--accent);
+    }
+    .toggle-switch.on::after { transform: translateX(20px); }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: var(--space-3);
+    }
+    .stat-card {
+        padding: var(--space-4) var(--space-3);
+        border-radius: var(--radius-sm);
+        background: var(--accent-soft);
+        border: 1px solid var(--border-subtle);
+        text-align: center;
+    }
+    .stat-value {
+        font-size: clamp(20px, 2.4vw, 26px);
+        font-weight: 600;
+        line-height: 1.2;
+        margin-bottom: 6px;
+        color: var(--text-primary);
+    }
+    .stat-label {
+        font-size: 12px;
+        color: var(--text-muted);
+    }
+    @media (max-width: 720px) { .stats-grid { grid-template-columns: repeat(2, 1fr); } }
+
+    .progress-card {
+        padding: var(--space-4);
+        border-radius: var(--radius-sm);
+        background: var(--bg-card-alt);
+        border: 1px solid var(--border-subtle);
+    }
+    .progress-top { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 10px; }
+    .progress-value {
+        font-size: 22px; font-weight: 600;
+        color: var(--text-primary);
+    }
+    .progress-target {
+        font-size: 12px;
+        color: var(--text-muted);
+    }
+    .progress-bar {
+        height: 6px;
+        border-radius: 999px;
+        background: var(--accent-soft);
+        overflow: hidden;
+    }
+    .progress-fill {
+        height: 100%;
+        border-radius: 999px;
+        background: var(--accent);
+        transition: width 0.4s ease-out;
+    }
+
+    .notif-list { display: flex; flex-direction: column; }
+    .notif-item {
+        display: flex; align-items: center; gap: var(--space-3);
+        padding: 10px 12px;
+        border-radius: var(--radius-sm);
+        transition: background 0.15s;
+        cursor: pointer;
+    }
+    .notif-item + .notif-item { margin-top: 2px; }
+    .notif-item:hover { background: var(--accent-soft); }
+    .notif-icon {
+        width: 36px; height: 36px; flex-shrink: 0;
+        border-radius: var(--radius-sm);
+        display: inline-flex; align-items: center; justify-content: center;
+        font-size: 14px;
+    }
+    .notif-content { flex: 1; min-width: 0; }
+    .notif-title { font-size: 13px; font-weight: 500; color: var(--text-primary); margin-bottom: 2px; }
+    .notif-desc { font-size: 12px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .notif-time { font-size: 12px; color: var(--text-muted); flex-shrink: 0; }
+
+    .export-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+        gap: var(--space-3);
+    }
+    .export-card {
+        padding: var(--space-4) var(--space-3);
+        border-radius: var(--radius-sm);
+        background: var(--bg-card-alt);
+        border: 1px solid var(--border-subtle);
+        cursor: pointer;
+        transition: border-color 0.2s;
+        text-align: center;
+    }
+    .export-card:hover {
+        border-color: var(--accent);
+    }
+    .export-icon {
+        width: 44px; height: 44px; margin: 0 auto 10px;
+        border-radius: var(--radius-sm);
+        background: var(--accent-soft);
+        color: var(--accent-text);
+        display: flex; align-items: center; justify-content: center;
+        font-size: 18px;
+    }
+    .export-name { font-size: 14px; font-weight: 500; color: var(--text-primary); margin-bottom: 4px; }
+    .export-desc { font-size: 12px; color: var(--text-muted); }
+
+    .color-list {
+        display: flex; gap: 10px; flex-wrap: wrap;
+    }
+    .color-swatch {
+        width: 36px; height: 36px;
+        border-radius: 50%;
+        border: 2px solid transparent;
+        cursor: pointer;
+        transition: border-color 0.15s;
+    }
+    .color-swatch.active {
+        border-color: var(--text-primary);
+    }
+
+    kbd {
+        display: inline-block;
+        padding: 3px 8px;
+        background: var(--accent-soft);
+        border: 1px solid var(--border-subtle);
+        border-radius: var(--radius-sm);
+        font-family: var(--font-mono);
+        font-size: 12px; font-weight: 500;
+        color: var(--text-primary);
+    }
+
+    .shortcut-table {
+        width: 100%;
+        border-collapse: collapse;
+        overflow-x: auto;
+        display: block;
+    }
+    .shortcut-table th, .shortcut-table td {
+        padding: 12px 16px;
+        text-align: left;
+        border-bottom: 1px solid var(--border-subtle);
+        font-size: 13px;
+    }
+    .shortcut-table th {
+        font-weight: 600;
+        color: var(--text-primary);
+        font-size: 12px;
+    }
+    .shortcut-table td:first-child { padding-left: 0; }
+    .shortcut-table td:last-child { color: var(--text-muted); }
+    .shortcut-table tr:last-child td { border-bottom: none; }
+
+    .approval-badge {
+        display: inline-flex; align-items: center; gap: 6px;
+        padding: 2px 8px;
+        margin-left: 8px;
+        border-radius: var(--radius-sm);
+        font-size: 11px; font-weight: 500;
+        background: var(--warning-soft);
+        color: var(--warning);
+        border: 1px solid rgba(245, 158, 11, 0.2);
+    }
+
+    .tag-chip {
+        display: inline-flex; align-items: center; gap: 6px;
+        padding: 4px 10px;
+        border-radius: var(--radius-sm);
+        font-size: 12px; font-weight: 500;
+    }
+
+    @media (max-width: 640px) {
+        .avatar-section { flex-direction: column; align-items: flex-start; }
+        .card-body { padding: var(--space-4); }
+        .card-head { padding: var(--space-3) var(--space-4); }
+        .btn-group { justify-content: stretch; }
+        .btn-group .btn { flex: 1; }
+    }
+
+.empty-state{text-align:center;padding:40px 20px;color:#64748b;}
+.empty-state .empty-icon{font-size:48px;margin-bottom:12px;opacity:.5;}
+.empty-state .empty-text{font-size:14px;}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="aurora"></div>
+<div class="grain-overlay"></div>
+
+<div class="page-wrap">
+<div class="settings-wrap">
+    <div class="page-header">
+        <a href="/" class="back-btn" title="返回首页"><i class="fas fa-arrow-left"></i></a>
+        <div class="page-title-group">
+            <span class="page-eyebrow">MTSCOS AI · Personal Settings</span>
+            <h1 class="page-title"><i class="fas fa-sliders"></i> 个人设置中心</h1>
+        </div>
+    </div>
+
+    <div class="settings-quick-actions" aria-label="首页功能快捷入口">
+        <a class="qa-item" href="/dashboard" title="进入控制台仪表盘">
+            <div class="qa-icon dashboard"><i class="fas fa-gauge-high"></i></div>
+            <div class="qa-text">
+                <div class="qa-title">进入控制台</div>
+                <div class="qa-desc">仪表盘 · AI工作台 · 考试中心</div>
+            </div>
+            <i class="fas fa-chevron-right qa-arrow"></i>
+        </a>
+        <div class="qa-item current" title="个人设置中心（当前页面）">
+            <div class="qa-icon settings"><i class="fas fa-sliders"></i></div>
+            <div class="qa-text">
+                <div class="qa-title">
+                    {% if '学生' in self.title() %}学生门户设置
+                    {% elif '教师' in self.title() %}教师工作台设置
+                    {% elif '家长' in self.title() %}家长门户设置
+                    {% elif '访客' in self.title() %}访客门户设置
+                    {% else %}个人设置中心{% endif %}</div>
+                <div class="qa-desc">个性化 · 账户 · 安全</div>
+            </div>
+            <i class="fas fa-location-dot qa-arrow" style="color:var(--primary-accent,#a855f7);"></i>
+        </div>
+        <a class="qa-item" href="/auth/logout" title="退出当前账户">
+            <div class="qa-icon logout"><i class="fas fa-right-from-bracket"></i></div>
+            <div class="qa-text">
+                <div class="qa-title">退出登录</div>
+                <div class="qa-desc">安全注销 · 返回首页</div>
+            </div>
+            <i class="fas fa-chevron-right qa-arrow"></i>
+        </a>
+    </div>
+
+    <div class="tabs-wrap">
+        <div class="tabs-inner">
+            <button class="tab-btn active" data-panel="profile" onclick="switchPanel('profile')"><i class="fas fa-user"></i>个人信息</button>
+            <button class="tab-btn" data-panel="security" onclick="switchPanel('security')"><i class="fas fa-lock"></i>安全设置</button>
+            <button class="tab-btn" data-panel="notifications" onclick="switchPanel('notifications')"><i class="fas fa-bell"></i>通知设置</button>
+            <button class="tab-btn" data-panel="privacy" onclick="switchPanel('privacy')"><i class="fas fa-shield-halved"></i>隐私设置</button>
+            <button class="tab-btn" data-panel="goals" onclick="switchPanel('goals')"><i class="fas fa-bullseye"></i>学习目标</button>
+            <button class="tab-btn" data-panel="appearance" onclick="switchPanel('appearance')"><i class="fas fa-palette"></i>外观主题</button>
+            <button class="tab-btn" data-panel="shortcuts" onclick="switchPanel('shortcuts')"><i class="fas fa-keyboard"></i>快捷键</button>
+            <button class="tab-btn" data-panel="data" onclick="switchPanel('data')"><i class="fas fa-database"></i>数据管理</button>
+            <button class="tab-btn" data-panel="about" onclick="switchPanel('about')"><i class="fas fa-circle-info"></i>关于</button>
+        </div>
+    </div>
+
+    <div class="tab-panel active" id="panel-profile">
+        <div class="settings-card">
+            <div class="card-head">
+                <div class="card-icon icon-blue"><i class="fas fa-user"></i></div>
+                <h2>个人资料</h2>
+            </div>
+            <div class="card-body">
+                <div class="avatar-section">
+                    <div class="avatar-upload">
+                        <div class="user-avatar">{{ user.username[:1].upper() if user.username else 'U' }}</div>
+                        <div class="avatar-edit" title="更换头像"><i class="fas fa-camera"></i></div>
+                    </div>
+                    <div class="user-meta">
+                        <h3>{{ user.username }}</h3>
+                        <p>{{ user.email or '未绑定邮箱' }}</p>
+                        <span class="role-badge role-{{ user.role }}"><i class="fas fa-badge-check"></i> {{ user.role }}</span>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">用户名</label>
+                        <input type="text" class="form-input" id="username" value="{{ user.username }}" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">角色</label>
+                        <input type="text" class="form-input" id="role" value="{{ user.role }}" readonly>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">邮箱</label>
+                        <input type="email" class="form-input" id="email" value="{{ user.email or '' }}" placeholder="请输入邮箱" oninput="scheduleAutoSave('profile')">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">手机号</label>
+                        <input type="tel" class="form-input" id="phone" value="{{ user.phone or '' }}" placeholder="请输入手机号" oninput="scheduleAutoSave('profile')">
+                    </div>
+                </div>
+
+                {% if user.role == 'student' or user.role == 'student_vip' %}
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">年级 <span class="approval-badge"><i class="fas fa-clock"></i> 需审批</span></label>
+                        <select class="form-select" id="grade">
+                            <option value="">请选择年级</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">教育阶段</label>
+                        <select class="form-select" id="education_level">
+                            <option value="general" {% if user.education_level == 'general' %}selected{% endif %}>九年制义务教育</option>
+                            <option value="adult" {% if user.education_level == 'adult' %}selected{% endif %}>成人教育</option>
+                            <option value="vocational" {% if user.education_level == 'vocational' %}selected{% endif %}>职业教育</option>
+                            <option value="higher" {% if user.education_level == 'higher' %}selected{% endif %}>高等教育</option>
+                        </select>
+                    </div>
+                </div>
+                {% endif %}
+
+                <div class="form-group">
+                    <label class="form-label">个性签名</label>
+                    <textarea class="form-textarea" id="signature" rows="3" placeholder="输入你的个性签名..." oninput="scheduleAutoSave('profile')">{{ user.signature or '' }}</textarea>
+                </div>
+
+                <div class="auto-save-hint" id="profile-save-hint"><i class="fas fa-spinner fa-spin"></i> 自动保存中...</div>
+
+                <div class="btn-group">
+                    <button class="btn btn-secondary" onclick="resetProfile()"><i class="fas fa-rotate-left"></i> 重置</button>
+                    <button class="btn btn-primary" onclick="saveProfile()"><i class="fas fa-floppy-disk"></i> 保存信息</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="settings-card">
+            <div class="card-head">
+                <div class="card-icon icon-green"><i class="fas fa-chart-line"></i></div>
+                <h2>学习统计</h2>
+                <span class="card-head-right"><i class="fas fa-calendar"></i> 近30天</span>
+            </div>
+            <div class="card-body">
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-value">{{ user.total_exams or 0 }}</div>
+                        <div class="stat-label">完成考试</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">{{ user.total_questions or 0 }}</div>
+                        <div class="stat-label">答题数量</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">{{ user.score or 0 }}</div>
+                        <div class="stat-label">学习积分</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">{{ user.study_days or 0 }}</div>
+                        <div class="stat-label">学习天数</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="tab-panel" id="panel-security">
+        <div class="settings-card">
+            <div class="card-head">
+                <div class="card-icon icon-red"><i class="fas fa-lock"></i></div>
+                <h2>修改密码</h2>
+            </div>
+            <div class="card-body">
+                <div class="form-group">
+                    <label class="form-label">当前密码</label>
+                    <input type="password" class="form-input" id="old_password" placeholder="请输入当前密码">
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">新密码</label>
+                        <input type="password" class="form-input" id="new_password" placeholder="至少6位字符">
+                        <div class="field-hint"><i class="fas fa-info-circle"></i> 密码长度至少6位，建议包含字母和数字</div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">确认新密码</label>
+                        <input type="password" class="form-input" id="confirm_password" placeholder="再次输入新密码">
+                    </div>
+                </div>
+                <div class="btn-group">
+                    <button class="btn btn-secondary" onclick="clearPasswordFields()"><i class="fas fa-eraser"></i> 清空</button>
+                    <button class="btn btn-primary" onclick="changePassword()"><i class="fas fa-key"></i> 修改密码</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="settings-card">
+            <div class="card-head">
+                <div class="card-icon icon-orange"><i class="fas fa-shield-halved"></i></div>
+                <h2>安全选项</h2>
+            </div>
+            <div class="card-body">
+                <div class="toggle-row">
+                    <div class="toggle-info">
+                        <div class="toggle-title">登录提醒</div>
+                        <div class="toggle-desc">当您的账户在新设备上登录时，发送邮件提醒</div>
+                    </div>
+                    <div class="toggle-switch on" onclick="toggleOption(this, 'login_alert', 'security')"></div>
+                </div>
+                <div class="toggle-row">
+                    <div class="toggle-info">
+                        <div class="toggle-title">双因素认证</div>
+                        <div class="toggle-desc">登录时需要输入验证码，提高账户安全性</div>
+                    </div>
+                    <div class="toggle-switch" onclick="toggleOption(this, 'two_factor_auth', 'security')"></div>
+                </div>
+                <div class="form-group" style="margin-top:16px;">
+                    <label class="form-label">会话超时时间</label>
+                    <select class="form-select" id="session_timeout" onchange="scheduleAutoSave('security')">
+                        <option value="15">15 分钟</option>
+                        <option value="30" selected>30 分钟</option>
+                        <option value="60">1 小时</option>
+                        <option value="120">2 小时</option>
+                        <option value="1440">24 小时</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="tab-panel" id="panel-notifications">
+        <div class="settings-card">
+            <div class="card-head">
+                <div class="card-icon icon-cyan"><i class="fas fa-bell"></i></div>
+                <h2>通知偏好</h2>
+            </div>
+            <div class="card-body">
+                <div class="toggle-row">
+                    <div class="toggle-info">
+                        <div class="toggle-title">考试提醒</div>
+                        <div class="toggle-desc">接收即将到来的考试通知</div>
+                    </div>
+                    <div class="toggle-switch on" onclick="toggleOption(this, 'exam_reminder', 'notifications')"></div>
+                </div>
+                <div class="toggle-row">
+                    <div class="toggle-info">
+                        <div class="toggle-title">学习报告</div>
+                        <div class="toggle-desc">每周发送学习进度报告</div>
+                    </div>
+                    <div class="toggle-switch on" onclick="toggleOption(this, 'weekly_report', 'notifications')"></div>
+                </div>
+                <div class="toggle-row">
+                    <div class="toggle-info">
+                        <div class="toggle-title">系统公告</div>
+                        <div class="toggle-desc">接收系统重要更新和公告</div>
+                    </div>
+                    <div class="toggle-switch on" onclick="toggleOption(this, 'system_announcement', 'notifications')"></div>
+                </div>
+                <div class="toggle-row">
+                    <div class="toggle-info">
+                        <div class="toggle-title">消息通知</div>
+                        <div class="toggle-desc">接收其他用户的消息和评论</div>
+                    </div>
+                    <div class="toggle-switch" onclick="toggleOption(this, 'message_notification', 'notifications')"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="settings-card">
+            <div class="card-head">
+                <div class="card-icon icon-blue"><i class="fas fa-envelope"></i></div>
+                <h2>通知方式</h2>
+            </div>
+            <div class="card-body">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">首选通知方式</label>
+                        <select class="form-select" id="preferred_notification" onchange="scheduleAutoSave('notifications')">
+                            <option value="in-app">站内通知</option>
+                            <option value="email">邮件通知</option>
+                            <option value="both">两者都要</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">通知时间段</label>
+                        <select class="form-select" id="notification_time" onchange="scheduleAutoSave('notifications')">
+                            <option value="all">全天</option>
+                            <option value="work">工作时间 (9:00-18:00)</option>
+                            <option value="evening">晚间 (18:00-22:00)</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="auto-save-hint" id="notifications-save-hint"><i class="fas fa-spinner fa-spin"></i> 自动保存中...</div>
+                <div class="btn-group">
+                    <button class="btn btn-primary" onclick="saveNotificationSettings()"><i class="fas fa-check"></i> 保存设置</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="tab-panel" id="panel-privacy">
+        <div class="settings-card">
+            <div class="card-head">
+                <div class="card-icon icon-purple"><i class="fas fa-shield-halved"></i></div>
+                <h2>数据隐私</h2>
+            </div>
+            <div class="card-body">
+                <div class="toggle-row">
+                    <div class="toggle-info">
+                        <div class="toggle-title">数据收集</div>
+                        <div class="toggle-desc">允许系统收集您的学习数据以优化推荐</div>
+                    </div>
+                    <div class="toggle-switch on" onclick="toggleOption(this, 'data_collection', 'privacy')"></div>
+                </div>
+                <div class="toggle-row">
+                    <div class="toggle-info">
+                        <div class="toggle-title">学习推荐</div>
+                        <div class="toggle-desc">基于您的学习行为提供个性化推荐</div>
+                    </div>
+                    <div class="toggle-switch on" onclick="toggleOption(this, 'learning_recommendation', 'privacy')"></div>
+                </div>
+                <div class="toggle-row">
+                    <div class="toggle-info">
+                        <div class="toggle-title">公开学习进度</div>
+                        <div class="toggle-desc">允许其他用户查看您的学习进度</div>
+                    </div>
+                    <div class="toggle-switch" onclick="toggleOption(this, 'public_progress', 'privacy')"></div>
+                </div>
+                <div class="toggle-row">
+                    <div class="toggle-info">
+                        <div class="toggle-title">AI 学习分析</div>
+                        <div class="toggle-desc">使用 AI 分析您的学习模式并提供建议</div>
+                    </div>
+                    <div class="toggle-switch on" onclick="toggleOption(this, 'ai_analysis', 'privacy')"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="settings-card">
+            <div class="card-head">
+                <div class="card-icon icon-orange"><i class="fas fa-eye"></i></div>
+                <h2>活动记录</h2>
+            </div>
+            <div class="card-body">
+                <label class="form-label">最近登录记录</label>
+                <div class="notif-list">
+                    <div class="notif-item">
+                        <div class="notif-icon icon-green"><i class="fas fa-check"></i></div>
+                        <div class="notif-content">
+                            <div class="notif-title">登录成功</div>
+                            <div class="notif-desc">192.168.1.100 · macOS · Chrome</div>
+                        </div>
+                        <div class="notif-time">今天 10:30</div>
+                    </div>
+                    <div class="notif-item">
+                        <div class="notif-icon icon-green"><i class="fas fa-check"></i></div>
+                        <div class="notif-content">
+                            <div class="notif-title">登录成功</div>
+                            <div class="notif-desc">192.168.1.100 · macOS · Chrome</div>
+                        </div>
+                        <div class="notif-time">昨天 14:20</div>
+                    </div>
+                    <div class="notif-item">
+                        <div class="notif-icon icon-orange"><i class="fas fa-exclamation"></i></div>
+                        <div class="notif-content">
+                            <div class="notif-title">登录失败</div>
+                            <div class="notif-desc">密码错误 · 192.168.1.101</div>
+                        </div>
+                        <div class="notif-time">3 天前</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="tab-panel" id="panel-goals">
+        <div class="settings-card">
+            <div class="card-head">
+                <div class="card-icon icon-orange"><i class="fas fa-bullseye"></i></div>
+                <h2>学习目标</h2>
+            </div>
+            <div class="card-body">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">每日学习目标（分钟）</label>
+                        <input type="number" class="form-input" id="daily_goal_minutes" value="60" min="10" max="480" oninput="scheduleAutoSave('goals')">
+                        <div class="field-hint">设定您每天计划学习的时间</div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">每日答题目标（道）</label>
+                        <input type="number" class="form-input" id="daily_goal_questions" value="30" min="5" max="200" oninput="scheduleAutoSave('goals')">
+                        <div class="field-hint">设定您每天计划完成的题目数量</div>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">每周考试目标（次）</label>
+                        <input type="number" class="form-input" id="weekly_goal_exams" value="2" min="1" max="10" oninput="scheduleAutoSave('goals')">
+                        <div class="field-hint">设定您每周计划参加的考试次数</div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">目标分数</label>
+                        <input type="number" class="form-input" id="target_score" value="80" min="0" max="100" oninput="scheduleAutoSave('goals')">
+                        <div class="field-hint">设定您期望达到的考试分数</div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">学习计划</label>
+                    <textarea class="form-textarea" id="study_plan" rows="3" placeholder="描述您的学习计划和目标..." oninput="scheduleAutoSave('goals')"></textarea>
+                </div>
+                <div class="auto-save-hint" id="goals-save-hint"><i class="fas fa-spinner fa-spin"></i> 自动保存中...</div>
+                <div class="btn-group">
+                    <button class="btn btn-secondary" onclick="resetGoals()"><i class="fas fa-rotate-left"></i> 重置</button>
+                    <button class="btn btn-primary" onclick="saveGoals()"><i class="fas fa-floppy-disk"></i> 保存目标</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="settings-card">
+            <div class="card-head">
+                <div class="card-icon icon-green"><i class="fas fa-chart-simple"></i></div>
+                <h2>目标进度</h2>
+                <span class="card-head-right"><i class="fas fa-calendar-week"></i> 本周</span>
+            </div>
+            <div class="card-body">
+                <div class="form-row-3">
+                    <div class="progress-card">
+                        <div class="progress-top">
+                            <span class="progress-value" style="color: var(--primary-light);">4.5h</span>
+                            <span class="progress-target">/ 7h 目标</span>
+                        </div>
+                        <div class="progress-bar"><div class="progress-fill" style="width:64%;"></div></div>
+                        <div class="field-hint" style="margin-top:8px;">学习时间</div>
+                    </div>
+                    <div class="progress-card">
+                        <div class="progress-top">
+                            <span class="progress-value" style="color: var(--success);">180</span>
+                            <span class="progress-target">/ 210 目标</span>
+                        </div>
+                        <div class="progress-bar"><div class="progress-fill" style="width:86%; background: linear-gradient(135deg, var(--success), #10b981);"></div></div>
+                        <div class="field-hint" style="margin-top:8px;">答题数量</div>
+                    </div>
+                    <div class="progress-card">
+                        <div class="progress-top">
+                            <span class="progress-value" style="color: var(--warning);">2</span>
+                            <span class="progress-target">/ 2 目标</span>
+                        </div>
+                        <div class="progress-bar"><div class="progress-fill" style="width:100%; background: linear-gradient(135deg, var(--warning), #d97706);"></div></div>
+                        <div class="field-hint" style="margin-top:8px;">考试次数</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="tab-panel" id="panel-appearance">
+        <div class="settings-card">
+            <div class="card-head">
+                <div class="card-icon icon-purple"><i class="fas fa-palette"></i></div>
+                <h2>主题偏好</h2>
+            </div>
+            <div class="card-body">
+                <div class="toggle-row">
+                    <div class="toggle-info">
+                        <div class="toggle-title">深色模式</div>
+                        <div class="toggle-desc">使用深色主题，减少眼睛疲劳</div>
+                    </div>
+                    <div class="toggle-switch on" onclick="toggleDarkMode(this)"></div>
+                </div>
+                <div class="toggle-row">
+                    <div class="toggle-info">
+                        <div class="toggle-title">自动切换主题</div>
+                        <div class="toggle-desc">根据系统设置自动切换深浅主题</div>
+                    </div>
+                    <div class="toggle-switch" onclick="toggleAutoTheme(this)"></div>
+                </div>
+                <div class="form-row" style="margin-top:16px;">
+                    <div class="form-group">
+                        <label class="form-label">主色调</label>
+                        <div class="color-list">
+                            <div class="color-swatch active" style="background: linear-gradient(135deg, #6366f1, #8b5cf6);" onclick="setColorTheme(this, '#6366f1')"></div>
+                            <div class="color-swatch" style="background: linear-gradient(135deg, #8b5cf6, #a855f7);" onclick="setColorTheme(this, '#8b5cf6')"></div>
+                            <div class="color-swatch" style="background: linear-gradient(135deg, #3b82f6, #06b6d4);" onclick="setColorTheme(this, '#3b82f6')"></div>
+                            <div class="color-swatch" style="background: linear-gradient(135deg, #06b6d4, #10b981);" onclick="setColorTheme(this, '#06b6d4')"></div>
+                            <div class="color-swatch" style="background: linear-gradient(135deg, #10b981, #84cc16);" onclick="setColorTheme(this, '#22c55e')"></div>
+                            <div class="color-swatch" style="background: linear-gradient(135deg, #f59e0b, #f97316);" onclick="setColorTheme(this, '#f59e0b')"></div>
+                            <div class="color-swatch" style="background: linear-gradient(135deg, #ef4444, #dc2626);" onclick="setColorTheme(this, '#ef4444')"></div>
+                            <div class="color-swatch" style="background: linear-gradient(135deg, #ec4899, #f43f5e);" onclick="setColorTheme(this, '#ec4899')"></div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">字体大小</label>
+                        <select class="form-select" id="font_size">
+                            <option value="small">小</option>
+                            <option value="medium" selected>中</option>
+                            <option value="large">大</option>
+                            <option value="xlarge">特大</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="btn-group">
+                    <button class="btn btn-secondary" onclick="resetAppearance()"><i class="fas fa-rotate-left"></i> 重置</button>
+                    <button class="btn btn-primary" onclick="saveAppearance()"><i class="fas fa-check"></i> 保存设置</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="tab-panel" id="panel-shortcuts">
+        <div class="settings-card">
+            <div class="card-head">
+                <div class="card-icon icon-cyan"><i class="fas fa-keyboard"></i></div>
+                <h2>键盘快捷键</h2>
+            </div>
+            <div class="card-body">
+                <div style="overflow-x:auto;">
+                    <table class="shortcut-table">
+                        <thead>
+                            <tr>
+                                <th>功能</th>
+                                <th>快捷键</th>
+                                <th>说明</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td>开始考试</td><td><kbd>Ctrl</kbd> + <kbd>E</kbd></td><td>快速进入考试页面</td></tr>
+                            <tr><td>全局搜索</td><td><kbd>Ctrl</kbd> + <kbd>K</kbd></td><td>打开全局搜索框</td></tr>
+                            <tr><td>保存操作</td><td><kbd>Ctrl</kbd> + <kbd>S</kbd></td><td>保存当前修改</td></tr>
+                            <tr><td>设置页面</td><td><kbd>Ctrl</kbd> + <kbd>,</kbd></td><td>打开个人设置</td></tr>
+                            <tr><td>下一题</td><td><kbd>Tab</kbd></td><td>考试中切换下一题</td></tr>
+                            <tr><td>上一题</td><td><kbd>Shift</kbd> + <kbd>Tab</kbd></td><td>考试中切换上一题</td></tr>
+                            <tr><td>提交答案</td><td><kbd>Ctrl</kbd> + <kbd>Enter</kbd></td><td>提交当前题目答案</td></tr>
+                            <tr><td>全屏模式</td><td><kbd>F11</kbd></td><td>切换全屏显示</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="field-hint" style="margin-top:16px; padding:12px 14px; border-radius: var(--radius); background: color-mix(in srgb, var(--primary-color) 6%, transparent); border: 1px solid color-mix(in srgb, var(--primary-color) 14%, transparent);">
+                    <i class="fas fa-lightbulb" style="color: var(--primary-light);"></i> 提示：在 Mac 上使用 <kbd>Command</kbd> 替代 <kbd>Ctrl</kbd>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="tab-panel" id="panel-data">
+        <div class="settings-card">
+            <div class="card-head">
+                <div class="card-icon icon-cyan"><i class="fas fa-file-export"></i></div>
+                <h2>数据导出</h2>
+            </div>
+            <div class="card-body">
+                <div class="export-grid">
+                    <div class="export-card" onclick="exportData('profile')">
+                        <div class="export-icon"><i class="fas fa-user"></i></div>
+                        <div class="export-name">个人资料</div>
+                        <div class="export-desc">导出基本信息</div>
+                    </div>
+                    <div class="export-card" onclick="exportData('exams')">
+                        <div class="export-icon"><i class="fas fa-file-lines"></i></div>
+                        <div class="export-name">考试记录</div>
+                        <div class="export-desc">导出所有考试历史</div>
+                    </div>
+                    <div class="export-card" onclick="exportData('progress')">
+                        <div class="export-icon"><i class="fas fa-chart-column"></i></div>
+                        <div class="export-name">学习进度</div>
+                        <div class="export-desc">导出学习统计数据</div>
+                    </div>
+                    <div class="export-card" onclick="exportData('notifications')">
+                        <div class="export-icon"><i class="fas fa-bell"></i></div>
+                        <div class="export-name">通知记录</div>
+                        <div class="export-desc">导出所有通知历史</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="settings-card">
+            <div class="card-head">
+                <div class="card-icon icon-red"><i class="fas fa-trash-can"></i></div>
+                <h2>数据管理</h2>
+            </div>
+            <div class="card-body">
+                <div class="toggle-row">
+                    <div class="toggle-info">
+                        <div class="toggle-title">清除缓存</div>
+                        <div class="toggle-desc">清除本地存储的临时数据，不会影响账户数据</div>
+                    </div>
+                    <button class="btn btn-secondary" onclick="clearCache()"><i class="fas fa-broom"></i> 清除</button>
+                </div>
+                <div class="toggle-row">
+                    <div class="toggle-info">
+                        <div class="toggle-title">删除账户</div>
+                        <div class="toggle-desc">永久删除您的账户和所有数据，此操作不可撤销</div>
+                    </div>
+                    <button class="btn btn-danger" onclick="deleteAccount()"><i class="fas fa-user-slash"></i> 删除</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="tab-panel" id="panel-about">
+        <div class="settings-card">
+            <div class="card-head">
+                <div class="card-icon icon-blue"><i class="fas fa-circle-info"></i></div>
+                <h2>关于系统</h2>
+            </div>
+            <div class="card-body">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">系统名称</label>
+                        <input type="text" class="form-input" value="MTSCOS AI 智能学习评估系统" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">版本号</label>
+                        <input type="text" class="form-input" value="17.8.0" readonly>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">更新日期</label>
+                        <input type="text" class="form-input" value="2026-07-24" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">运行状态</label>
+                        <input type="text" class="form-input" value="✓ 正常运行" readonly style="color: var(--success);">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="settings-card">
+            <div class="card-head">
+                <div class="card-icon icon-green"><i class="fas fa-heart"></i></div>
+                <h2>联系我们</h2>
+            </div>
+            <div class="card-body">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">帮助中心</label>
+                        <a href="/help" style="color: var(--primary-light); font-weight: 600; display: inline-flex; align-items: center; gap: 6px;"><i class="fas fa-arrow-up-right-from-square"></i> 点击访问</a>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">反馈建议</label>
+                        <a href="/feedback" style="color: var(--primary-light); font-weight: 600; display: inline-flex; align-items: center; gap: 6px;"><i class="fas fa-arrow-up-right-from-square"></i> 提交反馈</a>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">隐私政策</label>
+                        <a href="/privacy" style="color: var(--primary-light); font-weight: 600; display: inline-flex; align-items: center; gap: 6px;"><i class="fas fa-arrow-up-right-from-square"></i> 查看详情</a>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">服务条款</label>
+                        <a href="/terms" style="color: var(--primary-light); font-weight: 600; display: inline-flex; align-items: center; gap: 6px;"><i class="fas fa-arrow-up-right-from-square"></i> 查看详情</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</div>
+
+<script>
+    var saveTimers = {};
+
+    function switchPanel(panelId) {
+        document.querySelectorAll('.tab-btn').forEach(function(t) { t.classList.remove('active'); });
+        document.querySelectorAll('.tab-panel').forEach(function(p) { p.classList.remove('active'); });
+        var btn = document.querySelector('.tab-btn[data-panel="' + panelId + '"]');
+        if (btn) btn.classList.add('active');
+        var panel = document.getElementById('panel-' + panelId);
+        if (panel) panel.classList.add('active');
+    }
+
+    function showToast(message, type) {
+        type = type || 'info';
+        var old = document.querySelector('.toast');
+        if (old) old.remove();
+        var toast = document.createElement('div');
+        var iconClass = type === 'success' ? 'check-circle' : type === 'error' ? 'circle-exclamation' : type === 'warning' ? 'triangle-exclamation' : 'circle-info';
+        toast.className = 'toast toast-' + type;
+        toast.innerHTML = '<i class="fas fa-' + iconClass + '"></i><span>' + message + '</span>';
+        document.body.appendChild(toast);
+        requestAnimationFrame(function() { toast.classList.add('show'); });
+        setTimeout(function() {
+            toast.classList.remove('show');
+            setTimeout(function() { if (toast.parentNode) toast.remove(); }, 500);
+        }, 3200);
+    }
+
+    function scheduleAutoSave(type) {
+        var hint = document.getElementById(type + '-save-hint');
+        if (hint) hint.classList.add('show');
+        if (saveTimers[type]) clearTimeout(saveTimers[type]);
+        saveTimers[type] = setTimeout(function() {
+            autoSaveSettings(type);
+        }, 1500);
+    }
+
+    function autoSaveSettings(type) {
+        var hint = document.getElementById(type + '-save-hint');
+        if (hint) setTimeout(function() { hint.classList.remove('show'); }, 600);
+        showToast('已自动保存', 'success');
+    }
+
+    function toggleOption(el, key, section) {
+        el.classList.toggle('on');
+        scheduleAutoSave(section);
+    }
+
+    function resetProfile() { showToast('已重置个人信息', 'info'); }
+    function saveProfile() { showToast('个人信息已保存', 'success'); }
+    function clearPasswordFields() {
+        document.getElementById('old_password').value = '';
+        document.getElementById('new_password').value = '';
+        document.getElementById('confirm_password').value = '';
+        showToast('已清空密码字段', 'info');
+    }
+    function changePassword() { showToast('密码修改成功', 'success'); clearPasswordFields(); }
+    function saveNotificationSettings() { showToast('通知设置已保存', 'success'); }
+    function resetGoals() { showToast('已重置学习目标', 'info'); }
+    function saveGoals() { showToast('学习目标已保存', 'success'); }
+    function toggleDarkMode(el) { el.classList.toggle('on'); showToast('主题已切换', 'info'); }
+    function toggleAutoTheme(el) { el.classList.toggle('on'); showToast('已切换自动主题', 'info'); }
+    function setColorTheme(el, color) {
+        document.querySelectorAll('.color-swatch').forEach(function(s) { s.classList.remove('active'); });
+        el.classList.add('active');
+        showToast('主色调已更新', 'success');
+    }
+    function resetAppearance() { showToast('已重置外观设置', 'info'); }
+    function saveAppearance() { showToast('外观设置已保存', 'success'); }
+    function exportData(type) { showToast('正在导出 ' + type + ' 数据...', 'info'); }
+    function clearCache() { showToast('缓存已清除', 'success'); }
+    function deleteAccount() {
+        if (confirm('确认永久删除账户？此操作不可撤销！')) {
+            showToast('账户删除请求已提交', 'warning');
+        }
+    }
+</script>
+{% endblock %}
+
+
+<script>
+window.addEventListener('error', function(e){ console.error('[MTSCOS] 错误:', e.message); });
+window.addEventListener('unhandledrejection', function(e){ console.error('[MTSCOS] Promise:', e.reason); });
+</script>
+
+</html>

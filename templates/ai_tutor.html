@@ -1,0 +1,204 @@
+{% extends "base.html" %}
+
+{% block title %}AI智能辅导{% endblock %}
+
+{% block head %}
+<style>
+    .tutor-container {
+        max-width: 900px;
+        margin: 30px auto;
+        background: var(--bg-card);
+        backdrop-filter: blur(var(--glass-blur));
+        -webkit-backdrop-filter: blur(var(--glass-blur));
+        border: 1px solid var(--glass-border);
+        border-radius: var(--radius-md);
+        box-shadow: var(--shadow-md);
+        padding: 30px;
+        color: var(--text-primary);
+    }
+    .tutor-header {
+        text-align: center;
+        margin-bottom: 30px;
+    }
+    .tutor-header h1 {
+        color: var(--text-primary);
+        font-size: 28px;
+        margin-bottom: 10px;
+        font-weight: 700;
+    }
+    .tutor-header p {
+        color: var(--text-secondary);
+        font-size: 14px;
+    }
+    .chat-box {
+        background: var(--bg-card-alt);
+        border-radius: var(--radius-md);
+        padding: 20px;
+        height: 400px;
+        overflow-y: auto;
+        margin-bottom: 20px;
+        border: 1px solid var(--border-subtle);
+    }
+    .chat-message {
+        margin-bottom: 15px;
+        padding: 12px 16px;
+        border-radius: var(--radius-sm);
+        max-width: 80%;
+        font-size: 14px;
+        line-height: 1.6;
+    }
+    .chat-message.user {
+        background: var(--accent);
+        color: white;
+        margin-left: auto;
+    }
+    .chat-message.ai {
+        background: var(--bg-card);
+        color: var(--text-primary);
+        border: 1px solid var(--border-subtle);
+    }
+    .chat-input {
+        display: flex;
+        gap: 10px;
+    }
+    .chat-input input {
+        flex: 1;
+        padding: 12px;
+        border: 1px solid var(--border-strong);
+        border-radius: var(--radius-sm);
+        font-size: 14px;
+        background: var(--bg-card-alt);
+        color: var(--text-primary);
+        outline: none;
+        font-family: var(--font-sans);
+    }
+    .chat-input input:focus {
+        border-color: var(--accent);
+    }
+    .chat-input button {
+        padding: 12px 24px;
+        background: var(--accent);
+        color: white;
+        border: none;
+        border-radius: var(--radius-sm);
+        cursor: pointer;
+        font-weight: 600;
+        transition: background 0.2s;
+        font-family: var(--font-sans);
+    }
+    .chat-input button:hover {
+        background: #4338ca;
+    }
+    .tutor-features {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 15px;
+        margin-bottom: 20px;
+    }
+    .feature-card {
+        padding: 15px;
+        background: var(--accent-soft);
+        border-radius: var(--radius-sm);
+        text-align: center;
+        border: 1px solid var(--border-subtle);
+    }
+    .feature-card .icon {
+        font-size: 24px;
+        margin-bottom: 8px;
+        color: var(--accent-text);
+    }
+    .feature-card h4 {
+        color: var(--text-primary);
+        font-size: 14px;
+        font-weight: 600;
+    }
+
+@media (max-width: 768px) {
+    .stats-grid, .section-grid, .feature-grid { grid-template-columns: 1fr !important; }
+    .sidebar { width: 60px !important; }
+    .main-content { padding: 12px !important; }
+}
+
+.loading-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;z-index:9999;}
+.loading-spinner{width:40px;height:40px;border:3px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin 1s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.empty-state{text-align:center;padding:40px 20px;color:#64748b;}
+.empty-state .empty-icon{font-size:48px;margin-bottom:12px;opacity:.5;}
+.empty-state .empty-text{font-size:14px;}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="tutor-container">
+    <div class="tutor-header">
+        <h1><i class="fas fa-robot"></i> AI智能辅导</h1>
+        <p>智能学习助手，随时为您解答问题</p>
+    </div>
+
+    <div class="tutor-features">
+        <div class="feature-card">
+            <div class="icon"><i class="fas fa-book-open"></i></div>
+            <h4>知识解答</h4>
+        </div>
+        <div class="feature-card">
+            <div class="icon"><i class="fas fa-lightbulb"></i></div>
+            <h4>学习建议</h4>
+        </div>
+        <div class="feature-card">
+            <div class="icon"><i class="fas fa-target"></i></div>
+            <h4>个性化辅导</h4>
+        </div>
+    </div>
+
+    <div class="chat-box" id="chatBox">
+        <div class="chat-message ai">您好！我是AI智能辅导助手，有什么可以帮您的吗？</div>
+    </div>
+
+    <div class="chat-input">
+        <input type="text" id="chatInput" placeholder="请输入您的问题..." onkeypress="if(event.key==='Enter') sendMessage()">
+        <button onclick="sendMessage()">发送</button>
+    </div>
+</div>
+
+<script>
+function sendMessage() {
+    var input = document.getElementById('chatInput');
+    var chatBox = document.getElementById('chatBox');
+    var message = input.value.trim();
+
+    if (!message) return;
+
+    // 添加用户消息
+    var userMsg = document.createElement('div');
+    userMsg.className = 'chat-message user';
+    userMsg.textContent = message;
+    chatBox.appendChild(userMsg);
+
+    input.value = '';
+    chatBox.scrollTop = chatBox.scrollHeight;
+
+    // 发送到AI
+    fetch('/ai-chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: message })
+    })
+    .then(function(res) { return res.json(); })
+    .then(function(data) {
+        var aiMsg = document.createElement('div');
+        aiMsg.className = 'chat-message ai';
+        aiMsg.textContent = data.response || data.message || '抱歉，我暂时无法回答这个问题。';
+        chatBox.appendChild(aiMsg);
+        chatBox.scrollTop = chatBox.scrollHeight;
+    })
+    .catch(function(err) {
+        var aiMsg = document.createElement('div');
+        aiMsg.className = 'chat-message ai';
+        aiMsg.textContent = '网络错误，请稍后重试。';
+        chatBox.appendChild(aiMsg);
+        chatBox.scrollTop = chatBox.scrollHeight;
+    });
+}
+</script>
+{% endblock %}

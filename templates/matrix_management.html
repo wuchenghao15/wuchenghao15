@@ -1,0 +1,154 @@
+{# =====================================================================
+   MTSCOS AI · REAL PAGE (no placeholders)
+   继承 base.html，使用主题 CSS 变量；数据由路由 render_template 传入；
+   任何数据为空均显示"暂无数据"兜底，绝不显示占位/假人/示例文案。
+   ===================================================================== #}
+{% extends "base.html" %}
+{% block head %}
+<style>
+  .pg-wrap{padding:28px 32px;max-width:1400px;margin:0 auto;color:var(--text-primary);}
+  .pg-title{display:flex;align-items:center;gap:12px;margin-bottom:6px;}
+  .pg-title h2{font-size:22px;font-weight:700;margin:0;color:var(--text-primary);}
+  .pg-title i{font-size:22px;color:var(--accent);}
+  .pg-subtitle{color:var(--text-secondary);font-size:13px;margin-bottom:22px;}
+  .pg-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px;margin-bottom:22px;}
+  .pg-stat-card{background:var(--bg-card);backdrop-filter:blur(var(--glass-blur));-webkit-backdrop-filter:blur(var(--glass-blur));border:1px solid var(--glass-border);border-radius:var(--radius-md);box-shadow:var(--shadow-md);padding:16px 18px;}
+  .pg-stat-label{font-size:12px;color:var(--text-secondary);margin-bottom:6px;}
+  .pg-stat-value{font-size:24px;font-weight:700;color:var(--text-primary);}
+  .pg-stat-sub{font-size:11px;color:var(--text-muted);margin-top:4px;}
+  .pg-card{background:var(--bg-card);backdrop-filter:blur(var(--glass-blur));-webkit-backdrop-filter:blur(var(--glass-blur));border:1px solid var(--glass-border);border-radius:var(--radius-md);box-shadow:var(--shadow-md);padding:20px 22px;margin-bottom:18px;}
+  .pg-card h3{font-size:15px;font-weight:600;margin:0 0 14px 0;color:var(--text-primary);display:flex;align-items:center;gap:8px;}
+  .pg-card h3 i{color:var(--accent);font-size:14px;}
+  .pg-table{width:100%;border-collapse:collapse;font-size:13px;}
+  .pg-table th{background:var(--bg-card-alt);text-align:left;padding:10px 12px;color:var(--text-secondary);font-weight:600;border-bottom:1px solid var(--border-subtle);position:sticky;top:0;}
+  .pg-table td{padding:10px 12px;border-bottom:1px solid var(--border-subtle);color:var(--text-primary);}
+  .pg-table tr:hover td{background:var(--accent-soft);}
+  .pg-empty{padding:44px 20px;text-align:center;color:var(--text-muted);font-size:13px;border:1px dashed var(--border-subtle);border-radius:var(--radius-sm);margin:10px 0;}
+  .pg-empty i{font-size:28px;opacity:0.6;display:block;margin-bottom:8px;}
+  .pg-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;}
+  .pg-chip{display:inline-block;padding:3px 10px;border-radius:var(--radius-full);font-size:11px;font-weight:600;}
+  .pg-chip-active{background:var(--success-soft);color:var(--success);}
+  .pg-chip-warn{background:var(--warning-soft);color:var(--warning);}
+  .pg-chip-error{background:var(--danger-soft);color:var(--danger);}
+  .pg-chip-muted{background:var(--bg-card-alt);color:var(--text-secondary);}
+  .pg-btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:var(--radius-sm);font-size:13px;font-weight:600;border:1px solid var(--border-subtle);background:var(--accent-soft);color:var(--accent-text);text-decoration:none;cursor:pointer;transition:background 0.2s;font-family:var(--font-sans);}
+  .pg-btn:hover{background:var(--accent-hover);border-color:var(--border-strong);}
+  .pg-btn-primary{background:var(--accent);color:white;border-color:transparent;}
+  .pg-btn-primary:hover{background:#4338ca;}
+  .pg-toolbar{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:14px;}
+  .pg-toolbar-left,.pg-toolbar-right{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+  .pg-input{padding:8px 12px;border-radius:var(--radius-sm);border:1px solid var(--border-strong);background:var(--bg-card-alt);color:var(--text-primary);font-size:13px;min-width:200px;font-family:var(--font-sans);outline:none;}
+  .pg-input:focus{border-color:var(--accent);}
+  .pg-label{font-size:12px;color:var(--text-secondary);font-weight:600;margin-bottom:6px;display:block;}
+  .pg-form-row{margin-bottom:14px;}
+  .pg-auth-wrap{min-height:calc(100vh - 80px);display:flex;align-items:center;justify-content:center;padding:40px 20px;}
+  .pg-auth-card{background:var(--bg-card);backdrop-filter:blur(var(--glass-blur));-webkit-backdrop-filter:blur(var(--glass-blur));border:1px solid var(--glass-border);border-radius:var(--radius-md);box-shadow:var(--shadow-md);padding:36px 38px;width:100%;max-width:430px;}
+  .pg-auth-card h2{margin:0 0 6px;text-align:center;font-size:22px;}
+  .pg-auth-sub{text-align:center;color:var(--text-secondary);font-size:13px;margin-bottom:24px;}
+  .pg-scroll{max-height:520px;overflow:auto;border:1px solid var(--border-subtle);border-radius:var(--radius-sm);}
+  .pg-bar{height:8px;border-radius:var(--radius-full);background:var(--bg-card-alt);overflow:hidden;}
+  .pg-bar > span{display:block;height:100%;background:var(--accent);border-radius:var(--radius-full);transition:width 0.2s;}
+
+@media (max-width: 768px) {
+    .stats-grid, .section-grid, .feature-grid { grid-template-columns: 1fr !important; }
+    .sidebar { width: 60px !important; }
+    .main-content { padding: 12px !important; }
+}
+
+.loading-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;z-index:9999;}
+.loading-spinner{width:40px;height:40px;border:3px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin 1s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+{% endblock %}
+{% block content %}
+
+<div class="pg-wrap">
+  <div class="pg-title"><i class="fas fa-project-diagram"></i><h2>矩阵管理</h2></div>
+  <div class="pg-subtitle">集群 / Agent / 员工 三维管控面板 · 修改需具备管理员权限</div>
+
+  <div class="pg-toolbar">
+    <div class="pg-toolbar-left">
+      <input class="pg-input" placeholder="按集群 ID / 员工姓名 搜索…" />
+      <button class="pg-btn"><i class="fas fa-sync"></i> 刷新</button>
+    </div>
+    <div class="pg-toolbar-right">
+      {% if is_admin %}
+      <button class="pg-btn"><i class="fas fa-plus"></i> 新建集群</button>
+      <button class="pg-btn"><i class="fas fa-user-plus"></i> 注册员工</button>
+      <button class="pg-btn pg-btn-primary"><i class="fas fa-play"></i> 部署到所有节点</button>
+      {% else %}
+      <span class="pg-chip pg-chip-muted">只读模式（非管理员）</span>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="pg-stats">
+    <div class="pg-stat-card"><div class="pg-stat-label">总集群</div><div class="pg-stat-value">{{ total_clusters|default(0, true) }}</div><div class="pg-stat-sub">active / maintenance / offline</div></div>
+    <div class="pg-stat-card"><div class="pg-stat-label">模型配置</div><div class="pg-stat-value">{{ model_count|default(0, true) }}</div><div class="pg-stat-sub">ai_model_config · 可用 Provider</div></div>
+    <div class="pg-stat-card"><div class="pg-stat-label">活跃员工</div><div class="pg-stat-value">{{ active_emps|default(0, true) }}</div><div class="pg-stat-sub">is_enabled=1</div></div>
+    <div class="pg-stat-card"><div class="pg-stat-label">配置快照</div><div class="pg-stat-value">{{ snapshot_count|default(0, true) }}</div><div class="pg-stat-sub">config_snapshot</div></div>
+  </div>
+
+  <div class="pg-grid">
+    <div class="pg-card" style="margin-bottom:0;">
+      <h3><i class="fas fa-cubes"></i> 集群</h3>
+      {% if cluster_list %}
+      <div class="pg-scroll" style="max-height:420px;">
+      <table class="pg-table">
+        <thead><tr><th>集群</th><th>类型</th><th>状态</th></tr></thead>
+        <tbody>
+          {% for c in cluster_list %}
+          <tr><td><code>{{ c.cluster_id }}</code></td><td>{{ c.cluster_type }}</td>
+            <td>{% if c.status=='active' %}<span class="pg-chip pg-chip-active">运行中</span>{% else %}<span class="pg-chip pg-chip-warn">{{ c.status }}</span>{% endif %}</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      </div>
+      {% else %}
+      <div class="pg-empty"><i class="fas fa-cube"></i>暂无集群</div>
+      {% endif %}
+    </div>
+
+    <div class="pg-card" style="margin-bottom:0;">
+      <h3><i class="fas fa-microchip"></i> 模型配置</h3>
+      {% if model_list %}
+      <div class="pg-scroll" style="max-height:420px;">
+      <table class="pg-table">
+        <thead><tr><th>模型 ID</th><th>名称</th><th>Provider</th><th>类型</th></tr></thead>
+        <tbody>
+          {% for m in model_list %}
+          <tr><td><code>{{ m.model_id }}</code></td><td>{{ m.model_name }}</td><td>{{ m.provider }}</td>
+            <td><span class="pg-chip pg-chip-muted">{{ m.model_type }}</span></td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      </div>
+      {% else %}
+      <div class="pg-empty"><i class="fas fa-microchip"></i>暂无模型配置</div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+{% block scripts %}
+<script>
+  document.addEventListener('click', function(e){
+    var t = e.target.closest('[data-pg-action]');
+    if(!t) return;
+    e.preventDefault();
+    var a = t.dataset.pgAction;
+    if(a === 'back') window.history.back();
+    if(a === 'home') location.href = '/';
+    if(a === 'dashboard') location.href = '/dashboard';
+  });
+</script>
+{% endblock %}
+
+
+<script>
+window.addEventListener('error', function(e){ console.error('[MTSCOS] 错误:', e.message); });
+window.addEventListener('unhandledrejection', function(e){ console.error('[MTSCOS] Promise:', e.reason); });
+</script>
+
+</html>

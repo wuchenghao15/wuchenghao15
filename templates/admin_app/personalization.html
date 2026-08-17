@@ -1,0 +1,1062 @@
+{% extends "admin_app/base.html" %}
+{% block title %}个性化布局设置 - MTSCOS AI{% endblock %}
+
+{% block content %}
+<div class="pers-page">
+    <div class="pers-header">
+        <div>
+            <h1><i class="fas fa-palette"></i> 个性化布局设置</h1>
+            <p>定制你的工作台外观、布局、通知与模块，让系统更贴合你的使用习惯</p>
+        </div>
+        <div class="pers-header-actions">
+            <button class="btn-secondary" onclick="exportPrefs()">⬇ 导出偏好</button>
+            <button class="btn-secondary" onclick="document.getElementById('import-file').click()">⬆ 导入偏好</button>
+            <input type="file" id="import-file" accept=".json" style="display:none" onchange="importPrefs(event)">
+            <button class="btn-danger" onclick="resetPreferences()">↺ 重置默认</button>
+        </div>
+    </div>
+
+    <div class="pers-tabs">
+        <button class="pers-tab active" data-tab="theme" onclick="switchTab('theme')"><i class="fas fa-palette"></i> 主题设置</button>
+        <button class="pers-tab" data-tab="layout" onclick="switchTab('layout')">📐 布局设置</button>
+        <button class="pers-tab" data-tab="notification" onclick="switchTab('notification')"><i class="fas fa-bell"></i> 通知设置</button>
+        <button class="pers-tab" data-tab="module" onclick="switchTab('module')">🧩 模块管理</button>
+        <button class="pers-tab" data-tab="advanced" onclick="switchTab('advanced')"><i class="fas fa-cog"></i> 高级设置</button>
+    </div>
+
+    <!-- 主题设置 -->
+    <div id="tab-theme" class="pers-tab-content active">
+        <div class="card">
+            <div class="card-head">
+                <h3>显示模式</h3>
+                <span class="card-desc">选择深色、浅色或跟随系统</span>
+            </div>
+            <div class="card-body">
+                <div class="option-grid">
+                    <label class="option-card" data-name="theme" data-value="light">
+                        <input type="radio" name="theme" value="light">
+                        <div class="option-preview light-preview">
+                            <div class="prev-bar"></div>
+                            <div class="prev-block"></div>
+                        </div>
+                        <div class="option-label">☀️ 浅色</div>
+                    </label>
+                    <label class="option-card" data-name="theme" data-value="dark">
+                        <input type="radio" name="theme" value="dark">
+                        <div class="option-preview dark-preview">
+                            <div class="prev-bar"></div>
+                            <div class="prev-block"></div>
+                        </div>
+                        <div class="option-label">🌙 深色</div>
+                    </label>
+                    <label class="option-card" data-name="theme" data-value="auto">
+                        <input type="radio" name="theme" value="auto">
+                        <div class="option-preview auto-preview">
+                            <div class="prev-bar"></div>
+                            <div class="prev-block"></div>
+                        </div>
+                        <div class="option-label">💻 自动</div>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-head">
+                <h3>配色方案</h3>
+                <span class="card-desc">选择系统主色调</span>
+            </div>
+            <div class="card-body">
+                <div class="option-grid">
+                    <label class="option-card color-card" data-name="color_scheme" data-value="default">
+                        <input type="radio" name="color_scheme" value="default">
+                        <div class="color-swatch" style="background:#1890ff"></div>
+                        <div class="option-label">默认蓝</div>
+                    </label>
+                    <label class="option-card color-card" data-name="color_scheme" data-value="blue">
+                        <input type="radio" name="color_scheme" value="blue">
+                        <div class="color-swatch" style="background:#0052cc"></div>
+                        <div class="option-label">深海蓝</div>
+                    </label>
+                    <label class="option-card color-card" data-name="color_scheme" data-value="green">
+                        <input type="radio" name="color_scheme" value="green">
+                        <div class="color-swatch" style="background:#52c41a"></div>
+                        <div class="option-label">森林绿</div>
+                    </label>
+                    <label class="option-card color-card" data-name="color_scheme" data-value="purple">
+                        <input type="radio" name="color_scheme" value="purple">
+                        <div class="color-swatch" style="background:#722ed1"></div>
+                        <div class="option-label">魅惑紫</div>
+                    </label>
+                    <label class="option-card color-card" data-name="color_scheme" data-value="orange">
+                        <input type="radio" name="color_scheme" value="orange">
+                        <div class="color-swatch" style="background:#fa8c16"></div>
+                        <div class="option-label">活力橙</div>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-head">
+                <h3>实时预览</h3>
+                <span class="card-desc">主题切换效果即时可见</span>
+            </div>
+            <div class="card-body">
+                <div class="theme-preview-box" id="theme-preview-box">
+                    <div class="tp-topbar">
+                        <span class="tp-brand">MTSCOS AI</span>
+                        <span class="tp-links">
+                            <span class="tp-link active">仪表盘</span>
+                            <span class="tp-link">课程</span>
+                            <span class="tp-link">考试</span>
+                        </span>
+                    </div>
+                    <div class="tp-body">
+                        <div class="tp-sidebar">
+                            <div class="tp-side-item active"></div>
+                            <div class="tp-side-item"></div>
+                            <div class="tp-side-item"></div>
+                            <div class="tp-side-item"></div>
+                        </div>
+                        <div class="tp-content">
+                            <div class="tp-card"></div>
+                            <div class="tp-card"></div>
+                            <div class="tp-card"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 布局设置 -->
+    <div id="tab-layout" class="pers-tab-content">
+        <div class="card">
+            <div class="card-head">
+                <h3>侧边栏</h3>
+                <span class="card-desc">控制侧边栏折叠状态与位置</span>
+            </div>
+            <div class="card-body">
+                <div class="form-row">
+                    <div class="form-item">
+                        <label>侧边栏状态</label>
+                        <div class="switch-group">
+                            <label class="switch">
+                                <input type="checkbox" id="sidebar_collapsed" data-key="sidebar_collapsed">
+                                <span class="switch-text">折叠侧边栏</span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="form-item">
+                        <label>侧边栏位置</label>
+                        <div class="seg-control" data-key="sidebar_position">
+                            <button class="seg-btn active" data-value="left">⬅ 左侧</button>
+                            <button class="seg-btn" data-value="right">右侧 ➡</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-head">
+                <h3>内容密度</h3>
+                <span class="card-desc">调整内容间距以适配阅读习惯</span>
+            </div>
+            <div class="card-body">
+                <div class="form-row">
+                    <div class="form-item">
+                        <label>内容密度</label>
+                        <div class="seg-control" data-key="content_density">
+                            <button class="seg-btn" data-value="comfortable">舒适</button>
+                            <button class="seg-btn active" data-value="medium">适中</button>
+                            <button class="seg-btn" data-value="compact">紧凑</button>
+                        </div>
+                    </div>
+                    <div class="form-item">
+                        <label>字体大小</label>
+                        <div class="seg-control" data-key="font_size">
+                            <button class="seg-btn" data-value="small">小</button>
+                            <button class="seg-btn active" data-value="medium">中</button>
+                            <button class="seg-btn" data-value="large">大</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 通知设置 -->
+    <div id="tab-notification" class="pers-tab-content">
+        <div class="card">
+            <div class="card-head">
+                <h3>通知位置</h3>
+                <span class="card-desc">选择通知弹出的屏幕角落</span>
+            </div>
+            <div class="card-body">
+                <div class="position-picker" data-key="notification_position">
+                    <button class="pos-btn" data-value="top-left">↖ 左上</button>
+                    <button class="pos-btn" data-value="top-right">↗ 右上</button>
+                    <button class="pos-btn" data-value="bottom-left">↙ 左下</button>
+                    <button class="pos-btn active" data-value="bottom-right">↘ 右下</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-head">
+                <h3>通知效果</h3>
+                <span class="card-desc">控制通知的展示方式</span>
+            </div>
+            <div class="card-body">
+                <div class="form-row">
+                    <div class="form-item">
+                        <label class="switch">
+                            <input type="checkbox" id="notification_animation" data-key="notification_animation" checked>
+                            <span class="switch-text">启用动画效果</span>
+                        </label>
+                    </div>
+                    <div class="form-item">
+                        <label class="switch">
+                            <input type="checkbox" id="notification_sound" data-key="notification_sound" checked>
+                            <span class="switch-text">启用提示声音</span>
+                        </label>
+                    </div>
+                </div>
+                <div class="form-actions">
+                    <button class="btn-primary" onclick="testNotification()"><i class="fas fa-bell"></i> 测试通知</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 模块管理 -->
+    <div id="tab-module" class="pers-tab-content">
+        <div class="card">
+            <div class="card-head">
+                <h3>模块显示与置顶</h3>
+                <span class="card-desc">勾选显示模块、置顶常用模块</span>
+            </div>
+            <div class="card-body">
+                <div id="module-list" class="module-list">
+                    <div class="loading-tip">模块加载中…</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-head">
+                <h3>组件排序</h3>
+                <span class="card-desc">拖拽下列组件调整顺序</span>
+            </div>
+            <div class="card-body">
+                <div id="widget-list" class="widget-list">
+                    <div class="loading-tip">组件加载中…</div>
+                </div>
+                <div class="form-actions">
+                    <button class="btn-primary" onclick="saveWidgetOrder()">💾 保存排序</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 高级设置 -->
+    <div id="tab-advanced" class="pers-tab-content">
+        <div class="card">
+            <div class="card-head">
+                <h3>自定义 CSS</h3>
+                <span class="card-desc">注入自定义样式覆盖默认主题</span>
+            </div>
+            <div class="card-body">
+                <textarea id="custom_css" class="custom-css-box" placeholder="/* 在此输入自定义 CSS */&#10;:root {&#10;  --primary-color: #1890ff;&#10;}" data-key="custom_css"></textarea>
+                <div class="form-actions">
+                    <button class="btn-primary" onclick="applyCustomCss()">✓ 应用 CSS</button>
+                    <button class="btn-secondary" onclick="clearCustomCss()">清除</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-head">
+                <h3>偏好导入 / 导出</h3>
+                <span class="card-desc">备份或迁移你的个性化设置</span>
+            </div>
+            <div class="card-body">
+                <div class="form-actions">
+                    <button class="btn-primary" onclick="exportPrefs()">⬇ 导出偏好为 JSON</button>
+                    <button class="btn-secondary" onclick="document.getElementById('import-file').click()">⬆ 从文件导入</button>
+                    <button class="btn-secondary" onclick="showImportModal()"><i class="fas fa-list-check"></i> 从文本导入</button>
+                </div>
+                <div class="import-text-area" id="import-text-area" style="display:none;">
+                    <textarea id="import-text" placeholder='粘贴 JSON 偏好内容，如 {"theme":"dark",...}'></textarea>
+                    <button class="btn-primary" onclick="importPrefsFromText()">确认导入</button>
+                    <button class="btn-secondary" onclick="document.getElementById('import-text-area').style.display='none'">取消</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 通知容器 -->
+<div id="notif-container"></div>
+
+<style>
+/* === CSS 变量与主题 === */
+:root {
+    --pers-primary: #1890ff;
+    --pers-primary-hover: #40a9ff;
+    --pers-primary-active: #096dd9;
+    --pers-bg: #f5f7fa;
+    --pers-card-bg: #ffffff;
+    --pers-text: #1f2937;
+    --pers-text-secondary: #6b7280;
+    --pers-border: #e5e7eb;
+    --pers-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    --pers-shadow-hover: 0 4px 16px rgba(0,0,0,0.1);
+}
+
+body.pers-theme-dark {
+    --pers-bg: #14171f;
+    --pers-card-bg: #1f2430;
+    --pers-text: #e5e7eb;
+    --pers-text-secondary: #9ca3af;
+    --pers-border: #2d3340;
+    --pers-shadow: 0 2px 8px rgba(0,0,0,0.4);
+    --pers-shadow-hover: 0 4px 16px rgba(0,0,0,0.5);
+}
+
+body.pers-theme-auto {
+    /* 自动模式由 JS 根据 prefers-color-scheme 决定 */
+}
+
+body.pers-scheme-blue { --pers-primary: #0052cc; --pers-primary-hover: #0747a6; --pers-primary-active: #0747a6; }
+body.pers-scheme-green { --pers-primary: #52c41a; --pers-primary-hover: #73d13d; --pers-primary-active: #389e0d; }
+body.pers-scheme-purple { --pers-primary: #722ed1; --pers-primary-hover: #9254de; --pers-primary-active: #531dab; }
+body.pers-scheme-orange { --pers-primary: #fa8c16; --pers-primary-hover: #ffa940; --pers-primary-active: #d46b08; }
+
+/* === 主结构 === */
+.pers-page { padding: 20px; max-width: 1100px; margin: 0 auto; color: var(--pers-text); }
+.pers-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
+.pers-header h1 { margin: 0 0 6px 0; font-size: 22px; color: var(--pers-text); }
+.pers-header p { margin: 0; color: var(--pers-text-secondary); font-size: 13px; }
+.pers-header-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+/* === 按钮 === */
+.btn-primary { background: var(--pers-primary); color: #fff; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px; transition: background 0.2s; }
+.btn-primary:hover { background: var(--pers-primary-hover); }
+.btn-secondary { background: var(--pers-card-bg); color: var(--pers-text); border: 1px solid var(--pers-border); padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px; transition: all 0.2s; }
+.btn-secondary:hover { border-color: var(--pers-primary); color: var(--pers-primary); }
+.btn-danger { background: #fff1f0; color: #ff4d4f; border: 1px solid #ffccc7; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px; }
+.btn-danger:hover { background: #ff4d4f; color: #fff; }
+.btn-ghost { background: transparent; border: 1px dashed var(--pers-border); color: var(--pers-text-secondary); padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; }
+.btn-ghost:hover { color: var(--pers-primary); border-color: var(--pers-primary); }
+.btn-small { padding: 4px 10px; font-size: 12px; border-radius: 4px; }
+
+/* === 标签页 === */
+.pers-tabs { display: flex; gap: 4px; background: var(--pers-card-bg); border: 1px solid var(--pers-border); border-radius: 10px; padding: 6px; margin-bottom: 20px; overflow-x: auto; box-shadow: var(--pers-shadow); }
+.pers-tab { padding: 10px 18px; border: none; background: transparent; cursor: pointer; font-size: 14px; font-weight: 600; color: var(--pers-text-secondary); border-radius: 6px; white-space: nowrap; transition: all 0.2s; }
+.pers-tab:hover { color: var(--pers-text); background: var(--pers-bg); }
+.pers-tab.active { background: var(--pers-primary); color: #fff; }
+.pers-tab-content { display: none; }
+.pers-tab-content.active { display: block; }
+
+/* === 卡片 === */
+.card { background: var(--pers-card-bg); border: 1px solid var(--pers-border); border-radius: 10px; box-shadow: var(--pers-shadow); margin-bottom: 16px; overflow: hidden; }
+.card-head { display: flex; align-items: baseline; justify-content: space-between; padding: 16px 22px; border-bottom: 1px solid var(--pers-border); flex-wrap: wrap; gap: 8px; }
+.card-head h3 { margin: 0; font-size: 16px; color: var(--pers-text); }
+.card-desc { color: var(--pers-text-secondary); font-size: 12px; }
+.card-body { padding: 20px 22px; }
+
+/* === 选项卡网格 === */
+.option-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
+.option-card { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 14px; border: 2px solid var(--pers-border); border-radius: 10px; cursor: pointer; transition: all 0.2s; background: var(--pers-card-bg); }
+.option-card:hover { border-color: var(--pers-primary); }
+.option-card input { display: none; }
+.option-card.selected { border-color: var(--pers-primary); background: rgba(24,144,255,0.06); box-shadow: 0 0 0 3px rgba(24,144,255,0.1); }
+.option-label { font-size: 13px; color: var(--pers-text); font-weight: 500; }
+.option-preview { width: 100%; height: 60px; border-radius: 6px; overflow: hidden; position: relative; border: 1px solid var(--pers-border); }
+.light-preview { background: #fff; }
+.light-preview .prev-bar { height: 14px; background: #1890ff; }
+.light-preview .prev-block { position: absolute; bottom: 6px; left: 6px; right: 6px; height: 8px; background: #f0f0f0; border-radius: 2px; }
+.dark-preview { background: #1f2430; }
+.dark-preview .prev-bar { height: 14px; background: #1890ff; }
+.dark-preview .prev-block { position: absolute; bottom: 6px; left: 6px; right: 6px; height: 8px; background: #2d3340; border-radius: 2px; }
+.auto-preview { background: linear-gradient(135deg, #fff 50%, #1f2430 50%); }
+.auto-preview .prev-bar { height: 14px; background: #1890ff; }
+.auto-preview .prev-block { position: absolute; bottom: 6px; left: 6px; right: 6px; height: 8px; background: linear-gradient(90deg, #f0f0f0 50%, #2d3340 50%); border-radius: 2px; }
+
+/* === 配色卡片 === */
+.color-card { padding: 18px 14px; }
+.color-swatch { width: 48px; height: 48px; border-radius: 50%; box-shadow: 0 2px 6px rgba(0,0,0,0.15); }
+
+/* === 主题预览盒 === */
+.theme-preview-box { border: 1px solid var(--pers-border); border-radius: 8px; overflow: hidden; max-width: 600px; }
+.tp-topbar { display: flex; align-items: center; gap: 16px; padding: 10px 14px; background: var(--pers-card-bg); border-bottom: 1px solid var(--pers-border); }
+.tp-brand { font-weight: 700; color: var(--pers-primary); }
+.tp-links { display: flex; gap: 12px; }
+.tp-link { font-size: 12px; color: var(--pers-text-secondary); padding: 4px 8px; border-radius: 4px; }
+.tp-link.active { background: var(--pers-primary); color: #fff; }
+.tp-body { display: flex; height: 160px; background: var(--pers-bg); }
+.tp-sidebar { width: 60px; background: var(--pers-card-bg); border-right: 1px solid var(--pers-border); padding: 10px 8px; display: flex; flex-direction: column; gap: 8px; }
+.tp-side-item { height: 12px; background: var(--pers-border); border-radius: 3px; }
+.tp-side-item.active { background: var(--pers-primary); }
+.tp-content { flex: 1; padding: 12px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.tp-card { background: var(--pers-card-bg); border: 1px solid var(--pers-border); border-radius: 4px; }
+
+/* === 表单 === */
+.form-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px; }
+.form-item { display: flex; flex-direction: column; gap: 8px; }
+.form-item label { font-size: 13px; color: var(--pers-text); font-weight: 600; }
+.form-actions { margin-top: 14px; display: flex; gap: 8px; flex-wrap: wrap; }
+
+/* === 开关 === */
+.switch { display: inline-flex; align-items: center; gap: 10px; cursor: pointer; }
+.switch input[type=checkbox] { width: 40px; height: 22px; appearance: none; background: var(--pers-border); border-radius: 11px; position: relative; cursor: pointer; transition: background 0.2s; }
+.switch input[type=checkbox]::before { content: ''; position: absolute; top: 2px; left: 2px; width: 18px; height: 18px; background: #fff; border-radius: 50%; transition: transform 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
+.switch input[type=checkbox]:checked { background: var(--pers-primary); }
+.switch input[type=checkbox]:checked::before { transform: translateX(18px); }
+.switch-text { font-size: 14px; color: var(--pers-text); }
+
+/* === 分段控件 === */
+.seg-control { display: inline-flex; background: var(--pers-bg); border-radius: 8px; padding: 3px; }
+.seg-btn { padding: 7px 14px; border: none; background: transparent; cursor: pointer; font-size: 13px; color: var(--pers-text-secondary); border-radius: 6px; transition: all 0.2s; }
+.seg-btn.active { background: var(--pers-primary); color: #fff; }
+
+/* === 通知位置选择器 === */
+.position-picker { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; max-width: 360px; }
+.pos-btn { padding: 20px; border: 2px dashed var(--pers-border); background: var(--pers-card-bg); border-radius: 8px; cursor: pointer; color: var(--pers-text-secondary); font-size: 14px; font-weight: 600; transition: all 0.2s; }
+.pos-btn:hover { border-color: var(--pers-primary); color: var(--pers-primary); }
+.pos-btn.active { border-style: solid; border-color: var(--pers-primary); background: rgba(24,144,255,0.06); color: var(--pers-primary); }
+
+/* === 模块列表 === */
+.module-list { display: flex; flex-direction: column; gap: 8px; }
+.module-item { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border: 1px solid var(--pers-border); border-radius: 8px; background: var(--pers-card-bg); transition: all 0.2s; }
+.module-item:hover { box-shadow: var(--pers-shadow-hover); }
+.module-item.pinned { border-left: 3px solid var(--pers-primary); }
+.module-item.hidden-module { opacity: 0.55; }
+.module-icon { width: 32px; height: 32px; border-radius: 6px; background: var(--pers-primary); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 16px; }
+.module-info { flex: 1; }
+.module-name { font-size: 14px; font-weight: 600; color: var(--pers-text); }
+.module-desc { font-size: 12px; color: var(--pers-text-secondary); margin-top: 2px; }
+.module-actions { display: flex; gap: 6px; }
+.module-actions .btn-small { padding: 4px 10px; font-size: 12px; }
+.module-actions .btn-small.active { background: var(--pers-primary); color: #fff; border: none; }
+.loading-tip { text-align: center; color: var(--pers-text-secondary); padding: 20px; font-size: 13px; }
+
+/* === 组件排序 === */
+.widget-list { display: flex; flex-direction: column; gap: 6px; }
+.widget-item { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border: 1px solid var(--pers-border); border-radius: 6px; background: var(--pers-card-bg); cursor: move; transition: all 0.2s; }
+.widget-item:hover { box-shadow: var(--pers-shadow-hover); }
+.widget-item.dragging { opacity: 0.5; }
+.widget-item.drag-over { border-color: var(--pers-primary); border-style: dashed; }
+.widget-handle { color: var(--pers-text-secondary); cursor: grab; font-size: 16px; }
+.widget-index { width: 24px; height: 24px; border-radius: 50%; background: var(--pers-bg); color: var(--pers-text); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; }
+.widget-name { flex: 1; font-size: 14px; color: var(--pers-text); }
+
+/* === 自定义 CSS 文本框 === */
+.custom-css-box { width: 100%; min-height: 160px; padding: 12px; font-family: 'Menlo', 'Monaco', 'Courier New', monospace; font-size: 13px; border: 1px solid var(--pers-border); border-radius: 8px; background: var(--pers-bg); color: var(--pers-text); resize: vertical; box-sizing: border-box; }
+.custom-css-box:focus { outline: none; border-color: var(--pers-primary); }
+
+/* === 导入文本区 === */
+.import-text-area { margin-top: 14px; display: flex; flex-direction: column; gap: 8px; }
+.import-text-area textarea { width: 100%; min-height: 120px; padding: 10px; font-family: 'Menlo', 'Monaco', 'Courier New', monospace; font-size: 12px; border: 1px solid var(--pers-border); border-radius: 6px; box-sizing: border-box; background: var(--pers-bg); color: var(--pers-text); resize: vertical; }
+
+/* === 通知 === */
+#notif-container { position: fixed; z-index: 9999; pointer-events: none; }
+body.notif-top-left #notif-container { top: 16px; left: 16px; }
+body.notif-top-right #notif-container { top: 16px; right: 16px; }
+body.notif-bottom-left #notif-container { bottom: 16px; left: 16px; }
+body.notif-bottom-right #notif-container { bottom: 16px; right: 16px; }
+.notif-item { background: var(--pers-card-bg); border-left: 4px solid var(--pers-primary); box-shadow: 0 4px 16px rgba(0,0,0,0.15); border-radius: 6px; padding: 12px 16px; margin-bottom: 10px; max-width: 320px; pointer-events: auto; }
+.notif-item.notif-anim { animation: notifSlideIn 0.3s ease; }
+@keyframes notifSlideIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+.notif-item .notif-title { font-weight: 600; font-size: 14px; color: var(--pers-text); }
+.notif-item .notif-msg { font-size: 13px; color: var(--pers-text-secondary); margin-top: 4px; }
+
+/* === 内容密度 === */
+body.pers-density-comfortable .card-body { padding: 24px 26px; }
+body.pers-density-medium .card-body { padding: 20px 22px; }
+body.pers-density-compact .card-body { padding: 12px 16px; }
+
+/* === 字体大小 === */
+body.pers-font-small { font-size: 13px; }
+body.pers-font-medium { font-size: 14px; }
+body.pers-font-large { font-size: 16px; }
+
+/* === 响应式 === */
+@media (max-width: 768px) {
+    .pers-header { flex-direction: column; }
+    .pers-header-actions { width: 100%; }
+    .pers-header-actions button { flex: 1; }
+    .form-row { grid-template-columns: 1fr; }
+    .position-picker { grid-template-columns: 1fr; }
+    .option-grid { grid-template-columns: repeat(2, 1fr); }
+    .tp-content { grid-template-columns: 1fr; }
+}
+</style>
+
+<script>
+// === 全局状态 ===
+let currentPreferences = {};
+let availableThemes = null;
+let availableModules = [];
+let widgets = [];
+let saveTimer = null;
+
+// === 默认偏好（用于本地兜底） ===
+const DEFAULT_PREFS = {
+    theme: 'light',
+    color_scheme: 'default',
+    sidebar_collapsed: false,
+    sidebar_position: 'left',
+    content_density: 'medium',
+    font_size: 'medium',
+    notification_position: 'bottom-right',
+    notification_animation: true,
+    notification_sound: true,
+    custom_css: '',
+    pinned_modules: [],
+    hidden_modules: [],
+    widget_order: []
+};
+
+// === 工具：发送 API 请求 ===
+async function apiRequest(method, url, body) {
+    const opts = { method, headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin' };
+    if (body !== undefined) opts.body = JSON.stringify(body);
+    try {
+        const res = await fetch(url, opts);
+        const ct = res.headers.get('content-type') || '';
+        if (ct.includes('application/json')) return await res.json();
+        return { success: res.ok, status: res.status };
+    } catch (e) {
+        console.error('API request failed:', method, url, e);
+        return { success: false, error: e.message };
+    }
+}
+
+// === 标签页切换 ===
+function switchTab(tab) {
+    document.querySelectorAll('.pers-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+    document.querySelectorAll('.pers-tab-content').forEach(c => c.classList.toggle('active', c.id === 'tab-' + tab));
+    if (tab === 'module') loadModules();
+}
+
+// === 加载用户偏好 ===
+async function loadPreferences() {
+    const data = await apiRequest('GET', '/api/optimization/layout/preferences');
+    if (data && data.success && data.preferences) {
+        currentPreferences = { ...DEFAULT_PREFS, ...data.preferences };
+    } else if (data && data.preferences) {
+        currentPreferences = { ...DEFAULT_PREFS, ...data.preferences };
+    } else {
+        currentPreferences = { ...DEFAULT_PREFS };
+        showToast('提示', '使用默认偏好设置（未能从服务器加载）', 'info');
+    }
+    applyAllPreferences();
+    return currentPreferences;
+}
+
+// === 应用所有偏好到 UI ===
+function applyAllPreferences() {
+    const p = currentPreferences;
+    // 主题与配色
+    if (p.theme) {
+        setRadio('theme', p.theme);
+        applyTheme(p.theme);
+    }
+    if (p.color_scheme) {
+        setRadio('color_scheme', p.color_scheme);
+        applyColorScheme(p.color_scheme);
+    }
+    // 布局
+    setCheckbox('sidebar_collapsed', p.sidebar_collapsed);
+    setSegControl('sidebar_position', p.sidebar_position || 'left');
+    setSegControl('content_density', p.content_density || 'medium');
+    setSegControl('font_size', p.font_size || 'medium');
+    applyDensity(p.content_density || 'medium');
+    applyFontSize(p.font_size || 'medium');
+    // 通知
+    setPosition(p.notification_position || 'bottom-right');
+    setCheckbox('notification_animation', p.notification_animation !== false);
+    setCheckbox('notification_sound', p.notification_sound !== false);
+    // 自定义 CSS
+    const cssBox = document.getElementById('custom_css');
+    if (cssBox) cssBox.value = p.custom_css || '';
+    applyCustomCss();
+}
+
+// === UI 辅助函数 ===
+function setRadio(name, value) {
+    document.querySelectorAll(`input[name="${name}"]`).forEach(r => r.checked = (r.value === value));
+    document.querySelectorAll(`.option-card[data-name="${name}"]`).forEach(c => c.classList.toggle('selected', c.dataset.value === value));
+}
+function setCheckbox(id, value) {
+    const el = document.getElementById(id);
+    if (el) el.checked = !!value;
+}
+function setSegControl(key, value) {
+    document.querySelectorAll(`.seg-control[data-key="${key}"] .seg-btn`).forEach(b => b.classList.toggle('active', b.dataset.value === value));
+}
+function setPosition(value) {
+    document.querySelectorAll('.position-picker .pos-btn').forEach(b => b.classList.toggle('active', b.dataset.value === value));
+    applyNotificationPosition(value);
+}
+
+// === 主题应用 ===
+function applyTheme(theme) {
+    document.body.classList.remove('pers-theme-light', 'pers-theme-dark', 'pers-theme-auto');
+    let actual = theme;
+    if (theme === 'auto') {
+        actual = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
+    document.body.classList.add('pers-theme-' + actual);
+    document.body.classList.add('pers-theme-auto'); // 保留标记用于 JS 判断
+    if (theme !== 'auto') document.body.classList.remove('pers-theme-auto');
+}
+
+function applyColorScheme(scheme) {
+    document.body.classList.remove('pers-scheme-default', 'pers-scheme-blue', 'pers-scheme-green', 'pers-scheme-purple', 'pers-scheme-orange');
+    document.body.classList.add('pers-scheme-' + scheme);
+}
+
+function applyDensity(density) {
+    document.body.classList.remove('pers-density-comfortable', 'pers-density-medium', 'pers-density-compact');
+    document.body.classList.add('pers-density-' + density);
+}
+
+function applyFontSize(size) {
+    document.body.classList.remove('pers-font-small', 'pers-font-medium', 'pers-font-large');
+    document.body.classList.add('pers-font-' + size);
+}
+
+function applyNotificationPosition(pos) {
+    document.body.classList.remove('notif-top-left', 'notif-top-right', 'notif-bottom-left', 'notif-bottom-right');
+    const map = { 'top-left': 'notif-top-left', 'top-right': 'notif-top-right', 'bottom-left': 'notif-bottom-left', 'bottom-right': 'notif-bottom-right' };
+    if (map[pos]) document.body.classList.add(map[pos]);
+}
+
+function applyCustomCss() {
+    let tag = document.getElementById('pers-custom-css');
+    if (!tag) {
+        tag = document.createElement('style');
+        tag.id = 'pers-custom-css';
+        document.head.appendChild(tag);
+    }
+    const css = (currentPreferences.custom_css || document.getElementById('custom_css')?.value || '').trim();
+    tag.textContent = css;
+}
+
+function clearCustomCss() {
+    const cssBox = document.getElementById('custom_css');
+    if (cssBox) cssBox.value = '';
+    currentPreferences.custom_css = '';
+    applyCustomCss();
+    savePreference('custom_css', '');
+}
+
+// === 保存单个偏好 ===
+async function savePreference(key, value) {
+    currentPreferences[key] = value;
+    // 实时保存到服务器
+    if (saveTimer) clearTimeout(saveTimer);
+    saveTimer = setTimeout(async () => {
+        const payload = { ...currentPreferences };
+        const data = await apiRequest('PUT', '/api/optimization/layout/preferences', payload);
+        if (data && data.success) {
+            showToast('已保存', `${key} 已更新`, 'success');
+        } else {
+            showToast('保存失败', `无法保存 ${key}，请稍后重试`, 'error');
+        }
+    }, 400);
+}
+
+// === 重置偏好 ===
+async function resetPreferences() {
+    if (!confirm('确定要重置所有个性化设置到默认值吗？此操作不可撤销。')) return;
+    const data = await apiRequest('POST', '/api/optimization/layout/reset', {});
+    if (data && data.success) {
+        currentPreferences = { ...DEFAULT_PREFS };
+        if (data.preferences) currentPreferences = { ...DEFAULT_PREFS, ...data.preferences };
+        applyAllPreferences();
+        showToast('已重置', '所有设置已恢复默认', 'success');
+        loadModules();
+    } else {
+        showToast('重置失败', '服务器返回错误', 'error');
+    }
+}
+
+// === 导出偏好 ===
+async function exportPrefs() {
+    try {
+        const data = await apiRequest('GET', '/api/optimization/layout/export');
+        let jsonStr;
+        if (data && data.success && data.preferences) {
+            jsonStr = JSON.stringify(data.preferences, null, 2);
+        } else if (data && data.preferences) {
+            jsonStr = JSON.stringify(data.preferences, null, 2);
+        } else {
+            jsonStr = JSON.stringify(currentPreferences, null, 2);
+        }
+        const blob = new Blob([jsonStr], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `mtscos-preferences-${new Date().toISOString().slice(0,10)}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        showToast('已导出', '偏好文件已下载', 'success');
+    } catch (e) {
+        showToast('导出失败', e.message, 'error');
+    }
+}
+
+// === 从文件导入偏好 ===
+async function importPrefs(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    try {
+        const text = await file.text();
+        await doImport(text);
+    } catch (e) {
+        showToast('导入失败', e.message, 'error');
+    }
+    event.target.value = '';
+}
+
+function showImportModal() {
+    document.getElementById('import-text-area').style.display = 'flex';
+    document.getElementById('import-text').focus();
+}
+
+async function importPrefsFromText() {
+    const text = document.getElementById('import-text').value.trim();
+    if (!text) { showToast('提示', '请粘贴 JSON 内容', 'info'); return; }
+    await doImport(text);
+    document.getElementById('import-text-area').style.display = 'none';
+    document.getElementById('import-text').value = '';
+}
+
+async function doImport(jsonString) {
+    let prefs;
+    try { prefs = JSON.parse(jsonString); }
+    catch (e) { showToast('导入失败', 'JSON 格式错误：' + e.message, 'error'); return; }
+    const data = await apiRequest('POST', '/api/optimization/layout/import', { preferences: JSON.stringify(prefs) });
+    if (data && data.success) {
+        if (data.preferences) currentPreferences = { ...DEFAULT_PREFS, ...data.preferences };
+        else currentPreferences = { ...DEFAULT_PREFS, ...prefs };
+        applyAllPreferences();
+        loadModules();
+        showToast('已导入', '偏好设置已应用', 'success');
+    } else {
+        showToast('导入失败', (data && data.error) || '服务器错误', 'error');
+    }
+}
+
+// === 模块管理 ===
+async function loadModules() {
+    // 优先从偏好接口的 themes 拉取（含模块清单），失败时使用预设
+    if (!availableThemes) {
+        const data = await apiRequest('GET', '/api/optimization/layout/themes');
+        if (data && data.success) availableThemes = data;
+        else if (data) availableThemes = data;
+    }
+    // 拉取模块清单（若 themes 接口未含 modules，则用本地预设）
+    let modules = (availableThemes && (availableThemes.modules || availableThemes.available_modules)) || null;
+    if (!modules) {
+        modules = getDefaultModules();
+    }
+    availableModules = modules;
+    renderModules();
+    loadWidgets();
+}
+
+function getDefaultModules() {
+    return [
+        { id: 'dashboard', name: '仪表盘', icon: '<i class="fas fa-chart-bar"></i>', desc: '系统总览与统计' },
+        { id: 'courses', name: '课程管理', icon: '<i class="fas fa-book-open"></i>', desc: '课程内容与进度' },
+        { id: 'exams', name: '考试中心', icon: '<i class="fas fa-file-alt"></i>', desc: '考试安排与成绩' },
+        { id: 'assignments', name: '作业管理', icon: '✏️', desc: '作业发布与批改' },
+        { id: 'users', name: '用户管理', icon: '<i class="fas fa-users"></i>', desc: '用户账号与权限' },
+        { id: 'analytics', name: '数据分析', icon: '<i class="fas fa-chart-line"></i>', desc: '学习行为分析' },
+        { id: 'resources', name: '资源管理', icon: '<i class="fas fa-folder-tree"></i>', desc: '教学资源库' },
+        { id: 'communication', name: '通讯中心', icon: '💬', desc: '通知与消息' },
+        { id: 'ai_tutor', name: 'AI 助教', icon: '<i class="fas fa-robot"></i>', desc: '智能辅导助手' },
+        { id: 'knowledge_graph', name: '知识图谱', icon: '🧠', desc: '知识结构可视化' }
+    ];
+}
+
+function renderModules() {
+    const container = document.getElementById('module-list');
+    if (!container) return;
+    const pinned = currentPreferences.pinned_modules || [];
+    const hidden = currentPreferences.hidden_modules || [];
+    if (!availableModules || availableModules.length === 0) {
+        container.innerHTML = '<div class="loading-tip">暂无可用模块</div>';
+        return;
+    }
+    // 置顶模块排在前面
+    const sorted = [...availableModules].sort((a, b) => {
+        const aPin = pinned.includes(a.id) ? 0 : 1;
+        const bPin = pinned.includes(b.id) ? 0 : 1;
+        return aPin - bPin;
+    });
+    container.innerHTML = sorted.map(m => {
+        const isPinned = pinned.includes(m.id);
+        const isHidden = hidden.includes(m.id);
+        return `
+        <div class="module-item ${isPinned ? 'pinned' : ''} ${isHidden ? 'hidden-module' : ''}" data-id="${m.id}">
+            <div class="module-icon">${m.icon || '📦'}</div>
+            <div class="module-info">
+                <div class="module-name">${m.name}${isPinned ? ' 📌' : ''}</div>
+                <div class="module-desc">${m.desc || ''}</div>
+            </div>
+            <div class="module-actions">
+                <button class="btn-secondary btn-small ${isPinned ? 'active' : ''}" onclick="toggleModule('${m.id}', '${isPinned ? 'unpin' : 'pin'}')">
+                    ${isPinned ? '取消置顶' : '置顶'}
+                </button>
+                <button class="btn-secondary btn-small ${isHidden ? '' : 'active'}" onclick="toggleModule('${m.id}', '${isHidden ? 'show' : 'hide'}')">
+                    ${isHidden ? '显示' : '隐藏'}
+                </button>
+            </div>
+        </div>`;
+    }).join('');
+}
+
+// === 模块操作：pin/unpin/hide/show ===
+async function toggleModule(moduleId, action) {
+    const url = `/api/optimization/layout/modules/${action}`;
+    const data = await apiRequest('POST', url, { module_id: moduleId });
+    if (data && (data.success === true || data.success === undefined)) {
+        // 同步本地状态
+        const pinned = currentPreferences.pinned_modules || [];
+        const hidden = currentPreferences.hidden_modules || [];
+        if (action === 'pin') { if (!pinned.includes(moduleId)) pinned.push(moduleId); }
+        else if (action === 'unpin') { currentPreferences.pinned_modules = pinned.filter(id => id !== moduleId); }
+        else if (action === 'hide') { if (!hidden.includes(moduleId)) hidden.push(moduleId); }
+        else if (action === 'show') { currentPreferences.hidden_modules = hidden.filter(id => id !== moduleId); }
+        if (action === 'pin' || action === 'hide') {
+            currentPreferences.pinned_modules = pinned;
+            currentPreferences.hidden_modules = hidden;
+        }
+        renderModules();
+        const labels = { pin: '已置顶', unpin: '已取消置顶', hide: '已隐藏', show: '已显示' };
+        showToast(labels[action], `模块 ${moduleId} ${labels[action]}`, 'success');
+    } else {
+        showToast('操作失败', (data && data.error) || '请稍后重试', 'error');
+    }
+}
+
+// === 组件排序（拖拽） ===
+function loadWidgets() {
+    const container = document.getElementById('widget-list');
+    if (!container) return;
+    // 优先使用偏好中的顺序，否则使用默认模块列表
+    const order = currentPreferences.widget_order || [];
+    let list;
+    if (order.length > 0) {
+        list = order.map(id => {
+            const m = availableModules.find(x => x.id === id);
+            return m || { id, name: id, icon: '📦' };
+        });
+        // 追加未在 order 中的模块
+        availableModules.forEach(m => {
+            if (!order.includes(m.id)) list.push(m);
+        });
+    } else {
+        list = [...availableModules];
+    }
+    widgets = list;
+    renderWidgets();
+}
+
+function renderWidgets() {
+    const container = document.getElementById('widget-list');
+    if (!container) return;
+    container.innerHTML = widgets.map((w, i) => `
+        <div class="widget-item" draggable="true" data-id="${w.id}">
+            <span class="widget-handle">⠿</span>
+            <span class="widget-index">${i + 1}</span>
+            <span class="widget-name">${w.icon || '📦'} ${w.name}</span>
+        </div>
+    `).join('');
+    bindDragEvents();
+}
+
+function bindDragEvents() {
+    let dragSrc = null;
+    document.querySelectorAll('.widget-item').forEach(item => {
+        item.addEventListener('dragstart', (e) => {
+            dragSrc = item;
+            item.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/plain', item.dataset.id);
+        });
+        item.addEventListener('dragend', () => {
+            item.classList.remove('dragging');
+            document.querySelectorAll('.widget-item').forEach(i => i.classList.remove('drag-over'));
+        });
+        item.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            if (dragSrc && dragSrc !== item) item.classList.add('drag-over');
+        });
+        item.addEventListener('dragleave', () => item.classList.remove('drag-over'));
+        item.addEventListener('drop', (e) => {
+            e.preventDefault();
+            item.classList.remove('drag-over');
+            if (!dragSrc || dragSrc === item) return;
+            const fromId = dragSrc.dataset.id;
+            const toId = item.dataset.id;
+            const fromIdx = widgets.findIndex(w => w.id === fromId);
+            const toIdx = widgets.findIndex(w => w.id === toId);
+            if (fromIdx < 0 || toIdx < 0) return;
+            const [moved] = widgets.splice(fromIdx, 1);
+            widgets.splice(toIdx, 0, moved);
+            renderWidgets();
+        });
+    });
+}
+
+async function saveWidgetOrder() {
+    const widgetIds = widgets.map(w => w.id);
+    currentPreferences.widget_order = widgetIds;
+    const data = await apiRequest('PUT', '/api/optimization/layout/widget-order', { widget_ids: widgetIds });
+    if (data && (data.success === true || data.success === undefined)) {
+        showToast('已保存', '组件顺序已更新', 'success');
+    } else {
+        showToast('保存失败', (data && data.error) || '请稍后重试', 'error');
+    }
+}
+
+// === 测试通知 ===
+function testNotification() {
+    const pos = currentPreferences.notification_position || 'bottom-right';
+    applyNotificationPosition(pos);
+    showNotif('测试通知', '这是一条来自个性化设置的测试通知', 'info');
+    if (currentPreferences.notification_sound !== false) playNotifSound();
+}
+
+function showNotif(title, msg, type) {
+    const container = document.getElementById('notif-container');
+    const item = document.createElement('div');
+    item.className = 'notif-item';
+    if (type === 'success') item.style.borderLeftColor = '#52c41a';
+    else if (type === 'error') item.style.borderLeftColor = '#ff4d4f';
+    else if (type === 'info') item.style.borderLeftColor = '#1890ff';
+    if (currentPreferences.notification_animation !== false) item.classList.add('notif-anim');
+    item.innerHTML = `<div class="notif-title">${title}</div><div class="notif-msg">${msg}</div>`;
+    container.appendChild(item);
+    setTimeout(() => {
+        item.style.transition = 'opacity 0.3s, transform 0.3s';
+        item.style.opacity = '0';
+        item.style.transform = 'translateY(-10px)';
+        setTimeout(() => item.remove(), 300);
+    }, 3000);
+}
+
+function showToast(title, msg, type) { showNotif(title, msg, type); }
+
+function playNotifSound() {
+    try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain); gain.connect(ctx.destination);
+        osc.frequency.value = 880;
+        gain.gain.setValueAtTime(0.15, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
+        osc.start(); osc.stop(ctx.currentTime + 0.3);
+    } catch (e) { /* 忽略音频错误 */ }
+}
+
+// === 事件绑定 ===
+function bindEvents() {
+    // 主题/配色选项卡
+    document.querySelectorAll('.option-card[data-name]').forEach(card => {
+        card.addEventListener('click', () => {
+            const name = card.dataset.name;
+            const value = card.dataset.value;
+            const input = card.querySelector('input[type=radio]');
+            if (input) input.checked = true;
+            document.querySelectorAll(`.option-card[data-name="${name}"]`).forEach(c => c.classList.remove('selected'));
+            card.classList.add('selected');
+            if (name === 'theme') { applyTheme(value); savePreference('theme', value); }
+            else if (name === 'color_scheme') { applyColorScheme(value); savePreference('color_scheme', value); }
+        });
+    });
+
+    // 复选框
+    document.querySelectorAll('input[type=checkbox][data-key]').forEach(cb => {
+        cb.addEventListener('change', () => {
+            const key = cb.dataset.key;
+            savePreference(key, cb.checked);
+            if (key === 'sidebar_collapsed') showToast('侧边栏', cb.checked ? '已折叠' : '已展开', 'info');
+        });
+    });
+
+    // 分段控件
+    document.querySelectorAll('.seg-control[data-key]').forEach(sc => {
+        sc.querySelectorAll('.seg-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                sc.querySelectorAll('.seg-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                const key = sc.dataset.key;
+                const value = btn.dataset.value;
+                if (key === 'content_density') applyDensity(value);
+                else if (key === 'font_size') applyFontSize(value);
+                else if (key === 'sidebar_position') applySidebarPosition(value);
+                savePreference(key, value);
+            });
+        });
+    });
+
+    // 通知位置
+    document.querySelectorAll('.position-picker[data-key] .pos-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.position-picker .pos-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            const value = btn.dataset.value;
+            applyNotificationPosition(value);
+            savePreference('notification_position', value);
+        });
+    });
+
+    // 自定义 CSS 实时保存（防抖）
+    const cssBox = document.getElementById('custom_css');
+    if (cssBox) {
+        cssBox.addEventListener('input', () => {
+            if (saveTimer) clearTimeout(saveTimer);
+            saveTimer = setTimeout(() => {
+                currentPreferences.custom_css = cssBox.value;
+                applyCustomCss();
+                savePreference('custom_css', cssBox.value);
+            }, 800);
+        });
+    }
+}
+
+function applySidebarPosition(pos) {
+    document.body.classList.remove('pers-sidebar-left', 'pers-sidebar-right');
+    document.body.classList.add('pers-sidebar-' + pos);
+}
+
+// === 自动主题监听（系统切换时刷新） ===
+function watchSystemTheme() {
+    const mq = window.matchMedia('(prefers-color-scheme: dark)');
+    mq.addEventListener('change', () => {
+        if (currentPreferences.theme === 'auto') applyTheme('auto');
+    });
+}
+
+// === 初始化 ===
+(async function init() {
+    bindEvents();
+    watchSystemTheme();
+    await loadPreferences();
+    // 模块列表懒加载（切到模块标签时再拉取）
+})();
+</script>
+{% endblock %}

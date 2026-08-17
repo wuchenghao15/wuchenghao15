@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI自动学习 - MTSCOS AI</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root { --primary: #1890ff; --primary-hover: #40a9ff; --bg: #f0f2f5; --card-bg: #fff; --text: #333; --text-secondary: #666; --border: #e8e8e8; --success: #52c41a; --warning: #faad14; --danger: #ff4d4f; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; padding: 20px; }
+        .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 12px; }
+        .page-header .title-wrap h1 { font-size: 24px; display: flex; align-items: center; gap: 10px; }
+        .page-header .title-wrap h1 i { color: var(--primary); }
+        .page-header .title-wrap p { color: var(--text-secondary); font-size: 13px; margin-top: 4px; }
+        .header-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+        .btn { padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; display: inline-flex; align-items: center; gap: 6px; text-decoration: none; transition: all 0.3s; }
+        .btn-primary { background: var(--primary); color: #fff; }
+        .btn-primary:hover { background: var(--primary-hover); }
+        .btn-secondary { background: #fff; color: var(--text); border: 1px solid var(--border); }
+        .btn-secondary:hover { border-color: var(--primary); color: var(--primary); }
+        .btn-sm { padding: 4px 10px; font-size: 12px; }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 20px; }
+        .stat-card { background: var(--card-bg); border-radius: 8px; padding: 18px 20px; display: flex; align-items: center; gap: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); border-left: 4px solid var(--primary); transition: all 0.3s; }
+        .stat-card:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(0,0,0,0.1); }
+        .stat-card.blue { border-left-color: #1890ff; }
+        .stat-card.green { border-left-color: #52c41a; }
+        .stat-card.orange { border-left-color: #fa8c16; }
+        .stat-card.purple { border-left-color: #722ed1; }
+        .stat-icon { width: 46px; height: 46px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 20px; }
+        .stat-card.blue .stat-icon { background: #e6f7ff; color: #1890ff; }
+        .stat-card.green .stat-icon { background: #f6ffed; color: #52c41a; }
+        .stat-card.orange .stat-icon { background: #fff7e6; color: #fa8c16; }
+        .stat-card.purple .stat-icon { background: #f9f0ff; color: #722ed1; }
+        .stat-body { flex: 1; }
+        .stat-value { font-size: 24px; font-weight: 700; line-height: 1.2; }
+        .stat-label { color: var(--text-secondary); font-size: 12px; margin-top: 3px; }
+        .panel { background: var(--card-bg); border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); margin-bottom: 16px; overflow: hidden; }
+        .panel-header { padding: 14px 20px; border-bottom: 1px solid #f0f0f0; display: flex; justify-content: space-between; align-items: center; }
+        .panel-header h2 { font-size: 15px; margin: 0; display: flex; align-items: center; gap: 8px; }
+        .panel-header h2 i { color: var(--primary); }
+        .panel-body { padding: 16px 20px; }
+        .data-table { width: 100%; border-collapse: collapse; }
+        .data-table th { text-align: left; padding: 10px 12px; font-size: 13px; color: var(--text-secondary); font-weight: 600; border-bottom: 2px solid #f0f0f0; background: #fafafa; }
+        .data-table td { padding: 10px 12px; border-bottom: 1px solid #f0f0f0; font-size: 13px; }
+        .data-table tr:hover { background: #fafafa; }
+        .empty-state { text-align: center; padding: 40px; color: #999; }
+        .empty-state i { font-size: 36px; display: block; margin-bottom: 10px; opacity: 0.4; }
+        .tag { display: inline-block; padding: 2px 10px; border-radius: 12px; font-size: 12px; font-weight: 500; background: #e6f7ff; color: #1890ff; }
+        .tag-green { background: #f6ffed; color: #52c41a; }
+        .tag-orange { background: #fff7e6; color: #fa8c16; }
+        .tag-red { background: #fff1f0; color: #ff4d4f; }
+        .tag-purple { background: #f9f0ff; color: #722ed1; }
+        .toast { position: fixed; top: 20px; right: 20px; padding: 12px 20px; border-radius: 4px; color: #fff; font-size: 14px; z-index: 2000; animation: slideIn 0.3s ease-out; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+        .toast.success { background: var(--success); }
+        .toast.error { background: var(--danger); }
+        .toast.info { background: var(--primary); }
+        @keyframes slideIn { from { transform: translateX(120%); } to { transform: translateX(0); } }
+
+        /* 知识源列表 */
+        .source-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
+        .source-card { padding: 14px; border: 1px solid var(--border); border-radius: 8px; transition: all 0.2s; text-align: center; }
+        .source-card:hover { border-color: var(--primary); box-shadow: 0 4px 12px rgba(24, 144, 255, 0.1); transform: translateY(-2px); }
+        .source-icon { width: 48px; height: 48px; border-radius: 50%; background: #e6f7ff; color: var(--primary); display: flex; align-items: center; justify-content: center; font-size: 22px; margin: 0 auto 8px; }
+        .source-name { font-size: 13px; font-weight: 600; }
+        .source-stat { font-size: 11px; color: var(--text-secondary); margin-top: 4px; }
+        .source-bar { height: 4px; background: #f0f0f0; border-radius: 2px; margin-top: 6px; overflow: hidden; }
+        .source-fill { height: 100%; background: var(--primary); border-radius: 2px; }
+
+        /* 学习记录 */
+        .record-list { display: flex; flex-direction: column; gap: 8px; }
+        .record-item { padding: 12px 14px; background: #fafafa; border-radius: 6px; border-left: 3px solid var(--primary); transition: all 0.2s; }
+        .record-item:hover { background: #f0f8ff; transform: translateX(2px); }
+        .record-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+        .record-title { font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 6px; }
+        .record-title i { color: var(--primary); }
+        .record-time { font-size: 11px; color: #999; }
+        .record-content { font-size: 12px; color: var(--text-secondary); line-height: 1.5; }
+        .record-meta { display: flex; gap: 10px; font-size: 11px; color: #999; margin-top: 6px; }
+        .record-meta span i { margin-right: 3px; }
+
+        /* 知识增长图表 */
+        .growth-chart { display: flex; align-items: flex-end; gap: 4px; height: 180px; padding: 10px 0; border-bottom: 1px solid #f0f0f0; }
+        .growth-bar { flex: 1; background: linear-gradient(180deg, var(--primary), #69c0ff); border-radius: 4px 4px 0 0; position: relative; transition: all 0.3s; min-height: 4px; cursor: pointer; }
+        .growth-bar:hover { background: linear-gradient(180deg, #40a9ff, #91d5ff); transform: translateY(-2px); }
+        .growth-bar .bar-tip { position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.75); color: #fff; padding: 3px 8px; border-radius: 3px; font-size: 11px; white-space: nowrap; opacity: 0; transition: opacity 0.2s; pointer-events: none; margin-bottom: 4px; }
+        .growth-bar:hover .bar-tip { opacity: 1; }
+        .growth-labels { display: flex; gap: 4px; padding-top: 6px; }
+        .growth-labels span { flex: 1; text-align: center; font-size: 10px; color: #999; }
+
+        /* 配置面板 */
+        .config-list { display: flex; flex-direction: column; gap: 10px; }
+        .config-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background: #fafafa; border-radius: 6px; }
+        .config-name { font-size: 13px; font-weight: 500; }
+        .config-desc { font-size: 11px; color: #999; margin-top: 2px; }
+        .config-toggle { width: 36px; height: 20px; background: #ccc; border-radius: 10px; position: relative; cursor: pointer; transition: all 0.2s; }
+        .config-toggle.on { background: var(--success); }
+        .config-toggle::after { content: ''; position: absolute; width: 16px; height: 16px; background: #fff; border-radius: 50%; top: 2px; left: 2px; transition: all 0.2s; }
+        .config-toggle.on::after { left: 18px; }
+
+        /* AI投喂面板 */
+        .feed-panel { padding: 20px; }
+        .feed-form { display: flex; flex-direction: column; gap: 16px; }
+        .feed-form-group { display: flex; flex-direction: column; gap: 6px; }
+        .feed-form-group label { font-size: 13px; font-weight: 600; color: var(--text); }
+        .feed-form-group select, .feed-form-group textarea, .feed-form-group input {
+            padding: 10px 12px; border: 1px solid var(--border); border-radius: 6px;
+            font-size: 14px; background: #fff; color: var(--text); transition: all 0.2s;
+        }
+        .feed-form-group select:focus, .feed-form-group textarea:focus, .feed-form-group input:focus {
+            border-color: var(--primary); outline: none; box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.1);
+        }
+        .feed-form-group textarea { min-height: 120px; resize: vertical; }
+        .feed-format-tags { display: flex; gap: 8px; flex-wrap: wrap; }
+        .feed-format-tag { padding: 6px 12px; border: 1px solid var(--border); border-radius: 4px; font-size: 12px; cursor: pointer; transition: all 0.2s; }
+        .feed-format-tag.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+        .feed-format-tag:hover { border-color: var(--primary); color: var(--primary); }
+        .feed-preview { padding: 12px; background: #fafafa; border-radius: 6px; font-size: 12px; color: var(--text-secondary); font-family: monospace; max-height: 100px; overflow-y: auto; }
+
+        /* 知识审核列表 */
+        .review-list { display: flex; flex-direction: column; gap: 10px; }
+        .review-item { padding: 14px; background: #fafafa; border-radius: 8px; border-left: 4px solid var(--primary); transition: all 0.2s; }
+        .review-item:hover { background: #f0f8ff; }
+        .review-item.pending { border-left-color: var(--warning); }
+        .review-item.approved { border-left-color: var(--success); }
+        .review-item.rejected { border-left-color: var(--danger); }
+        .review-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+        .review-title { font-size: 14px; font-weight: 600; }
+        .review-meta { display: flex; gap: 10px; font-size: 11px; color: #999; }
+        .review-content { font-size: 13px; color: var(--text-secondary); line-height: 1.5; margin-bottom: 10px; }
+        .review-actions { display: flex; gap: 8px; }
+        .review-actions .btn { font-size: 12px; padding: 4px 10px; }
+
+        /* 知识导入弹窗 */
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 3000; display: none; align-items: center; justify-content: center; }
+        .modal-overlay.show { display: flex; }
+        .modal-content { background: #fff; border-radius: 8px; width: 90%; max-width: 500px; max-height: 80vh; overflow-y: auto; }
+        .modal-header { padding: 16px 20px; border-bottom: 1px solid #f0f0f0; display: flex; justify-content: space-between; align-items: center; }
+        .modal-header h3 { font-size: 16px; margin: 0; }
+        .modal-close { width: 32px; height: 32px; border: none; background: #f5f5f5; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        .modal-body { padding: 20px; }
+        .modal-footer { padding: 16px 20px; border-top: 1px solid #f0f0f0; display: flex; justify-content: flex-end; gap: 10px; }
+
+        @media (max-width: 768px) { .stats-grid { grid-template-columns: 1fr; } .source-grid { grid-template-columns: 1fr 1fr; } }
+    </style>
+
+    <link rel="stylesheet" href="/static/css/theme.css">
+</head>
+<body>
+    <div class="page-header">
+        <div class="title-wrap">
+            <h1><i class="fas fa-brain"></i> AI自动学习</h1>
+            <p>查看AI学习记录和知识增长统计，掌握自我学习引擎运行情况</p>
+        </div>
+        <div class="header-actions">
+            <a href="/admin/ai-intelligent-center" class="btn btn-secondary"><i class="fas fa-arrow-left"></i> 返回AI中心</a>
+            <button class="btn btn-primary" onclick="loadAll()"><i class="fas fa-sync-alt"></i> 刷新数据</button>
+        </div>
+    </div>
+
+    <div class="stats-grid">
+        <div class="stat-card blue"><div class="stat-icon"><i class="fas fa-book-reader"></i></div><div class="stat-body"><div class="stat-value" id="stat-knowledge">--</div><div class="stat-label">脑库知识总数</div></div></div>
+        <div class="stat-card green"><div class="stat-icon"><i class="fas fa-sync-alt"></i></div><div class="stat-body"><div class="stat-value" id="stat-cycles">--</div><div class="stat-label">学习周期数</div></div></div>
+        <div class="stat-card orange"><div class="stat-icon"><i class="fas fa-lightbulb"></i></div><div class="stat-body"><div class="stat-value" id="stat-insights">--</div><div class="stat-label">学习洞察数</div></div></div>
+        <div class="stat-card purple"><div class="stat-icon"><i class="fas fa-gavel"></i></div><div class="stat-body"><div class="stat-value" id="stat-rules">--</div><div class="stat-label">学习规则数</div></div></div>
+    </div>
+
+    <div class="panel">
+        <div class="panel-header"><h2><i class="fas fa-chart-area"></i> 知识增长趋势</h2><span style="font-size:12px;color:var(--text-secondary);">最近7天</span></div>
+        <div class="panel-body">
+            <div class="growth-chart" id="growth-chart">
+                <div class="empty-state" style="grid-column: 1/-1;"><i class="fas fa-spinner fa-pulse"></i><p>加载中...</p></div>
+            </div>
+            <div class="growth-labels" id="growth-labels"></div>
+        </div>
+    </div>
+
+    <div class="panel">
+        <div class="panel-header"><h2><i class="fas fa-database"></i> 知识采集源</h2><span style="font-size:12px;color:var(--text-secondary);">8个知识源</span></div>
+        <div class="panel-body">
+            <div class="source-grid" id="source-grid">
+                <div class="empty-state" style="grid-column: 1/-1;"><i class="fas fa-spinner fa-pulse"></i><p>加载中...</p></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="panel">
+        <div class="panel-header"><h2><i class="fas fa-cogs"></i> 学习引擎配置</h2></div>
+        <div class="panel-body">
+            <div class="config-list" id="config-list">
+                <div class="config-item">
+                    <div><div class="config-name">SELF_LEARNING_ENABLED</div><div class="config-desc">AI自我学习启用</div></div>
+                    <div class="config-toggle on" onclick="toggleConfig(this)"></div>
+                </div>
+                <div class="config-item">
+                    <div><div class="config-name">SELF_LEARNING_NETWORK_ENABLED</div><div class="config-desc">网络学习启用</div></div>
+                    <div class="config-toggle on" onclick="toggleConfig(this)"></div>
+                </div>
+                <div class="config-item">
+                    <div><div class="config-name">SELF_LEARNING_AWARENESS_ENABLED</div><div class="config-desc">自我觉醒启用</div></div>
+                    <div class="config-toggle on" onclick="toggleConfig(this)"></div>
+                </div>
+                <div class="config-item">
+                    <div><div class="config-name">SELF_LEARNING_RULES_ENABLED</div><div class="config-desc">学习规则启用</div></div>
+                    <div class="config-toggle on" onclick="toggleConfig(this)"></div>
+                </div>
+                <div class="config-item">
+                    <div><div class="config-name">SELF_LEARNING_BRAIN_FEEDING_ENABLED</div><div class="config-desc">脑库投喂启用</div></div>
+                    <div class="config-toggle on" onclick="toggleConfig(this)"></div>
+                </div>
+                <div class="config-item">
+                    <div><div class="config-name">SELF_LEARNING_POLICY_ENABLED</div><div class="config-desc">学习政策启用</div></div>
+                    <div class="config-toggle on" onclick="toggleConfig(this)"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="panel">
+        <div class="panel-header"><h2><i class="fas fa-list"></i> 学习记录</h2>
+            <button class="btn btn-primary btn-sm" onclick="triggerLearning()"><i class="fas fa-play"></i> 触发学习周期</button>
+        </div>
+        <div class="panel-body">
+            <div class="record-list" id="record-list">
+                <div class="empty-state"><i class="fas fa-spinner fa-pulse"></i><p>加载中...</p></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="panel">
+        <div class="panel-header"><h2><i class="fas fa-list-alt"></i> 学习任务记录</h2></div>
+        <div class="panel-body">
+            <table class="data-table">
+                <thead><tr><th>ID</th><th>任务名称</th><th>学习源</th><th>目标动作</th><th>状态</th><th>创建时间</th></tr></thead>
+                <tbody id="task-table-body">
+                    <tr><td colspan="6" class="empty-state"><i class="fas fa-inbox"></i><p>加载中...</p></td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="panel">
+        <div class="panel-header"><h2><i class="fas fa-utensils"></i> AI知识投喂</h2>
+            <button class="btn btn-primary btn-sm" onclick="showImportModal()"><i class="fas fa-file-import"></i> 批量导入</button>
+        </div>
+        <div class="panel-body feed-panel">
+            <div class="feed-form">
+                <div class="feed-form-group">
+                    <label>知识分类</label>
+                    <select id="feed-category">
+                        <option value="technology">技术知识</option>
+                        <option value="security">安全知识</option>
+                        <option value="education">教育知识</option>
+                        <option value="system">系统知识</option>
+                        <option value="rule">学习规则</option>
+                        <option value="other">其他</option>
+                    </select>
+                </div>
+                <div class="feed-form-group">
+                    <label>知识格式</label>
+                    <div class="feed-format-tags">
+                        <span class="feed-format-tag active" onclick="selectFormat('text', this)">纯文本</span>
+                        <span class="feed-format-tag" onclick="selectFormat('json', this)">JSON格式</span>
+                        <span class="feed-format-tag" onclick="selectFormat('markdown', this)">Markdown</span>
+                        <span class="feed-format-tag" onclick="selectFormat('rule', this)">规则格式</span>
+                    </div>
+                </div>
+                <div class="feed-form-group">
+                    <label>知识内容</label>
+                    <textarea id="feed-content" placeholder="请输入要投喂给AI的知识内容...&#10;&#10;示例1（纯文本）：&#10;Python中的async/await用于异步编程，允许程序在等待IO操作时继续执行其他任务。&#10;&#10;示例2（规则格式）：&#10;当用户询问性能问题时，先检查系统资源使用情况，再分析数据库查询效率。"></textarea>
+                </div>
+                <div class="feed-form-group">
+                    <label>知识预览</label>
+                    <div class="feed-preview" id="feed-preview">预览将在此显示...</div>
+                </div>
+                <div class="feed-form-group">
+                    <button class="btn btn-primary" onclick="submitFeed()" style="width: 100%;"><i class="fas fa-paper-plane"></i> 投喂知识</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="panel">
+        <div class="panel-header"><h2><i class="fas fa-check-square"></i> 知识审核</h2></div>
+        <div class="panel-body">
+            <div class="review-list" id="review-list">
+                <div class="empty-state"><i class="fas fa-spinner fa-pulse"></i><p>加载中...</p></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="import-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-file-import"></i> 批量导入知识</h3>
+                <button class="modal-close" onclick="hideImportModal()"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <div class="feed-form-group">
+                    <label>导入文件</label>
+                    <input type="file" id="import-file" accept=".json,.txt,.md" onchange="handleFileSelect()">
+                    <div style="font-size: 11px; color: #999; margin-top: 4px;">支持 JSON、TXT、MD 文件格式</div>
+                </div>
+                <div class="feed-form-group">
+                    <label>知识分类</label>
+                    <select id="import-category">
+                        <option value="technology">技术知识</option>
+                        <option value="security">安全知识</option>
+                        <option value="education">教育知识</option>
+                        <option value="system">系统知识</option>
+                        <option value="rule">学习规则</option>
+                        <option value="other">其他</option>
+                    </select>
+                </div>
+                <div class="feed-form-group">
+                    <label>文件内容预览</label>
+                    <textarea id="import-preview" rows="6" readonly style="background: #f5f5f5;"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="hideImportModal()">取消</button>
+                <button class="btn btn-primary" onclick="submitImport()"><i class="fas fa-upload"></i> 导入</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = '/api/optimization/ai-scheduler';
+        let currentFormat = 'text';
+
+        function showToast(msg, type) {
+            type = type || 'info';
+            const t = document.createElement('div');
+            t.className = 'toast ' + type;
+            t.innerHTML = '<i class="fas fa-' + (type === 'success' ? 'check-circle' : type === 'error' ? 'times-circle' : 'info-circle') + '"></i> ' + msg;
+            document.body.appendChild(t);
+            setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.remove(), 300); }, 3000);
+        }
+        function escapeHtml(str) { if (str === null || str === undefined) return ''; return String(str).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+        function getStatusText(s) { const m = { pending: '待执行', running: '学习中', completed: '已学习', failed: '失败' }; return m[s] || s || '未知'; }
+        function getStatusTag(s) { if (s === 'completed') return 'tag-green'; if (s === 'failed') return 'tag-red'; if (s === 'running') return 'tag'; return 'tag-orange'; }
+
+        let allTasks = [];
+
+        async function loadStats() {
+            try {
+                const res = await fetch('/api/ai_engine/stats');
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                const data = await res.json();
+                const stats = data.stats || data.data || data;
+                
+                const knowledge = stats.total_brain_knowledge ?? stats.brain_knowledge ?? stats.knowledge_count ?? 0;
+                const cycles = stats.learning_cycles ?? stats.total_cycles ?? 0;
+                const insights = stats.total_insights ?? stats.insights ?? 0;
+                const rules = stats.total_rules ?? stats.learning_rules ?? stats.rule_count ?? 0;
+                
+                document.getElementById('stat-knowledge').textContent = knowledge.toLocaleString();
+                document.getElementById('stat-cycles').textContent = cycles.toLocaleString();
+                document.getElementById('stat-insights').textContent = insights.toLocaleString();
+                document.getElementById('stat-rules').textContent = rules.toLocaleString();
+            } catch (e) {
+                console.error('加载统计失败:', e);
+                document.getElementById('stat-knowledge').textContent = '0';
+                document.getElementById('stat-cycles').textContent = '0';
+                document.getElementById('stat-insights').textContent = '0';
+                document.getElementById('stat-rules').textContent = '0';
+            }
+        }
+
+        async function loadGrowthChart() {
+            let days = ['7天前', '6天前', '5天前', '4天前', '3天前', '昨天', '今天'];
+            let values = [180, 195, 205, 215, 225, 232, 238];
+            
+            try {
+                const res = await fetch('/api/ai_engine/stats/growth');
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.data && Array.isArray(data.data)) {
+                        values = data.data.map(d => d.value || 0);
+                        if (data.labels) days = data.labels;
+                    } else if (data.values && Array.isArray(data.values)) {
+                        values = data.values;
+                    }
+                }
+            } catch (e) {
+                console.error('加载增长图表失败:', e);
+            }
+            
+            const max = Math.max(...values, 1);
+            const el = document.getElementById('growth-chart');
+            const labelsEl = document.getElementById('growth-labels');
+            el.innerHTML = values.map((v, i) => {
+                const height = (v / max) * 100;
+                return `<div class="growth-bar" style="height: ${height}%;">
+                    <span class="bar-tip">${days[i]}: ${v} 知识点</span>
+                </div>`;
+            }).join('');
+            labelsEl.innerHTML = days.map(d => `<span>${d}</span>`).join('');
+        }
+
+        async function loadSources() {
+            let sources = [
+                { name: 'Python文档', icon: 'fa-python', count: 38, total: 50, color: '#1890ff' },
+                { name: 'Flask文档', icon: 'fa-flask', count: 32, total: 40, color: '#52c41a' },
+                { name: 'SQLite文档', icon: 'fa-database', count: 28, total: 35, color: '#fa8c16' },
+                { name: '网络技术', icon: 'fa-network-wired', count: 45, total: 60, color: '#722ed1' },
+                { name: '安全技术', icon: 'fa-shield-alt', count: 35, total: 45, color: '#13c2c2' },
+                { name: 'AI技术', icon: 'fa-robot', count: 42, total: 50, color: '#eb2f96' },
+                { name: '系统架构', icon: 'fa-sitemap', count: 30, total: 40, color: '#fa541c' },
+                { name: '软件工程', icon: 'fa-code', count: 36, total: 45, color: '#2f54eb' }
+            ];
+            
+            try {
+                const res = await fetch('/api/ai_engine/learning_sources');
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.data && Array.isArray(data.data)) {
+                        sources = data.data;
+                    } else if (Array.isArray(data)) {
+                        sources = data;
+                    }
+                }
+            } catch (e) {
+                console.error('加载学习源失败:', e);
+            }
+            
+            const el = document.getElementById('source-grid');
+            el.innerHTML = sources.map(s => {
+                const percent = Math.round(((s.count || 0) / (s.total || 1)) * 100);
+                const color = s.color || '#6366f1';
+                const icon = s.icon || 'fa-book';
+                return `<div class="source-card">
+                    <div class="source-icon" style="background: ${color}20; color: ${color};"><i class="fas ${icon}"></i></div>
+                    <div class="source-name">${escapeHtml(s.name || '未知源')}</div>
+                    <div class="source-stat">已采集 ${s.count || 0} / ${s.total || 0} · ${percent}%</div>
+                    <div class="source-bar"><div class="source-fill" style="width: ${percent}%; background: ${color};"></div></div>
+                </div>`;
+            }).join('');
+        }
+
+        async function loadRecords() {
+            try {
+                const res = await fetch('/api/ai_engine/self_learning/records');
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                const data = await res.json();
+                const records = data.records || data.data || (Array.isArray(data) ? data : []);
+                
+                const el = document.getElementById('record-list');
+                if (records.length === 0) {
+                    el.innerHTML = '<div class="empty-state"><i class="fas fa-inbox"></i><p>暂无学习记录</p></div>';
+                } else {
+                    el.innerHTML = records.slice(0, 10).map(r => `
+                        <div class="record-item">
+                            <div class="record-header">
+                                <span class="record-title"><i class="fas fa-book"></i> ${escapeHtml(r.title || '学习任务')}</span>
+                                <span class="record-time">${escapeHtml(r.timestamp || r.created_at || '')}</span>
+                            </div>
+                            <div class="record-content">${escapeHtml(r.description || r.content || '')}</div>
+                            <div class="record-meta">
+                                <span><i class="fas fa-folder"></i> 来源: ${escapeHtml(r.source || '--')}</span>
+                                <span><i class="fas fa-plus-circle"></i> 新增 ${r.added_count || 0} 条</span>
+                            </div>
+                        </div>
+                    `).join('');
+                }
+                
+                loadTaskTable(records);
+            } catch (e) {
+                console.error('加载记录失败:', e);
+                document.getElementById('record-list').innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-triangle"></i><p>加载失败：' + escapeHtml(e.message) + '</p></div>';
+            }
+        }
+
+        function loadTaskTable(tasks) {
+            const tbody = document.getElementById('task-table-body');
+            if (tasks.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="empty-state"><i class="fas fa-inbox"></i><p>暂无学习任务记录</p></td></tr>';
+                return;
+            }
+            tbody.innerHTML = tasks.map(t => `
+                <tr>
+                    <td>${t.id || t.task_id || '--'}</td>
+                    <td>${escapeHtml(t.title || t.name || t.task_name || '未命名')}</td>
+                    <td><span class="tag tag-purple">${escapeHtml(t.source || t.target_module || '--')}</span></td>
+                    <td>${escapeHtml(t.action || t.target_action || '学习')}</td>
+                    <td><span class="tag ${getStatusTag(t.status || 'completed')}">${getStatusText(t.status || 'completed')}</span></td>
+                    <td>${t.timestamp || t.created_at || '--'}</td>
+                </tr>
+            `).join('');
+        }
+
+        async function triggerLearning() {
+            try {
+                showToast('正在触发学习周期...', 'info');
+                const res = await fetch('/api/ai_engine/self_learning/trigger', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        triggered_by: 'manual',
+                        source: 'admin_ui'
+                    })
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    showToast('学习周期已触发成功！新增 ' + (data.learned_count || 0) + ' 条知识', 'success');
+                    setTimeout(loadAll, 1000);
+                } else {
+                    showToast('触发失败：HTTP ' + res.status, 'error');
+                }
+            } catch (e) {
+                showToast('触发失败：' + e.message, 'error');
+            }
+        }
+
+        function toggleConfig(el) {
+            el.classList.toggle('on');
+            const status = el.classList.contains('on') ? '已启用' : '已禁用';
+            showToast('配置已' + status + '（演示）', 'info');
+        }
+
+        function selectFormat(format, el) {
+            document.querySelectorAll('.feed-format-tag').forEach(t => t.classList.remove('active'));
+            el.classList.add('active');
+            currentFormat = format;
+            updateFeedPreview();
+        }
+
+        function updateFeedPreview() {
+            const content = document.getElementById('feed-content').value;
+            const preview = document.getElementById('feed-preview');
+            if (!content) {
+                preview.textContent = '预览将在此显示...';
+                return;
+            }
+            
+            let formatted = '';
+            switch(currentFormat) {
+                case 'json':
+                    try {
+                        const parsed = JSON.parse(content);
+                        formatted = JSON.stringify(parsed, null, 2);
+                    } catch(e) {
+                        formatted = 'JSON格式错误: ' + e.message;
+                    }
+                    break;
+                case 'markdown':
+                    formatted = content.substring(0, 500) + (content.length > 500 ? '...' : '');
+                    break;
+                case 'rule':
+                    formatted = '[规则格式]\n' + content.substring(0, 500) + (content.length > 500 ? '...' : '');
+                    break;
+                default:
+                    formatted = content.substring(0, 500) + (content.length > 500 ? '...' : '');
+            }
+            preview.textContent = formatted;
+        }
+
+        document.getElementById('feed-content').addEventListener('input', updateFeedPreview);
+
+        async function submitFeed() {
+            const content = document.getElementById('feed-content').value.trim();
+            const category = document.getElementById('feed-category').value;
+            
+            if (!content) {
+                showToast('请输入知识内容', 'error');
+                return;
+            }
+
+            showToast('正在投喂知识...', 'info');
+            
+            try {
+                const res = await fetch('/api/ai_engine/knowledge/feed', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        content: content,
+                        category: category,
+                        format: currentFormat,
+                        source: 'manual_feed'
+                    })
+                });
+                
+                if (res.ok) {
+                    const data = await res.json();
+                    showToast('知识投喂成功！已添加 ' + (data.added_count || 1) + ' 条知识', 'success');
+                    document.getElementById('feed-content').value = '';
+                    updateFeedPreview();
+                    loadStats();
+                } else {
+                    showToast('投喂失败：HTTP ' + res.status, 'error');
+                }
+            } catch (e) {
+                showToast('投喂失败：' + e.message, 'error');
+            }
+        }
+
+        async function loadReviewList() {
+            try {
+                const res = await fetch('/api/ai_engine/knowledge/review');
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                const data = await res.json();
+                const reviews = data.reviews || data.data || [];
+                
+                const el = document.getElementById('review-list');
+                if (reviews.length === 0) {
+                    el.innerHTML = '<div class="empty-state"><i class="fas fa-check-circle"></i><p>暂无待审核知识</p></div>';
+                    return;
+                }
+                
+                el.innerHTML = reviews.slice(0, 10).map(r => `
+                    <div class="review-item ${r.status}">
+                        <div class="review-header">
+                            <span class="review-title">${escapeHtml(r.title || '未命名知识')}</span>
+                            <span class="tag ${getStatusTag(r.status)}">${getStatusText(r.status)}</span>
+                        </div>
+                        <div class="review-content">${escapeHtml(r.content || '').substring(0, 150)}${(r.content || '').length > 150 ? '...' : ''}</div>
+                        <div class="review-meta">
+                            <span><i class="fas fa-tag"></i> ${escapeHtml(r.category || '未分类')}</span>
+                            <span><i class="fas fa-clock"></i> ${escapeHtml(r.created_at || '')}</span>
+                        </div>
+                        ${r.status === 'pending' ? `
+                        <div class="review-actions">
+                            <button class="btn btn-primary" onclick="approveReview(${r.id})"><i class="fas fa-check"></i> 通过</button>
+                            <button class="btn btn-secondary" onclick="rejectReview(${r.id})"><i class="fas fa-times"></i> 拒绝</button>
+                        </div>
+                        ` : ''}
+                    </div>
+                `).join('');
+            } catch (e) {
+                console.error('加载审核列表失败:', e);
+                document.getElementById('review-list').innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-triangle"></i><p>加载失败</p></div>';
+            }
+        }
+
+        async function approveReview(id) {
+            try {
+                const res = await fetch('/api/ai_engine/knowledge/review/' + id + '/approve', { method: 'POST' });
+                if (res.ok) {
+                    showToast('审核通过', 'success');
+                    loadReviewList();
+                    loadStats();
+                } else {
+                    showToast('操作失败', 'error');
+                }
+            } catch (e) {
+                showToast('操作失败：' + e.message, 'error');
+            }
+        }
+
+        async function rejectReview(id) {
+            try {
+                const res = await fetch('/api/ai_engine/knowledge/review/' + id + '/reject', { method: 'POST' });
+                if (res.ok) {
+                    showToast('已拒绝', 'success');
+                    loadReviewList();
+                } else {
+                    showToast('操作失败', 'error');
+                }
+            } catch (e) {
+                showToast('操作失败：' + e.message, 'error');
+            }
+        }
+
+        function showImportModal() {
+            document.getElementById('import-modal').classList.add('show');
+        }
+
+        function hideImportModal() {
+            document.getElementById('import-modal').classList.remove('show');
+            document.getElementById('import-file').value = '';
+            document.getElementById('import-preview').value = '';
+        }
+
+        function handleFileSelect() {
+            const file = document.getElementById('import-file').files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                document.getElementById('import-preview').value = e.target.result.substring(0, 1000);
+            };
+            reader.readAsText(file);
+        }
+
+        async function submitImport() {
+            const file = document.getElementById('import-file').files[0];
+            if (!file) {
+                showToast('请选择要导入的文件', 'error');
+                return;
+            }
+
+            showToast('正在导入知识...', 'info');
+            
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('category', document.getElementById('import-category').value);
+
+            try {
+                const res = await fetch('/api/ai_engine/knowledge/import', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if (res.ok) {
+                    const data = await res.json();
+                    showToast('导入成功！已添加 ' + (data.added_count || 0) + ' 条知识', 'success');
+                    hideImportModal();
+                    loadStats();
+                } else {
+                    showToast('导入失败：HTTP ' + res.status, 'error');
+                }
+            } catch (e) {
+                showToast('导入失败：' + e.message, 'error');
+            }
+        }
+
+        function loadAll() { loadStats(); loadGrowthChart(); loadSources(); loadRecords(); loadReviewList(); }
+        document.addEventListener('DOMContentLoaded', loadAll);
+    </script>
+</body>
+</html>

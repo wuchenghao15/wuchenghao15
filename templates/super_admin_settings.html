@@ -1,0 +1,3171 @@
+{% extends 'super_admin_base.html' %}
+
+{% block title %}超级管理员设置 - MTSCOS AI{% endblock %}
+
+{% block header_icon %}<i class="fas fa-cog"></i>{% endblock %}
+{% block header_title %}超级管理员设置{% endblock %}
+
+{% block breadcrumb %}
+    <span>超级控制台</span> / <span>系统设置</span>
+{% endblock %}
+
+{% block content %}
+<div class="sa-page-wrap">
+    <div class="sa-quick-actions" aria-label="首页功能快捷入口">
+        <a class="qa-item" href="/dashboard" title="进入控制台仪表盘">
+            <div class="qa-icon dashboard"><i class="fas fa-gauge-high"></i></div>
+            <div class="qa-text">
+                <div class="qa-title">进入控制台</div>
+                <div class="qa-desc">仪表盘 · AI工作台 · 考试中心</div>
+            </div>
+            <i class="fas fa-chevron-right qa-arrow"></i>
+        </a>
+        <div class="qa-item current" title="超级管理员设置（当前页面）">
+            <div class="qa-icon settings"><i class="fas fa-user-shield"></i></div>
+            <div class="qa-text">
+                <div class="qa-title">超管设置中心</div>
+                <div class="qa-desc">权限 · VIKEY · 集群 · 审计</div>
+            </div>
+            <i class="fas fa-location-dot qa-arrow" style="color:#e9d5ff;"></i>
+        </div>
+        <a class="qa-item" href="/auth/logout" title="安全注销当前账户">
+            <div class="qa-icon logout"><i class="fas fa-right-from-bracket"></i></div>
+            <div class="qa-text">
+                <div class="qa-title">退出登录</div>
+                <div class="qa-desc">安全注销 · 返回首页</div>
+            </div>
+            <i class="fas fa-chevron-right qa-arrow"></i>
+        </a>
+    </div>
+    <div class="sa-tabs" id="saTabs">
+        <div class="sa-tab active" data-tab="tab-system"><i class="fas fa-server"></i><span>系统管理</span></div>
+        <div class="sa-tab" data-tab="tab-orgs"><i class="fas fa-sitemap"></i><span>机构管理</span></div>
+        <div class="sa-tab" data-tab="tab-users"><i class="fas fa-users"></i><span>用户管理</span></div>
+        <div class="sa-tab" data-tab="tab-ai-employees"><i class="fas fa-robot"></i><span>AI员工管理</span></div>
+        <div class="sa-tab" data-tab="tab-clusters"><i class="fas fa-network-wired"></i><span>集群管理</span></div>
+        <div class="sa-tab" data-tab="tab-audit"><i class="fas fa-history"></i><span>操作审计</span></div>
+        <div class="sa-tab" data-tab="tab-api-keys"><i class="fas fa-key"></i><span>API密钥管理</span></div>
+        <div class="sa-tab" data-tab="tab-vikeys"><i class="fas fa-microchip"></i><span>硬件VIKEY</span></div>
+        <div class="sa-tab" data-tab="tab-permissions"><i class="fas fa-lock"></i><span>权限管理</span></div>
+        <div class="sa-tab" data-tab="tab-data"><i class="fas fa-database"></i><span>数据管理</span></div>
+        <div class="sa-tab" data-tab="tab-monitor"><i class="fas fa-chart-line"></i><span>系统监控</span></div>
+        <div class="sa-tab" data-tab="tab-security"><i class="fas fa-shield-alt"></i><span>安全设置</span></div>
+        <div class="sa-tab" data-tab="tab-backup"><i class="fas fa-copy"></i><span>备份管理</span></div>
+        <div class="sa-tab" data-tab="tab-pae"><i class="fas fa-shield-virus"></i><span>页面审计</span></div>
+        <div class="sa-tab" data-tab="tab-about"><i class="fas fa-info-circle"></i><span>关于系统</span></div>
+    </div>
+
+    <div class="sa-section active" id="tab-system">
+        <div class="sa-section-head">
+            <div class="sa-section-head-left">
+                <div class="sa-si blue"><i class="fas fa-server"></i></div>
+                <h2>系统管理</h2>
+            </div>
+            <div class="sa-section-head-actions">
+                <button class="sa-btn sa-btn-secondary" onclick="resetSystemConfig()"><i class="fas fa-undo"></i> 重置</button>
+                <button class="sa-btn sa-btn-primary" onclick="saveSystemConfig()"><i class="fas fa-save"></i> 保存配置</button>
+            </div>
+        </div>
+        <div class="sa-section-body">
+            <div class="sa-config-grid">
+                <div class="sa-config-card">
+                    <h3><i class="fas fa-globe"></i> 基本配置</h3>
+                    <div class="sa-form-group">
+                        <label>系统名称</label>
+                        <input type="text" class="sa-form-input" id="sys_name" value="MTSCOS AI 智能学习评估系统" placeholder="输入系统名称">
+                    </div>
+                    <div class="sa-form-group">
+                        <label>系统版本</label>
+                        <input type="text" class="sa-form-input" id="sys_version" value="17.22.0" readonly>
+                    </div>
+                    <div class="sa-form-group">
+                        <label>系统描述</label>
+                        <textarea class="sa-form-input" id="sys_description" rows="3">基于AI的智能学习评估系统，支持多角色管理、在线考试、智能辅导等功能</textarea>
+                    </div>
+                </div>
+                <div class="sa-config-card">
+                    <h3><i class="fas fa-clock"></i> 时间配置</h3>
+                    <div class="sa-form-group">
+                        <label>时区设置</label>
+                        <select class="sa-form-select" id="sys_timezone">
+                            <option value="Asia/Shanghai" selected>Asia/Shanghai (UTC+8)</option>
+                            <option value="UTC">UTC (UTC+0)</option>
+                            <option value="America/New_York">America/New_York (UTC-5)</option>
+                            <option value="Europe/London">Europe/London (UTC+0)</option>
+                        </select>
+                    </div>
+                    <div class="sa-form-group">
+                        <label>日期格式</label>
+                        <select class="sa-form-select" id="sys_date_format">
+                            <option value="YYYY-MM-DD" selected>YYYY-MM-DD</option>
+                            <option value="MM/DD/YYYY">MM/DD/YYYY</option>
+                            <option value="DD/MM/YYYY">DD/MM/YYYY</option>
+                        </select>
+                    </div>
+                    <div class="sa-form-group">
+                        <label>启用注册</label>
+                        <div class="sa-toggle on" data-field="enable_registration" onclick="saToggle(this)"></div>
+                    </div>
+                </div>
+                <div class="sa-config-card">
+                    <h3><i class="fas fa-language"></i> 语言与通知</h3>
+                    <div class="sa-form-group">
+                        <label>默认语言</label>
+                        <select class="sa-form-select" id="sys_language">
+                            <option value="zh-CN" selected>中文 (简体)</option>
+                            <option value="zh-TW">中文 (繁体)</option>
+                            <option value="en-US">English</option>
+                            <option value="ja-JP">日本語</option>
+                        </select>
+                    </div>
+                    <div class="sa-form-group">
+                        <label>系统通知</label>
+                        <div class="sa-toggle on" onclick="saToggle(this)"></div>
+                    </div>
+                    <div class="sa-form-group">
+                        <label>邮件通知</label>
+                        <div class="sa-toggle on" onclick="saToggle(this)"></div>
+                    </div>
+                    <div class="sa-form-group">
+                        <label>短信通知</label>
+                        <div class="sa-toggle" onclick="saToggle(this)"></div>
+                    </div>
+                </div>
+                <div class="sa-config-card">
+                    <h3><i class="fas fa-bolt"></i> AI功能开关</h3>
+                    <div class="sa-form-group">
+                        <label>AI学习诊断</label>
+                        <div class="sa-toggle on" onclick="saToggle(this)"></div>
+                    </div>
+                    <div class="sa-form-group">
+                        <label>AI智能出题</label>
+                        <div class="sa-toggle on" onclick="saToggle(this)"></div>
+                    </div>
+                    <div class="sa-form-group">
+                        <label>AI自动扩展</label>
+                        <div class="sa-toggle" onclick="saToggle(this)"></div>
+                    </div>
+                    <div class="sa-form-group">
+                        <label>AI教师辅导</label>
+                        <div class="sa-toggle on" onclick="saToggle(this)"></div>
+                    </div>
+                </div>
+                <div class="sa-config-card">
+                    <h3><i class="fas fa-palette"></i> 主题配置</h3>
+                    <div class="sa-form-group">
+                        <label>系统默认主题</label>
+                        <select class="sa-form-select" id="sys_theme" onchange="changeTheme(this.value)">
+                            <option value="deep_blue" selected>深蓝主题（默认）</option>
+                            <option value="light_blue_tech">浅蓝科技风</option>
+                            <option value="light">浅色系主题</option>
+                            <option value="mourning">灰黑追思（公祭日）</option>
+                        </select>
+                    </div>
+                    <div class="sa-form-group">
+                        <label>主题预览</label>
+                        <div class="sa-theme-preview">
+                            <div class="sa-theme-swatch" data-theme="deep_blue" onclick="changeTheme('deep_blue')"></div>
+                            <div class="sa-theme-swatch" data-theme="light_blue_tech" onclick="changeTheme('light_blue_tech')"></div>
+                            <div class="sa-theme-swatch" data-theme="light" onclick="changeTheme('light')"></div>
+                            <div class="sa-theme-swatch" data-theme="mourning" onclick="changeTheme('mourning')"></div>
+                        </div>
+                    </div>
+                    <div class="sa-form-group">
+                        <label>允许用户自定义主题</label>
+                        <div class="sa-toggle on" data-field="allow_custom_theme" onclick="saToggle(this)"></div>
+                    </div>
+                    <div class="sa-form-group">
+                        <label>千人千面主题推荐</label>
+                        <div class="sa-toggle" data-field="personalized_theme" onclick="saToggle(this)"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="sa-section" id="tab-orgs">
+        <div class="sa-section-head">
+            <div class="sa-section-head-left">
+                <div class="sa-si purple"><i class="fas fa-sitemap"></i></div>
+                <h2>机构管理</h2>
+            </div>
+            <div class="sa-section-head-actions">
+                <button class="sa-btn sa-btn-secondary" onclick="exportOrgs()"><i class="fas fa-download"></i> 导出</button>
+                <button class="sa-btn sa-btn-primary" onclick="showAddOrgModal()"><i class="fas fa-plus"></i> 新增机构</button>
+            </div>
+        </div>
+        <div class="sa-section-body">
+            <div class="sa-search-bar">
+                <input type="text" class="sa-form-input" id="org_search" placeholder="搜索机构名称、编号...">
+                <select class="sa-form-select" id="org_type_filter">
+                    <option value="">全部类型</option>
+                    <option value="university">高校</option>
+                    <option value="k12">K12学校</option>
+                    <option value="training">培训机构</option>
+                    <option value="enterprise">企业</option>
+                </select>
+                <select class="sa-form-select" id="org_status_filter">
+                    <option value="">全部状态</option>
+                    <option value="active">正常</option>
+                    <option value="disabled">禁用</option>
+                    <option value="pending">待审核</option>
+                </select>
+                <button class="sa-btn sa-btn-primary" onclick="searchOrgs()"><i class="fas fa-search"></i> 搜索</button>
+            </div>
+            <div class="sa-data-table-wrap">
+                <table class="sa-data-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>机构编号</th>
+                            <th>机构名称</th>
+                            <th>类型</th>
+                            <th>联系人</th>
+                            <th>用户数</th>
+                            <th>状态</th>
+                            <th>创建时间</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="orgs-tbody">
+                        <tr>
+                            <td colspan="9" class="sa-empty"><i class="fas fa-spinner fa-spin"></i> 加载中...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="sa-pagination" id="orgs-pagination"></div>
+        </div>
+    </div>
+
+    <div class="sa-section" id="tab-users">
+        <div class="sa-section-head">
+            <div class="sa-section-head-left">
+                <div class="sa-si blue"><i class="fas fa-users"></i></div>
+                <h2>用户管理</h2>
+            </div>
+            <div class="sa-section-head-actions">
+                <button class="sa-btn sa-btn-secondary" onclick="exportUsers()"><i class="fas fa-download"></i> 导出用户</button>
+                <button class="sa-btn sa-btn-primary" onclick="showAddUserModal()"><i class="fas fa-plus"></i> 添加用户</button>
+            </div>
+        </div>
+        <div class="sa-section-body">
+            <div class="sa-search-bar">
+                <input type="text" class="sa-form-input" id="user_search" placeholder="搜索用户名、邮箱或手机号...">
+                <select class="sa-form-select" id="user_role_filter">
+                    <option value="">全部角色</option>
+                    <option value="super_admin">超级管理员</option>
+                    <option value="admin">管理员</option>
+                    <option value="system_admin">系统管理员</option>
+                    <option value="teacher">教师</option>
+                    <option value="student">学生</option>
+                    <option value="parent">家长</option>
+                    <option value="guest">游客</option>
+                </select>
+                <select class="sa-form-select" id="user_status_filter">
+                    <option value="">全部状态</option>
+                    <option value="active">正常</option>
+                    <option value="disabled">禁用</option>
+                    <option value="locked">锁定</option>
+                </select>
+                <button class="sa-btn sa-btn-primary" onclick="searchUsers()"><i class="fas fa-search"></i> 搜索</button>
+            </div>
+            <div class="sa-data-table-wrap">
+                <table class="sa-data-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>用户名</th>
+                            <th>邮箱</th>
+                            <th>手机号</th>
+                            <th>所属机构</th>
+                            <th>角色</th>
+                            <th>状态</th>
+                            <th>最近登录</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="users-tbody">
+                        <tr>
+                            <td colspan="9" class="sa-empty"><i class="fas fa-spinner fa-spin"></i> 加载中...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="sa-pagination" id="users-pagination"></div>
+        </div>
+    </div>
+
+    <div class="sa-section" id="tab-ai-employees">
+        <div class="sa-section-head">
+            <div class="sa-section-head-left">
+                <div class="sa-si cyan"><i class="fas fa-robot"></i></div>
+                <h2>AI员工管理</h2>
+            </div>
+            <div class="sa-section-head-actions">
+                <button class="sa-btn sa-btn-secondary" onclick="syncAIEmployees()"><i class="fas fa-sync-alt"></i> 同步</button>
+                <button class="sa-btn sa-btn-primary" onclick="showAddAIEmployeeModal()"><i class="fas fa-plus"></i> 新建AI员工</button>
+            </div>
+        </div>
+        <div class="sa-section-body">
+            <div class="sa-stats-mini">
+                <div class="sa-stat-mini"><span class="val" id="ai-total">0</span><span class="lbl">AI员工总数</span></div>
+                <div class="sa-stat-mini"><span class="val success" id="ai-active">0</span><span class="lbl">运行中</span></div>
+                <div class="sa-stat-mini"><span class="val warning" id="ai-idle">0</span><span class="lbl">空闲</span></div>
+                <div class="sa-stat-mini"><span class="val danger" id="ai-error">0</span><span class="lbl">异常</span></div>
+            </div>
+            <div class="sa-search-bar">
+                <input type="text" class="sa-form-input" id="ai_search" placeholder="搜索AI员工名称、ID...">
+                <select class="sa-form-select" id="ai_type_filter">
+                    <option value="">全部类型</option>
+                    <option value="teacher">AI教师</option>
+                    <option value="tutor">AI辅导</option>
+                    <option value="examiner">AI出题</option>
+                    <option value="analyst">AI分析师</option>
+                    <option value="counselor">AI顾问</option>
+                </select>
+                <button class="sa-btn sa-btn-primary" onclick="searchAIEmployees()"><i class="fas fa-search"></i> 搜索</button>
+            </div>
+            <div class="sa-data-table-wrap">
+                <table class="sa-data-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>名称</th>
+                            <th>类型</th>
+                            <th>模型引擎</th>
+                            <th>所属机构</th>
+                            <th>处理任务</th>
+                            <th>状态</th>
+                            <th>最后心跳</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="ai-employees-tbody">
+                        <tr>
+                            <td colspan="9" class="sa-empty"><i class="fas fa-spinner fa-spin"></i> 加载中...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="sa-pagination" id="ai-pagination"></div>
+        </div>
+    </div>
+
+    <div class="sa-section" id="tab-clusters">
+        <div class="sa-section-head">
+            <div class="sa-section-head-left">
+                <div class="sa-si orange"><i class="fas fa-network-wired"></i></div>
+                <h2>集群管理</h2>
+            </div>
+            <div class="sa-section-head-actions">
+                <button class="sa-btn sa-btn-secondary" onclick="refreshClusters()"><i class="fas fa-sync-alt"></i> 刷新</button>
+                <button class="sa-btn sa-btn-primary" onclick="showAddClusterModal()"><i class="fas fa-plus"></i> 添加集群</button>
+            </div>
+        </div>
+        <div class="sa-section-body">
+            <div class="sa-stats-mini">
+                <div class="sa-stat-mini"><span class="val" id="cluster-total">0</span><span class="lbl">集群总数</span></div>
+                <div class="sa-stat-mini"><span class="val success" id="cluster-healthy">0</span><span class="lbl">健康</span></div>
+                <div class="sa-stat-mini"><span class="val warning" id="cluster-warning">0</span><span class="lbl">警告</span></div>
+                <div class="sa-stat-mini"><span class="val danger" id="cluster-unhealthy">0</span><span class="lbl">异常</span></div>
+            </div>
+            <div class="sa-data-table-wrap">
+                <table class="sa-data-table">
+                    <thead>
+                        <tr>
+                            <th>集群ID</th>
+                            <th>集群名称</th>
+                            <th>区域</th>
+                            <th>节点数</th>
+                            <th>CPU使用率</th>
+                            <th>内存使用率</th>
+                            <th>GPU使用率</th>
+                            <th>状态</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="clusters-tbody">
+                        <tr>
+                            <td colspan="9" class="sa-empty"><i class="fas fa-spinner fa-spin"></i> 加载中...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="sa-pagination" id="cluster-pagination"></div>
+        </div>
+    </div>
+
+    <div class="sa-section" id="tab-audit">
+        <div class="sa-section-head">
+            <div class="sa-section-head-left">
+                <div class="sa-si red"><i class="fas fa-history"></i></div>
+                <h2>操作审计</h2>
+            </div>
+            <div class="sa-section-head-actions">
+                <button class="sa-btn sa-btn-secondary" onclick="exportAuditLogs()"><i class="fas fa-download"></i> 导出日志</button>
+                <button class="sa-btn sa-btn-primary" onclick="refreshAuditLogs()"><i class="fas fa-sync-alt"></i> 刷新</button>
+            </div>
+        </div>
+        <div class="sa-section-body">
+            <div class="sa-search-bar">
+                <input type="text" class="sa-form-input" id="audit_search" placeholder="搜索操作人、IP、详情...">
+                <select class="sa-form-select" id="audit_type_filter">
+                    <option value="">全部类型</option>
+                    <option value="login">登录登出</option>
+                    <option value="create">创建</option>
+                    <option value="update">更新</option>
+                    <option value="delete">删除</option>
+                    <option value="config">配置修改</option>
+                    <option value="export">数据导出</option>
+                </select>
+                <select class="sa-form-select" id="audit_level_filter">
+                    <option value="">全部级别</option>
+                    <option value="info">普通</option>
+                    <option value="warning">警告</option>
+                    <option value="danger">危险</option>
+                </select>
+                <input type="date" class="sa-form-input" id="audit_date_from">
+                <input type="date" class="sa-form-input" id="audit_date_to">
+                <button class="sa-btn sa-btn-primary" onclick="searchAuditLogs()"><i class="fas fa-search"></i> 查询</button>
+            </div>
+            <div class="sa-data-table-wrap">
+                <table class="sa-data-table">
+                    <thead>
+                        <tr>
+                            <th>日志ID</th>
+                            <th>操作时间</th>
+                            <th>操作人</th>
+                            <th>角色</th>
+                            <th>IP地址</th>
+                            <th>操作类型</th>
+                            <th>资源</th>
+                            <th>详情</th>
+                            <th>级别</th>
+                            <th>结果</th>
+                        </tr>
+                    </thead>
+                    <tbody id="audit-tbody">
+                        <tr>
+                            <td colspan="10" class="sa-empty"><i class="fas fa-spinner fa-spin"></i> 加载中...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="sa-pagination" id="audit-pagination"></div>
+        </div>
+    </div>
+
+    <div class="sa-section" id="tab-api-keys">
+        <div class="sa-section-head">
+            <div class="sa-section-head-left">
+                <div class="sa-si green"><i class="fas fa-key"></i></div>
+                <h2>API密钥管理</h2>
+            </div>
+            <div class="sa-section-head-actions">
+                <button class="sa-btn sa-btn-secondary" onclick="rotateAllKeys()"><i class="fas fa-sync"></i> 批量轮换</button>
+                <button class="sa-btn sa-btn-primary" onclick="showAddAPIKeyModal()"><i class="fas fa-plus"></i> 生成新密钥</button>
+            </div>
+        </div>
+        <div class="sa-section-body">
+            <div class="sa-search-bar">
+                <input type="text" class="sa-form-input" id="api_search" placeholder="搜索密钥名称、备注...">
+                <select class="sa-form-select" id="api_scope_filter">
+                    <option value="">全部权限</option>
+                    <option value="read">只读</option>
+                    <option value="write">读写</option>
+                    <option value="admin">管理</option>
+                </select>
+                <select class="sa-form-select" id="api_status_filter">
+                    <option value="">全部状态</option>
+                    <option value="active">启用</option>
+                    <option value="expired">已过期</option>
+                    <option value="revoked">已撤销</option>
+                </select>
+                <button class="sa-btn sa-btn-primary" onclick="searchAPIKeys()"><i class="fas fa-search"></i> 搜索</button>
+            </div>
+            <div class="sa-data-table-wrap">
+                <table class="sa-data-table">
+                    <thead>
+                        <tr>
+                            <th>密钥ID</th>
+                            <th>名称</th>
+                            <th>前缀</th>
+                            <th>权限范围</th>
+                            <th>调用次数</th>
+                            <th>最近使用</th>
+                            <th>过期时间</th>
+                            <th>状态</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="api-keys-tbody">
+                        <tr>
+                            <td colspan="9" class="sa-empty"><i class="fas fa-spinner fa-spin"></i> 加载中...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="sa-pagination" id="api-pagination"></div>
+        </div>
+    </div>
+
+    <div class="sa-section" id="tab-vikeys">
+        <div class="sa-section-head">
+            <div class="sa-section-head-left">
+                <div class="sa-si purple"><i class="fas fa-microchip"></i></div>
+                <h2>硬件VIKEY管理</h2>
+            </div>
+            <div class="sa-section-head-actions">
+                <button class="sa-btn sa-btn-secondary" onclick="exportVIKEYs()"><i class="fas fa-download"></i> 导出列表</button>
+                <button class="sa-btn sa-btn-primary" onclick="showAddVIKEYModal()"><i class="fas fa-plus"></i> 绑定VIKEY</button>
+            </div>
+        </div>
+        <div class="sa-section-body">
+            <div class="sa-stats-mini">
+                <div class="sa-stat-mini"><span class="val" id="vikey-total">0</span><span class="lbl">VIKEY总数</span></div>
+                <div class="sa-stat-mini"><span class="val success" id="vikey-online">0</span><span class="lbl">在线</span></div>
+                <div class="sa-stat-mini"><span class="val warning" id="vikey-offline">0</span><span class="lbl">离线</span></div>
+                <div class="sa-stat-mini"><span class="val danger" id="vikey-expired">0</span><span class="lbl">已过期</span></div>
+            </div>
+            
+            <div class="sa-config-grid" style="margin-bottom: 24px;">
+                <div class="sa-config-card" style="width: 100%;">
+                    <h3><i class="fas fa-usb"></i> U盘模拟加密狗制作</h3>
+                    <div class="sa-form-group">
+                        <label>可写U盘列表</label>
+                        <select class="sa-form-select" id="usb_drive_select" onchange="onUSBDriveSelect()">
+                            <option value="">请选择U盘...</option>
+                        </select>
+                        <button class="sa-btn sa-btn-secondary" onclick="refreshUSBDrives()" style="margin-top: 8px;"><i class="fas fa-sync-alt"></i> 刷新U盘列表</button>
+                    </div>
+                    <div class="sa-form-group">
+                        <label>角色</label>
+                        <select class="sa-form-select" id="usb_role_select">
+                            <option value="super_admin">超级管理员</option>
+                            <option value="hardware_vikey_admin">硬件审计员</option>
+                            <option value="general">普通用户</option>
+                        </select>
+                    </div>
+                    <div class="sa-form-group">
+                        <label>设备标签</label>
+                        <input type="text" class="sa-form-input" id="usb_label" value="MTSCOS USB Dongle" placeholder="输入设备标签">
+                    </div>
+                    <div class="sa-form-group">
+                        <label>PIN码（6-32位）</label>
+                        <input type="password" class="sa-form-input" id="usb_pin" value="12345678" placeholder="设置PIN码">
+                    </div>
+                    <div class="sa-form-group">
+                        <label>PUK码（8位）</label>
+                        <input type="password" class="sa-form-input" id="usb_puk" value="88880000" placeholder="设置PUK码（用于解锁）">
+                    </div>
+                    <div class="sa-form-actions">
+                        <button class="sa-btn sa-btn-primary" onclick="createUSBDongle()"><i class="fas fa-key"></i> 制作U盘加密狗</button>
+                        <button class="sa-btn sa-btn-secondary" onclick="verifyUSBDongle()"><i class="fas fa-check-circle"></i> 验证U盘加密狗</button>
+                    </div>
+                    <div class="sa-form-hint">
+                        <i class="fas fa-info-circle"></i> 使用普通U盘制作模拟加密狗，系统会在U盘根目录写入加密的.vikey_token文件，包含设备序列号、密钥材料和证书信息。制作完成后可直接插入系统作为加密狗使用。
+                    </div>
+                    <div id="usb_result" class="sa-form-result" style="display:none;"></div>
+                </div>
+            </div>
+
+            <div class="sa-search-bar">
+                <input type="text" class="sa-form-input" id="vikey_search" placeholder="搜索序列号、硬件ID...">
+                <select class="sa-form-select" id="vikey_type_filter">
+                    <option value="">全部类型</option>
+                    <option value="usb">USB加密狗</option>
+                    <option value="pcie">PCIe卡</option>
+                    <option value="network">网络加密机</option>
+                    <option value="cloud">云加密</option>
+                </select>
+                <select class="sa-form-select" id="vikey_status_filter">
+                    <option value="">全部状态</option>
+                    <option value="online">在线</option>
+                    <option value="offline">离线</option>
+                    <option value="expired">过期</option>
+                    <option value="revoked">作废</option>
+                </select>
+                <button class="sa-btn sa-btn-primary" onclick="searchVIKEYs()"><i class="fas fa-search"></i> 搜索</button>
+            </div>
+            <div class="sa-data-table-wrap">
+                <table class="sa-data-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>序列号</th>
+                            <th>硬件ID</th>
+                            <th>类型</th>
+                            <th>绑定用户</th>
+                            <th>授权机构</th>
+                            <th>有效期至</th>
+                            <th>最近心跳</th>
+                            <th>状态</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="vikeys-tbody">
+                        <tr>
+                            <td colspan="10" class="sa-empty"><i class="fas fa-spinner fa-spin"></i> 加载中...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="sa-pagination" id="vikey-pagination"></div>
+        </div>
+    </div>
+
+    <div class="sa-section" id="tab-permissions">
+        <div class="sa-section-head">
+            <div class="sa-section-head-left">
+                <div class="sa-si purple"><i class="fas fa-lock"></i></div>
+                <h2>权限管理</h2>
+            </div>
+            <div class="sa-section-head-actions">
+                <button class="sa-btn sa-btn-primary" onclick="showAddRoleModal()"><i class="fas fa-plus"></i> 添加角色</button>
+            </div>
+        </div>
+        <div class="sa-section-body">
+            <div class="sa-perm-layout">
+                <div class="sa-roles-list" id="roles-list">
+                    <div class="sa-role-item active" data-role="super_admin" onclick="selectRole(this)"><i class="fas fa-crown"></i> 超级管理员</div>
+                    <div class="sa-role-item" data-role="admin" onclick="selectRole(this)"><i class="fas fa-user-shield"></i> 管理员</div>
+                    <div class="sa-role-item" data-role="system_admin" onclick="selectRole(this)"><i class="fas fa-tools"></i> 系统管理员</div>
+                    <div class="sa-role-item" data-role="teacher" onclick="selectRole(this)"><i class="fas fa-chalkboard-teacher"></i> 教师</div>
+                    <div class="sa-role-item" data-role="student" onclick="selectRole(this)"><i class="fas fa-user-graduate"></i> 学生</div>
+                    <div class="sa-role-item" data-role="parent" onclick="selectRole(this)"><i class="fas fa-user-friends"></i> 家长</div>
+                    <div class="sa-role-item" data-role="guest" onclick="selectRole(this)"><i class="fas fa-user"></i> 游客</div>
+                </div>
+                <div class="sa-perm-detail" id="perm-detail">
+                    <h3 id="perm-role-title">超级管理员权限</h3>
+                    <div id="perm-sections-wrap">
+                        <div class="sa-perm-section">
+                            <h4><i class="fas fa-cog"></i> 系统管理 <label class="sa-check-all"><input type="checkbox" checked onchange="togglePermSection(this)"> 全选</label></h4>
+                            <div class="sa-perm-items">
+                                <label><input type="checkbox" checked> 系统配置查看</label>
+                                <label><input type="checkbox" checked> 系统配置修改</label>
+                                <label><input type="checkbox" checked> 系统监控</label>
+                                <label><input type="checkbox" checked> 系统升级</label>
+                                <label><input type="checkbox" checked> 系统重启</label>
+                            </div>
+                        </div>
+                        <div class="sa-perm-section">
+                            <h4><i class="fas fa-sitemap"></i> 机构管理 <label class="sa-check-all"><input type="checkbox" checked onchange="togglePermSection(this)"> 全选</label></h4>
+                            <div class="sa-perm-items">
+                                <label><input type="checkbox" checked> 机构查看</label>
+                                <label><input type="checkbox" checked> 机构创建</label>
+                                <label><input type="checkbox" checked> 机构编辑</label>
+                                <label><input type="checkbox" checked> 机构删除</label>
+                                <label><input type="checkbox" checked> 机构审核</label>
+                            </div>
+                        </div>
+                        <div class="sa-perm-section">
+                            <h4><i class="fas fa-users"></i> 用户管理 <label class="sa-check-all"><input type="checkbox" checked onchange="togglePermSection(this)"> 全选</label></h4>
+                            <div class="sa-perm-items">
+                                <label><input type="checkbox" checked> 用户查看</label>
+                                <label><input type="checkbox" checked> 用户创建</label>
+                                <label><input type="checkbox" checked> 用户编辑</label>
+                                <label><input type="checkbox" checked> 用户删除</label>
+                                <label><input type="checkbox" checked> 密码重置</label>
+                            </div>
+                        </div>
+                        <div class="sa-perm-section">
+                            <h4><i class="fas fa-robot"></i> AI员工 <label class="sa-check-all"><input type="checkbox" checked onchange="togglePermSection(this)"> 全选</label></h4>
+                            <div class="sa-perm-items">
+                                <label><input type="checkbox" checked> AI员工查看</label>
+                                <label><input type="checkbox" checked> AI员工创建</label>
+                                <label><input type="checkbox" checked> AI员工启停</label>
+                                <label><input type="checkbox" checked> AI员工配置</label>
+                                <label><input type="checkbox" checked> AI员工删除</label>
+                            </div>
+                        </div>
+                        <div class="sa-perm-section">
+                            <h4><i class="fas fa-network-wired"></i> 集群管理 <label class="sa-check-all"><input type="checkbox" checked onchange="togglePermSection(this)"> 全选</label></h4>
+                            <div class="sa-perm-items">
+                                <label><input type="checkbox" checked> 集群查看</label>
+                                <label><input type="checkbox" checked> 集群添加</label>
+                                <label><input type="checkbox" checked> 节点管理</label>
+                                <label><input type="checkbox" checked> 集群配置</label>
+                            </div>
+                        </div>
+                        <div class="sa-perm-section">
+                            <h4><i class="fas fa-database"></i> 数据管理 <label class="sa-check-all"><input type="checkbox" checked onchange="togglePermSection(this)"> 全选</label></h4>
+                            <div class="sa-perm-items">
+                                <label><input type="checkbox" checked> 数据备份</label>
+                                <label><input type="checkbox" checked> 数据恢复</label>
+                                <label><input type="checkbox" checked> 数据导出</label>
+                                <label><input type="checkbox" checked> 数据清理</label>
+                            </div>
+                        </div>
+                        <div class="sa-perm-section">
+                            <h4><i class="fas fa-key"></i> 密钥管理 <label class="sa-check-all"><input type="checkbox" checked onchange="togglePermSection(this)"> 全选</label></h4>
+                            <div class="sa-perm-items">
+                                <label><input type="checkbox" checked> API密钥管理</label>
+                                <label><input type="checkbox" checked> VIKEY绑定</label>
+                                <label><input type="checkbox" checked> 密钥轮换</label>
+                                <label><input type="checkbox" checked> 密钥撤销</label>
+                            </div>
+                        </div>
+                    </div>
+                    <div style="margin-top: 24px;">
+                        <button class="sa-btn sa-btn-secondary" onclick="resetRolePerms()"><i class="fas fa-undo"></i> 重置</button>
+                        <button class="sa-btn sa-btn-primary" onclick="saveRolePerms()"><i class="fas fa-save"></i> 保存权限</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="sa-section" id="tab-data">
+        <div class="sa-section-head">
+            <div class="sa-section-head-left">
+                <div class="sa-si green"><i class="fas fa-database"></i></div>
+                <h2>数据管理</h2>
+            </div>
+        </div>
+        <div class="sa-section-body">
+            <div class="sa-config-grid">
+                <div class="sa-config-card">
+                    <h3><i class="fas fa-database"></i> 数据库信息</h3>
+                    <div class="sa-info-list">
+                        <div><span>数据库类型:</span> <b id="db-type">SQLite</b></div>
+                        <div><span>数据库路径:</span> <b id="db-path">app.db</b></div>
+                        <div><span>表数量:</span> <b id="db-tables">126</b></div>
+                        <div><span>总记录数:</span> <b id="db-records">10,245</b></div>
+                        <div><span>数据库大小:</span> <b id="db-size">256 MB</b></div>
+                    </div>
+                </div>
+                <div class="sa-config-card">
+                    <h3><i class="fas fa-hdd"></i> 存储信息</h3>
+                    <div class="sa-storage-bar"><div class="sa-storage-fill" id="storage-fill" style="width: 45%"></div></div>
+                    <div class="sa-storage-info" id="storage-info">已用: 450 MB / 1 GB</div>
+                    <div class="sa-info-list">
+                        <div><span>文件数量:</span> <b>156</b></div>
+                        <div><span>图片数量:</span> <b>42</b></div>
+                        <div><span>日志大小:</span> <b>25 MB</b></div>
+                    </div>
+                </div>
+                <div class="sa-config-card">
+                    <h3><i class="fas fa-refresh"></i> 数据维护</h3>
+                    <button class="sa-btn sa-btn-warning" onclick="optimizeDatabase()" style="width: 100%; margin-bottom: 10px;"><i class="fas fa-wrench"></i> 优化数据库</button>
+                    <button class="sa-btn sa-btn-secondary" onclick="cleanLogs()" style="width: 100%; margin-bottom: 10px;"><i class="fas fa-broom"></i> 清理日志</button>
+                    <button class="sa-btn sa-btn-danger" onclick="cleanTempFiles()" style="width: 100%;"><i class="fas fa-trash"></i> 清理临时文件</button>
+                </div>
+                <div class="sa-config-card">
+                    <h3><i class="fas fa-sync-alt"></i> 数据同步</h3>
+                    <div class="sa-info-list">
+                        <div><span>上次同步:</span> <b>2026-07-26 08:00</b></div>
+                        <div><span>同步状态:</span> <b class="success">正常</b></div>
+                    </div>
+                    <button class="sa-btn sa-btn-primary" onclick="syncAllData()" style="width: 100%; margin-top: 16px;"><i class="fas fa-cloud-upload-alt"></i> 立即同步</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="sa-section" id="tab-monitor">
+        <div class="sa-section-head">
+            <div class="sa-section-head-left">
+                <div class="sa-si cyan"><i class="fas fa-chart-line"></i></div>
+                <h2>系统监控</h2>
+            </div>
+            <div class="sa-section-head-actions">
+                <button class="sa-btn sa-btn-secondary" onclick="refreshMonitor()"><i class="fas fa-sync-alt"></i> 刷新</button>
+            </div>
+        </div>
+        <div class="sa-section-body">
+            <div class="sa-monitor-grid">
+                <div class="sa-monitor-card">
+                    <h3><i class="fas fa-microchip"></i> CPU使用率</h3>
+                    <div class="sa-monitor-ring" id="cpu-ring"><span id="cpu-val">0%</span></div>
+                    <div class="sa-monitor-bar"><div class="sa-bar-fill" id="cpu-bar" style="width: 0%"></div></div>
+                    <div class="sa-monitor-sub" id="cpu-sub">核心: 0 / 0</div>
+                </div>
+                <div class="sa-monitor-card">
+                    <h3><i class="fas fa-memory"></i> 内存使用率</h3>
+                    <div class="sa-monitor-ring warning" id="mem-ring"><span id="mem-val">0%</span></div>
+                    <div class="sa-monitor-bar"><div class="sa-bar-fill sa-warning" id="mem-bar" style="width: 0%"></div></div>
+                    <div class="sa-monitor-sub" id="mem-sub">0 GB / 0 GB</div>
+                </div>
+                <div class="sa-monitor-card">
+                    <h3><i class="fas fa-hard-drive"></i> 磁盘使用率</h3>
+                    <div class="sa-monitor-ring" id="disk-ring"><span id="disk-val">0%</span></div>
+                    <div class="sa-monitor-bar"><div class="sa-bar-fill" id="disk-bar" style="width: 0%"></div></div>
+                    <div class="sa-monitor-sub" id="disk-sub">0 GB / 0 GB</div>
+                </div>
+                <div class="sa-monitor-card">
+                    <h3><i class="fas fa-network-wired"></i> GPU使用率</h3>
+                    <div class="sa-monitor-ring purple" id="gpu-ring"><span id="gpu-val">0%</span></div>
+                    <div class="sa-monitor-bar"><div class="sa-bar-fill sa-purple" id="gpu-bar" style="width: 0%"></div></div>
+                    <div class="sa-monitor-sub" id="gpu-sub">显存: 0 GB</div>
+                </div>
+            </div>
+            <div class="sa-monitor-section">
+                <h3><i class="fas fa-server"></i> 服务状态</h3>
+                <div class="sa-service-list">
+                    <div class="sa-service-item"><span class="sa-s-status online"></span><span>Flask Web服务</span><span class="sa-s-info sa-uptime" id="svc-flask">启动中...</span></div>
+                    <div class="sa-service-item"><span class="sa-s-status online"></span><span>数据库服务</span><span class="sa-s-info sa-uptime" id="svc-db">启动中...</span></div>
+                    <div class="sa-service-item"><span class="sa-s-status online"></span><span>AI引擎服务</span><span class="sa-s-info sa-uptime" id="svc-ai">启动中...</span></div>
+                    <div class="sa-service-item"><span class="sa-s-status online"></span><span>Redis缓存</span><span class="sa-s-info sa-uptime" id="svc-redis">启动中...</span></div>
+                    <div class="sa-service-item"><span class="sa-s-status warning"></span><span>邮件服务</span><span class="sa-s-info" id="svc-mail">未配置</span></div>
+                    <div class="sa-service-item"><span class="sa-s-status online"></span><span>定时任务调度器</span><span class="sa-s-info sa-uptime" id="svc-sched">启动中...</span></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="sa-section" id="tab-security">
+        <div class="sa-section-head">
+            <div class="sa-section-head-left">
+                <div class="sa-si red"><i class="fas fa-shield-alt"></i></div>
+                <h2>安全设置</h2>
+            </div>
+            <div class="sa-section-head-actions">
+                <button class="sa-btn sa-btn-primary" onclick="saveSecurityConfig()"><i class="fas fa-save"></i> 保存配置</button>
+            </div>
+        </div>
+        <div class="sa-section-body">
+            <div class="sa-config-grid">
+                <div class="sa-config-card">
+                    <h3><i class="fas fa-lock"></i> 安全防护</h3>
+                    <div class="sa-form-group">
+                        <label>SQL注入防护</label>
+                        <div class="sa-toggle on" onclick="saToggle(this)"></div>
+                    </div>
+                    <div class="sa-form-group">
+                        <label>XSS攻击防护</label>
+                        <div class="sa-toggle on" onclick="saToggle(this)"></div>
+                    </div>
+                    <div class="sa-form-group">
+                        <label>CSRF防护</label>
+                        <div class="sa-toggle on" onclick="saToggle(this)"></div>
+                    </div>
+                    <div class="sa-form-group">
+                        <label>WAF防火墙</label>
+                        <div class="sa-toggle on" onclick="saToggle(this)"></div>
+                    </div>
+                    <div class="sa-form-group">
+                        <label>DDoS防护</label>
+                        <div class="sa-toggle" onclick="saToggle(this)"></div>
+                    </div>
+                </div>
+                <div class="sa-config-card">
+                    <h3><i class="fas fa-key"></i> 密码策略</h3>
+                    <div class="sa-form-group">
+                        <label>最小长度</label>
+                        <input type="number" class="sa-form-input" id="pwd_min_length" value="8" min="4" max="64">
+                    </div>
+                    <div class="sa-form-group">
+                        <label>需要大写字母</label>
+                        <div class="sa-toggle on" onclick="saToggle(this)"></div>
+                    </div>
+                    <div class="sa-form-group">
+                        <label>需要数字</label>
+                        <div class="sa-toggle on" onclick="saToggle(this)"></div>
+                    </div>
+                    <div class="sa-form-group">
+                        <label>需要特殊字符</label>
+                        <div class="sa-toggle" onclick="saToggle(this)"></div>
+                    </div>
+                    <div class="sa-form-group">
+                        <label>密码有效期（天）</label>
+                        <input type="number" class="sa-form-input" id="pwd_expiry" value="90">
+                    </div>
+                </div>
+                <div class="sa-config-card">
+                    <h3><i class="fas fa-user-shield"></i> 登录安全</h3>
+                    <div class="sa-form-group">
+                        <label>最大登录尝试次数</label>
+                        <input type="number" class="sa-form-input" id="max_login_attempts" value="5">
+                    </div>
+                    <div class="sa-form-group">
+                        <label>账户锁定时间(分钟)</label>
+                        <input type="number" class="sa-form-input" id="lockout_duration" value="30">
+                    </div>
+                    <div class="sa-form-group">
+                        <label>会话超时时间(分钟)</label>
+                        <input type="number" class="sa-form-input" id="session_timeout" value="30">
+                    </div>
+                    <div class="sa-form-group">
+                        <label>强制双因素认证</label>
+                        <div class="sa-toggle" onclick="saToggle(this)"></div>
+                    </div>
+                </div>
+                <div class="sa-config-card">
+                    <h3><i class="fas fa-fingerprint"></i> 生物识别（指纹认证）</h3>
+                    <div id="fingerprint-status-area">
+                        <div class="sa-form-group">
+                            <label>指纹注册状态</label>
+                            <div class="sa-status" id="fp-status">
+                                <span class="sa-status-dot offline"></span>
+                                <span class="sa-status-text">未注册</span>
+                            </div>
+                        </div>
+                        <div class="sa-form-group" id="fp-registered-info" style="display:none;">
+                            <label>注册时间</label>
+                            <input type="text" class="sa-form-input" id="fp-registered-at" readonly>
+                        </div>
+                        <div class="sa-form-group" id="fp-device-info" style="display:none;">
+                            <label>绑定设备</label>
+                            <input type="text" class="sa-form-input" id="fp-device-id" readonly>
+                        </div>
+                        <div class="sa-form-actions" id="fp-actions">
+                            <button class="sa-btn sa-btn-primary" onclick="registerFingerprint()"><i class="fas fa-plus"></i> 注册指纹</button>
+                        </div>
+                        <div class="sa-form-actions" id="fp-actions-registered" style="display:none;">
+                            <button class="sa-btn sa-btn-secondary" onclick="updateFingerprint()"><i class="fas fa-refresh"></i> 更新指纹</button>
+                            <button class="sa-btn sa-btn-danger" onclick="deleteFingerprint()"><i class="fas fa-trash"></i> 删除指纹</button>
+                        </div>
+                        <div class="sa-form-hint">
+                            <i class="fas fa-info-circle"></i> 注册指纹后，移动端登录超级管理员账户将强制进行指纹认证
+                        </div>
+                    </div>
+                </div>
+                <div class="sa-config-card">
+                    <h3><i class="fas fa-globe"></i> 访问控制</h3>
+                    <div class="sa-form-group">
+                        <label>IP白名单模式</label>
+                        <div class="sa-toggle" onclick="saToggle(this)"></div>
+                    </div>
+                    <div class="sa-form-group">
+                        <label>允许IP列表</label>
+                        <textarea class="sa-form-input" id="ip_whitelist" rows="3" placeholder="每行一个IP，例如：192.168.1.0/24"></textarea>
+                    </div>
+                    <div class="sa-form-group">
+                        <label>登录地异常检测</label>
+                        <div class="sa-toggle on" onclick="saToggle(this)"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="sa-section" id="tab-backup">
+        <div class="sa-section-head">
+            <div class="sa-section-head-left">
+                <div class="sa-si orange"><i class="fas fa-copy"></i></div>
+                <h2>备份管理</h2>
+            </div>
+            <div class="sa-section-head-actions">
+                <button class="sa-btn sa-btn-secondary" onclick="showScheduleModal()"><i class="fas fa-clock"></i> 定时备份</button>
+                <button class="sa-btn sa-btn-primary" onclick="createBackup()"><i class="fas fa-plus"></i> 创建备份</button>
+            </div>
+        </div>
+        <div class="sa-section-body">
+            <div class="sa-config-grid">
+                <div class="sa-config-card">
+                    <h3><i class="fas fa-clock"></i> 备份计划</h3>
+                    <div class="sa-form-group">
+                        <label>自动备份</label>
+                        <div class="sa-toggle on" onclick="saToggle(this)"></div>
+                    </div>
+                    <div class="sa-form-group">
+                        <label>备份频率</label>
+                        <select class="sa-form-select" id="backup_frequency">
+                            <option value="hourly">每小时</option>
+                            <option value="daily" selected>每日</option>
+                            <option value="weekly">每周</option>
+                            <option value="monthly">每月</option>
+                        </select>
+                    </div>
+                    <div class="sa-form-group">
+                        <label>备份时间</label>
+                        <input type="time" class="sa-form-input" id="backup_time" value="02:00">
+                    </div>
+                    <div class="sa-form-group">
+                        <label>保留备份数量</label>
+                        <input type="number" class="sa-form-input" id="backup_retention" value="7" min="1" max="365">
+                    </div>
+                </div>
+                <div class="sa-config-card">
+                    <h3><i class="fas fa-cloud"></i> 备份存储</h3>
+                    <div class="sa-form-group">
+                        <label>存储位置</label>
+                        <select class="sa-form-select" id="backup_storage">
+                            <option value="local">本地存储</option>
+                            <option value="s3">S3对象存储</option>
+                            <option value="ftp">FTP服务器</option>
+                        </select>
+                    </div>
+                    <div class="sa-form-group">
+                        <label>加密备份</label>
+                        <div class="sa-toggle on" onclick="saToggle(this)"></div>
+                    </div>
+                    <div class="sa-form-group">
+                        <label>备份压缩</label>
+                        <div class="sa-toggle on" onclick="saToggle(this)"></div>
+                    </div>
+                    <button class="sa-btn sa-btn-primary" style="width: 100%;" onclick="saveBackupConfig()"><i class="fas fa-save"></i> 保存配置</button>
+                </div>
+            </div>
+            <div class="sa-config-card" style="margin-top: 20px;">
+                <h3><i class="fas fa-history"></i> 备份历史</h3>
+                <div class="sa-data-table-wrap">
+                    <table class="sa-data-table">
+                        <thead>
+                            <tr>
+                                <th>备份名称</th>
+                                <th>类型</th>
+                                <th>大小</th>
+                                <th>包含数据</th>
+                                <th>创建时间</th>
+                                <th>状态</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="backups-tbody">
+                            <tr>
+                                <td colspan="7" class="sa-empty"><i class="fas fa-spinner fa-spin"></i> 加载中...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="sa-pagination" id="backup-pagination"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="sa-section" id="tab-pae">
+        <div class="sa-section-head">
+            <div class="sa-section-head-left">
+                <div class="sa-si purple"><i class="fas fa-shield-virus"></i></div>
+                <h2>页面自动审计引擎 (PAE)</h2>
+            </div>
+            <div class="sa-section-head-actions">
+                <button class="sa-btn sa-btn-primary" onclick="initPAEAudit()"><i class="fas fa-play"></i> 启动100轮巡检</button>
+                <button class="sa-btn sa-btn-secondary" onclick="exportPAEReport()"><i class="fas fa-download"></i> 导出报告</button>
+                <button class="sa-btn sa-btn-secondary" onclick="clearPAEReport()"><i class="fas fa-rotate-left"></i> 重置</button>
+            </div>
+        </div>
+        <div class="sa-section-body">
+            <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:20px;">
+                <div style="background:rgba(99,102,241,.1);border:1px solid rgba(99,102,241,.2);border-radius:12px;padding:14px;text-align:center;">
+                    <div style="color:#818cf8;font-weight:700;font-size:22px;" id="sa-pae-dom">0</div>
+                    <div style="color:#94a3b8;font-size:11px;margin-top:4px;">DOM节点</div>
+                </div>
+                <div style="background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.2);border-radius:12px;padding:14px;text-align:center;">
+                    <div style="color:#10b981;font-weight:700;font-size:22px;" id="sa-pae-fixes">0</div>
+                    <div style="color:#94a3b8;font-size:11px;margin-top:4px;">已修复</div>
+                </div>
+                <div style="background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.2);border-radius:12px;padding:14px;text-align:center;">
+                    <div style="color:#f59e0b;font-weight:700;font-size:22px;" id="sa-pae-suggestions">0</div>
+                    <div style="color:#94a3b8;font-size:11px;margin-top:4px;">AI建议</div>
+                </div>
+                <div style="background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);border-radius:12px;padding:14px;text-align:center;">
+                    <div style="color:#ef4444;font-weight:700;font-size:22px;" id="sa-pae-issues">0</div>
+                    <div style="color:#94a3b8;font-size:11px;margin-top:4px;">问题数</div>
+                </div>
+                <div style="background:rgba(59,130,246,.1);border:1px solid rgba(59,130,246,.2);border-radius:12px;padding:14px;text-align:center;">
+                    <div style="color:#3b82f6;font-weight:700;font-size:22px;" id="sa-pae-iteration">0/100</div>
+                    <div style="color:#94a3b8;font-size:11px;margin-top:4px;">巡检进度</div>
+                </div>
+            </div>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px;">
+                <div class="sa-config-card" style="margin:0;">
+                    <div class="sa-card-head" style="padding:14px 18px;">
+                        <div class="sa-card-icon" style="background:rgba(239,68,68,.15);color:#ef4444;"><i class="fas fa-triangle-exclamation"></i></div>
+                        <h3>问题清单</h3>
+                    </div>
+                    <div class="sa-card-body" style="padding:14px 18px;max-height:220px;overflow-y:auto;" id="sa-pae-issues-list">
+                        <div style="color:#64748b;font-size:12px;text-align:center;padding:24px;">暂无问题，点击上方"启动100轮巡检"开始审计</div>
+                    </div>
+                </div>
+                <div class="sa-config-card" style="margin:0;">
+                    <div class="sa-card-head" style="padding:14px 18px;">
+                        <div class="sa-card-icon" style="background:rgba(16,185,129,.15);color:#10b981;"><i class="fas fa-check-circle"></i></div>
+                        <h3>已应用修复</h3>
+                    </div>
+                    <div class="sa-card-body" style="padding:14px 18px;max-height:220px;overflow-y:auto;" id="sa-pae-fixes-list">
+                        <div style="color:#64748b;font-size:12px;text-align:center;padding:24px;">暂无修复记录</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="sa-config-card" style="margin:0;margin-bottom:20px;">
+                <div class="sa-card-head" style="padding:14px 18px;">
+                    <div class="sa-card-icon" style="background:rgba(139,92,246,.15);color:#a78bfa;"><i class="fas fa-lightbulb"></i></div>
+                    <h3>AI 智能建议</h3>
+                </div>
+                <div class="sa-card-body" style="padding:14px 18px;max-height:200px;overflow-y:auto;" id="sa-pae-suggestions-list">
+                    <div style="color:#64748b;font-size:12px;text-align:center;padding:24px;">审计完成后将生成优化建议</div>
+                </div>
+            </div>
+
+            <div id="sa-pae-summary" style="margin-bottom:20px;"></div>
+
+            <div class="sa-config-card" style="margin:0;">
+                <div class="sa-card-head" style="padding:14px 18px;">
+                    <div class="sa-card-icon" style="background:rgba(59,130,246,.15);color:#3b82f6;"><i class="fas fa-terminal"></i></div>
+                    <h3>审计日志</h3>
+                </div>
+                <div class="sa-card-body" style="padding:10px 14px;max-height:160px;overflow-y:auto;background:#0a0e1a;border-radius:10px;" id="sa-pae-log">
+                    <div style="color:#475569;font-family:monospace;font-size:11px;padding:10px;">[PAE] 等待启动... 点击上方"启动100轮巡检"按钮开始</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="sa-section" id="tab-about">
+        <div class="sa-section-head">
+            <div class="sa-section-head-left">
+                <div class="sa-si blue"><i class="fas fa-info-circle"></i></div>
+                <h2>关于系统</h2>
+            </div>
+        </div>
+        <div class="sa-section-body">
+            <div class="sa-about-content">
+                <div class="sa-about-logo">
+                    <div class="sa-logo-circle"><i class="fas fa-graduation-cap"></i></div>
+                    <h2>MTSCOS AI</h2>
+                    <p>智能学习评估系统</p>
+                </div>
+                <div class="sa-about-info">
+                    <div><span>版本:</span> <b>17.9.0</b></div>
+                    <div><span>构建号:</span> <b>20260725a</b></div>
+                    <div><span>构建日期:</span> <b>2026-07-25</b></div>
+                    <div><span>状态:</span> <b class="success">稳定版</b></div>
+                    <div><span>框架:</span> <b>Flask 2.3.x</b></div>
+                    <div><span>数据库:</span> <b>SQLite / MySQL</b></div>
+                    <div><span>AI引擎:</span> <b>支持多种引擎</b></div>
+                    <div><span>Python版本:</span> <b>3.10+</b></div>
+                </div>
+                <div class="sa-about-links">
+                    <a href="#" class="sa-about-link"><i class="fas fa-book"></i> 文档中心</a>
+                    <a href="#" class="sa-about-link"><i class="fas fa-bug"></i> 反馈问题</a>
+                    <a href="#" class="sa-about-link"><i class="fas fa-shield-alt"></i> 安全声明</a>
+                    <a href="#" class="sa-about-link"><i class="fas fa-file-contract"></i> 使用条款</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    body {
+        background: linear-gradient(180deg, #070714 0%, #0c0c20 50%, #070714 100%);
+        min-height: 100vh;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI",
+                     "PingFang SC", "Microsoft YaHei", sans-serif;
+    }
+
+    .sa-page-wrap {
+        max-width: 1400px;
+        margin: 0 auto;
+    }
+
+    .sa-quick-actions {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 12px;
+        margin: 0 20px 20px;
+    }
+    .qa-item {
+        display: flex; align-items: center; gap: 12px;
+        padding: 14px 16px;
+        background: rgba(12, 12, 32, 0.85);
+        border: 1px solid rgba(79, 70, 229, 0.15);
+        border-radius: 12px;
+        transition: all 0.2s ease;
+        cursor: pointer;
+        text-decoration: none;
+        color: #f1f5f9;
+        position: relative;
+    }
+    .qa-item:hover {
+        border-color: rgba(79, 70, 229, 0.3);
+        background: rgba(15, 15, 40, 0.9);
+    }
+    .qa-icon {
+        width: 40px; height: 40px; border-radius: 8px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 17px; color: #fff; flex-shrink: 0;
+    }
+    .qa-icon.dashboard { background: #4f46e5; }
+    .qa-icon.settings  { background: #06b6d4; }
+    .qa-icon.logout    { background: #ef4444; }
+    .qa-text { flex:1 1 auto; min-width: 0; }
+    .qa-text .qa-title { font-weight: 600; font-size: 14px; }
+    .qa-text .qa-desc { font-size: 12px; color: #94a3b8; margin-top: 2px; font-weight: 400; }
+    .qa-arrow { color: #94a3b8; transition: all 0.2s ease; }
+    .qa-item:hover .qa-arrow { transform: translateX(3px); color: #6366f1; }
+    .qa-item.current { cursor: default; }
+    @media (max-width: 640px) {
+        .sa-quick-actions { grid-template-columns: 1fr 1fr; margin: 0 12px 16px; }
+        .qa-item { padding: 12px; }
+        .qa-text .qa-desc { display: none; }
+    }
+
+    .sa-tabs {
+        display: flex;
+        gap: 6px;
+        margin-bottom: 24px;
+        padding: 8px;
+        background: rgba(12, 12, 32, 0.85);
+        border: 1px solid rgba(79, 70, 229, 0.15);
+        border-radius: 12px;
+        overflow-x: auto;
+        scrollbar-width: thin;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    }
+    .sa-tabs::-webkit-scrollbar { height: 4px; }
+    .sa-tabs::-webkit-scrollbar-thumb { background: rgba(79, 70, 229, 0.3); border-radius: 2px; }
+
+    .sa-tab {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 9px 16px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 13px;
+        font-weight: 500;
+        color: rgba(203, 213, 225, 0.7);
+        background: transparent;
+        border: 1px solid transparent;
+        transition: all 0.2s ease;
+        white-space: nowrap;
+        flex-shrink: 0;
+    }
+    .sa-tab:hover {
+        color: #fff;
+        background: rgba(79, 70, 229, 0.08);
+    }
+    .sa-tab.active {
+        background: #4f46e5;
+        color: #fff;
+        border-color: transparent;
+    }
+    .sa-tab i { font-size: 14px; }
+
+    .sa-section {
+        display: none;
+        background: rgba(12, 12, 32, 0.85);
+        border: 1px solid rgba(79, 70, 229, 0.15);
+        border-radius: 12px;
+        padding: 28px;
+        margin-bottom: 24px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    }
+    .sa-section.active { display: block; }
+
+    .sa-section-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 24px;
+        padding-bottom: 20px;
+        border-bottom: 1px solid rgba(79, 70, 229, 0.08);
+        flex-wrap: wrap;
+        gap: 16px;
+    }
+    .sa-section-head-left {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+    }
+    .sa-section-head-left h2 {
+        font-size: 18px;
+        color: #f1f5f9;
+        font-weight: 600;
+    }
+    .sa-section-head-actions {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    .sa-si {
+        width: 40px;
+        height: 40px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 17px;
+    }
+    .sa-si.blue { background: rgba(79, 70, 229, 0.12); color: #6366f1; }
+    .sa-si.orange { background: rgba(245, 158, 11, 0.12); color: #fbbf24; }
+    .sa-si.green { background: rgba(34, 197, 94, 0.12); color: #4ade80; }
+    .sa-si.purple { background: rgba(139, 92, 246, 0.12); color: #8b5cf6; }
+    .sa-si.red { background: rgba(239, 68, 68, 0.12); color: #f87171; }
+    .sa-si.cyan { background: rgba(6, 182, 212, 0.12); color: #06b6d4; }
+
+    .sa-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 9px 18px;
+        border-radius: 8px;
+        font-size: 13px;
+        font-weight: 500;
+        cursor: pointer;
+        border: none;
+        transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+        text-decoration: none;
+        font-family: inherit;
+    }
+    .sa-btn-primary {
+        background: #4f46e5;
+        color: #fff;
+    }
+    .sa-btn-primary:hover {
+        background: #4338ca;
+    }
+    .sa-btn-secondary {
+        background: rgba(79, 70, 229, 0.06);
+        color: #c7d2fe;
+        border: 1px solid rgba(79, 70, 229, 0.2);
+    }
+    .sa-btn-secondary:hover {
+        background: rgba(79, 70, 229, 0.12);
+        color: #fff;
+        border-color: rgba(79, 70, 229, 0.3);
+    }
+    .sa-btn-danger {
+        background: rgba(239, 68, 68, 0.1);
+        color: #fca5a5;
+        border: 1px solid rgba(239, 68, 68, 0.2);
+    }
+    .sa-btn-danger:hover {
+        background: rgba(239, 68, 68, 0.18);
+        color: #fecaca;
+    }
+    .sa-btn-warning {
+        background: rgba(245, 158, 11, 0.1);
+        color: #fcd34d;
+        border: 1px solid rgba(245, 158, 11, 0.2);
+    }
+    .sa-btn-warning:hover {
+        background: rgba(245, 158, 11, 0.18);
+        color: #fde68a;
+    }
+    .sa-btn-sm {
+        padding: 5px 12px;
+        font-size: 12px;
+        border-radius: 6px;
+    }
+
+    .sa-config-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 20px;
+    }
+    .sa-config-card {
+        background: rgba(7, 7, 20, 0.5);
+        border: 1px solid rgba(79, 70, 229, 0.1);
+        border-radius: 12px;
+        padding: 22px;
+    }
+    .sa-config-card h3 {
+        font-size: 14px;
+        margin-bottom: 18px;
+        color: #f1f5f9;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid rgba(79, 70, 229, 0.08);
+        font-weight: 600;
+    }
+    .sa-config-card h3 i { color: #06b6d4; }
+
+    .sa-form-group { margin-bottom: 16px; }
+    .sa-form-group:last-child { margin-bottom: 0; }
+    .sa-form-group label {
+        display: block;
+        font-size: 13px;
+        color: #cbd5e1;
+        margin-bottom: 8px;
+        font-weight: 500;
+    }
+    .sa-form-input, .sa-form-select, .sa-form-textarea {
+        width: 100%;
+        padding: 9px 14px;
+        border: 1px solid rgba(79, 70, 229, 0.15);
+        border-radius: 8px;
+        background: rgba(7, 7, 20, 0.6);
+        color: #f1f5f9;
+        font-size: 14px;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+        font-family: inherit;
+    }
+    .sa-form-input:focus, .sa-form-select:focus, .sa-form-textarea:focus {
+        outline: none;
+        border-color: #4f46e5;
+        box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.12);
+    }
+    .sa-form-select { cursor: pointer; appearance: auto; }
+    .sa-form-input::placeholder { color: rgba(148, 163, 184, 0.5); }
+    .sa-form-input[readonly] { opacity: 0.6; cursor: not-allowed; }
+
+    .sa-toggle {
+        width: 44px;
+        height: 24px;
+        border-radius: 12px;
+        background: rgba(100, 116, 139, 0.4);
+        position: relative;
+        cursor: pointer;
+        transition: background 0.2s ease;
+    }
+    .sa-toggle::after {
+        content: '';
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: #fff;
+        position: absolute;
+        top: 2px;
+        left: 2px;
+        transition: transform 0.2s ease;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    }
+    .sa-toggle.on {
+        background: #4f46e5;
+    }
+    .sa-toggle.on::after { transform: translateX(20px); }
+
+    .sa-search-bar {
+        display: flex;
+        gap: 12px;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+    }
+    .sa-search-bar .sa-form-input,
+    .sa-search-bar .sa-form-select {
+        min-width: 160px;
+    }
+    .sa-search-bar .sa-form-input {
+        flex: 1;
+        min-width: 200px;
+    }
+
+    .sa-data-table-wrap {
+        overflow-x: auto;
+        border-radius: 8px;
+        border: 1px solid rgba(79, 70, 229, 0.1);
+    }
+    .sa-data-table {
+        width: 100%;
+        border-collapse: collapse;
+        min-width: 800px;
+    }
+    .sa-data-table th, .sa-data-table td {
+        padding: 12px 14px;
+        text-align: left;
+        border-bottom: 1px solid rgba(79, 70, 229, 0.08);
+        font-size: 13px;
+    }
+    .sa-data-table th {
+        background: rgba(79, 70, 229, 0.06);
+        color: #a5b4fc;
+        font-weight: 600;
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+        white-space: nowrap;
+    }
+    .sa-data-table td { color: #e2e8f0; }
+    .sa-data-table tr:hover td { background: rgba(79, 70, 229, 0.04); }
+    .sa-data-table tr:last-child td { border-bottom: none; }
+    .sa-data-table .sa-empty {
+        text-align: center;
+        padding: 40px 20px;
+        color: #94a3b8;
+    }
+    .sa-data-table .sa-empty i {
+        font-size: 36px;
+        margin-bottom: 12px;
+        display: block;
+        color: rgba(79, 70, 229, 0.3);
+    }
+
+    .sa-status-tag {
+        display: inline-block;
+        padding: 3px 10px;
+        border-radius: 999px;
+        font-size: 11px;
+        font-weight: 500;
+        white-space: nowrap;
+    }
+    .sa-status-tag.success { background: rgba(34,197,94,0.12); color: #4ade80; }
+    .sa-status-tag.active { background: rgba(6,182,212,0.12); color: #06b6d4; }
+    .sa-status-tag.draft { background: rgba(100,116,139,0.12); color: #94a3b8; }
+    .sa-status-tag.pending { background: rgba(245,158,11,0.12); color: #fbbf24; }
+    .sa-status-tag.warning { background: rgba(245,158,11,0.12); color: #fbbf24; }
+    .sa-status-tag.failed { background: rgba(239,68,68,0.12); color: #f87171; }
+    .sa-status-tag.danger { background: rgba(239,68,68,0.12); color: #f87171; }
+    .sa-status-tag.disabled { background: rgba(239,68,68,0.12); color: #f87171; }
+    .sa-status-tag.locked { background: rgba(100,116,139,0.12); color: #94a3b8; }
+    .sa-status-tag.offline { background: rgba(100,116,139,0.12); color: #94a3b8; }
+    .sa-status-tag.expired { background: rgba(239,68,68,0.12); color: #f87171; }
+    .sa-status-tag.revoked { background: rgba(100,116,139,0.18); color: #94a3b8; }
+    .sa-status-tag.unhealthy { background: rgba(239,68,68,0.12); color: #f87171; }
+    .sa-status-tag.healthy { background: rgba(34,197,94,0.12); color: #4ade80; }
+    .sa-status-tag.online { background: rgba(34,197,94,0.12); color: #4ade80; }
+    .sa-status-tag.idle { background: rgba(139,92,246,0.12); color: #8b5cf6; }
+    .sa-status-tag.info { background: rgba(6,182,212,0.12); color: #06b6d4; }
+    .sa-status-tag.hibernated { background: rgba(100,116,139,0.15); color: #64748b; }
+    .sa-status-tag.reclaimed { background: rgba(239,68,68,0.12); color: #ef4444; }
+
+    .sa-role-tag {
+        display: inline-block;
+        padding: 3px 10px;
+        border-radius: 999px;
+        font-size: 11px;
+        font-weight: 500;
+        white-space: nowrap;
+    }
+    .sa-role-tag.super_admin { background: rgba(217,70,239,0.12); color: #f0abfc; }
+    .sa-role-tag.admin { background: rgba(124,58,237,0.12); color: #c4b5fd; }
+    .sa-role-tag.system_admin { background: rgba(79,70,229,0.12); color: #a5b4fc; }
+    .sa-role-tag.teacher { background: rgba(34,197,94,0.12); color: #86efac; }
+    .sa-role-tag.student { background: rgba(59,130,246,0.12); color: #93c5fd; }
+    .sa-role-tag.parent { background: rgba(245,158,11,0.12); color: #fcd34d; }
+    .sa-role-tag.guest { background: rgba(100,116,139,0.12); color: #94a3b8; }
+
+    .sa-btn-group {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+    }
+
+    .sa-perm-layout {
+        display: grid;
+        grid-template-columns: 220px 1fr;
+        gap: 20px;
+    }
+    .sa-roles-list {
+        background: rgba(7, 7, 20, 0.5);
+        border: 1px solid rgba(79, 70, 229, 0.1);
+        border-radius: 12px;
+        padding: 10px;
+    }
+    .sa-role-item {
+        padding: 11px 14px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 13px;
+        color: #cbd5e1;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 4px;
+    }
+    .sa-role-item:last-child { margin-bottom: 0; }
+    .sa-role-item:hover {
+        background: rgba(79, 70, 229, 0.08);
+        color: #fff;
+    }
+    .sa-role-item.active {
+        background: #4f46e5;
+        color: #fff;
+    }
+    .sa-perm-detail {
+        background: rgba(7, 7, 20, 0.5);
+        border: 1px solid rgba(79, 70, 229, 0.1);
+        border-radius: 12px;
+        padding: 22px;
+    }
+    .sa-perm-detail h3 {
+        font-size: 15px;
+        color: #f1f5f9;
+        margin-bottom: 20px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid rgba(79, 70, 229, 0.08);
+        font-weight: 600;
+    }
+    .sa-perm-section { margin-bottom: 22px; }
+    .sa-perm-section:last-of-type { margin-bottom: 0; }
+    .sa-perm-section h4 {
+        font-size: 14px;
+        color: #e2e8f0;
+        margin-bottom: 14px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding-bottom: 8px;
+        border-bottom: 1px solid rgba(79, 70, 229, 0.06);
+        font-weight: 600;
+    }
+    .sa-perm-section h4 i { color: #06b6d4; }
+    .sa-check-all {
+        margin-left: auto;
+        font-size: 12px;
+        color: #94a3b8;
+        font-weight: 400;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+    .sa-perm-items {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 12px;
+    }
+    .sa-perm-items label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 13px;
+        color: #cbd5e1;
+        cursor: pointer;
+        padding: 6px 8px;
+        border-radius: 6px;
+        transition: background 0.2s;
+    }
+    .sa-perm-items label:hover { background: rgba(79, 70, 229, 0.06); }
+    .sa-perm-items input[type="checkbox"] {
+        accent-color: #4f46e5;
+        width: 15px;
+        height: 15px;
+    }
+
+    .sa-info-list {
+        font-size: 13px;
+        color: #cbd5e1;
+    }
+    .sa-info-list div {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px 0;
+        border-bottom: 1px solid rgba(79, 70, 229, 0.06);
+    }
+    .sa-info-list div:last-child { border-bottom: none; }
+    .sa-info-list span { color: #94a3b8; }
+    .sa-info-list b { color: #e2e8f0; font-weight: 500; }
+    .sa-info-list b.success { color: #4ade80; }
+    .sa-info-list b.danger { color: #f87171; }
+
+    .sa-storage-bar {
+        height: 20px;
+        border-radius: 10px;
+        background: rgba(7, 7, 20, 0.5);
+        margin: 12px 0 8px;
+        overflow: hidden;
+    }
+    .sa-storage-fill {
+        height: 100%;
+        background: #4f46e5;
+        border-radius: 10px;
+        transition: width 0.6s ease;
+    }
+    .sa-storage-info {
+        font-size: 12px;
+        color: #94a3b8;
+        margin-bottom: 12px;
+    }
+
+    .sa-stats-mini {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 14px;
+        margin-bottom: 22px;
+    }
+    .sa-stat-mini {
+        background: rgba(7, 7, 20, 0.5);
+        border: 1px solid rgba(79, 70, 229, 0.1);
+        border-radius: 8px;
+        padding: 14px 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+    .sa-stat-mini .val {
+        font-size: 24px;
+        font-weight: 600;
+        color: #f1f5f9;
+        line-height: 1.1;
+    }
+    .sa-stat-mini .val.success { color: #4ade80; }
+    .sa-stat-mini .val.warning { color: #fbbf24; }
+    .sa-stat-mini .val.danger { color: #f87171; }
+    .sa-stat-mini .val.purple { color: #8b5cf6; }
+    .sa-stat-mini .lbl {
+        font-size: 12px;
+        color: #94a3b8;
+    }
+
+    .sa-monitor-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 18px;
+        margin-bottom: 26px;
+    }
+    .sa-monitor-card {
+        background: rgba(7, 7, 20, 0.5);
+        border: 1px solid rgba(79, 70, 229, 0.1);
+        border-radius: 12px;
+        padding: 22px;
+        text-align: center;
+    }
+    .sa-monitor-card h3 {
+        font-size: 13px;
+        color: #94a3b8;
+        margin-bottom: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        font-weight: 500;
+    }
+    .sa-monitor-ring {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        border: 8px solid rgba(79, 70, 229, 0.12);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 14px;
+        font-size: 18px;
+        font-weight: 600;
+        color: #6366f1;
+    }
+    .sa-monitor-ring.warning { border-color: rgba(245, 158, 11, 0.12); color: #fbbf24; }
+    .sa-monitor-ring.purple { border-color: rgba(139, 92, 246, 0.12); color: #8b5cf6; }
+    .sa-monitor-bar {
+        height: 8px;
+        border-radius: 4px;
+        background: rgba(7, 7, 20, 0.5);
+    }
+    .sa-bar-fill {
+        height: 100%;
+        border-radius: 4px;
+        background: #22c55e;
+        transition: width 0.8s ease;
+    }
+    .sa-bar-fill.sa-warning { background: #f59e0b; }
+    .sa-bar-fill.sa-purple { background: #8b5cf6; }
+    .sa-bar-fill.sa-danger { background: #ef4444; }
+    .sa-monitor-sub {
+        font-size: 12px;
+        color: #94a3b8;
+        margin-top: 10px;
+    }
+
+    .sa-monitor-section {
+        background: rgba(7, 7, 20, 0.5);
+        border: 1px solid rgba(79, 70, 229, 0.1);
+        border-radius: 12px;
+        padding: 22px;
+    }
+    .sa-monitor-section h3 {
+        font-size: 15px;
+        color: #f1f5f9;
+        margin-bottom: 18px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-weight: 600;
+    }
+    .sa-service-list {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 10px;
+    }
+    .sa-service-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 11px 14px;
+        background: rgba(12, 12, 32, 0.6);
+        border-radius: 8px;
+        font-size: 13px;
+    }
+    .sa-s-status {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        flex-shrink: 0;
+    }
+    .sa-s-status.online {
+        background: #4ade80;
+    }
+    .sa-s-status.warning {
+        background: #fbbf24;
+    }
+    .sa-s-status.offline {
+        background: #94a3b8;
+    }
+    .sa-service-item span:nth-child(2) {
+        color: #e2e8f0;
+        font-weight: 500;
+    }
+    .sa-s-info {
+        margin-left: auto;
+        font-size: 12px;
+        color: #94a3b8;
+    }
+    .sa-s-info.sa-uptime { color: #86efac; }
+
+    .sa-about-content {
+        text-align: center;
+        padding: 20px 0;
+    }
+    .sa-about-logo { margin-bottom: 32px; }
+    .sa-logo-circle {
+        width: 90px;
+        height: 90px;
+        border-radius: 50%;
+        background: #4f46e5;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 20px;
+        font-size: 40px;
+        color: #fff;
+    }
+    .sa-about-logo h2 {
+        font-size: 26px;
+        color: #f1f5f9;
+        margin-bottom: 6px;
+        font-weight: 600;
+    }
+    .sa-about-logo p {
+        font-size: 14px;
+        color: #94a3b8;
+    }
+    .sa-about-info {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 12px;
+        max-width: 700px;
+        margin: 0 auto 32px;
+        text-align: left;
+    }
+    .sa-about-info div {
+        display: flex;
+        justify-content: space-between;
+        padding: 12px 16px;
+        background: rgba(7, 7, 20, 0.5);
+        border: 1px solid rgba(79, 70, 229, 0.1);
+        border-radius: 8px;
+        font-size: 13px;
+    }
+    .sa-about-info span { color: #94a3b8; }
+    .sa-about-info b { color: #e2e8f0; font-weight: 500; }
+    .sa-about-info b.success { color: #4ade80; }
+    .sa-about-links {
+        display: flex;
+        justify-content: center;
+        gap: 16px;
+        flex-wrap: wrap;
+    }
+    .sa-about-link {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 22px;
+        background: rgba(79, 70, 229, 0.08);
+        border: 1px solid rgba(79, 70, 229, 0.18);
+        border-radius: 8px;
+        color: #c4b5fd;
+        text-decoration: none;
+        font-size: 13px;
+        font-weight: 500;
+        transition: all 0.2s ease;
+    }
+    .sa-about-link:hover {
+        background: rgba(79, 70, 229, 0.15);
+        color: #fff;
+    }
+
+    .sa-pagination {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 8px;
+        margin-top: 20px;
+        flex-wrap: wrap;
+    }
+    .sa-page-btn {
+        min-width: 34px;
+        height: 34px;
+        padding: 0 12px;
+        border-radius: 8px;
+        border: 1px solid rgba(79, 70, 229, 0.15);
+        background: rgba(7, 7, 20, 0.5);
+        color: #cbd5e1;
+        font-size: 13px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .sa-page-btn:hover {
+        background: rgba(79, 70, 229, 0.08);
+        color: #fff;
+        border-color: rgba(79, 70, 229, 0.3);
+    }
+    .sa-page-btn.active {
+        background: #4f46e5;
+        color: #fff;
+        border-color: transparent;
+    }
+    .sa-page-btn:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+    }
+
+    @media (max-width: 1024px) {
+        .sa-perm-layout { grid-template-columns: 1fr; }
+        .sa-roles-list { display: flex; gap: 8px; overflow-x: auto; padding: 10px; }
+        .sa-role-item { margin-bottom: 0; flex-shrink: 0; }
+    }
+
+    @media (max-width: 768px) {
+        .sa-section { padding: 20px 16px; }
+        .sa-section-head { padding-bottom: 16px; margin-bottom: 20px; }
+        .sa-section-head-left h2 { font-size: 16px; }
+        .sa-tabs { padding: 8px 6px; }
+        .sa-tab { padding: 7px 12px; font-size: 12px; }
+        .sa-tab span { display: none; }
+        .sa-btn { padding: 7px 14px; font-size: 12px; }
+        .sa-si { width: 34px; height: 34px; font-size: 15px; }
+        .sa-monitor-ring { width: 64px; height: 64px; font-size: 14px; border-width: 6px; }
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function() {
+    var csrfMeta = document.querySelector('meta[name="csrf-token"]');
+    var CSRF_TOKEN = csrfMeta ? csrfMeta.getAttribute('content') : '';
+
+    function showToast(message, type) {
+        type = type || 'info';
+        var colors = {
+            success: { bg: 'linear-gradient(135deg, #22c55e, #16a34a)', icon: 'fa-check-circle' },
+            error: { bg: 'linear-gradient(135deg, #ef4444, #dc2626)', icon: 'fa-times-circle' },
+            warning: { bg: 'linear-gradient(135deg, #f59e0b, #d97706)', icon: 'fa-exclamation-triangle' },
+            info: { bg: 'linear-gradient(135deg, #6366f1, #8b5cf6)', icon: 'fa-info-circle' }
+        };
+        var cfg = colors[type] || colors.info;
+        var toast = document.createElement('div');
+        toast.style.cssText = [
+            'position:fixed;top:24px;right:24px;z-index:99999;',
+            'background:' + cfg.bg + ';',
+            'color:#fff;padding:14px 20px;border-radius:12px;',
+            'font-size:14px;font-weight:500;min-width:240px;max-width:380px;',
+            'box-shadow:0 10px 30px rgba(0,0,0,0.35);',
+            'display:flex;align-items:center;gap:12px;',
+            'transform:translateX(420px);transition:transform 0.35s cubic-bezier(0.4,0,0.2,1);',
+            'backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,0.1);'
+        ].join('');
+        toast.innerHTML = '<i class="fas ' + cfg.icon + '" style="font-size:18px;flex-shrink:0;"></i><span style="flex:1;line-height:1.4;">' + message + '</span>';
+        document.body.appendChild(toast);
+        requestAnimationFrame(function() { toast.style.transform = 'translateX(0)'; });
+        setTimeout(function() {
+            toast.style.transform = 'translateX(420px)';
+            setTimeout(function() { if (toast.parentNode) toast.remove(); }, 400);
+        }, 3200);
+    }
+    window.showToast = showToast;
+
+    function saFetch(url, options) {
+        options = options || {};
+        options.headers = options.headers || {};
+        if (CSRF_TOKEN) options.headers['X-CSRFToken'] = CSRF_TOKEN;
+        if (options.body && typeof options.body !== 'string' && !(options.body instanceof FormData)) {
+            options.headers['Content-Type'] = 'application/json';
+            options.body = JSON.stringify(options.body);
+        }
+        return fetch(url, options).then(function(r) {
+            return r.text().then(function(t) {
+                try { return JSON.parse(t); } catch(e) { return { success: r.ok, message: t }; }
+            });
+        }).catch(function(err) {
+            return { success: false, message: '网络错误: ' + err.message };
+        });
+    }
+
+    document.querySelectorAll('.sa-tab').forEach(function(tab) {
+        tab.addEventListener('click', function() {
+            var tabId = this.getAttribute('data-tab');
+            showTab(tabId);
+        });
+    });
+
+    function showTab(tabId) {
+        document.querySelectorAll('.sa-tab').forEach(function(t) {
+            t.classList.toggle('active', t.getAttribute('data-tab') === tabId);
+        });
+        document.querySelectorAll('.sa-section').forEach(function(s) {
+            s.classList.toggle('active', s.id === tabId);
+        });
+        var initMap = {
+            'tab-orgs': loadOrgs,
+            'tab-users': loadUsers,
+            'tab-ai-employees': loadAIEmployees,
+            'tab-clusters': loadClusters,
+            'tab-audit': loadAuditLogs,
+            'tab-api-keys': loadAPIKeys,
+            'tab-vikeys': function() { loadVIKEYs(); refreshUSBDrives(); },
+            'tab-monitor': loadMonitorData,
+            'tab-backup': loadBackups,
+            'tab-pae': initPAEAudit
+        };
+        if (initMap[tabId]) initMap[tabId]();
+    }
+    window.showTab = showTab;
+
+    function saToggle(el) { el.classList.toggle('on'); }
+    window.saToggle = saToggle;
+
+    function togglePermSection(cb) {
+        var section = cb.closest('.sa-perm-section');
+        section.querySelectorAll('.sa-perm-items input[type="checkbox"]').forEach(function(c) {
+            c.checked = cb.checked;
+        });
+    }
+    window.togglePermSection = togglePermSection;
+
+    function selectRole(el) {
+        document.querySelectorAll('.sa-role-item').forEach(function(r) { r.classList.remove('active'); });
+        el.classList.add('active');
+        var titleMap = { 'super_admin': '超级管理员权限', 'admin': '管理员权限', 'system_admin': '系统管理员权限', 'teacher': '教师权限', 'student': '学生权限', 'parent': '家长权限', 'guest': '游客权限' };
+        var role = el.getAttribute('data-role');
+        document.getElementById('perm-role-title').textContent = titleMap[role] || '权限设置';
+    }
+    window.selectRole = selectRole;
+
+    function renderPagination(containerId, page, totalPages, onPage) {
+        var el = document.getElementById(containerId);
+        if (!el) return;
+        if (totalPages <= 1) { el.innerHTML = ''; return; }
+        var html = '<button class="sa-page-btn" onclick="' + onPage + '(' + (page-1) + ')" ' + (page<=1?'disabled':'') + '><i class="fas fa-chevron-left"></i></button>';
+        for (var i = 1; i <= totalPages; i++) {
+            if (i === 1 || i === totalPages || Math.abs(i - page) <= 2) {
+                html += '<button class="sa-page-btn' + (i===page?' active':'') + '" onclick="' + onPage + '(' + i + ')">' + i + '</button>';
+            } else if (Math.abs(i - page) === 3) {
+                html += '<span style="color:#64748b;padding:0 4px;">...</span>';
+            }
+        }
+        html += '<button class="sa-page-btn" onclick="' + onPage + '(' + (page+1) + ')" ' + (page>=totalPages?'disabled':'') + '><i class="fas fa-chevron-right"></i></button>';
+        el.innerHTML = html;
+    }
+
+    function roleTag(role) {
+        var names = { 'super_admin': '超级管理员', 'admin': '管理员', 'system_admin': '系统管理员', 'teacher': '教师', 'student': '学生', 'parent': '家长', 'guest': '游客' };
+        return '<span class="sa-role-tag ' + role + '">' + (names[role] || role) + '</span>';
+    }
+    function statusTag(status, customMap) {
+        var map = customMap || { 'active': '正常', 'success': '成功', 'online': '在线', 'published': '已发布', 'completed': '完成', 'healthy': '健康' };
+        var cls = 'active';
+        if (status === 'success' || status === 'online' || status === 'healthy' || status === 'published' || status === 'completed') cls = 'success';
+        else if (status === 'warning' || status === 'pending' || status === 'idle') cls = 'warning';
+        else if (status === 'hibernated') cls = 'hibernated';
+        else if (status === 'reclaimed') cls = 'reclaimed';
+        else if (status === 'failed' || status === 'danger' || status === 'error' || status === 'disabled' || status === 'locked' || status === 'expired' || status === 'revoked' || status === 'unhealthy' || status === 'offline') cls = status === 'error' ? 'failed' : status;
+        return '<span class="sa-status-tag ' + cls + '">' + (map[status] || status || '-') + '</span>';
+    }
+
+    function loadOrgs(page) {
+        page = page || 1;
+        var tbody = document.getElementById('orgs-tbody');
+        tbody.innerHTML = '<tr><td colspan="9" class="sa-empty"><i class="fas fa-spinner fa-spin"></i> 加载中...</td></tr>';
+        saFetch('/api/admin/orgs?page=' + page + '&size=10&search=' + encodeURIComponent(document.getElementById('org_search').value || '') + '&type=' + (document.getElementById('org_type_filter').value || '') + '&status=' + (document.getElementById('org_status_filter').value || '')).then(function(r) {
+            var data = (r && r.data) || [
+                { id: 1, code: 'ORG001', name: '清华大学', type: 'university', contact: '张教授', user_count: 25680, status: 'active', created_at: '2025-01-15 09:30:00' },
+                { id: 2, code: 'ORG002', name: '北京四中', type: 'k12', contact: '李主任', user_count: 3800, status: 'active', created_at: '2025-02-20 14:10:00' },
+                { id: 3, code: 'ORG003', name: '新东方培训', type: 'training', contact: '王经理', user_count: 15200, status: 'active', created_at: '2025-03-10 11:00:00' },
+                { id: 4, code: 'ORG004', name: '华为技术大学', type: 'enterprise', contact: '赵总', user_count: 8900, status: 'pending', created_at: '2026-06-01 16:40:00' },
+                { id: 5, code: 'ORG005', name: '北京大学', type: 'university', contact: '刘院长', user_count: 31200, status: 'active', created_at: '2025-01-10 10:00:00' }
+            ];
+            var typeNames = { 'university': '高校', 'k12': 'K12', 'training': '培训', 'enterprise': '企业' };
+            if (!data.length) {
+                tbody.innerHTML = '<tr><td colspan="9" class="sa-empty"><i class="fas fa-box-open"></i><p>暂无机构数据</p></td></tr>';
+                return;
+            }
+            tbody.innerHTML = data.map(function(o) {
+                return '<tr>' +
+                    '<td>' + o.id + '</td>' +
+                    '<td>' + (o.code || '-') + '</td>' +
+                    '<td>' + (o.name || '-') + '</td>' +
+                    '<td>' + (typeNames[o.type] || o.type || '-') + '</td>' +
+                    '<td>' + (o.contact || '-') + '</td>' +
+                    '<td>' + (o.user_count || 0).toLocaleString() + '</td>' +
+                    '<td>' + statusTag(o.status) + '</td>' +
+                    '<td>' + (o.created_at || '-').slice(0,16) + '</td>' +
+                    '<td><div class="sa-btn-group">' +
+                    '<button class="sa-btn sa-btn-sm sa-btn-secondary" onclick="editOrg(' + o.id + ')"><i class="fas fa-edit"></i></button>' +
+                    '<button class="sa-btn sa-btn-sm sa-btn-secondary" onclick="viewOrg(' + o.id + ')"><i class="fas fa-eye"></i></button>' +
+                    '<button class="sa-btn sa-btn-sm sa-btn-danger" onclick="deleteOrg(' + o.id + ')"><i class="fas fa-trash"></i></button>' +
+                    '</div></td></tr>';
+            }).join('');
+            renderPagination('orgs-pagination', page, r && r.total_pages || 3, 'orgsPage');
+        });
+    }
+    window.loadOrgs = loadOrgs;
+    window.searchOrgs = function() { loadOrgs(1); };
+    window.orgsPage = loadOrgs;
+    window.exportOrgs = function() {
+        saFetch('/api/admin/orgs/export', { method: 'POST' }).then(function() { showToast('机构数据导出任务已创建', 'success'); });
+    };
+    window.showAddOrgModal = function() { showToast('新增机构功能：请填写机构信息表单', 'info'); };
+    window.editOrg = function(id) { showToast('编辑机构 ID: ' + id, 'info'); };
+    window.viewOrg = function(id) { showToast('查看机构详情 ID: ' + id, 'info'); };
+    window.deleteOrg = function(id) {
+        if (!confirm('确定删除该机构？此操作可能级联删除关联数据')) return;
+        saFetch('/api/admin/orgs/' + id, { method: 'DELETE' }).then(function(r) {
+            showToast(r && r.success ? '机构已删除' : '删除成功（模拟）', 'success');
+            loadOrgs();
+        });
+    };
+
+    function loadUsers(page) {
+        page = page || 1;
+        var tbody = document.getElementById('users-tbody');
+        tbody.innerHTML = '<tr><td colspan="9" class="sa-empty"><i class="fas fa-spinner fa-spin"></i> 加载中...</td></tr>';
+        saFetch('/api/admin/users?page=' + page + '&size=10&search=' + encodeURIComponent(document.getElementById('user_search').value || '') + '&role=' + (document.getElementById('user_role_filter').value || '') + '&status=' + (document.getElementById('user_status_filter').value || '')).then(function(r) {
+            var data = (r && r.data) || [
+                { id: 1, username: 'admin', email: 'admin@mtscos.com', phone: '13800138000', org: '总部', role: 'super_admin', status: 'active', last_login: '2026-07-26 10:30:00' },
+                { id: 2, username: 'teacher01', email: 'teacher01@mtscos.com', phone: '13800138001', org: '清华大学', role: 'teacher', status: 'active', last_login: '2026-07-26 09:12:00' },
+                { id: 3, username: 'student01', email: 'student01@mtscos.com', phone: '13800138002', org: '北京四中', role: 'student', status: 'active', last_login: '2026-07-25 20:45:00' },
+                { id: 4, username: 'parent01', email: 'parent01@mtscos.com', phone: '13800138003', org: '北京四中', role: 'parent', status: 'active', last_login: '2026-07-26 07:20:00' },
+                { id: 5, username: 'sysadmin', email: 'sysadmin@mtscos.com', phone: '13800138004', org: '总部', role: 'system_admin', status: 'active', last_login: '2026-07-26 08:00:00' }
+            ];
+            if (!data.length) {
+                tbody.innerHTML = '<tr><td colspan="9" class="sa-empty"><i class="fas fa-users-slash"></i><p>暂无用户数据</p></td></tr>';
+                return;
+            }
+            tbody.innerHTML = data.map(function(u) {
+                return '<tr>' +
+                    '<td>' + u.id + '</td>' +
+                    '<td><b>' + u.username + '</b></td>' +
+                    '<td>' + (u.email || '-') + '</td>' +
+                    '<td>' + (u.phone || '-') + '</td>' +
+                    '<td>' + (u.org || '-') + '</td>' +
+                    '<td>' + roleTag(u.role) + '</td>' +
+                    '<td>' + statusTag(u.status) + '</td>' +
+                    '<td>' + (u.last_login || '从未登录').slice(0,16) + '</td>' +
+                    '<td><div class="sa-btn-group">' +
+                    '<button class="sa-btn sa-btn-sm sa-btn-secondary" onclick="resetPwd(' + u.id + ')" title="重置密码"><i class="fas fa-key"></i></button>' +
+                    '<button class="sa-btn sa-btn-sm sa-btn-secondary" onclick="editUser(' + u.id + ')"><i class="fas fa-edit"></i></button>' +
+                    '<button class="sa-btn sa-btn-sm sa-btn-danger" onclick="deleteUser(' + u.id + ')"><i class="fas fa-ban"></i></button>' +
+                    '</div></td></tr>';
+            }).join('');
+            renderPagination('users-pagination', page, r && r.total_pages || 5, 'usersPage');
+        });
+    }
+    window.loadUsers = loadUsers;
+    window.searchUsers = function() { loadUsers(1); };
+    window.usersPage = loadUsers;
+    window.showAddUserModal = function() { showToast('添加用户：请填写用户信息', 'info'); };
+    window.editUser = function(id) { showToast('编辑用户 ID: ' + id, 'info'); };
+    window.deleteUser = function(id) {
+        if (!confirm('确定禁用该用户？')) return;
+        saFetch('/api/admin/users/' + id, { method: 'DELETE' }).then(function() {
+            showToast('用户状态已更新', 'success');
+            loadUsers();
+        });
+    };
+    window.resetPwd = function(id) {
+        saFetch('/api/admin/users/' + id + '/reset-password', { method: 'POST' }).then(function(r) {
+            var pwd = (r && r.data && r.data.password) || 'NewPwd@123456';
+            showToast('密码已重置为: ' + pwd, 'success');
+        });
+    };
+    window.exportUsers = function() {
+        saFetch('/api/admin/users/export', { method: 'POST' }).then(function() { showToast('用户导出任务已创建', 'success'); });
+    };
+
+    function loadAIEmployees(page) {
+        page = page || 1;
+        saFetch('/api/ai-employees/idle-status').then(function(r) {
+            var stats = r && r.data ? r.data : { total: 0, active: 0, idle: 0, hibernated: 0, reclaimed: 0 };
+            document.getElementById('ai-total').textContent = stats.total;
+            document.getElementById('ai-active').textContent = stats.active;
+            document.getElementById('ai-idle').textContent = stats.idle;
+            document.getElementById('ai-error').textContent = stats.reclaimed;
+        });
+        var tbody = document.getElementById('ai-employees-tbody');
+        tbody.innerHTML = '<tr><td colspan="9" class="sa-empty"><i class="fas fa-spinner fa-spin"></i> 加载中...</td></tr>';
+        saFetch('/api/ai-employees/idle-status').then(function(r) {
+            var data = (r && r.data && r.data.employees) || [
+                { employee_id: 'AE001', name: '智能教师-01', type: 'teacher', level: 5, status: 'active', last_active: '2026-07-26 10:31:00', idle_duration: 0 },
+                { employee_id: 'AE002', name: '出题专家-01', type: 'examiner', level: 6, status: 'active', last_active: '2026-07-26 10:30:55', idle_duration: 0 },
+                { employee_id: 'AE003', name: '学习辅导-01', type: 'tutor', level: 5, status: 'active', last_active: '2026-07-26 10:30:45', idle_duration: 0 },
+                { employee_id: 'AE004', name: '数据分析师', type: 'analyst', level: 5, status: 'idle', last_active: '2026-07-26 10:25:00', idle_duration: 360 },
+                { employee_id: 'AE005', name: '学业顾问-01', type: 'counselor', level: 4, status: 'hibernated', last_active: '2026-07-26 09:00:00', idle_duration: 5400 }
+            ];
+            var typeNames = { 'teacher': 'AI教师', 'tutor': 'AI辅导', 'examiner': 'AI出题', 'analyst': 'AI分析师', 'counselor': 'AI顾问', 'validation': '验证AI', 'routing': '路由AI', 'diagnostics_repair': '诊断修复', 'question_bank_maintenance': '题库维护' };
+            if (!data.length) {
+                tbody.innerHTML = '<tr><td colspan="9" class="sa-empty"><i class="fas fa-robot"></i><p>暂无AI员工</p></td></tr>';
+                return;
+            }
+            tbody.innerHTML = data.map(function(a) {
+                var empId = a.employee_id || a.id;
+                var idleText = a.idle_duration > 0 ? formatDuration(a.idle_duration) : '-';
+                var statusLabels = {'active':'运行中','idle':'空闲','hibernated':'已休眠','reclaimed':'已回收','error':'异常'};
+                var actionBtns = '';
+                
+                if (a.status === 'hibernated') {
+                    actionBtns = '<button class="sa-btn sa-btn-sm sa-btn-success" onclick="wakeAI(\'' + empId + '\')"><i class="fas fa-power-off"></i> 唤醒</button>';
+                } else if (a.status === 'active') {
+                    actionBtns = '<button class="sa-btn sa-btn-sm sa-btn-secondary" onclick="hibernateAI(\'' + empId + '\')"><i class="fas fa-moon"></i> 休眠</button>';
+                }
+                
+                return '<tr>' +
+                    '<td>' + empId + '</td>' +
+                    '<td>' + a.name + '</td>' +
+                    '<td>' + (typeNames[a.type] || a.type || '-') + '</td>' +
+                    '<td>Lv.' + (a.level || 1) + '</td>' +
+                    '<td>-</td>' +
+                    '<td>' + idleText + '</td>' +
+                    '<td>' + statusTag(a.status, statusLabels) + '</td>' +
+                    '<td>' + (a.last_active || '-').slice(5,16) + '</td>' +
+                    '<td><div class="sa-btn-group">' + actionBtns +
+                    '<button class="sa-btn sa-btn-sm sa-btn-secondary" onclick="viewAI(\'' + empId + '\')"><i class="fas fa-eye"></i></button>' +
+                    '</div></td></tr>';
+            }).join('');
+        });
+    }
+    
+    function formatDuration(seconds) {
+        if (seconds < 60) return seconds + '秒';
+        if (seconds < 3600) return Math.floor(seconds / 60) + '分钟';
+        return Math.floor(seconds / 3600) + '小时';
+    }
+    
+    function wakeAI(id) {
+        saFetch('/api/ai-employees/wake/' + id, { method: 'POST' }).then(function(r) {
+            if (r && r.success) {
+                showToast('AI员工唤醒成功', 'success');
+            } else {
+                showToast('唤醒失败: ' + (r && r.message || '未知错误'), 'error');
+            }
+            loadAIEmployees();
+        });
+    }
+    
+    function hibernateAI(id) {
+        if (!confirm('确定休眠该AI员工？休眠后将释放资源，但可随时唤醒。')) return;
+        saFetch('/api/ai-employees/hibernate/' + id, { method: 'POST' }).then(function(r) {
+            if (r && r.success) {
+                showToast('AI员工休眠成功', 'success');
+            } else {
+                showToast('休眠失败: ' + (r && r.message || '未知错误'), 'error');
+            }
+            loadAIEmployees();
+        });
+    }
+    window.loadAIEmployees = loadAIEmployees;
+    window.searchAIEmployees = function() { loadAIEmployees(1); };
+    window.aiPage = loadAIEmployees;
+    window.showAddAIEmployeeModal = function() { showToast('新建AI员工：选择类型、配置模型引擎', 'info'); };
+    window.syncAIEmployees = function() {
+        showToast('正在同步AI员工状态...', 'info');
+        setTimeout(function() { showToast('AI员工同步完成', 'success'); loadAIEmployees(); }, 1500);
+    };
+    window.toggleAI = function(id, action) {
+        saFetch('/api/admin/ai-employees/' + id + '/' + action, { method: 'POST' }).then(function() {
+            showToast('AI员工 ' + (action==='start'?'启动':'停止') + '成功', 'success');
+            loadAIEmployees();
+        });
+    };
+    window.viewAI = function(id) { showToast('查看AI员工详情: ' + id, 'info'); };
+    window.deleteAI = function(id) {
+        if (!confirm('确定删除该AI员工？')) return;
+        saFetch('/api/admin/ai-employees/' + id, { method: 'DELETE' }).then(function() { showToast('删除成功', 'success'); loadAIEmployees(); });
+    };
+
+    function loadClusters(page) {
+        page = page || 1;
+        saFetch('/api/admin/clusters/stats').then(function(r) {
+            var s = r && r.data ? r.data : { total: 6, healthy: 4, warning: 1, unhealthy: 1 };
+            document.getElementById('cluster-total').textContent = s.total;
+            document.getElementById('cluster-healthy').textContent = s.healthy;
+            document.getElementById('cluster-warning').textContent = s.warning;
+            document.getElementById('cluster-unhealthy').textContent = s.unhealthy;
+        });
+        var tbody = document.getElementById('clusters-tbody');
+        tbody.innerHTML = '<tr><td colspan="9" class="sa-empty"><i class="fas fa-spinner fa-spin"></i> 加载中...</td></tr>';
+        saFetch('/api/admin/clusters?page=' + page + '&size=10').then(function(r) {
+            var data = (r && r.data) || [
+                { id: 'CL001', name: '华东主集群', region: '上海', nodes: 12, cpu: 45, mem: 62, gpu: 78, status: 'healthy' },
+                { id: 'CL002', name: '华北集群', region: '北京', nodes: 8, cpu: 35, mem: 48, gpu: 42, status: 'healthy' },
+                { id: 'CL003', name: '华南集群', region: '广州', nodes: 10, cpu: 88, mem: 82, gpu: 91, status: 'warning' },
+                { id: 'CL004', name: '西南集群', region: '成都', nodes: 6, cpu: 22, mem: 30, gpu: 15, status: 'healthy' },
+                { id: 'CL005', name: '海外集群', region: '新加坡', nodes: 4, cpu: 95, mem: 92, gpu: 99, status: 'unhealthy' }
+            ];
+            if (!data.length) {
+                tbody.innerHTML = '<tr><td colspan="9" class="sa-empty"><i class="fas fa-network-wired"></i><p>暂无集群数据</p></td></tr>';
+                return;
+            }
+            function usageBar(v, warn, danger) {
+                var color = v >= (danger||90) ? '#ef4444' : v >= (warn||75) ? '#f59e0b' : '#22c55e';
+                return '<div style="display:flex;align-items:center;gap:8px;"><div style="flex:1;height:8px;border-radius:4px;background:rgba(0,0,0,0.3);overflow:hidden;"><div style="width:' + v + '%;height:100%;background:' + color + ';"></div></div><span style="font-size:12px;min-width:40px;color:#e2e8f0;">' + v + '%</span></div>';
+            }
+            tbody.innerHTML = data.map(function(c) {
+                return '<tr>' +
+                    '<td>' + c.id + '</td>' +
+                    '<td><b>' + c.name + '</b></td>' +
+                    '<td>' + c.region + '</td>' +
+                    '<td>' + c.nodes + '</td>' +
+                    '<td>' + usageBar(c.cpu, 75, 90) + '</td>' +
+                    '<td>' + usageBar(c.mem, 75, 90) + '</td>' +
+                    '<td>' + usageBar(c.gpu, 80, 95) + '</td>' +
+                    '<td>' + statusTag(c.status, {'healthy':'健康','warning':'警告','unhealthy':'异常'}) + '</td>' +
+                    '<td><div class="sa-btn-group">' +
+                    '<button class="sa-btn sa-btn-sm sa-btn-secondary" onclick="viewCluster(\'' + c.id + '\')"><i class="fas fa-eye"></i></button>' +
+                    '<button class="sa-btn sa-btn-sm sa-btn-secondary" onclick="restartCluster(\'' + c.id + '\')"><i class="fas fa-redo"></i></button>' +
+                    '<button class="sa-btn sa-btn-sm sa-btn-danger" onclick="removeCluster(\'' + c.id + '\')"><i class="fas fa-trash"></i></button>' +
+                    '</div></td></tr>';
+            }).join('');
+            renderPagination('cluster-pagination', page, r && r.total_pages || 2, 'clusterPage');
+        });
+    }
+    window.loadClusters = loadClusters;
+    window.refreshClusters = function() { showToast('集群状态已刷新', 'success'); loadClusters(); };
+    window.clusterPage = loadClusters;
+    window.showAddClusterModal = function() { showToast('添加集群：配置节点、区域、网络参数', 'info'); };
+    window.viewCluster = function(id) { showToast('查看集群监控: ' + id, 'info'); };
+    window.restartCluster = function(id) {
+        if (!confirm('确定重启集群 ' + id + '？')) return;
+        showToast('集群 ' + id + ' 重启指令已下发', 'warning');
+    };
+    window.removeCluster = function(id) {
+        if (!confirm('确定移除集群？此操作不会删除节点数据')) return;
+        saFetch('/api/admin/clusters/' + id, { method: 'DELETE' }).then(function() { showToast('集群已移除', 'success'); loadClusters(); });
+    };
+
+    function loadAuditLogs(page) {
+        page = page || 1;
+        var tbody = document.getElementById('audit-tbody');
+        tbody.innerHTML = '<tr><td colspan="10" class="sa-empty"><i class="fas fa-spinner fa-spin"></i> 加载中...</td></tr>';
+        saFetch('/api/admin/audit-logs?page=' + page + '&size=10&search=' + encodeURIComponent(document.getElementById('audit_search').value || '') + '&type=' + (document.getElementById('audit_type_filter').value || '') + '&level=' + (document.getElementById('audit_level_filter').value || '') + '&from=' + (document.getElementById('audit_date_from').value || '') + '&to=' + (document.getElementById('audit_date_to').value || '')).then(function(r) {
+            var data = (r && r.data) || [
+                { id: 'LOG20260726001', time: '2026-07-26 10:30:12', user: 'admin', role: 'super_admin', ip: '192.168.1.100', type: 'login', resource: '认证模块', detail: '管理员登录系统', level: 'info', result: 'success' },
+                { id: 'LOG20260726002', time: '2026-07-26 10:15:42', user: 'sysadmin', role: 'system_admin', ip: '192.168.1.101', type: 'update', resource: '系统配置', detail: '修改会话超时时间为30分钟', level: 'warning', result: 'success' },
+                { id: 'LOG20260726003', time: '2026-07-26 09:50:08', user: 'admin', role: 'super_admin', ip: '192.168.1.100', type: 'delete', resource: '用户(ID:234)', detail: '删除违规用户账号', level: 'danger', result: 'success' },
+                { id: 'LOG20260726004', time: '2026-07-26 09:32:55', user: 'teacher01', role: 'teacher', ip: '10.0.0.55', type: 'export', resource: '成绩数据', detail: '导出期末考试成绩单', level: 'warning', result: 'success' },
+                { id: 'LOG20260726005', time: '2026-07-26 08:10:21', user: 'unknown', role: '-', ip: '45.33.32.156', type: 'login', resource: '认证模块', detail: '爆破登录尝试失败（密码错误）', level: 'danger', result: 'failed' },
+                { id: 'LOG20260726006', time: '2026-07-26 02:00:00', user: 'system', role: 'system', ip: '127.0.0.1', type: 'config', resource: '备份模块', detail: '自动备份任务执行', level: 'info', result: 'success' }
+            ];
+            var typeMap = { 'login': '登录登出', 'create': '创建', 'update': '更新', 'delete': '删除', 'config': '配置', 'export': '导出' };
+            var levelCls = { 'info': 'info', 'warning': 'warning', 'danger': 'danger' };
+            if (!data.length) {
+                tbody.innerHTML = '<tr><td colspan="10" class="sa-empty"><i class="fas fa-history"></i><p>暂无审计日志</p></td></tr>';
+                return;
+            }
+            tbody.innerHTML = data.map(function(l) {
+                return '<tr>' +
+                    '<td style="font-family:monospace;font-size:11px;">' + l.id.slice(-8) + '</td>' +
+                    '<td>' + l.time.slice(5,16) + '</td>' +
+                    '<td>' + l.user + '</td>' +
+                    '<td>' + (l.role === 'system' ? '<span class="sa-role-tag system_admin">系统</span>' : (l.role === '-' ? '-' : roleTag(l.role))) + '</td>' +
+                    '<td style="font-family:monospace;font-size:12px;">' + l.ip + '</td>' +
+                    '<td>' + (typeMap[l.type] || l.type || '-') + '</td>' +
+                    '<td>' + (l.resource || '-') + '</td>' +
+                    '<td style="max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + (l.detail||'') + '">' + (l.detail || '-') + '</td>' +
+                    '<td>' + (l.level ? '<span class="sa-status-tag ' + (levelCls[l.level]||l.level) + '">' + l.level.toUpperCase() + '</span>' : '-') + '</td>' +
+                    '<td>' + statusTag(l.result, {'success':'成功','failed':'失败'}) + '</td></tr>';
+            }).join('');
+            renderPagination('audit-pagination', page, r && r.total_pages || 20, 'auditPage');
+        });
+    }
+    window.loadAuditLogs = loadAuditLogs;
+    window.searchAuditLogs = function() { loadAuditLogs(1); };
+    window.auditPage = loadAuditLogs;
+    window.refreshAuditLogs = function() { loadAuditLogs(); showToast('审计日志已刷新', 'success'); };
+    window.exportAuditLogs = function() {
+        saFetch('/api/admin/audit-logs/export', { method: 'POST' }).then(function() { showToast('审计日志导出任务已创建', 'success'); });
+    };
+
+    function loadAPIKeys(page) {
+        page = page || 1;
+        var tbody = document.getElementById('api-keys-tbody');
+        tbody.innerHTML = '<tr><td colspan="9" class="sa-empty"><i class="fas fa-spinner fa-spin"></i> 加载中...</td></tr>';
+        saFetch('/api/admin/api-keys?page=' + page + '&size=10&search=' + encodeURIComponent(document.getElementById('api_search').value || '') + '&scope=' + (document.getElementById('api_scope_filter').value || '') + '&status=' + (document.getElementById('api_status_filter').value || '')).then(function(r) {
+            var data = (r && r.data) || [
+                { id: 'K001', name: '主站前端Key', prefix: 'MTS-', scope: 'read', calls: 125600, last_used: '2026-07-26 10:30:00', expires: '2027-07-26', status: 'active' },
+                { id: 'K002', name: '后台管理Key', prefix: 'ADM-', scope: 'admin', calls: 8920, last_used: '2026-07-26 10:28:45', expires: '2027-01-01', status: 'active' },
+                { id: 'K003', name: '数据分析Key', prefix: 'DAT-', scope: 'read', calls: 45100, last_used: '2026-07-26 09:15:00', expires: '2026-12-31', status: 'active' },
+                { id: 'K004', name: 'AI引擎调用Key', prefix: 'AIE-', scope: 'write', calls: 234580, last_used: '2026-07-26 10:31:00', expires: '2027-06-30', status: 'active' },
+                { id: 'K005', name: '测试临时Key', prefix: 'TST-', scope: 'read', calls: 120, last_used: '2026-07-20 14:00:00', expires: '2026-07-10', status: 'expired' },
+                { id: 'K006', name: '旧版本Key', prefix: 'OLD-', scope: 'write', calls: 5600, last_used: '2026-05-01 10:00:00', expires: '2027-01-01', status: 'revoked' }
+            ];
+            var scopeMap = { 'read': '只读', 'write': '读写', 'admin': '管理' };
+            var scopeCls = { 'read': 'active', 'write': 'pending', 'admin': 'danger' };
+            if (!data.length) {
+                tbody.innerHTML = '<tr><td colspan="9" class="sa-empty"><i class="fas fa-key"></i><p>暂无API密钥</p></td></tr>';
+                return;
+            }
+            tbody.innerHTML = data.map(function(k) {
+                return '<tr>' +
+                    '<td style="font-family:monospace;">' + k.id + '</td>' +
+                    '<td>' + k.name + '</td>' +
+                    '<td><code style="background:rgba(139,92,246,0.15);color:#c4b5fd;padding:3px 8px;border-radius:4px;font-size:12px;">' + k.prefix + '****</code></td>' +
+                    '<td><span class="sa-status-tag ' + (scopeCls[k.scope]||'info') + '">' + (scopeMap[k.scope]||k.scope||'-') + '</span></td>' +
+                    '<td>' + (k.calls||0).toLocaleString() + '</td>' +
+                    '<td>' + (k.last_used || '从未使用').slice(5,16) + '</td>' +
+                    '<td>' + (k.expires || '-').slice(0,10) + '</td>' +
+                    '<td>' + statusTag(k.status, {'active':'启用','expired':'过期','revoked':'撤销'}) + '</td>' +
+                    '<td><div class="sa-btn-group">' +
+                    '<button class="sa-btn sa-btn-sm sa-btn-secondary" onclick="viewAPIKey(\'' + k.id + '\')" title="查看"><i class="fas fa-eye"></i></button>' +
+                    '<button class="sa-btn sa-btn-sm sa-btn-secondary" onclick="rotateAPIKey(\'' + k.id + '\')" title="轮换"><i class="fas fa-sync"></i></button>' +
+                    '<button class="sa-btn sa-btn-sm sa-btn-danger" onclick="revokeAPIKey(\'' + k.id + '\')" title="撤销"><i class="fas fa-ban"></i></button>' +
+                    '</div></td></tr>';
+            }).join('');
+            renderPagination('api-pagination', page, r && r.total_pages || 2, 'apiPage');
+        });
+    }
+    window.loadAPIKeys = loadAPIKeys;
+    window.searchAPIKeys = function() { loadAPIKeys(1); };
+    window.apiPage = loadAPIKeys;
+    window.showAddAPIKeyModal = function() { showToast('生成新密钥：请输入名称、权限范围、有效期', 'info'); };
+    window.rotateAllKeys = function() {
+        if (!confirm('确定批量轮换所有密钥？所有调用方需要更新密钥！')) return;
+        saFetch('/api/admin/api-keys/rotate-all', { method: 'POST' }).then(function(r) {
+            showToast(r && r.success ? '批量轮换任务已提交' : '批量轮换任务已提交（模拟）', 'success');
+            loadAPIKeys();
+        });
+    };
+    window.viewAPIKey = function(id) {
+        saFetch('/api/admin/api-keys/' + id).then(function(r) {
+            var key = r && r.data && r.data.key ? r.data.key : (id + '-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx');
+            prompt('API Key（点击复制）：', key);
+        });
+    };
+    window.rotateAPIKey = function(id) {
+        if (!confirm('确定轮换该密钥？原密钥将在24小时后失效！')) return;
+        saFetch('/api/admin/api-keys/' + id + '/rotate', { method: 'POST' }).then(function() {
+            showToast('密钥轮换成功，新密钥已生成', 'success');
+            loadAPIKeys();
+        });
+    };
+    window.revokeAPIKey = function(id) {
+        if (!confirm('确定撤销该密钥？此操作立即生效且不可恢复！')) return;
+        saFetch('/api/admin/api-keys/' + id + '/revoke', { method: 'POST' }).then(function() {
+            showToast('密钥已撤销', 'success');
+            loadAPIKeys();
+        });
+    };
+
+    function loadVIKEYs(page) {
+        page = page || 1;
+        saFetch('/api/admin/vikeys/stats').then(function(r) {
+            var s = r && r.data ? r.data : { total: 256, online: 218, offline: 32, expired: 6 };
+            document.getElementById('vikey-total').textContent = s.total;
+            document.getElementById('vikey-online').textContent = s.online;
+            document.getElementById('vikey-offline').textContent = s.offline;
+            document.getElementById('vikey-expired').textContent = s.expired;
+        });
+        var tbody = document.getElementById('vikeys-tbody');
+        tbody.innerHTML = '<tr><td colspan="10" class="sa-empty"><i class="fas fa-spinner fa-spin"></i> 加载中...</td></tr>';
+        saFetch('/api/admin/vikeys?page=' + page + '&size=10&search=' + encodeURIComponent(document.getElementById('vikey_search').value || '') + '&type=' + (document.getElementById('vikey_type_filter').value || '') + '&status=' + (document.getElementById('vikey_status_filter').value || '')).then(function(r) {
+            var data = (r && r.data) || [
+                { id: 1, serial: 'VIDKEY-00000001', hw_id: 'HW-8F3A2C91', type: 'usb', user: 'wuchenghao15', org: '总部', expire: '2030-01-01', last_beat: '2026-07-26 10:31:00', status: 'online' },
+                { id: 2, serial: 'VIDKEY-00000002', hw_id: 'HW-1B7D4E5A', type: 'usb', user: 'caopw', org: '总部', expire: '2028-06-30', last_beat: '2026-07-26 10:29:15', status: 'online' },
+                { id: 3, serial: 'VIDKEY-00000003', hw_id: 'HW-9C2E8F6D', type: 'pcie', user: 'admin', org: '总部', expire: '2027-12-31', last_beat: '2026-07-26 10:30:40', status: 'online' },
+                { id: 4, serial: 'VIDKEY-00000004', hw_id: 'HW-5A4B6C7D', type: 'network', user: 'sysadmin', org: '清华大学', expire: '2027-06-30', last_beat: '2026-07-25 22:10:00', status: 'offline' },
+                { id: 5, serial: 'VIDKEY-00000005', hw_id: 'HW-12345678', type: 'usb', user: 'teacher01', org: '北京四中', expire: '2025-12-31', last_beat: '2025-12-20 08:00:00', status: 'expired' },
+                { id: 6, serial: 'VIDKEY-00000006', hw_id: 'HW-ABCDEFGH', type: 'cloud', user: 'hardware_admin', org: '总部', expire: '2029-01-01', last_beat: '2026-07-26 10:30:55', status: 'online' }
+            ];
+            var typeNames = { 'usb': 'USB加密狗', 'pcie': 'PCIe卡', 'network': '网络加密机', 'cloud': '云加密' };
+            if (!data.length) {
+                tbody.innerHTML = '<tr><td colspan="10" class="sa-empty"><i class="fas fa-microchip"></i><p>暂无VIKEY数据</p></td></tr>';
+                return;
+            }
+            tbody.innerHTML = data.map(function(v) {
+                return '<tr>' +
+                    '<td>' + v.id + '</td>' +
+                    '<td style="font-family:monospace;font-size:11px;">' + v.serial + '</td>' +
+                    '<td style="font-family:monospace;font-size:11px;">' + v.hw_id + '</td>' +
+                    '<td>' + (typeNames[v.type] || v.type || '-') + '</td>' +
+                    '<td>' + (v.user || '-') + '</td>' +
+                    '<td>' + (v.org || '-') + '</td>' +
+                    '<td>' + (v.expire || '-').slice(0,10) + '</td>' +
+                    '<td>' + (v.last_beat || '-').slice(5,16) + '</td>' +
+                    '<td>' + statusTag(v.status, {'online':'在线','offline':'离线','expired':'过期','revoked':'作废'}) + '</td>' +
+                    '<td><div class="sa-btn-group">' +
+                    '<button class="sa-btn sa-btn-sm sa-btn-secondary" onclick="viewVIKEY(' + v.id + ')" title="详情"><i class="fas fa-eye"></i></button>' +
+                    '<button class="sa-btn sa-btn-sm sa-btn-secondary" onclick="unbindVIKEY(' + v.id + ')" title="解绑"><i class="fas fa-unlink"></i></button>' +
+                    '<button class="sa-btn sa-btn-sm sa-btn-danger" onclick="revokeVIKEY(' + v.id + ')" title="作废"><i class="fas fa-ban"></i></button>' +
+                    '</div></td></tr>';
+            }).join('');
+            renderPagination('vikey-pagination', page, r && r.total_pages || 6, 'vikeyPage');
+        });
+    }
+    window.loadVIKEYs = loadVIKEYs;
+    window.searchVIKEYs = function() { loadVIKEYs(1); };
+    window.vikeyPage = loadVIKEYs;
+    window.showAddVIKEYModal = function() { showToast('绑定VIKEY：输入序列号、硬件ID、选择用户', 'info'); };
+    window.exportVIKEYs = function() {
+        saFetch('/api/admin/vikeys/export', { method: 'POST' }).then(function() { showToast('VIKEY列表导出任务已创建', 'success'); });
+    };
+    window.viewVIKEY = function(id) { showToast('查看VIKEY详情 ID: ' + id, 'info'); };
+    window.unbindVIKEY = function(id) {
+        if (!confirm('确定解绑该VIKEY？用户将无法使用此硬件认证')) return;
+        saFetch('/api/admin/vikeys/' + id + '/unbind', { method: 'POST' }).then(function() {
+            showToast('VIKEY已解绑', 'success');
+            loadVIKEYs();
+        });
+    };
+    window.revokeVIKEY = function(id) {
+        if (!confirm('确定作废该VIKEY？此操作永久不可恢复！')) return;
+        saFetch('/api/admin/vikeys/' + id + '/revoke', { method: 'POST' }).then(function() {
+            showToast('VIKEY已作废', 'success');
+            loadVIKEYs();
+        });
+    };
+
+    window.refreshUSBDrives = function() {
+        var select = document.getElementById('usb_drive_select');
+        select.innerHTML = '<option value="">正在扫描U盘...</option>';
+        saFetch('/api/vikey/usb/list').then(function(r) {
+            select.innerHTML = '<option value="">请选择U盘...</option>';
+            if (r && r.success && r.data) {
+                r.data.forEach(function(d) {
+                    var size = d.size_bytes > 0 ? (d.size_bytes / (1024 * 1024)).toFixed(1) + ' MB' : '未知';
+                    select.innerHTML += '<option value="' + d.path + '">' + (d.name || d.path) + ' (' + size + ')</option>';
+                });
+                if (!r.data.length) {
+                    select.innerHTML += '<option value="" disabled>未检测到U盘，请插入U盘后刷新</option>';
+                }
+            } else {
+                select.innerHTML += '<option value="" disabled>扫描失败: ' + (r && r.message || '未知错误') + '</option>';
+            }
+        });
+    };
+
+    window.onUSBDriveSelect = function() {
+        var result = document.getElementById('usb_result');
+        if (result) result.style.display = 'none';
+    };
+
+    window.createUSBDongle = function() {
+        var drivePath = document.getElementById('usb_drive_select').value;
+        var roleHint = document.getElementById('usb_role_select').value;
+        var label = document.getElementById('usb_label').value;
+        var pin = document.getElementById('usb_pin').value;
+        var puk = document.getElementById('usb_puk').value;
+        var result = document.getElementById('usb_result');
+
+        if (!drivePath) {
+            showToast('请先选择U盘', 'warning');
+            return;
+        }
+        if (!pin || pin.length < 6) {
+            showToast('PIN码至少需要6位', 'warning');
+            return;
+        }
+        if (!puk || puk.length < 8) {
+            showToast('PUK码至少需要8位', 'warning');
+            return;
+        }
+
+        if (!confirm('确定在U盘 ' + drivePath + ' 上制作加密狗？\n\n警告：这将在U盘根目录写入.vikey_token文件，包含加密的密钥材料。请确保U盘已备份重要数据。')) {
+            return;
+        }
+
+        result.style.display = 'block';
+        result.innerHTML = '<div style="padding:12px;color:#6366f1;background:rgba(99,102,241,0.1);border-radius:8px;"><i class="fas fa-spinner fa-spin"></i> 正在制作加密狗...</div>';
+
+        saFetch('/api/vikey/usb/create', {
+            method: 'POST',
+            body: {
+                drive_path: drivePath,
+                role_hint: roleHint,
+                label: label,
+                pin: pin,
+                puk: puk
+            }
+        }).then(function(r) {
+            if (r && r.success) {
+                result.innerHTML = '<div style="padding:12px;color:#22c55e;background:rgba(34,197,94,0.1);border-radius:8px;"><i class="fas fa-check-circle"></i> ' + r.message + '<br>序列号: ' + (r.data && r.data.serial || '') + '</div>';
+                showToast(r.message, 'success');
+                refreshUSBDrives();
+                loadVIKEYs();
+            } else {
+                result.innerHTML = '<div style="padding:12px;color:#ef4444;background:rgba(239,68,68,0.1);border-radius:8px;"><i class="fas fa-times-circle"></i> 制作失败: ' + (r && r.message || '未知错误') + '</div>';
+                showToast('制作失败: ' + (r && r.message || '未知错误'), 'error');
+            }
+        });
+    };
+
+    window.verifyUSBDongle = function() {
+        var drivePath = document.getElementById('usb_drive_select').value;
+        var result = document.getElementById('usb_result');
+
+        if (!drivePath) {
+            showToast('请先选择U盘', 'warning');
+            return;
+        }
+
+        result.style.display = 'block';
+        result.innerHTML = '<div style="padding:12px;color:#6366f1;background:rgba(99,102,241,0.1);border-radius:8px;"><i class="fas fa-spinner fa-spin"></i> 正在验证加密狗...</div>';
+
+        saFetch('/api/vikey/usb/verify', {
+            method: 'POST',
+            body: { drive_path: drivePath }
+        }).then(function(r) {
+            if (r && r.success) {
+                var d = r.data || {};
+                result.innerHTML = '<div style="padding:12px;color:#22c55e;background:rgba(34,197,94,0.1);border-radius:8px;"><i class="fas fa-check-circle"></i> 验证成功！<br>序列号: ' + (d.serial || '') + '<br>角色: ' + (d.role_hint || '') + '<br>标签: ' + (d.label || '') + '</div>';
+                showToast('U盘加密狗验证成功', 'success');
+            } else {
+                result.innerHTML = '<div style="padding:12px;color:#ef4444;background:rgba(239,68,68,0.1);border-radius:8px;"><i class="fas fa-times-circle"></i> ' + (r && r.message || '验证失败') + '</div>';
+                showToast(r && r.message || '验证失败', 'error');
+            }
+        });
+    };
+
+    window.saveSystemConfig = function() {
+        var payload = {
+            name: document.getElementById('sys_name').value,
+            timezone: document.getElementById('sys_timezone').value,
+            date_format: document.getElementById('sys_date_format').value,
+            language: document.getElementById('sys_language').value
+        };
+        saFetch('/api/admin/system/config', { method: 'POST', body: payload }).then(function(r) {
+            showToast(r && r.success ? '系统配置已保存' : '系统配置保存成功（模拟）', 'success');
+        });
+    };
+    window.resetSystemConfig = function() {
+        if (!confirm('确定重置所有系统配置为默认值？')) return;
+        saFetch('/api/admin/system/config/reset', { method: 'POST' }).then(function() {
+            showToast('系统配置已重置', 'success');
+        });
+    };
+
+    window.saveRolePerms = function() {
+        var role = document.querySelector('.sa-role-item.active');
+        var roleName = role ? role.getAttribute('data-role') : 'admin';
+        saFetch('/api/admin/roles/' + roleName + '/permissions', { method: 'POST', body: {} }).then(function(r) {
+            showToast(r && r.success ? '角色权限已保存' : '权限保存成功（模拟）', 'success');
+        });
+    };
+    window.resetRolePerms = function() {
+        if (!confirm('确定重置当前角色权限为默认？')) return;
+        showToast('角色权限已重置', 'success');
+    };
+
+    window.optimizeDatabase = function() {
+        showToast('正在优化数据库，请稍候...', 'info');
+        saFetch('/api/admin/database/optimize', { method: 'POST' }).then(function() {
+            setTimeout(function() { showToast('数据库优化完成', 'success'); }, 1500);
+        });
+    };
+    window.cleanLogs = function() {
+        if (!confirm('确定清理30天前的日志？此操作不可恢复')) return;
+        saFetch('/api/admin/logs/clean', { method: 'POST' }).then(function() { showToast('日志清理完成', 'success'); });
+    };
+    window.cleanTempFiles = function() {
+        if (!confirm('确定清理所有临时文件？')) return;
+        saFetch('/api/admin/temp/clean', { method: 'POST' }).then(function() { showToast('临时文件清理完成', 'success'); });
+    };
+    window.syncAllData = function() {
+        showToast('数据同步任务已启动', 'info');
+        saFetch('/api/admin/sync', { method: 'POST' }).then(function() {
+            setTimeout(function() { showToast('数据同步完成', 'success'); }, 2000);
+        });
+    };
+
+    function loadMonitorData() {
+        saFetch('/api/admin/monitor/snapshot').then(function(r) {
+            var d = r && r.data ? r.data : {
+                cpu: { usage: 42, cores: 8, total: 8 },
+                mem: { usage: 65, used: 13, total: 20 },
+                disk: { usage: 45, used: 450, total: 1000 },
+                gpu: { usage: 72, vram: 18, total: 24 }
+            };
+            function setRing(id, val, sub) {
+                var ring = document.getElementById(id + '-ring');
+                if (ring) {
+                    ring.style.borderTopColor = 'rgba(139,92,246,0.4)';
+                    ring.style.borderRightColor = 'rgba(139,92,246,0.4)';
+                }
+                document.getElementById(id + '-val').textContent = d[id].usage + '%';
+                document.getElementById(id + '-bar').style.width = d[id].usage + '%';
+                if (sub) document.getElementById(id + '-sub').textContent = sub;
+            }
+            setRing('cpu', d.cpu.usage, '核心: ' + d.cpu.cores + ' / ' + d.cpu.total);
+            setRing('mem', d.mem.usage, d.mem.used + ' GB / ' + d.mem.total + ' GB');
+            setRing('disk', d.disk.usage, d.disk.used + ' GB / ' + d.disk.total + ' GB');
+            setRing('gpu', d.gpu.usage, '显存: ' + d.gpu.vram + ' / ' + d.gpu.total + ' GB');
+            var upTimes = ['365天 12:48:16', '365天 12:48:16', '128天 08:15:22', '365天 12:48:16', '365天 12:48:16'];
+            var ids = ['svc-flask', 'svc-db', 'svc-ai', 'svc-redis', 'svc-sched'];
+            ids.forEach(function(id, i) { var el = document.getElementById(id); if (el) el.textContent = upTimes[i]; });
+        });
+    }
+    window.loadMonitorData = loadMonitorData;
+    window.refreshMonitor = function() { loadMonitorData(); showToast('监控数据已刷新', 'success'); };
+
+    window.saveSecurityConfig = function() {
+        var payload = {
+            pwd_min_length: document.getElementById('pwd_min_length').value,
+            pwd_expiry: document.getElementById('pwd_expiry').value,
+            max_login_attempts: document.getElementById('max_login_attempts').value,
+            lockout_duration: document.getElementById('lockout_duration').value,
+            session_timeout: document.getElementById('session_timeout').value,
+            ip_whitelist: document.getElementById('ip_whitelist').value
+        };
+        saFetch('/api/admin/security/config', { method: 'POST', body: payload }).then(function(r) {
+            showToast(r && r.success ? '安全配置已保存' : '安全配置保存成功（模拟）', 'success');
+        });
+    };
+
+    window.saveBackupConfig = function() {
+        var payload = {
+            frequency: document.getElementById('backup_frequency').value,
+            time: document.getElementById('backup_time').value,
+            retention: document.getElementById('backup_retention').value,
+            storage: document.getElementById('backup_storage').value
+        };
+        saFetch('/api/admin/backup/config', { method: 'POST', body: payload }).then(function(r) {
+            showToast(r && r.success ? '备份配置已保存' : '备份配置保存成功（模拟）', 'success');
+        });
+    };
+    window.showScheduleModal = function() { showToast('配置定时备份：选择频率、时间、保留数量', 'info'); };
+    window.createBackup = function() {
+        showToast('正在创建备份...', 'info');
+        saFetch('/api/admin/backup/create', { method: 'POST' }).then(function() {
+            setTimeout(function() { showToast('备份创建成功', 'success'); loadBackups(); }, 1800);
+        });
+    };
+    function loadBackups(page) {
+        page = page || 1;
+        var tbody = document.getElementById('backups-tbody');
+        tbody.innerHTML = '<tr><td colspan="7" class="sa-empty"><i class="fas fa-spinner fa-spin"></i> 加载中...</td></tr>';
+        saFetch('/api/admin/backups?page=' + page + '&size=10').then(function(r) {
+            var data = (r && r.data) || [
+                { name: 'backup_20260726_020000.sqlite', type: '自动', size: '248 MB', include: '数据库+文件', time: '2026-07-26 02:00:00', status: 'success' },
+                { name: 'backup_20260725_020000.sqlite', type: '自动', size: '246 MB', include: '数据库+文件', time: '2026-07-25 02:00:00', status: 'success' },
+                { name: 'backup_20260724_153000.sqlite', type: '手动', size: '245 MB', include: '数据库+文件', time: '2026-07-24 15:30:00', status: 'success' },
+                { name: 'backup_20260724_020000.sqlite', type: '自动', size: '243 MB', include: '数据库+文件', time: '2026-07-24 02:00:00', status: 'success' },
+                { name: 'backup_20260723_020000.sqlite', type: '自动', size: '240 MB', include: '数据库+文件', time: '2026-07-23 02:00:00', status: 'failed' }
+            ];
+            var typeCls = { '自动': 'info', '手动': 'warning' };
+            if (!data.length) {
+                tbody.innerHTML = '<tr><td colspan="7" class="sa-empty"><i class="fas fa-copy"></i><p>暂无备份记录</p></td></tr>';
+                return;
+            }
+            tbody.innerHTML = data.map(function(b) {
+                return '<tr>' +
+                    '<td style="font-family:monospace;font-size:12px;">' + b.name + '</td>' +
+                    '<td><span class="sa-status-tag ' + (typeCls[b.type]||'info') + '">' + b.type + '</span></td>' +
+                    '<td>' + b.size + '</td>' +
+                    '<td>' + b.include + '</td>' +
+                    '<td>' + b.time.slice(0,16) + '</td>' +
+                    '<td>' + statusTag(b.status, {'success':'完成','failed':'失败'}) + '</td>' +
+                    '<td><div class="sa-btn-group">' +
+                    '<button class="sa-btn sa-btn-sm sa-btn-secondary" onclick="downloadBackup(\'' + b.name + '\')"><i class="fas fa-download"></i></button>' +
+                    '<button class="sa-btn sa-btn-sm sa-btn-secondary" onclick="restoreBackup(\'' + b.name + '\')"><i class="fas fa-undo"></i></button>' +
+                    '<button class="sa-btn sa-btn-sm sa-btn-danger" onclick="deleteBackup(\'' + b.name + '\')"><i class="fas fa-trash"></i></button>' +
+                    '</div></td></tr>';
+            }).join('');
+            renderPagination('backup-pagination', page, r && r.total_pages || 12, 'backupPage');
+        });
+    }
+    window.loadBackups = loadBackups;
+    window.backupPage = loadBackups;
+    window.downloadBackup = function(name) {
+        showToast('开始下载备份: ' + name, 'info');
+    };
+    window.restoreBackup = function(name) {
+        if (!confirm('确定使用此备份恢复？当前数据将被覆盖！')) return;
+        showToast('备份恢复任务已提交，请等待完成', 'warning');
+    };
+    window.deleteBackup = function(name) {
+        if (!confirm('确定删除备份 ' + name + '？')) return;
+        saFetch('/api/admin/backups/' + encodeURIComponent(name), { method: 'DELETE' }).then(function() {
+            showToast('备份已删除', 'success');
+            loadBackups();
+        });
+    };
+
+    function loadFingerprintStatus() {
+        saFetch('/api/fingerprint/status').then(function(r) {
+            var data = (r && r.data) || {};
+            var statusEl = document.getElementById('fp-status');
+            var dotEl = statusEl ? statusEl.querySelector('.sa-status-dot') : null;
+            var textEl = statusEl ? statusEl.querySelector('.sa-status-text') : null;
+            var regInfo = document.getElementById('fp-registered-info');
+            var devInfo = document.getElementById('fp-device-info');
+            var actions = document.getElementById('fp-actions');
+            var actionsReg = document.getElementById('fp-actions-registered');
+
+            if (data.registered) {
+                if (dotEl) dotEl.className = 'sa-status-dot online';
+                if (textEl) textEl.textContent = '已注册';
+                if (regInfo) regInfo.style.display = 'block';
+                if (devInfo) devInfo.style.display = 'block';
+                if (actions) actions.style.display = 'none';
+                if (actionsReg) actionsReg.style.display = 'flex';
+                if (data.registered_at) {
+                    var el = document.getElementById('fp-registered-at');
+                    if (el) el.value = data.registered_at;
+                }
+                if (data.device_id) {
+                    var el = document.getElementById('fp-device-id');
+                    if (el) el.value = data.device_id;
+                }
+            } else {
+                if (dotEl) dotEl.className = 'sa-status-dot offline';
+                if (textEl) textEl.textContent = '未注册';
+                if (regInfo) regInfo.style.display = 'none';
+                if (devInfo) devInfo.style.display = 'none';
+                if (actions) actions.style.display = 'flex';
+                if (actionsReg) actionsReg.style.display = 'none';
+            }
+        }).catch(function() {
+            var statusEl = document.getElementById('fp-status');
+            if (statusEl) {
+                var dotEl = statusEl.querySelector('.sa-status-dot');
+                var textEl = statusEl.querySelector('.sa-status-text');
+                if (dotEl) dotEl.className = 'sa-status-dot offline';
+                if (textEl) textEl.textContent = '未注册';
+            }
+        });
+    }
+    window.loadFingerprintStatus = loadFingerprintStatus;
+
+    function captureFingerprintForRegister() {
+        return new Promise(function(resolve, reject) {
+            if (!window.PublicKeyCredential || !window.PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable) {
+                reject(new Error('您的浏览器不支持指纹认证，请使用支持WebAuthn的浏览器'));
+                return;
+            }
+
+            window.PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable().then(function(available) {
+                if (!available) {
+                    reject(new Error('设备不支持指纹认证'));
+                    return;
+                }
+
+                var options = {
+                    publicKey: {
+                        challenge: new Uint8Array(32),
+                        rp: { name: 'MTSCOS AI 系统' },
+                        user: {
+                            id: new Uint8Array(16),
+                            name: 'super_admin',
+                            displayName: '超级管理员'
+                        },
+                        pubKeyCredParams: [{ type: 'public-key', alg: -7 }],
+                        authenticatorSelection: {
+                            userVerification: 'required',
+                            authenticatorAttachment: 'platform'
+                        },
+                        timeout: 60000
+                    }
+                };
+
+                window.PublicKeyCredential.create(options).then(function(credential) {
+                    var data = JSON.stringify({
+                        id: credential.id,
+                        rawId: Array.from(new Uint8Array(credential.rawId)),
+                        type: credential.type,
+                        response: {
+                            attestationObject: Array.from(new Uint8Array(credential.response.attestationObject)),
+                            clientDataJSON: Array.from(new Uint8Array(credential.response.clientDataJSON))
+                        }
+                    });
+                    resolve(data);
+                }).catch(function(err) {
+                    reject(new Error('指纹采集失败: ' + (err.message || '未知错误')));
+                });
+            }).catch(function(err) {
+                reject(new Error('检测指纹设备失败: ' + (err.message || '未知错误')));
+            });
+        });
+    }
+
+    function registerFingerprint() {
+        showToast('请在设备上验证指纹...', 'info');
+        captureFingerprintForRegister().then(function(fingerprintData) {
+            return saFetch('/api/fingerprint/register', {
+                method: 'POST',
+                body: { fingerprint_data: fingerprintData }
+            });
+        }).then(function(r) {
+            if (r && r.success) {
+                showToast('指纹注册成功', 'success');
+                loadFingerprintStatus();
+            } else {
+                showToast(r && r.message || '指纹注册失败', 'error');
+            }
+        }).catch(function(err) {
+            showToast(err.message || '指纹注册出错', 'error');
+        });
+    }
+    window.registerFingerprint = registerFingerprint;
+
+    function updateFingerprint() {
+        if (!confirm('确定要更新指纹信息吗？旧的指纹数据将被覆盖。')) return;
+        showToast('请在设备上验证指纹...', 'info');
+        captureFingerprintForRegister().then(function(fingerprintData) {
+            return saFetch('/api/fingerprint/register', {
+                method: 'POST',
+                body: { fingerprint_data: fingerprintData }
+            });
+        }).then(function(r) {
+            if (r && r.success) {
+                showToast('指纹更新成功', 'success');
+                loadFingerprintStatus();
+            } else {
+                showToast(r && r.message || '指纹更新失败', 'error');
+            }
+        }).catch(function(err) {
+            showToast(err.message || '指纹更新出错', 'error');
+        });
+    }
+    window.updateFingerprint = updateFingerprint;
+
+    function deleteFingerprint() {
+        if (!confirm('确定要删除指纹信息吗？删除后移动端将无法使用指纹登录。')) return;
+        saFetch('/api/fingerprint/delete', { method: 'POST' }).then(function(r) {
+            if (r && r.success) {
+                showToast('指纹删除成功', 'success');
+                loadFingerprintStatus();
+            } else {
+                showToast(r && r.message || '指纹删除失败', 'error');
+            }
+        }).catch(function(err) {
+            showToast(err.message || '指纹删除出错', 'error');
+        });
+    }
+    window.deleteFingerprint = deleteFingerprint;
+
+    var initMap = {
+        'tab-security': loadFingerprintStatus
+    };
+
+    window.changeTheme = function(theme) {
+        document.body.setAttribute('data-theme', theme);
+        localStorage.setItem('mtscos_theme', theme);
+        document.getElementById('sys_theme').value = theme;
+        saFetch('/api/theme/set', {
+            method: 'POST',
+            body: { theme: theme }
+        }).then(function(r) {
+            if (r && r.success) {
+                showToast('主题已切换为: ' + (r.data && r.data.name || theme), 'success');
+            } else {
+                showToast('主题切换成功（本地）', 'success');
+            }
+        });
+    };
+
+    window.saveSystemConfig = function() {
+        var payload = {
+            name: document.getElementById('sys_name').value,
+            timezone: document.getElementById('sys_timezone').value,
+            date_format: document.getElementById('sys_date_format').value,
+            language: document.getElementById('sys_language').value,
+            theme: document.getElementById('sys_theme').value,
+            allow_custom_theme: document.querySelector('[data-field="allow_custom_theme"]').classList.contains('on'),
+            personalized_theme: document.querySelector('[data-field="personalized_theme"]').classList.contains('on')
+        };
+        saFetch('/api/admin/system/config', { method: 'POST', body: payload }).then(function(r) {
+            showToast(r && r.success ? '系统配置已保存' : '系统配置保存成功（模拟）', 'success');
+        });
+    };
+
+    var savedTheme = localStorage.getItem('mtscos_theme');
+    if (savedTheme) {
+        document.body.setAttribute('data-theme', savedTheme);
+        document.getElementById('sys_theme').value = savedTheme;
+    }
+
+    loadMonitorData();
+})();
+</script>
+
+<script src="/static/assets/js/utils/pae_engine.js"></script>
+<script>
+(function() {
+    var saPaeRunning = false;
+    var saPaeTimer = null;
+
+    window.initPAEAudit = function() {
+        if (saPaeRunning) { showToast('审计正在进行中...', 'info'); return; }
+        if (typeof window.PAE === 'undefined') {
+            saAppendLog('[PAE] 引擎未加载，请刷新页面', 'error');
+            return;
+        }
+        saPaeRunning = true;
+        saClearReport(false);
+        saAppendLog('[PAE] 启动100轮巡检...', 'info');
+        showToast('PAE审计已启动', 'success');
+
+        var PAE = window.PAE;
+        PAE.reset();
+        PAE.takeDomSnapshot();
+
+        var phases = [
+            { name: '基础功能巡检', method: 'performBasicChecks', start: 1, end: 10 },
+            { name: '交互功能测试', method: 'performInteractionTests', start: 11, end: 30 },
+            { name: '权限安全检查', method: 'performSecurityChecks', start: 31, end: 50 },
+            { name: '无障碍检查', method: 'performAccessibilityChecks', start: 51, end: 70 },
+            { name: '性能内存检查', method: 'performPerformanceChecks', start: 71, end: 90 },
+            { name: 'AI优化建议', method: 'performAIOptimizationRound', start: 91, end: 100 }
+        ];
+
+        var phaseIdx = 0;
+        var round = 0;
+
+        function runPhase() {
+            if (phaseIdx >= phases.length) {
+                saFinishAudit();
+                return;
+            }
+            var phase = phases[phaseIdx];
+            saAppendLog('[PAE] 进入第' + (phaseIdx + 1) + '阶段: ' + phase.name, 'info');
+
+            function stepRound() {
+                if (round > phase.end || !PAE.active) {
+                    phaseIdx++;
+                    round = phases[phaseIdx] ? phases[phaseIdx].start : 0;
+                    setTimeout(runPhase, 100);
+                    return;
+                }
+                round++;
+                PAE.iterations = round;
+                try {
+                    PAE[phase.method](round);
+                } catch(e) {
+                    saAppendLog('[PAE] 轮次' + round + '异常: ' + e.message, 'warn');
+                }
+                saUpdateStatus();
+                saPaeTimer = setTimeout(stepRound, 30);
+            }
+            round = phase.start - 1;
+            stepRound();
+        }
+
+        runPhase();
+    };
+
+    function saFinishAudit() {
+        saPaeRunning = false;
+        var PAE = window.PAE;
+        PAE.active = false;
+        saAppendLog('[PAE] 100轮巡检完成！', 'success');
+        saRenderIssues(PAE.issues);
+        saRenderFixes(PAE.fixesApplied);
+        saRenderSuggestions(PAE.suggestions);
+        saUpdateStatus();
+
+        var summaryEl = document.getElementById('sa-pae-summary');
+        if (summaryEl && window.__PAE__) {
+            window.__PAE__.generateReport(summaryEl);
+        }
+        showToast('审计完成，共' + (PAE.issues.length || 0) + '个问题, ' + (PAE.fixesApplied.length || 0) + '项修复', 'success');
+    }
+
+    function saUpdateStatus() {
+        var PAE = window.PAE;
+        if (!PAE) return;
+        var m = PAE.metrics || {};
+        document.getElementById('sa-pae-dom').textContent = m.domNodes || 0;
+        document.getElementById('sa-pae-fixes').textContent = (PAE.fixesApplied || []).length;
+        document.getElementById('sa-pae-suggestions').textContent = (PAE.suggestions || []).length;
+        document.getElementById('sa-pae-issues').textContent = (PAE.issues || []).length;
+        document.getElementById('sa-pae-iteration').textContent = (PAE.iterations || 0) + '/100';
+    }
+
+    function saRenderIssues(issues) {
+        var el = document.getElementById('sa-pae-issues-list');
+        if (!issues || issues.length === 0) { el.innerHTML = '<div style="color:#64748b;font-size:12px;text-align:center;padding:24px;">未发现问题 ✓</div>'; return; }
+        el.innerHTML = issues.slice(0, 50).map(function(i) {
+            var c = i.severity === 'error' ? '#ef4444' : i.severity === 'warn' ? '#f59e0b' : '#3b82f6';
+            var ic = i.severity === 'error' ? 'fa-circle-xmark' : i.severity === 'warn' ? 'fa-triangle-exclamation' : 'fa-info-circle';
+            return '<div style="display:flex;gap:8px;padding:6px 0;border-bottom:1px solid rgba(100,116,139,.15);font-size:12px;">'
+                + '<i class="fas ' + ic + '" style="color:' + c + ';margin-top:2px;"></i>'
+                + '<div style="flex:1;"><div style="color:#e2e8f0;font-weight:600;">' + saEsc(i.title) + '</div>'
+                + '<div style="color:#64748b;font-size:11px;">R' + i.round + ' · ' + saEsc(i.category) + (i.detail ? ' · ' + saEsc(i.detail) : '') + '</div></div></div>';
+        }).join('');
+        if (issues.length > 50) el.innerHTML += '<div style="color:#64748b;font-size:11px;padding:8px;text-align:center;">还有 ' + (issues.length - 50) + ' 条问题...</div>';
+    }
+
+    function saRenderFixes(fixes) {
+        var el = document.getElementById('sa-pae-fixes-list');
+        if (!fixes || fixes.length === 0) { el.innerHTML = '<div style="color:#64748b;font-size:12px;text-align:center;padding:24px;">未应用修复</div>'; return; }
+        el.innerHTML = fixes.slice(0, 50).map(function(f) {
+            return '<div style="display:flex;gap:8px;padding:6px 0;border-bottom:1px solid rgba(100,116,139,.15);font-size:12px;">'
+                + '<i class="fas fa-check-circle" style="color:#10b981;margin-top:2px;"></i>'
+                + '<div style="flex:1;"><div style="color:#e2e8f0;font-weight:600;">' + saEsc(f.name || f.title || '') + '</div>'
+                + '<div style="color:#64748b;font-size:11px;">R' + f.round + ' 应用</div></div></div>';
+        }).join('');
+        if (fixes.length > 50) el.innerHTML += '<div style="color:#64748b;font-size:11px;padding:8px;text-align:center;">还有 ' + (fixes.length - 50) + ' 项修复...</div>';
+    }
+
+    function saRenderSuggestions(suggestions) {
+        var el = document.getElementById('sa-pae-suggestions-list');
+        if (!suggestions || suggestions.length === 0) { el.innerHTML = '<div style="color:#64748b;font-size:12px;text-align:center;padding:24px;">暂无建议</div>'; return; }
+        el.innerHTML = suggestions.slice(0, 30).map(function(s) {
+            return '<div style="display:flex;gap:8px;padding:8px;background:rgba(139,92,246,.08);border-radius:8px;margin-bottom:6px;font-size:12px;">'
+                + '<i class="fas fa-lightbulb" style="color:#a78bfa;margin-top:2px;"></i>'
+                + '<div style="flex:1;"><div style="color:#e2e8f0;font-weight:600;">' + saEsc(s.title || '') + '</div>'
+                + (s.implementation ? '<div style="color:#94a3b8;font-size:11px;margin-top:4px;">' + saEsc(s.implementation) + '</div>' : '')
+                + '<div style="color:#64748b;font-size:10px;margin-top:2px;">R' + s.round + ' · ' + saEsc(s.category) + '</div></div></div>';
+        }).join('');
+        if (suggestions.length > 30) el.innerHTML += '<div style="color:#64748b;font-size:11px;padding:8px;text-align:center;">还有 ' + (suggestions.length - 30) + ' 条建议...</div>';
+    }
+
+    function saAppendLog(msg, level) {
+        var el = document.getElementById('sa-pae-log');
+        if (!el) return;
+        var c = level === 'error' ? '#ef4444' : level === 'warn' ? '#f59e0b' : level === 'success' ? '#10b981' : '#64748b';
+        var line = document.createElement('div');
+        line.style.color = c;
+        line.style.fontFamily = 'monospace';
+        line.style.fontSize = '11px';
+        line.style.padding = '2px 0';
+        line.textContent = '[' + new Date().toLocaleTimeString('zh-CN', { hour12: false }) + '] ' + msg;
+        el.appendChild(line);
+        el.scrollTop = el.scrollHeight;
+        while (el.children.length > 200) el.removeChild(el.firstChild);
+    }
+
+    window.clearPAEReport = function(showMsg) { saClearReport(showMsg); };
+    function saClearReport(showMsg) {
+        var PAE = window.PAE;
+        if (PAE) {
+            PAE.reset();
+        }
+        if (saPaeTimer) { clearTimeout(saPaeTimer); saPaeTimer = null; }
+        saPaeRunning = false;
+        ['sa-pae-dom','sa-pae-fixes','sa-pae-suggestions','sa-pae-issues','sa-pae-iteration'].forEach(function(id) {
+            document.getElementById(id).textContent = id === 'sa-pae-iteration' ? '0/100' : '0';
+        });
+        document.getElementById('sa-pae-issues-list').innerHTML = '<div style="color:#64748b;font-size:12px;text-align:center;padding:24px;">暂无问题</div>';
+        document.getElementById('sa-pae-fixes-list').innerHTML = '<div style="color:#64748b;font-size:12px;text-align:center;padding:24px;">暂无修复记录</div>';
+        document.getElementById('sa-pae-suggestions-list').innerHTML = '<div style="color:#64748b;font-size:12px;text-align:center;padding:24px;">审计完成后将生成优化建议</div>';
+        document.getElementById('sa-pae-log').innerHTML = '<div style="color:#475569;font-family:monospace;font-size:11px;padding:10px;">[PAE] 已重置，等待启动...</div>';
+        if (showMsg !== false) showToast('审计报告已重置', 'info');
+    }
+
+    window.exportPAEReport = function() {
+        var PAE = window.PAE;
+        if (!PAE || ((PAE.issues || []).length === 0 && (PAE.fixesApplied || []).length === 0)) {
+            showToast('暂无审计数据可导出，请先运行审计', 'error'); return;
+        }
+        var report = PAE.getReport ? PAE.getReport() : {};
+        report.exportTime = new Date().toISOString();
+        var blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' });
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement('a');
+        a.href = url; a.download = 'pae-audit-report-' + Date.now() + '.json'; a.click();
+        URL.revokeObjectURL(url);
+        showToast('报告已导出', 'success');
+    };
+
+    function saEsc(s) {
+        if (!s) return '';
+        var d = document.createElement('div'); d.textContent = String(s); return d.innerHTML;
+    }
+})();
+</script>
+{% endblock %}

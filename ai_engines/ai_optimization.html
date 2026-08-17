@@ -1,0 +1,219 @@
+{% extends "base.html" %}
+
+{% block title %}AI优化报告 - MTSCOS AI系统{% endblock %}
+
+{% block extra_css %}
+    <style>
+        /* AI优化报告特定样式 */
+        .timestamp {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 20px;
+        }
+    </style>
+{% endblock %}
+
+    <!-- 载入过渡动画组件 -->
+    <div class="transition-overlay" id="transition-overlay">
+        <div class="transition-content">
+            <div class="transition-spinner">
+                <div class="spinner-ring">
+                    <div class="spinner-inner"></div>
+                    <div class="spinner-dot"></div>
+                </div>
+            </div>
+            <div class="transition-text" id="transition-text">正在加载...</div>
+        </div>
+    </div>
+
+    {% block content %}
+    <div class="container">
+        <!-- 主内容区 -->
+        <div class="main-content">
+            <!-- 侧边菜单 -->
+            <aside class="sidebar">
+                <nav class="menu">
+                    <ul>
+                        <li class="menu-item">
+                            <a href="{{ url_for('main.dashboard') }}">仪表盘</a>
+                        </li>
+                        
+                        <li class="menu-item">
+                            <a href="{{ url_for('main.japanese_test') }}">日语测试</a>
+                        </li>
+                        
+                        {% if user.role == 'hardware_vikey_admin' or user.role == 'super_admin' %}
+                        <li class="menu-item">
+                            <a href="{{ url_for('main.permissions') }}">权限管理</a>
+                        </li>
+                        {% endif %}
+                        
+                        <li class="menu-item">
+                            <a href="{{ url_for('main.hardware') }}">硬件管理</a>
+                        </li>
+                        
+                        <li class="menu-item">
+                            <a href="{{ url_for('main.ai_rules') }}">AI规则管理</a>
+                        </li>
+                        <li class="menu-item">
+                            <a href="{{ url_for('ai_instances') }}">AI实例监控</a>
+                        </li>
+                        <li class="menu-item">
+                            <a href="{{ url_for('main.system_config') }}">系统配置</a>
+                        </li>
+                        <li class="menu-item">
+                            <a href="{{ url_for('main.system_monitoring') }}">系统监控</a>
+                        </li>
+                        <li class="menu-item">
+                            <a href="{{ url_for('main.projects') }}">项目管理</a>
+                        </li>
+                        <li class="menu-item">
+                            <a href="{{ url_for('main.tasks') }}">任务管理</a>
+                        </li>
+                        <li class="menu-item">
+                            <a href="{{ url_for('main.reports') }}">报告管理</a>
+                        </li>
+                        <li class="menu-item active">
+                            <a href="{{ url_for('ai_optimization') }}">AI优化报告</a>
+                        </li>
+                        <li class="menu-item">
+                            <a href="{{ url_for('main.approval') }}">审批流程</a>
+                        </li>
+                        <li class="menu-item">
+                            <a href="{{ url_for('main.cleanup') }}">系统清理</a>
+                        </li>
+                    </ul>
+                </nav>
+            </aside>
+            
+            <!-- 主内容区域 -->
+            <main class="main-content">
+                <div class="ai-optimization-container">
+                    <div class="timestamp">
+                        最后更新时间: {{ ai_data.timestamp if ai_data.timestamp else '实时更新' }}
+                    </div>
+                    
+                    <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+                        <a href="{{ url_for('main.dashboard') }}" class="btn btn-primary"><svg class="svg-icon" viewBox="0 0 576 512" width="16" height="16"><path d="M575.8 255.3c0-1.1-.3-2.1-.7-3l-96-160c-5.2-8.7-14.6-14.3-25.1-14.3H416V48c0-26.5-21.5-48-48-48H208c-26.5 0-48 21.5-48 48v32H128c-10.5 0-19.9 5.6-25.1 14.3l-96 160c-.4.9-.7 1.9-.7 3 0 16.5 13.5 30 30 30h34V464c0 26.5 21.5 48 48 48H448c26.5 0 48-21.5 48-48V285.3h34c16.5 0 30-13.5 30-30zM160 464V288H96l96-160h32v112c0 8.8 7.2 16 16 16h32c8.8 0 16-7.2 16-16V128h192l96 160h-64v176H160z"/></svg> 返回主页</a>
+                        <button class="refresh-btn" onclick="refreshOptimizationData()">
+                            <span class="loading-spinner"></span> 刷新数据
+                        </button>
+                    </div>
+                    
+                    <!-- 查询缓存统计 -->
+                    <div class="ai-section">
+                        <h2>查询缓存统计</h2>
+                        <div class="stats-grid">
+                            <div class="stat-card">
+                                <div class="stat-value">{{ ai_data.query_cache_stats.cache_stats.total_queries }}</div>
+                                <div class="stat-label">总查询次数</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-value">{{ ai_data.query_cache_stats.cache_stats.hits }}</div>
+                                <div class="stat-label">缓存命中次数</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-value">{{ ai_data.query_cache_stats.cache_stats.misses }}</div>
+                                <div class="stat-label">缓存未命中次数</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-value">
+                                    {% if ai_data.query_cache_stats.cache_stats.total_queries > 0 %}
+                                        {{ "%.2f" % ((ai_data.query_cache_stats.cache_stats.hits / ai_data.query_cache_stats.cache_stats.total_queries) * 100) }}%
+                                    {% else %}
+                                        0%
+                                    {% endif %}
+                                </div>
+                                <div class="stat-label">命中率</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 网络优化统计 -->
+                    <div class="ai-section">
+                        <h2>网络优化统计</h2>
+                        <div class="stats-grid">
+                            <div class="stat-card">
+                                <div class="stat-value">{{ ai_data.network_optimization_stats.total_requests if ai_data.network_optimization_stats.total_requests is defined else 0 }}</div>
+                                <div class="stat-label">总请求数</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-value">{{ ai_data.network_optimization_stats.cached_responses if ai_data.network_optimization_stats.cached_responses is defined else 0 }}</div>
+                                <div class="stat-label">缓存响应数</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-value">{{ ai_data.network_optimization_stats.rate_limited_requests if ai_data.network_optimization_stats.rate_limited_requests is defined else 0 }}</div>
+                                <div class="stat-label">限流请求数</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-value">{{ ai_data.network_optimization_stats.duplicate_requests_blocked if ai_data.network_optimization_stats.duplicate_requests_blocked is defined else 0 }}</div>
+                                <div class="stat-label">拦截的重复请求</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- AI优化建议 -->
+                    <div class="ai-section">
+                        <h2>AI优化建议</h2>
+                        <ul class="suggestions-list">
+                            {% for suggestion in ai_data.optimization_suggestions %}
+                                <li class="suggestion-item">{{ suggestion }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    
+                    <!-- AI实例状态 -->
+                    <div class="ai-section">
+                        <h2>AI实例状态</h2>
+                        <div class="stats-grid">
+                            {% if ai_data.instance_stats %}
+                                {% for instance_name, stats in ai_data.instance_stats.items() %}
+                                    <div class="stat-card">
+                                        <div class="stat-value">{{ instance_name }}</div>
+                                        <div class="stat-label">
+                                            {% if stats.state %}
+                                                {{ stats.state }}
+                                            {% else %}
+                                                未知状态
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            {% else %}
+                                <div class="stat-card">
+                                    <div class="stat-value">--</div>
+                                    <div class="stat-label">暂无AI实例数据</div>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+{% endblock %}
+
+{% block extra_js %}
+    <script>
+        // 刷新优化数据
+        function refreshOptimizationData() {
+            fetch('/api/ai-optimization')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // 更新页面数据
+                        location.reload();
+                    } else {
+                        MTSCOS_AI.showTip('刷新数据失败: ' + data.message, 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error('刷新数据失败:', error);
+                    MTSCOS_AI.showTip('刷新数据失败，请稍后重试', 'error');
+                });
+        }
+        
+        // 自动刷新数据（每30秒）
+        setInterval(refreshOptimizationData, 30000);
+    </script>
+{% endblock %}

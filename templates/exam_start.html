@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% if exam %}{{ exam.title }}{% else %}开始考试{% endif %} - MTSCOS AI</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --dark-bg-primary: #0c0c1e;
+            --dark-bg-secondary: #1a1a3e;
+            --dark-bg-card: rgba(20, 20, 40, 0.85);
+            --dark-bg-surface: rgba(30, 30, 60, 0.6);
+            --dark-border: rgba(99, 102, 241, 0.2);
+            --dark-text-primary: #ffffff;
+            --dark-text-secondary: #94a3b8;
+            --dark-primary-color: #6366f1;
+            --dark-primary-light: #8b5cf6;
+            --dark-success: #22c55e;
+            --dark-warning: #f59e0b;
+            --dark-danger: #ef4444;
+            --dark-info: #3b82f6;
+            --radius-md: 8px;
+            --radius-lg: 12px;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, var(--dark-bg-primary) 0%, var(--dark-bg-secondary) 50%, var(--dark-bg-primary) 100%);
+            color: var(--dark-text-primary);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: var(--dark-bg-card);
+            border: 1px solid var(--dark-border);
+            border-radius: var(--radius-lg);
+            padding: 40px;
+            max-width: 520px;
+            width: 100%;
+            backdrop-filter: blur(20px);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+
+        .icon {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--dark-primary-color), var(--dark-primary-light));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            font-size: 36px;
+            box-shadow: 0 0 30px rgba(99, 102, 241, 0.3);
+        }
+
+        h1 {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--dark-text-primary);
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+            font-size: 14px;
+            color: var(--dark-text-secondary);
+        }
+
+        .exam-info {
+            background: var(--dark-bg-surface);
+            border-radius: var(--radius-md);
+            padding: 20px;
+            margin-bottom: 24px;
+        }
+
+        .info-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 12px;
+        }
+
+        .info-row:last-child { margin-bottom: 0; }
+
+        .info-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .info-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: var(--radius-md);
+            background: rgba(99, 102, 241, 0.15);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            color: var(--dark-primary-color);
+        }
+
+        .info-text {
+            font-size: 13px;
+            color: var(--dark-text-secondary);
+        }
+
+        .info-value {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--dark-text-primary);
+        }
+
+        .rules-section {
+            margin-bottom: 24px;
+        }
+
+        .rules-section h3 {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--dark-text-primary);
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .rules-list {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .rules-list li {
+            font-size: 13px;
+            color: var(--dark-text-secondary);
+            padding: 8px 0;
+            padding-left: 20px;
+            position: relative;
+            border-bottom: 1px solid var(--dark-border);
+        }
+
+        .rules-list li:last-child { border-bottom: none; }
+
+        .rules-list li::before {
+            content: '✓';
+            position: absolute;
+            left: 0;
+            color: var(--dark-success);
+            font-weight: 600;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 12px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 12px 24px;
+            border: none;
+            border-radius: var(--radius-md);
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            text-decoration: none;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--dark-primary-color), var(--dark-primary-light));
+            color: #fff;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 5px 20px rgba(99, 102, 241, 0.3);
+        }
+
+        .btn-secondary {
+            background: var(--dark-bg-surface);
+            color: var(--dark-text-primary);
+            border: 1px solid var(--dark-border);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(30, 30, 60, 0.8);
+            border-color: var(--dark-primary-color);
+        }
+
+        .practice-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 999px;
+            background: rgba(34, 197, 94, 0.15);
+            color: var(--dark-success);
+            font-size: 12px;
+            font-weight: 600;
+            margin-top: 8px;
+        }
+    
+@media (max-width: 768px) {
+    .stats-grid, .section-grid, .feature-grid { grid-template-columns: 1fr !important; }
+    .sidebar { width: 60px !important; }
+    .main-content { padding: 12px !important; }
+}
+
+.loading-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;z-index:9999;}
+.loading-spinner{width:40px;height:40px;border:3px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin 1s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.empty-state{text-align:center;padding:40px 20px;color:#64748b;}
+.empty-state .empty-icon{font-size:48px;margin-bottom:12px;opacity:.5;}
+.empty-state .empty-text{font-size:14px;}
+</style>
+
+    <link rel="stylesheet" href="/static/css/theme.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="icon">
+                <i class="fas {% if practice_mode %}fa-calendar-check{% else %}fa-file-pen{% endif %}"></i>
+            </div>
+            <h1>{% if exam %}{{ exam.title }}{% else %}开始考试{% endif %}</h1>
+            <p class="subtitle">
+                {% if practice_mode %}练习模式 - 不计入正式成绩{% endif %}
+            </p>
+            {% if practice_mode %}
+            <span class="practice-badge"><i class="fas fa-lightbulb"></i> 练习模式</span>
+            {% endif %}
+        </div>
+
+        <div class="exam-info">
+            <div class="info-row">
+                <div class="info-item">
+                    <div class="info-icon"><i class="fas fa-clock"></i></div>
+                    <div>
+                        <div class="info-text">考试时长</div>
+                        <div class="info-value">{% if exam %}{{ exam.duration }}{% else %}60{% endif %} 分钟</div>
+                    </div>
+                </div>
+                <div class="info-item">
+                    <div class="info-icon"><i class="fas fa-list-ol"></i></div>
+                    <div>
+                        <div class="info-text">题目数量</div>
+                        <div class="info-value">{% if questions %}{{ questions|length }}{% else %}0{% endif %} 题</div>
+                    </div>
+                </div>
+            </div>
+            <div class="info-row">
+                <div class="info-item">
+                    <div class="info-icon"><i class="fas fa-trophy"></i></div>
+                    <div>
+                        <div class="info-text">总分</div>
+                        <div class="info-value">{% if exam %}{{ exam.total_score }}{% else %}100{% endif %} 分</div>
+                    </div>
+                </div>
+                <div class="info-item">
+                    <div class="info-icon"><i class="fas fa-check-circle"></i></div>
+                    <div>
+                        <div class="info-text">及格分</div>
+                        <div class="info-value">{% if exam %}{{ exam.passing_score }}{% else %}60{% endif %} 分</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="rules-section">
+            <h3><i class="fas fa-info-circle" style="color:var(--dark-warning)"></i> 考试须知</h3>
+            <ul class="rules-list">
+                <li>考试开始后将自动计时，超时将自动提交</li>
+                <li>请确保网络稳定，避免考试中断</li>
+                <li>考试过程中请勿刷新页面或关闭浏览器</li>
+                <li>{% if not practice_mode %}考试成绩将计入个人档案{% else %}练习模式成绩仅作参考{% endif %}</li>
+                <li>如有疑问，请联系管理员</li>
+            </ul>
+        </div>
+
+        <div class="btn-group">
+            <a href="javascript:history.back()" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> 返回
+            </a>
+            <button class="btn btn-primary" onclick="startExam()">
+                <i class="fas fa-play"></i> 开始{% if practice_mode %}练习{% else %}考试{% endif %}
+            </button>
+        </div>
+    </div>
+
+    <script>
+        function startExam() {
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '/exam_system/exam/submit';
+            form.style.display = 'none';
+            
+            const practiceModeInput = document.createElement('input');
+            practiceModeInput.type = 'hidden';
+            practiceModeInput.name = 'practice_mode';
+            practiceModeInput.value = '{{ 'true' if practice_mode else 'false' }}';
+            form.appendChild(practiceModeInput);
+            
+            const examTitleInput = document.createElement('input');
+            examTitleInput.type = 'hidden';
+            examTitleInput.name = 'exam_title';
+            examTitleInput.value = '{{ exam.title if exam else '' }}';
+            form.appendChild(examTitleInput);
+            
+            const durationInput = document.createElement('input');
+            durationInput.type = 'hidden';
+            durationInput.name = 'duration';
+            durationInput.value = '{{ exam.duration if exam else 30 }}';
+            form.appendChild(durationInput);
+            
+            const totalScoreInput = document.createElement('input');
+            totalScoreInput.type = 'hidden';
+            totalScoreInput.name = 'total_score';
+            totalScoreInput.value = '{{ exam.total_score if exam else 100 }}';
+            form.appendChild(totalScoreInput);
+            
+            const passingScoreInput = document.createElement('input');
+            passingScoreInput.type = 'hidden';
+            passingScoreInput.name = 'passing_score';
+            passingScoreInput.value = '{{ exam.passing_score if exam else 60 }}';
+            form.appendChild(passingScoreInput);
+            
+            const subjectInput = document.createElement('input');
+            subjectInput.type = 'hidden';
+            subjectInput.name = 'subject';
+            subjectInput.value = '{{ exam.subject if exam else '' }}';
+            form.appendChild(subjectInput);
+            
+            document.body.appendChild(form);
+            form.submit();
+        }
+    </script>
+</body>
+
+<script>
+window.addEventListener('error', function(e){
+    console.error('[MTSCOS] 页面错误:', e.message, e.filename, e.lineno);
+});
+window.addEventListener('unhandledrejection', function(e){
+    console.error('[MTSCOS] 未处理Promise:', e.reason);
+});
+</script>
+
+</html>

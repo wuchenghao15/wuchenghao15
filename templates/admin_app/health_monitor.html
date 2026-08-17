@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>系统监控仪表盘</title>
+    <link rel="stylesheet" href="/assets/css/mtscos-design-system.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .monitor-dashboard { padding: 20px; }
+        .dashboard-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .dashboard-title { font-size: 24px; font-weight: 600; color: var(--text-primary); }
+        .refresh-btn { 
+            padding: 8px 16px; 
+            background: var(--primary-color); 
+            color: white; 
+            border: none; 
+            border-radius: 6px; 
+            cursor: pointer; 
+            display: flex; 
+            align-items: center; 
+            gap: 6px;
+        }
+        .refresh-btn:hover { background: var(--primary-hover); }
+        
+        .stats-overview { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 20px; }
+        .stat-card { 
+            background: var(--bg-secondary); 
+            border-radius: 12px; 
+            padding: 20px; 
+            display: flex; 
+            align-items: center; 
+            gap: 16px;
+        }
+        .stat-icon { 
+            width: 48px; 
+            height: 48px; 
+            border-radius: 12px; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            font-size: 24px;
+        }
+        .stat-icon.process { background: linear-gradient(135deg, #667eea, #764ba2); }
+        .stat-icon.data { background: linear-gradient(135deg, #11998e, #38ef7d); }
+        .stat-icon.function { background: linear-gradient(135deg, #eb3349, #f45c43); }
+        .stat-icon.alert { background: linear-gradient(135deg, #f093fb, #f5576c); }
+        .stat-info .stat-value { font-size: 24px; font-weight: 600; color: var(--text-primary); }
+        .stat-info .stat-label { font-size: 14px; color: var(--text-secondary); }
+        
+        .monitor-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
+        .monitor-section { 
+            background: var(--bg-secondary); 
+            border-radius: 12px; 
+            padding: 20px; 
+            min-height: 300px;
+        }
+        .section-header { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            margin-bottom: 16px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .section-title { font-size: 16px; font-weight: 600; color: var(--text-primary); }
+        
+        .status-badge { 
+            padding: 4px 10px; 
+            border-radius: 12px; 
+            font-size: 12px; 
+            font-weight: 500;
+        }
+        .status-running { background: rgba(72, 187, 120, 0.1); color: #48bb78; }
+        .status-stopped { background: rgba(239, 68, 68, 0.1); color: #ef4444; }
+        .status-ok { background: rgba(72, 187, 120, 0.1); color: #48bb78; }
+        .status-warning { background: rgba(246, 173, 85, 0.1); color: #f6ad55; }
+        .status-error { background: rgba(239, 68, 68, 0.1); color: #ef4444; }
+        .status-critical { background: rgba(239, 68, 68, 0.1); color: #ef4444; }
+        
+        .monitor-table { width: 100%; font-size: 13px; }
+        .monitor-table th, .monitor-table td { padding: 10px 8px; text-align: left; }
+        .monitor-table th { 
+            background: var(--bg-tertiary); 
+            color: var(--text-secondary); 
+            font-weight: 500;
+        }
+        .monitor-table tr:hover { background: var(--bg-tertiary); }
+        
+        .progress-bar { height: 8px; background: var(--bg-tertiary); border-radius: 4px; overflow: hidden; }
+        .progress-fill { height: 100%; border-radius: 4px; transition: width 0.3s; }
+        .progress-fill.cpu { background: linear-gradient(90deg, #f6ad55, #ef4444); }
+        .progress-fill.mem { background: linear-gradient(90deg, #4299e1, #667eea); }
+        .progress-fill.disk { background: linear-gradient(90deg, #48bb78, #38ef7d); }
+        
+        .resource-metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+        .metric-item { text-align: center; }
+        .metric-value { font-size: 28px; font-weight: 600; color: var(--text-primary); }
+        .metric-label { font-size: 12px; color: var(--text-secondary); margin-top: 4px; }
+        
+        .alerts-list { max-height: 400px; overflow-y: auto; }
+        .alert-item { 
+            padding: 12px; 
+            border-radius: 8px; 
+            margin-bottom: 8px; 
+            border-left: 4px solid;
+        }
+        .alert-item.critical { background: rgba(239, 68, 68, 0.08); border-left-color: #ef4444; }
+        .alert-item.warning { background: rgba(246, 173, 85, 0.08); border-left-color: #f6ad55; }
+        .alert-item.info { background: rgba(66, 153, 225, 0.08); border-left-color: #4299e1; }
+        .alert-title { font-weight: 500; margin-bottom: 4px; }
+        .alert-message { font-size: 12px; color: var(--text-secondary); }
+        .alert-time { font-size: 11px; color: var(--text-muted); }
+        
+        .empty-state { text-align: center; padding: 40px; color: var(--text-secondary); }
+        .empty-state i { font-size: 32px; margin-bottom: 8px; opacity: 0.5; }
+        
+        .action-btn { 
+            padding: 4px 10px; 
+            font-size: 11px; 
+            border: none; 
+            border-radius: 4px; 
+            cursor: pointer;
+            margin-left: 4px;
+        }
+        .btn-ack { background: rgba(66, 153, 225, 0.1); color: #4299e1; }
+        .btn-resolve { background: rgba(72, 187, 120, 0.1); color: #48bb78; }
+        
+        @media (max-width: 768px) {
+            .monitor-grid { grid-template-columns: 1fr; }
+            .stats-overview { grid-template-columns: repeat(2, 1fr); }
+            .resource-metrics { grid-template-columns: 1fr; }
+        }
+    </style>
+
+    <link rel="stylesheet" href="/static/css/theme.css">
+</head>
+<body>
+    <div class="monitor-dashboard">
+        <div class="dashboard-header">
+            <h1 class="dashboard-title"><i class="fas fa-chart-line"></i> 系统监控仪表盘</h1>
+            <button class="refresh-btn" onclick="refreshAllData()">
+                <i class="fas fa-sync-alt"></i> 刷新数据
+            </button>
+        </div>
+
+        <div class="stats-overview">
+            <div class="stat-card">
+                <div class="stat-icon process"><i class="fas fa-server"></i></div>
+                <div class="stat-info">
+                    <div class="stat-value" id="process-count">0</div>
+                    <div class="stat-label">监控进程</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon data"><i class="fas fa-database"></i></div>
+                <div class="stat-info">
+                    <div class="stat-value" id="data-count">0</div>
+                    <div class="stat-label">数据监控</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon function"><i class="fas fa-cogs"></i></div>
+                <div class="stat-info">
+                    <div class="stat-value" id="function-count">0</div>
+                    <div class="stat-label">功能监控</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon alert"><i class="fas fa-bell"></i></div>
+                <div class="stat-info">
+                    <div class="stat-value" id="alert-count">0</div>
+                    <div class="stat-label">活跃告警</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="monitor-grid">
+            <div class="monitor-section">
+                <div class="section-header">
+                    <h3 class="section-title"><i class="fas fa-server"></i> 进程监控</h3>
+                </div>
+                <div id="process-content">
+                    <div class="empty-state"><i class="fas fa-spinner fa-spin"></i> 加载中...</div>
+                </div>
+            </div>
+
+            <div class="monitor-section">
+                <div class="section-header">
+                    <h3 class="section-title"><i class="fas fa-database"></i> 数据监控</h3>
+                </div>
+                <div id="data-content">
+                    <div class="empty-state"><i class="fas fa-spinner fa-spin"></i> 加载中...</div>
+                </div>
+            </div>
+
+            <div class="monitor-section">
+                <div class="section-header">
+                    <h3 class="section-title"><i class="fas fa-cogs"></i> 功能监控</h3>
+                </div>
+                <div id="function-content">
+                    <div class="empty-state"><i class="fas fa-spinner fa-spin"></i> 加载中...</div>
+                </div>
+            </div>
+
+            <div class="monitor-section">
+                <div class="section-header">
+                    <h3 class="section-title"><i class="fas fa-microchip"></i> 资源监控</h3>
+                </div>
+                <div id="resource-content">
+                    <div class="empty-state"><i class="fas fa-spinner fa-spin"></i> 加载中...</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="monitor-section" style="grid-column: 1/-1;">
+            <div class="section-header">
+                <h3 class="section-title"><i class="fas fa-bell"></i> 健康告警</h3>
+                <span class="status-badge status-critical" id="active-alert-count">0 条活跃</span>
+            </div>
+            <div id="alert-content">
+                <div class="empty-state"><i class="fas fa-spinner fa-spin"></i> 加载中...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let refreshInterval;
+
+        document.addEventListener('DOMContentLoaded', function() {
+            refreshAllData();
+            refreshInterval = setInterval(refreshAllData, 10000);
+        });
+
+        function refreshAllData() {
+            fetchProcesses();
+            fetchData();
+            fetchFunctions();
+            fetchResources();
+            fetchAlerts();
+        }
+
+        function fetchProcesses() {
+            fetch('/api/system/monitor/processes')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const processes = data.processes;
+                        document.getElementById('process-count').textContent = processes.length;
+                        
+                        let html = '<table class="monitor-table"><thead><tr><th>进程名称</th><th>状态</th><th>CPU</th><th>内存</th><th>运行时间</th></tr></thead><tbody>';
+                        processes.forEach(p => {
+                            const statusClass = p.status === 'running' ? 'status-running' : 'status-stopped';
+                            const statusText = p.status === 'running' ? '运行中' : '已停止';
+                            html += `<tr>
+                                <td>${p.process_name}</td>
+                                <td><span class="status-badge ${statusClass}">${statusText}</span></td>
+                                <td>${p.cpu_percent}%</td>
+                                <td>${p.memory_percent}%</td>
+                                <td>${p.uptime || '-'}</td>
+                            </tr>`;
+                        });
+                        html += '</tbody></table>';
+                        document.getElementById('process-content').innerHTML = html;
+                    }
+                })
+                .catch(error => {
+                    document.getElementById('process-content').innerHTML = '<div class="empty-state">加载失败</div>';
+                });
+        }
+
+        function fetchData() {
+            fetch('/api/system/monitor/data')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const monitors = data.data;
+                        document.getElementById('data-count').textContent = monitors.length;
+                        
+                        let html = '<table class="monitor-table"><thead><tr><th>表名</th><th>记录数</th><th>最低要求</th><th>状态</th></tr></thead><tbody>';
+                        monitors.forEach(m => {
+                            let statusClass = 'status-ok';
+                            let statusText = '正常';
+                            if (m.status === 'warning') { statusClass = 'status-warning'; statusText = '警告'; }
+                            if (m.status === 'critical') { statusClass = 'status-critical'; statusText = '严重'; }
+                            if (m.status === 'error') { statusClass = 'status-error'; statusText = '错误'; }
+                            
+                            html += `<tr>
+                                <td>${m.table_name}</td>
+                                <td>${m.row_count}</td>
+                                <td>${m.expected_min}</td>
+                                <td><span class="status-badge ${statusClass}">${statusText}</span></td>
+                            </tr>`;
+                        });
+                        html += '</tbody></table>';
+                        document.getElementById('data-content').innerHTML = html;
+                    }
+                })
+                .catch(error => {
+                    document.getElementById('data-content').innerHTML = '<div class="empty-state">加载失败</div>';
+                });
+        }
+
+        function fetchFunctions() {
+            fetch('/api/system/monitor/functions')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const functions = data.functions;
+                        document.getElementById('function-count').textContent = functions.length;
+                        
+                        let html = '<table class="monitor-table"><thead><tr><th>功能名称</th><th>模块</th><th>状态</th><th>响应时间</th><th>成功率</th></tr></thead><tbody>';
+                        functions.forEach(f => {
+                            const statusClass = f.status === 'ok' ? 'status-ok' : 'status-error';
+                            const statusText = f.status === 'ok' ? '正常' : '异常';
+                            html += `<tr>
+                                <td>${f.function_name}</td>
+                                <td>${f.module}</td>
+                                <td><span class="status-badge ${statusClass}">${statusText}</span></td>
+                                <td>${f.response_time}s</td>
+                                <td>${f.success_rate}%</td>
+                            </tr>`;
+                        });
+                        html += '</tbody></table>';
+                        document.getElementById('function-content').innerHTML = html;
+                    }
+                })
+                .catch(error => {
+                    document.getElementById('function-content').innerHTML = '<div class="empty-state">加载失败</div>';
+                });
+        }
+
+        function fetchResources() {
+            fetch('/api/system/monitor/resources')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.resources.length > 0) {
+                        const latest = data.resources[0];
+                        
+                        let html = '<div class="resource-metrics">';
+                        html += `<div class="metric-item">
+                            <div class="metric-value">${latest.cpu_percent}%</div>
+                            <div class="metric-label">CPU使用率</div>
+                            <div class="progress-bar"><div class="progress-fill cpu" style="width: ${latest.cpu_percent}%"></div></div>
+                        </div>`;
+                        html += `<div class="metric-item">
+                            <div class="metric-value">${latest.memory_percent}%</div>
+                            <div class="metric-label">内存使用率</div>
+                            <div class="progress-bar"><div class="progress-fill mem" style="width: ${latest.memory_percent}%"></div></div>
+                        </div>`;
+                        html += `<div class="metric-item">
+                            <div class="metric-value">${latest.disk_percent}%</div>
+                            <div class="metric-label">磁盘使用率</div>
+                            <div class="progress-bar"><div class="progress-fill disk" style="width: ${latest.disk_percent}%"></div></div>
+                        </div>`;
+                        html += '</div>';
+                        document.getElementById('resource-content').innerHTML = html;
+                    }
+                })
+                .catch(error => {
+                    document.getElementById('resource-content').innerHTML = '<div class="empty-state">加载失败</div>';
+                });
+        }
+
+        function fetchAlerts() {
+            fetch('/api/system/monitor/alerts?status=active')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const alerts = data.alerts;
+                        document.getElementById('alert-count').textContent = alerts.length;
+                        document.getElementById('active-alert-count').textContent = `${alerts.length} 条活跃`;
+                        
+                        if (alerts.length === 0) {
+                            document.getElementById('alert-content').innerHTML = '<div class="empty-state"><i class="fas fa-check-circle"></i> 暂无活跃告警</div>';
+                            return;
+                        }
+                        
+                        let html = '<div class="alerts-list">';
+                        alerts.forEach(a => {
+                            const severityClass = a.severity === 'critical' ? 'critical' : (a.severity === 'warning' ? 'warning' : 'info');
+                            const icon = a.severity === 'critical' ? 'fa-exclamation-circle' : (a.severity === 'warning' ? 'fa-exclamation-triangle' : 'fa-info-circle');
+                            
+                            html += `<div class="alert-item ${severityClass}">
+                                <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                                    <div>
+                                        <div class="alert-title"><i class="fas ${icon}"></i> ${a.title}</div>
+                                        <div class="alert-message">${a.message}</div>
+                                        <div class="alert-time">${a.created_at}</div>
+                                    </div>
+                                    <div>
+                                        <button class="action-btn btn-ack" onclick="acknowledgeAlert('${a.alert_id}')">确认</button>
+                                        <button class="action-btn btn-resolve" onclick="resolveAlert('${a.alert_id}')">解决</button>
+                                    </div>
+                                </div>
+                            </div>`;
+                        });
+                        html += '</div>';
+                        document.getElementById('alert-content').innerHTML = html;
+                    }
+                })
+                .catch(error => {
+                    document.getElementById('alert-content').innerHTML = '<div class="empty-state">加载失败</div>';
+                });
+        }
+
+        function acknowledgeAlert(alertId) {
+            fetch('/api/system/monitor/acknowledge_alert', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ alert_id: alertId })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    fetchAlerts();
+                }
+            });
+        }
+
+        function resolveAlert(alertId) {
+            fetch('/api/system/monitor/resolve_alert', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ alert_id: alertId })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    fetchAlerts();
+                }
+            });
+        }
+    </script>
+</body>
+</html>
