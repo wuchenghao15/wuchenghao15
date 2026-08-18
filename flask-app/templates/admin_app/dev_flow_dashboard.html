@@ -1,0 +1,306 @@
+{% extends "base.html" %}
+
+{% block title %}12步骤开发流程看板 - MTSCOS AI{% endblock %}
+
+{% block head %}
+<style>
+    .df-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-top: 20px; }
+    .df-card { background: var(--bg-card, #fff); border-radius: 12px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); transition: transform 0.2s, box-shadow 0.2s; }
+    .df-card:hover { transform: translateY(-2px); box-shadow: 0 4px 16px rgba(0,0,0,0.12); }
+    .df-stat { display: flex; align-items: center; gap: 12px; }
+    .df-stat .num { font-size: 28px; font-weight: 700; color: var(--accent, #667eea); }
+    .df-stat .lbl { font-size: 13px; color: var(--text-secondary, #666); }
+    .df-table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+    .df-table th { text-align: left; padding: 8px 12px; font-size: 12px; color: var(--text-secondary, #888); border-bottom: 2px solid var(--border, #eee); }
+    .df-table td { padding: 10px 12px; font-size: 13px; border-bottom: 1px solid var(--border-soft, #f5f5f5); }
+    .df-badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+    .df-badge.done { background: #d4edda; color: #155724; }
+    .df-badge.progress { background: #fff3cd; color: #856404; }
+    .df-badge.pending { background: #e2e3e5; color: #383d41; }
+    .df-badge.blocked { background: #f8d7da; color: #721c24; }
+    .df-badge.loopback { background: #d1ecf1; color: #0c5460; }
+    .df-search { display: flex; gap: 8px; margin-bottom: 16px; }
+    .df-search input { flex: 1; padding: 8px 12px; border: 1px solid var(--border, #ddd); border-radius: 8px; font-size: 14px; }
+    .df-search button { padding: 8px 16px; background: var(--accent, #667eea); color: #fff; border: none; border-radius: 8px; cursor: pointer; }
+    .df-tabs { display: flex; gap: 4px; margin-bottom: 16px; border-bottom: 2px solid var(--border, #eee); flex-wrap: wrap; }
+    .df-tab { padding: 8px 16px; cursor: pointer; border-bottom: 2px solid transparent; font-size: 14px; color: var(--text-secondary, #666); }
+    .df-tab.active { color: var(--accent, #667eea); border-bottom-color: var(--accent, #667eea); font-weight: 600; }
+    .df-state-machine { display: flex; flex-wrap: wrap; gap: 6px; padding: 16px; background: var(--bg-soft, #f8f9fa); border-radius: 12px; margin-bottom: 16px; }
+    .df-node { padding: 6px 10px; border-radius: 6px; font-size: 11px; font-weight: 600; background: #e9ecef; color: #495057; position: relative; }
+    .df-node.done { background: #28a745; color: #fff; }
+    .df-node.progress { background: #ffc107; color: #212529; }
+    .df-node.blocked { background: #dc3545; color: #fff; }
+    .df-node.current { background: #667eea; color: #fff; box-shadow: 0 0 0 3px rgba(102,126,234,0.3); }
+    .df-arrow { color: #999; font-size: 14px; align-self: center; }
+    .df-flow-detail { background: var(--bg-soft, #f8f9fa); border-radius: 8px; padding: 16px; margin-top: 12px; }
+    .df-flow-detail h4 { margin: 0 0 8px 0; font-size: 14px; color: var(--text-primary, #333); }
+    .df-flow-detail p { margin: 4px 0; font-size: 13px; color: var(--text-secondary, #666); }
+    .df-pipeline { display: grid; grid-template-columns: repeat(12, 1fr); gap: 4px; margin: 12px 0; }
+    .df-pipe-step { height: 24px; border-radius: 4px; background: #e9ecef; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #495057; }
+    .df-pipe-step.done { background: #28a745; color: #fff; }
+    .df-pipe-step.progress { background: #ffc107; color: #212529; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div style="max-width: 1280px; margin: 0 auto; padding: 20px;">
+    <h1 style="color: var(--text-primary, #333); margin-bottom: 8px;">📋 §14 12步骤开发流程看板</h1>
+    <p style="color: var(--text-secondary, #666); margin-bottom: 20px;">IRON_RULE L0 强制执行 · {{ total_flows|default(0) }} 条开发流程 · 18节点状态机 · 4层拦截</p>
+
+    <div class="df-grid" style="grid-template-columns: repeat(5, 1fr);">
+        <div class="df-card"><div class="df-stat"><div class="num" id="stat-total">--</div><div class="lbl">流程总数</div></div></div>
+        <div class="df-card"><div class="df-stat"><div class="num" id="stat-done">--</div><div class="lbl">已完成(DONE)</div></div></div>
+        <div class="df-card"><div class="df-stat"><div class="num" id="stat-progress">--</div><div class="lbl">进行中</div></div></div>
+        <div class="df-card"><div class="df-stat"><div class="num" id="stat-loopback">--</div><div class="lbl">回环(LOOP)</div></div></div>
+        <div class="df-card"><div class="df-stat"><div class="num" id="stat-blocked">--</div><div class="lbl">阻断(VIOLATION)</div></div></div>
+    </div>
+
+    <div class="df-tabs">
+        <div class="df-tab active" onclick="switchTab('flows')">流程记录</div>
+        <div class="df-tab" onclick="switchTab('machine')">18节点状态机</div>
+        <div class="df-tab" onclick="switchTab('discuss')">A/B轮讨论</div>
+        <div class="df-tab" onclick="switchTab('acceptance')">验收测试</div>
+        <div class="df-tab" onclick="switchTab('git')">Git同步状态</div>
+    </div>
+
+    <div id="tab-flows">
+        <div class="df-search">
+            <input type="text" id="df-search-input" placeholder="按 flow_id / 标题 / 提案人搜索..." oninput="loadFlows()">
+            <button onclick="loadFlows()">搜索</button>
+        </div>
+        <div class="df-card">
+            <table class="df-table">
+                <thead><tr><th>flow_id</th><th>提案标题</th><th>提案人</th><th>当前节点</th><th>状态</th><th>回环次数</th><th>创建时间</th><th>操作</th></tr></thead>
+                <tbody id="flows-tbody"><tr><td colspan="8" style="text-align:center;color:#999;">加载中...</td></tr></tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="tab-machine" style="display:none;">
+        <div class="df-card">
+            <h3 style="margin:0 0 12px 0;font-size:16px;color:var(--text-primary,#333);">18节点状态机视图</h3>
+            <div class="df-state-machine" id="state-machine">
+                <span class="df-node">STEP_1_PROPOSAL</span><span class="df-arrow">→</span>
+                <span class="df-node">STEP_2A_ROUND</span><span class="df-arrow">→</span>
+                <span class="df-node">STEP_3_ZXF_DECISION</span><span class="df-arrow">→</span>
+                <span class="df-node">STEP_31_B_ROUND</span><span class="df-arrow">→</span>
+                <span class="df-node">STEP_311_SA_JUDGMENT</span><span class="df-arrow">→</span>
+                <span class="df-node">STEP_312_AUTO_PASS</span><span class="df-arrow">→</span>
+                <span class="df-node">STEP_32_PASS_SKIP_B</span><span class="df-arrow">→</span>
+                <span class="df-node">STEP_4_CLERK_RECORD</span><span class="df-arrow">→</span>
+                <span class="df-node">STEP_5_IMPL_DOCKING</span><span class="df-arrow">→</span>
+                <span class="df-node">STEP_6_AI_TEAM_COORD</span><span class="df-arrow">→</span>
+                <span class="df-node">STEP_7_EXECUTE</span><span class="df-arrow">→</span>
+                <span class="df-node">STEP_8_ACCEPTANCE</span><span class="df-arrow">→</span>
+                <span class="df-node">STEP_9A_PASS_OR_LOOPBACK</span><span class="df-arrow">→</span>
+                <span class="df-node">STEP_9B_SUMMARY</span><span class="df-arrow">→</span>
+                <span class="df-node">STEP_10_VERSION_UPGRADE</span><span class="df-arrow">→</span>
+                <span class="df-node">STEP_11_GIT_SYNC</span><span class="df-arrow">→</span>
+                <span class="df-node">STEP_12_TEST_1000</span><span class="df-arrow">→</span>
+                <span class="df-node">DONE</span>
+            </div>
+            <p style="font-size:12px;color:var(--text-secondary,#999);margin-top:8px;">点击流程记录中的「状态机」按钮查看该流程的节点状态分布</p>
+            <div id="machine-detail" class="df-flow-detail" style="display:none;">
+                <h4 id="machine-title">选择一个流程查看节点状态</h4>
+                <div id="machine-nodes" class="df-state-machine"></div>
+                <div id="machine-meta"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="tab-discuss" style="display:none;">
+        <div class="df-card">
+            <h3 style="margin:0 0 12px 0;font-size:16px;color:var(--text-primary,#333);">A轮/B轮讨论记录</h3>
+            <table class="df-table">
+                <thead><tr><th>flow_id</th><th>轮次</th><th>出席方</th><th>讨论摘要</th><th>表决结果</th><th>张晓峰决定</th></tr></thead>
+                <tbody id="discuss-tbody"><tr><td colspan="6" style="text-align:center;color:#999;">加载中...</td></tr></tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="tab-acceptance" style="display:none;">
+        <div class="df-card">
+            <h3 style="margin:0 0 12px 0;font-size:16px;color:var(--text-primary,#333);">验收与测试进度</h3>
+            <table class="df-table">
+                <thead><tr><th>flow_id</th><th>验收人</th><th>实施步骤数</th><th>已通过</th><th>1000轮测试</th><th>通过率</th><th>状态</th></tr></thead>
+                <tbody id="acceptance-tbody"><tr><td colspan="7" style="text-align:center;color:#999;">加载中...</td></tr></tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="tab-git" style="display:none;">
+        <div class="df-card">
+            <h3 style="margin:0 0 12px 0;font-size:16px;color:var(--text-primary,#333);">Git同步状态 (Layer-4 pre-push 拦截)</h3>
+            <table class="df-table">
+                <thead><tr><th>flow_id</th><th>commit</th><th>分支</th><th>推送时间</th><th>pre-push校验</th><th>final_status</th></tr></thead>
+                <tbody id="git-tbody"><tr><td colspan="6" style="text-align:center;color:#999;">加载中...</td></tr></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function switchTab(name) {
+    document.querySelectorAll('.df-tab').forEach(t => t.classList.remove('active'));
+    event.target.classList.add('active');
+    ['flows','machine','discuss','acceptance','git'].forEach(t => {
+        const el = document.getElementById('tab-' + t);
+        if (el) el.style.display = (t === name) ? '' : 'none';
+    });
+    if (name === 'flows') loadFlows();
+    if (name === 'discuss') loadDiscuss();
+    if (name === 'acceptance') loadAcceptance();
+    if (name === 'git') loadGit();
+}
+
+async function loadStats() {
+    try {
+        const r = await fetch('/api/devflow/stats');
+        const d = await r.json();
+        if (d.success) {
+            document.getElementById('stat-total').textContent = d.total ?? 0;
+            document.getElementById('stat-done').textContent = d.done ?? 0;
+            document.getElementById('stat-progress').textContent = d.progress ?? 0;
+            document.getElementById('stat-loopback').textContent = d.loopback ?? 0;
+            document.getElementById('stat-blocked').textContent = d.blocked ?? 0;
+        }
+    } catch (e) { console.error('stats', e); }
+}
+
+async function loadFlows() {
+    const q = (document.getElementById('df-search-input')?.value || '').trim();
+    try {
+        const r = await fetch('/api/devflow/list?q=' + encodeURIComponent(q));
+        const d = await r.json();
+        const tbody = document.getElementById('flows-tbody');
+        if (!d.success || !d.flows?.length) {
+            tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#999;">无流程记录</td></tr>';
+            return;
+        }
+        tbody.innerHTML = d.flows.map(f => {
+            const st = f.final_status || 'PENDING';
+            const cls = st === 'DONE' ? 'done' : (st === 'LOOPBACK' ? 'loopback' : (st === 'BLOCKED' ? 'blocked' : 'progress'));
+            return `<tr>
+                <td><code style="font-size:11px;">${escapeHtml(f.flow_id)}</code></td>
+                <td>${escapeHtml(f.proposal_title || '-')}</td>
+                <td>${escapeHtml(f.proposer || '-')}</td>
+                <td><span class="df-badge ${cls}">${escapeHtml(f.current_node || st)}</span></td>
+                <td><span class="df-badge ${cls}">${st}</span></td>
+                <td>${f.loopback_count ?? 0}</td>
+                <td>${escapeHtml(f.created_at || '-')}</td>
+                <td><button onclick="showMachine('${escapeHtml(f.flow_id)}')" style="padding:2px 8px;font-size:11px;cursor:pointer;border:1px solid #ddd;border-radius:4px;background:#fff;">状态机</button></td>
+            </tr>`;
+        }).join('');
+    } catch (e) {
+        console.error('flows', e);
+    }
+}
+
+async function showMachine(flowId) {
+    try {
+        const r = await fetch('/api/devflow/machine?flow_id=' + encodeURIComponent(flowId));
+        const d = await r.json();
+        const wrap = document.getElementById('machine-detail');
+        if (!d.success) { wrap.style.display = ''; wrap.querySelector('h4').textContent = '查询失败'; return; }
+        wrap.style.display = '';
+        document.getElementById('machine-title').textContent = '流程 ' + flowId + ' 节点状态';
+        const nodes = d.nodes || [];
+        document.getElementById('machine-nodes').innerHTML = nodes.map(n => {
+            const cls = n.status === 'done' ? 'done' : (n.status === 'current' ? 'current' : (n.status === 'blocked' ? 'blocked' : ''));
+            return `<span class="df-node ${cls}" title="${escapeHtml(n.label||'')}">${escapeHtml(n.code)}</span>`;
+        }).join('<span class="df-arrow">→</span>');
+        document.getElementById('machine-meta').innerHTML = `
+            <p>当前节点: <strong>${escapeHtml(d.current_node || '-')}</strong></p>
+            <p>最终状态: <strong>${escapeHtml(d.final_status || '-')}</strong></p>
+            <p>回环次数: ${d.loopback_count ?? 0}</p>
+            <p>4层拦截: pre_commit(${d.intercept?.pre_commit ? '✓' : '×'}) / before_request(${d.intercept?.before_request ? '✓' : '×'}) / ci_check(${d.intercept?.ci_check ? '✓' : '×'}) / git_hook(${d.intercept?.git_hook ? '✓' : '×'})</p>
+        `;
+    } catch (e) { console.error('machine', e); }
+}
+
+async function loadDiscuss() {
+    try {
+        const r = await fetch('/api/devflow/discuss');
+        const d = await r.json();
+        const tbody = document.getElementById('discuss-tbody');
+        if (!d.success || !d.items?.length) {
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#999;">无讨论记录</td></tr>';
+            return;
+        }
+        tbody.innerHTML = d.items.map(it => `
+            <tr>
+                <td><code style="font-size:11px;">${escapeHtml(it.flow_id)}</code></td>
+                <td>${it.round === 'A' ? 'A轮' : 'B轮'}</td>
+                <td>${escapeHtml((it.attendance || []).join(',')) || '-'}</td>
+                <td>${escapeHtml(it.summary || '-')}</td>
+                <td>${escapeHtml(it.vote_summary || '-')}</td>
+                <td>${escapeHtml(it.zxf_decision || '-')}</td>
+            </tr>
+        `).join('');
+    } catch (e) { console.error('discuss', e); }
+}
+
+async function loadAcceptance() {
+    try {
+        const r = await fetch('/api/devflow/acceptance');
+        const d = await r.json();
+        const tbody = document.getElementById('acceptance-tbody');
+        if (!d.success || !d.items?.length) {
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#999;">无验收记录</td></tr>';
+            return;
+        }
+        tbody.innerHTML = d.items.map(it => {
+            const total = it.step_total ?? 0;
+            const passed = it.step_passed ?? 0;
+            const ratio = total ? Math.round(passed * 100 / total) : 0;
+            const testTotal = it.test_total ?? 0;
+            const testPassed = it.test_passed ?? 0;
+            const st = it.acceptance_passed ? 'done' : 'progress';
+            return `<tr>
+                <td><code style="font-size:11px;">${escapeHtml(it.flow_id)}</code></td>
+                <td>${escapeHtml(it.acceptor || '-')}</td>
+                <td>${total}</td>
+                <td>${passed}</td>
+                <td>${testPassed}/${testTotal}</td>
+                <td>${ratio}%</td>
+                <td><span class="df-badge ${st}">${it.acceptance_passed ? '通过' : '进行中'}</span></td>
+            </tr>`;
+        }).join('');
+    } catch (e) { console.error('acceptance', e); }
+}
+
+async function loadGit() {
+    try {
+        const r = await fetch('/api/devflow/git_status');
+        const d = await r.json();
+        const tbody = document.getElementById('git-tbody');
+        if (!d.success || !d.items?.length) {
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#999;">无Git同步记录</td></tr>';
+            return;
+        }
+        tbody.innerHTML = d.items.map(it => {
+            const ok = it.pre_push_passed;
+            const cls = ok ? 'done' : 'blocked';
+            return `<tr>
+                <td><code style="font-size:11px;">${escapeHtml(it.flow_id)}</code></td>
+                <td><code style="font-size:11px;">${escapeHtml((it.commit_sha || '').slice(0, 12))}</code></td>
+                <td>${escapeHtml(it.branch || '-')}</td>
+                <td>${escapeHtml(it.pushed_at || '-')}</td>
+                <td><span class="df-badge ${cls}">${ok ? '通过' : '拦截'}</span></td>
+                <td>${escapeHtml(it.final_status || '-')}</td>
+            </tr>`;
+        }).join('');
+    } catch (e) { console.error('git', e); }
+}
+
+function escapeHtml(s) {
+    if (s === null || s === undefined) return '';
+    return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+loadStats();
+loadFlows();
+</script>
+{% endblock %}

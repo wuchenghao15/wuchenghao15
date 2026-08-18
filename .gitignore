@@ -3,6 +3,8 @@ venv/
 .env
 .env.local
 .env.*.local
+# 明确保留 .env.example 模板（仅占位符，禁止真实密钥）
+!.env.example
 
 # IDE
 .vscode/
@@ -56,6 +58,10 @@ encryption_key.key
 *.enc.db
 *.enc.key
 
+# AI secrets (local API keys, never commit)
+_runtime/config/ai_secrets.json
+**/ai_secrets.json
+
 # Docker
 .dockerignore
 
@@ -74,9 +80,58 @@ flask-app/*
 flask-app/ai_engines/*
 !flask-app/ai_engines/ai_intelligent_upgrade_engine.py
 !flask-app/ai_engines/mt_ir14_dev_flow.py
+# v22.7.0 巡检缺口发现引擎架构优化: 允许 flask-app/engines/auto_dev_team_engine.py 入库
+# (5维×3=15硬伤+3运行BUG修复: 算法_py_index复用/权重GapPrioritizer唯一入口/架构4阶段Pipeline/逻辑IR14单事务批量/框架连接池+缓存TTL)
+!flask-app/engines/
+flask-app/engines/*
+!flask-app/engines/auto_dev_team_engine.py
+# 2026-08-18 B1守卫P0修复: 允许 flask-app/app/ 下核心修复文件入库
+# (三段式匹配+category分支响应+运行时category推导, TEST_P0_VERIFY 100%通过)
+!flask-app/app/
+flask-app/app/*
+!flask-app/app/__init__.py
+!flask-app/app/utils/
+flask-app/app/utils/*
+!flask-app/app/utils/b1_global_permission_guard.py
+!flask-app/app/utils/ai_emp_badge.py
+# 2026-08-20 v2.9.0 AI治理中心: 5页面+27API+3AI员工+3EigenFlux专家
+# 允许 flask-app/routes/ 下 7 个治理中心路由文件入库
+!flask-app/routes/
+flask-app/routes/*
+!flask-app/routes/__init__.py
+!flask-app/routes/_governance_helpers.py
+!flask-app/routes/eigenflux_routes.py
+!flask-app/routes/brain_bank_routes.py
+!flask-app/routes/neural_array_routes.py
+!flask-app/routes/devflow_routes.py
+!flask-app/routes/ai_routes.py
+# 允许 flask-app/templates/admin_app/ 下 5 个治理中心页面入库
+!flask-app/templates/
+flask-app/templates/*
+!flask-app/templates/admin_app/
+flask-app/templates/admin_app/*
+!flask-app/templates/admin_app/eigenflux_center.html
+!flask-app/templates/admin_app/ai_team_hub.html
+!flask-app/templates/admin_app/dev_flow_dashboard.html
+!flask-app/templates/admin_app/brain_bank_explorer.html
+!flask-app/templates/admin_app/neural_array_matrix.html
 flask-app-old/
 .scheduler_heartbeat
 .scheduler_pid
+# 2026-09-07 v22.13.0 §14 Phase1 权限管理强制执行 (FLOW_20260907_PERMS14_PHASE1):
+# 允许权限装饰器扫描/批量补齐/审计闭环/只读盘点相关文件入库
+!flask-app/app/middlewares/
+flask-app/app/middlewares/*
+!flask-app/app/middlewares/system_container.py
+!flask-app/engines/deep_inspection_engine.py
+!flask-app/routes/readonly_inventory_routes.py
+!flask-app/scripts/
+flask-app/scripts/*
+!flask-app/scripts/tools/
+flask-app/scripts/tools/*
+!flask-app/scripts/tools/s14_phase1_add_decorators.py
+!flask-app/ai_engines/rules_engine/
+!flask-app/ai_engines/rules_engine/**
 .watchdog_pid
 .git_sync_state.json
 

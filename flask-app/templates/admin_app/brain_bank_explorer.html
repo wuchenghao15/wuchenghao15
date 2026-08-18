@@ -1,0 +1,282 @@
+{% extends "base.html" %}
+
+{% block title %}AI 脑库探索器 - MTSCOS AI{% endblock %}
+
+{% block head %}
+<style>
+    .bb-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-top: 20px; }
+    .bb-card { background: var(--bg-card, #fff); border-radius: 12px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); transition: transform 0.2s, box-shadow 0.2s; }
+    .bb-card:hover { transform: translateY(-2px); box-shadow: 0 4px 16px rgba(0,0,0,0.12); }
+    .bb-stat { display: flex; align-items: center; gap: 12px; }
+    .bb-stat .num { font-size: 28px; font-weight: 700; color: var(--accent, #667eea); }
+    .bb-stat .lbl { font-size: 13px; color: var(--text-secondary, #666); }
+    .bb-table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+    .bb-table th { text-align: left; padding: 8px 12px; font-size: 12px; color: var(--text-secondary, #888); border-bottom: 2px solid var(--border, #eee); }
+    .bb-table td { padding: 10px 12px; font-size: 13px; border-bottom: 1px solid var(--border-soft, #f5f5f5); }
+    .bb-badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+    .bb-badge.experience { background: #d4edda; color: #155724; }
+    .bb-badge.anomaly { background: #f8d7da; color: #721c24; }
+    .bb-badge.knowledge { background: #d1ecf1; color: #0c5460; }
+    .bb-badge.rule { background: #fff3cd; color: #856404; }
+    .bb-badge.violation { background: #cce5ff; color: #004085; }
+    .bb-search { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+    .bb-search input, .bb-search select { padding: 8px 12px; border: 1px solid var(--border, #ddd); border-radius: 8px; font-size: 14px; }
+    .bb-search input { flex: 1; min-width: 200px; }
+    .bb-search button { padding: 8px 16px; background: var(--accent, #667eea); color: #fff; border: none; border-radius: 8px; cursor: pointer; }
+    .bb-tabs { display: flex; gap: 4px; margin-bottom: 16px; border-bottom: 2px solid var(--border, #eee); flex-wrap: wrap; }
+    .bb-tab { padding: 8px 16px; cursor: pointer; border-bottom: 2px solid transparent; font-size: 14px; color: var(--text-secondary, #666); }
+    .bb-tab.active { color: var(--accent, #667eea); border-bottom-color: var(--accent, #667eea); font-weight: 600; }
+    .bb-kp-node { display: inline-block; padding: 4px 10px; margin: 4px; border-radius: 16px; background: var(--bg-soft, #f0f4ff); color: var(--accent, #667eea); font-size: 12px; font-weight: 600; border: 1px solid var(--accent-soft, #c3d4ff); }
+    .bb-feed-item { padding: 12px; border-left: 3px solid var(--accent, #667eea); background: var(--bg-soft, #f8f9fa); border-radius: 4px; margin-bottom: 8px; }
+    .bb-feed-item .meta { font-size: 11px; color: var(--text-secondary, #999); margin-bottom: 4px; }
+    .bb-feed-item .content { font-size: 13px; color: var(--text-primary, #333); }
+    .bb-heatmap { display: grid; grid-template-columns: repeat(24, 1fr); gap: 2px; margin: 12px 0; }
+    .bb-heat-cell { aspect-ratio: 1; border-radius: 2px; background: #f0f0f0; }
+    .bb-heat-cell.l1 { background: #c6e48b; }
+    .bb-heat-cell.l2 { background: #7bc96f; }
+    .bb-heat-cell.l3 { background: #239a3b; }
+    .bb-heat-cell.l4 { background: #196127; }
+    .bb-chart-bar { display: flex; align-items: center; gap: 8px; margin: 6px 0; }
+    .bb-chart-bar .lbl { width: 80px; font-size: 12px; color: var(--text-secondary, #666); text-align: right; }
+    .bb-chart-bar .bar { height: 16px; background: var(--accent, #667eea); border-radius: 4px; min-width: 2px; }
+    .bb-chart-bar .val { font-size: 12px; color: var(--text-primary, #333); font-weight: 600; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div style="max-width: 1280px; margin: 0 auto; padding: 20px;">
+    <h1 style="color: var(--text-primary, #333); margin-bottom: 8px;">🧠 AI 脑库探索器</h1>
+    <p style="color: var(--text-secondary, #666); margin-bottom: 20px;">知识中枢 · {{ total_entries|default(0) }} 条脑库条目 · 经验/异常/知识/规则投喂</p>
+
+    <div class="bb-grid" style="grid-template-columns: repeat(4, 1fr);">
+        <div class="bb-card"><div class="bb-stat"><div class="num" id="stat-total">--</div><div class="lbl">脑库条目</div></div></div>
+        <div class="bb-card"><div class="bb-stat"><div class="num" id="stat-exp">--</div><div class="lbl">经验投喂</div></div></div>
+        <div class="bb-card"><div class="bb-stat"><div class="num" id="stat-anom">--</div><div class="lbl">异常特征</div></div></div>
+        <div class="bb-card"><div class="bb-stat"><div class="num" id="stat-rule">--</div><div class="lbl">规则违反</div></div></div>
+    </div>
+
+    <div class="bb-tabs">
+        <div class="bb-tab active" onclick="switchTab('entries')">脑库条目</div>
+        <div class="bb-tab" onclick="switchTab('graph')">知识图谱</div>
+        <div class="bb-tab" onclick="switchTab('feed')">投喂记录</div>
+        <div class="bb-tab" onclick="switchTab('anomaly')">异常特征库</div>
+        <div class="bb-tab" onclick="switchTab('stats')">投喂热力图</div>
+    </div>
+
+    <div id="tab-entries">
+        <div class="bb-search">
+            <input type="text" id="bb-search-input" placeholder="按关键词/来源/标签搜索脑库..." oninput="loadEntries()">
+            <select id="bb-type-filter" onchange="loadEntries()">
+                <option value="">全部类型</option>
+                <option value="experience">经验</option>
+                <option value="knowledge">知识</option>
+                <option value="anomaly">异常</option>
+                <option value="rule">规则</option>
+                <option value="violation">违反</option>
+            </select>
+            <button onclick="loadEntries()">搜索</button>
+        </div>
+        <div class="bb-card">
+            <table class="bb-table">
+                <thead><tr><th>条目ID</th><th>类型</th><th>摘要</th><th>来源</th><th>权重</th><th>投喂时间</th><th>操作</th></tr></thead>
+                <tbody id="entries-tbody"><tr><td colspan="7" style="text-align:center;color:#999;">加载中...</td></tr></tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="tab-graph" style="display:none;">
+        <div class="bb-card">
+            <h3 style="margin:0 0 12px 0;font-size:16px;color:var(--text-primary,#333);">知识图谱节点</h3>
+            <p style="font-size:12px;color:var(--text-secondary,#999);margin-bottom:8px;">按领域聚类的脑库节点 (Top 50 高权重节点)</p>
+            <div id="graph-nodes" style="min-height:80px;"></div>
+        </div>
+    </div>
+
+    <div id="tab-feed" style="display:none;">
+        <div class="bb-card">
+            <h3 style="margin:0 0 12px 0;font-size:16px;color:var(--text-primary,#333);">最近投喂记录</h3>
+            <div id="feed-list"><p style="text-align:center;color:#999;">加载中...</p></div>
+        </div>
+    </div>
+
+    <div id="tab-anomaly" style="display:none;">
+        <div class="bb-card">
+            <h3 style="margin:0 0 12px 0;font-size:16px;color:var(--text-primary,#333);">系统异常错误特征库</h3>
+            <table class="bb-table">
+                <thead><tr><th>特征ID</th><th>异常类型</th><th>特征摘要</th><th>出现次数</th><th>处置建议</th><th>最近发生</th></tr></thead>
+                <tbody id="anomaly-tbody"><tr><td colspan="6" style="text-align:center;color:#999;">加载中...</td></tr></tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="tab-stats" style="display:none;">
+        <div class="bb-card">
+            <h3 style="margin:0 0 12px 0;font-size:16px;color:var(--text-primary,#333);">投喂热力图 (近30天)</h3>
+            <div class="bb-heatmap" id="heatmap"></div>
+            <div style="display:flex;align-items:center;gap:8px;margin-top:8px;font-size:11px;color:var(--text-secondary,#999);">
+                <span>少</span>
+                <span class="bb-heat-cell" style="width:12px;height:12px;"></span>
+                <span class="bb-heat-cell l1" style="width:12px;height:12px;"></span>
+                <span class="bb-heat-cell l2" style="width:12px;height:12px;"></span>
+                <span class="bb-heat-cell l3" style="width:12px;height:12px;"></span>
+                <span class="bb-heat-cell l4" style="width:12px;height:12px;"></span>
+                <span>多</span>
+            </div>
+            <h4 style="margin:16px 0 8px 0;font-size:14px;color:var(--text-primary,#333);">按类型分布</h4>
+            <div id="type-chart"></div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function switchTab(name) {
+    document.querySelectorAll('.bb-tab').forEach(t => t.classList.remove('active'));
+    event.target.classList.add('active');
+    ['entries','graph','feed','anomaly','stats'].forEach(t => {
+        const el = document.getElementById('tab-' + t);
+        if (el) el.style.display = (t === name) ? '' : 'none';
+    });
+    if (name === 'entries') loadEntries();
+    if (name === 'graph') loadGraph();
+    if (name === 'feed') loadFeed();
+    if (name === 'anomaly') loadAnomaly();
+    if (name === 'stats') loadStats();
+}
+
+async function loadStats() {
+    try {
+        const r = await fetch('/api/brain_bank/stats');
+        const d = await r.json();
+        if (d.success) {
+            document.getElementById('stat-total').textContent = d.total ?? 0;
+            document.getElementById('stat-exp').textContent = d.by_type?.experience ?? 0;
+            document.getElementById('stat-anom').textContent = d.by_type?.anomaly ?? 0;
+            document.getElementById('stat-rule').textContent = d.by_type?.violation ?? 0;
+        }
+        if (d.heatmap) renderHeatmap(d.heatmap);
+        if (d.by_type) renderTypeChart(d.by_type);
+    } catch (e) { console.error('stats', e); }
+}
+
+function renderHeatmap(data) {
+    const wrap = document.getElementById('heatmap');
+    if (!data || !data.length) { wrap.innerHTML = '<p style="color:#999;">无热力图数据</p>'; return; }
+    wrap.innerHTML = data.map(v => {
+        const cls = v === 0 ? '' : (v < 5 ? 'l1' : (v < 15 ? 'l2' : (v < 30 ? 'l3' : 'l4')));
+        return `<div class="bb-heat-cell ${cls}" title="${v} 条"></div>`;
+    }).join('');
+}
+
+function renderTypeChart(byType) {
+    const wrap = document.getElementById('type-chart');
+    if (!wrap) return;
+    const entries = Object.entries(byType || {});
+    if (!entries.length) { wrap.innerHTML = '<p style="color:#999;">无类型数据</p>'; return; }
+    const max = Math.max(...entries.map(([,v]) => v), 1);
+    const labels = { experience: '经验', knowledge: '知识', anomaly: '异常', rule: '规则', violation: '违反' };
+    wrap.innerHTML = entries.map(([k, v]) => {
+        const pct = Math.round(v * 100 / max);
+        return `<div class="bb-chart-bar"><div class="lbl">${labels[k] || k}</div><div class="bar" style="width:${pct}%"></div><div class="val">${v}</div></div>`;
+    }).join('');
+}
+
+async function loadEntries() {
+    const q = (document.getElementById('bb-search-input')?.value || '').trim();
+    const t = (document.getElementById('bb-type-filter')?.value || '').trim();
+    try {
+        const r = await fetch('/api/brain_bank/list?q=' + encodeURIComponent(q) + '&type=' + encodeURIComponent(t));
+        const d = await r.json();
+        const tbody = document.getElementById('entries-tbody');
+        if (!d.success || !d.entries?.length) {
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#999;">无脑库条目</td></tr>';
+            return;
+        }
+        tbody.innerHTML = d.entries.map(e => {
+            const cls = e.entry_type || 'knowledge';
+            return `<tr>
+                <td><code style="font-size:11px;">${escapeHtml(e.entry_id || e.id || '-')}</code></td>
+                <td><span class="bb-badge ${cls}">${escapeHtml(e.entry_type || '-')}</span></td>
+                <td>${escapeHtml((e.summary || e.content || '').slice(0, 80))}...</td>
+                <td>${escapeHtml(e.source || '-')}</td>
+                <td>${e.weight ?? 0}</td>
+                <td>${escapeHtml(e.created_at || '-')}</td>
+                <td><button onclick="showEntry('${escapeHtml(e.entry_id || e.id)}')" style="padding:2px 8px;font-size:11px;cursor:pointer;border:1px solid #ddd;border-radius:4px;background:#fff;">详情</button></td>
+            </tr>`;
+        }).join('');
+    } catch (e) { console.error('entries', e); }
+}
+
+async function showEntry(id) {
+    try {
+        const r = await fetch('/api/brain_bank/get?id=' + encodeURIComponent(id));
+        const d = await r.json();
+        if (!d.success) { alert('查询失败'); return; }
+        const e = d.entry || {};
+        alert(`条目: ${id}\n类型: ${e.entry_type || '-'}\n权重: ${e.weight ?? 0}\n来源: ${e.source || '-'}\n时间: ${e.created_at || '-'}\n内容: ${(e.content || e.summary || '').slice(0, 200)}`);
+    } catch (e) { console.error('entry', e); }
+}
+
+async function loadGraph() {
+    try {
+        const r = await fetch('/api/brain_bank/graph?limit=50');
+        const d = await r.json();
+        const wrap = document.getElementById('graph-nodes');
+        if (!d.success || !d.nodes?.length) {
+            wrap.innerHTML = '<p style="color:#999;">无图谱节点</p>';
+            return;
+        }
+        wrap.innerHTML = d.nodes.map(n => `<span class="bb-kp-node" title="权重:${n.weight ?? 0} · 出现${n.count ?? 0}次">${escapeHtml(n.label || n.tag || '')} (${n.count ?? 0})</span>`).join('');
+    } catch (e) { console.error('graph', e); }
+}
+
+async function loadFeed() {
+    try {
+        const r = await fetch('/api/brain_bank/feed?limit=30');
+        const d = await r.json();
+        const wrap = document.getElementById('feed-list');
+        if (!d.success || !d.items?.length) {
+            wrap.innerHTML = '<p style="text-align:center;color:#999;">无投喂记录</p>';
+            return;
+        }
+        wrap.innerHTML = d.items.map(it => `
+            <div class="bb-feed-item">
+                <div class="meta">${escapeHtml(it.created_at || '-')} · ${escapeHtml(it.source || '-')} · ${escapeHtml(it.feed_type || '-')}</div>
+                <div class="content">${escapeHtml(it.content || it.summary || '-')}</div>
+            </div>
+        `).join('');
+    } catch (e) { console.error('feed', e); }
+}
+
+async function loadAnomaly() {
+    try {
+        const r = await fetch('/api/brain_bank/anomaly');
+        const d = await r.json();
+        const tbody = document.getElementById('anomaly-tbody');
+        if (!d.success || !d.items?.length) {
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#999;">无异常特征</td></tr>';
+            return;
+        }
+        tbody.innerHTML = d.items.map(it => `
+            <tr>
+                <td><code style="font-size:11px;">${escapeHtml(it.feature_id || it.id || '-')}</code></td>
+                <td>${escapeHtml(it.anomaly_type || '-')}</td>
+                <td>${escapeHtml((it.feature_summary || '').slice(0, 60))}</td>
+                <td>${it.occurrence_count ?? 0}</td>
+                <td>${escapeHtml((it.resolution || '').slice(0, 60))}</td>
+                <td>${escapeHtml(it.last_seen || '-')}</td>
+            </tr>
+        `).join('');
+    } catch (e) { console.error('anomaly', e); }
+}
+
+function escapeHtml(s) {
+    if (s === null || s === undefined) return '';
+    return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+loadStats();
+loadEntries();
+</script>
+{% endblock %}

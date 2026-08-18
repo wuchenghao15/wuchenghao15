@@ -1,0 +1,244 @@
+{# AI 团队枢纽 — Art Design Pro LIST 样式套用 (flow_frontend_refactor_20260831_145440) #}
+{# 页面类型: LIST · 套 mtscos_pages.css §11 AI团队枢纽变体 #}
+{% extends 'admin_app/base.html' %}
+
+{% block title %}AI 团队枢纽 - MTSCOS{% endblock %}
+
+{# 通知 admin_app/base.html 本页类型 (用于 .art-content data-page-type 属性) #}
+{% set page_type = 'list' %}
+{% set active_nav = 'ai_team' %}
+
+{% block page_title %}AI 团队枢纽{% endblock %}
+
+{% block content %}
+{# --- Hero 动作条 / 页面副标题 --- #}
+<div class="mtscos-action-bar adp-slide-up">
+  <div class="mtscos-action-bar-title">
+    🤖 AI 团队枢纽
+    <span class="mtscos-action-bar-subtitle">
+      管理 {{ total_ai|default(10827) }} 名 AI 员工 · 团队 · 集群 · 技能 · 成长
+    </span>
+  </div>
+  <div class="mtscos-action-bar-actions">
+    <button class="mtscos-btn is-secondary is-sm" onclick="location.href='/ai_employee_dashboard'">AI 员工看板</button>
+    <button class="mtscos-btn is-primary is-sm" onclick="location.reload()">刷新</button>
+  </div>
+</div>
+
+{# --- 4格 KPI 统计网格 --- #}
+<div class="mtscos-hub-grid mtscos-stagger">
+  <div class="mtscos-hub-card"><div class="mtscos-hub-stat"><div class="mtscos-hub-num" id="stat-ai-total">--</div><div class="mtscos-hub-lbl">AI 员工总数</div></div></div>
+  <div class="mtscos-hub-card"><div class="mtscos-hub-stat"><div class="mtscos-hub-num" id="stat-ai-online">--</div><div class="mtscos-hub-lbl">在线活跃</div></div></div>
+  <div class="mtscos-hub-card"><div class="mtscos-hub-stat"><div class="mtscos-hub-num" id="stat-clusters">--</div><div class="mtscos-hub-lbl">AI 集群</div></div></div>
+  <div class="mtscos-hub-card"><div class="mtscos-hub-stat"><div class="mtscos-hub-num" id="stat-skills">--</div><div class="mtscos-hub-lbl">技能节点</div></div></div>
+  <div class="mtscos-hub-card"><div class="mtscos-hub-stat"><div class="mtscos-hub-num" id="stat-system-configs">--</div><div class="mtscos-hub-lbl">系统参数</div></div></div>
+  <div class="mtscos-hub-card"><div class="mtscos-hub-stat"><div class="mtscos-hub-num" id="stat-runtime-agents">--</div><div class="mtscos-hub-lbl">AI Agent</div></div></div>
+  <div class="mtscos-hub-card"><div class="mtscos-hub-stat"><div class="mtscos-hub-num" id="stat-runtime-hooks">--</div><div class="mtscos-hub-lbl">Hook</div></div></div>
+  <div class="mtscos-hub-card"><div class="mtscos-hub-stat"><div class="mtscos-hub-num" id="stat-runtime-plans">--</div><div class="mtscos-hub-lbl">自动化计划</div></div></div>
+  <div class="mtscos-hub-card"><div class="mtscos-hub-stat"><div class="mtscos-hub-num" id="stat-runtime-eigenflux">--</div><div class="mtscos-hub-lbl">EigenFlux AI</div></div></div>
+  <div class="mtscos-hub-card"><div class="mtscos-hub-stat"><div class="mtscos-hub-num" id="stat-runtime-experts">--</div><div class="mtscos-hub-lbl">EigenFlux 专家</div></div></div>
+</div>
+
+<section class="mtscos-hub-section adp-slide-up" data-delay="0.5">
+  <h3 class="mtscos-hub-section-title">🗃️ 数据库运行时配置</h3>
+  <div class="mtscos-table-wrapper">
+    <table class="mtscos-hub-table">
+      <thead><tr><th>项</th><th>值</th><th>说明</th></tr></thead>
+      <tbody id="runtime-summary-table">
+        <tr><td colspan="3" class="mtscos-hub-empty">加载中...</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+{# --- AI 员工列表 --- #}
+<section class="mtscos-hub-section adp-slide-up" data-delay="1">
+  <h3 class="mtscos-hub-section-title">📋 AI 员工列表</h3>
+  <div class="mtscos-table-wrapper">
+    <table class="mtscos-hub-table">
+      <thead><tr><th>状态</th><th>员工名称</th><th>角色</th><th>集群</th><th>等级</th><th>技能</th><th>成就</th></tr></thead>
+      <tbody id="ai-list"><tr><td colspan="7" class="mtscos-hub-empty">加载中...</td></tr></tbody>
+    </table>
+  </div>
+</section>
+
+{# --- 成长树 Top 10 --- #}
+<section class="mtscos-hub-section adp-slide-up" data-delay="2">
+  <h3 class="mtscos-hub-section-title">🌲 成长树 Top 10</h3>
+  <div class="mtscos-table-wrapper">
+    <table class="mtscos-hub-table">
+      <thead><tr><th>排名</th><th>员工</th><th>经验值</th><th>等级</th><th>成长进度</th><th>下次升级</th></tr></thead>
+      <tbody id="growth-list"><tr><td colspan="6" class="mtscos-hub-empty">加载中...</td></tr></tbody>
+    </table>
+  </div>
+</section>
+
+{# --- 集群节点状态 --- #}
+<section class="mtscos-hub-section adp-slide-up" data-delay="3">
+  <h3 class="mtscos-hub-section-title">🌐 集群节点状态</h3>
+  <div class="mtscos-table-wrapper">
+    <table class="mtscos-hub-table">
+      <thead><tr><th>节点ID</th><th>节点名称</th><th>类型</th><th>状态</th><th>负载</th><th>最后心跳</th></tr></thead>
+      <tbody id="cluster-nodes"><tr><td colspan="6" class="mtscos-hub-empty">加载中...</td></tr></tbody>
+    </table>
+  </div>
+</section>
+
+{# --- 新增 AI 员工 --- #}
+<section class="mtscos-hub-section adp-slide-up" data-delay="4">
+  <h3 class="mtscos-hub-section-title">👥 新增 AI 员工（配合新功能）</h3>
+  <div class="mtscos-table-wrapper">
+    <table class="mtscos-hub-table">
+      <thead><tr><th>AI 员工</th><th>角色</th><th>负责功能</th><th>状态</th></tr></thead>
+      <tbody>
+        <tr><td>EigenFlux团队协调员</td><td>团队协调</td><td>EigenFlux专家中心-专家匹配与任务分配</td><td><span class="mtscos-hub-badge online">待注册</span></td></tr>
+        <tr><td>脑库知识工程师</td><td>知识管理</td><td>AI脑库探索器-知识图谱与投喂管理</td><td><span class="mtscos-hub-badge online">待注册</span></td></tr>
+        <tr><td>神经网络运维员</td><td>运维</td><td>神经网络阵列矩阵-集群健康与自动修复</td><td><span class="mtscos-hub-badge online">待注册</span></td></tr>
+        <tr><td>开发流程审计员</td><td>审计</td><td>12步骤开发流程看板-流程监控与违规检测</td><td><span class="mtscos-hub-badge online">待注册</span></td></tr>
+        <tr><td>团队成长分析师</td><td>数据分析</td><td>AI团队枢纽-成长树与技能分析</td><td><span class="mtscos-hub-badge online">待注册</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<script>
+/* 运行时给进度条赋值 width (唯一 V2 动态 style 豁免: 纯百分比驱动) */
+function applyProgressFills(root) {
+  (root || document).querySelectorAll('.mtscos-hub-progress-bar[data-fill]').forEach(function (bar) {
+    var pct = Math.min(100, Math.max(0, parseFloat(bar.getAttribute('data-fill')) || 0));
+    bar.style.width = pct + '%';
+  });
+}
+
+async function loadStats() {
+  try {
+    var r = await fetch('/api/ai/team_hub_stats');
+    var d = await r.json();
+    if (d.success) {
+      document.getElementById('stat-ai-total').textContent = d.total_ai || 0;
+      document.getElementById('stat-ai-online').textContent = d.active_ai || 0;
+      document.getElementById('stat-clusters').textContent = d.clusters || 0;
+      document.getElementById('stat-skills').textContent = d.skills || 0;
+    }
+  } catch (e) {}
+}
+
+async function loadRuntimeSummary() {
+  try {
+    var r = await fetch('/api/system/runtime');
+    var d = await r.json();
+    var tbody = document.getElementById('runtime-summary-table');
+    if (!d || !d.success || !d.data) {
+      tbody.innerHTML = '<tr><td colspan="3" class="mtscos-hub-empty">无数据库运行时数据</td></tr>';
+      return;
+    }
+    var runtime = d.data || {};
+    var system = runtime.system_parameters || {};
+    var features = Array.isArray(system.features) ? system.features : [];
+    var aiEmployees = Array.isArray(runtime.ai_employees) ? runtime.ai_employees : [];
+    var aiAgents = Array.isArray(runtime.ai_agents) ? runtime.ai_agents : [];
+    var hooks = Array.isArray(runtime.hooks) ? runtime.hooks : [];
+    var plans = Array.isArray(runtime.automation_plans) ? runtime.automation_plans : [];
+    var experts = Array.isArray(runtime.eigenflux_experts) ? runtime.eigenflux_experts : [];
+    var eigenflux = runtime.eigenflux_ai || {};
+    document.getElementById('stat-system-configs').textContent = features.length || system.feature_count || 0;
+    document.getElementById('stat-runtime-agents').textContent = aiAgents.length || 0;
+    document.getElementById('stat-runtime-hooks').textContent = hooks.length || 0;
+    document.getElementById('stat-runtime-plans').textContent = plans.length || 0;
+    document.getElementById('stat-runtime-eigenflux').textContent = eigenflux.enabled ? 'ON' : 'OFF';
+    document.getElementById('stat-runtime-experts').textContent = experts.length || 0;
+    tbody.innerHTML = [
+      ['系统参数', String(features.length || system.feature_count || 0), 'app_feature_configs / system config'],
+      ['AI员工', String(aiEmployees.length || 0), 'ai_employee_config'],
+      ['AI Agent', String(aiAgents.length || 0), 'agent_registry'],
+      ['Hook', String(hooks.length || 0), 'automation_hooks / auto_hooks'],
+      ['自动化计划', String(plans.length || 0), 'automation_plans / ai_auto_plans'],
+      ['EigenFlux AI', eigenflux.enabled ? '启用' : '关闭', 'eigenflux_monitor_config'],
+      ['EigenFlux 专家', String(experts.length || 0), 'EigenFlux 专家团队'],
+    ].map(function (row) {
+      return '<tr><td>' + row[0] + '</td><td>' + row[1] + '</td><td>' + row[2] + '</td></tr>';
+    }).join('');
+  } catch (e) {
+    var tbody = document.getElementById('runtime-summary-table');
+    tbody.innerHTML = '<tr><td colspan="3" class="mtscos-hub-empty">加载失败</td></tr>';
+  }
+}
+
+async function loadAIList() {
+  try {
+    var r = await fetch('/api/ai/team_list?limit=20');
+    var d = await r.json();
+    var tbody = document.getElementById('ai-list');
+    if (d.success && d.employees && d.employees.length > 0) {
+      tbody.innerHTML = d.employees.map(function (e) {
+        var status = e.status || 'idle';
+        var skills = (e.skills || []).slice(0, 3).map(function (s) { return '<span class="mtscos-hub-skill">' + s + '</span>'; }).join('');
+        return '<tr>' +
+          '<td><span class="mtscos-hub-badge ' + status + '">' + status + '</span></td>' +
+          '<td>' + (e.name || e.employee_name || '--') + '</td>' +
+          '<td>' + (e.role || '--') + '</td>' +
+          '<td>' + (e.cluster || '--') + '</td>' +
+          '<td><span class="mtscos-hub-level">' + (e.level || 1) + '</span></td>' +
+          '<td>' + (skills || '--') + '</td>' +
+          '<td>' + (e.achievements || 0) + '</td>' +
+        '</tr>';
+      }).join('');
+    } else {
+      tbody.innerHTML = '<tr><td colspan="7" class="mtscos-hub-empty">无数据</td></tr>';
+    }
+  } catch (e) {}
+}
+
+async function loadGrowth() {
+  try {
+    var r = await fetch('/api/ai/growth_tree?limit=10');
+    var d = await r.json();
+    var tbody = document.getElementById('growth-list');
+    if (d.success && d.growth && d.growth.length > 0) {
+      tbody.innerHTML = d.growth.map(function (g, i) {
+        var pct = Math.min(100, (g.exp / (g.next_level_exp || 100)) * 100);
+        return '<tr>' +
+          '<td>#' + (i + 1) + '</td>' +
+          '<td>' + (g.name || '--') + '</td>' +
+          '<td>' + (g.exp || 0) + '</td>' +
+          '<td><span class="mtscos-hub-level">' + (g.level || 1) + '</span></td>' +
+          '<td><div class="mtscos-hub-progress"><div class="mtscos-hub-progress-bar" data-fill="' + pct + '"></div></div></td>' +
+          '<td>' + (g.next_level_exp || '--') + '</td>' +
+        '</tr>';
+      }).join('');
+      applyProgressFills(tbody);
+    } else {
+      tbody.innerHTML = '<tr><td colspan="6" class="mtscos-hub-empty">无数据</td></tr>';
+    }
+  } catch (e) {}
+}
+
+async function loadClusterNodes() {
+  try {
+    var r = await fetch('/api/ai/cluster_nodes_status');
+    var d = await r.json();
+    var tbody = document.getElementById('cluster-nodes');
+    if (d.success && d.nodes && d.nodes.length > 0) {
+      tbody.innerHTML = d.nodes.map(function (n) {
+        return '<tr>' +
+          '<td>' + (n.node_id || n.id || '--') + '</td>' +
+          '<td>' + (n.node_name || '--') + '</td>' +
+          '<td>' + (n.node_type || '--') + '</td>' +
+          '<td><span class="mtscos-hub-badge ' + (n.status || 'idle') + '">' + (n.status || '--') + '</span></td>' +
+          '<td>' + (n.load || '--') + '%</td>' +
+          '<td>' + ((n.last_heartbeat || '').substring(0, 19)) + '</td>' +
+        '</tr>';
+      }).join('');
+    } else {
+      tbody.innerHTML = '<tr><td colspan="6" class="mtscos-hub-empty">无集群节点</td></tr>';
+    }
+  } catch (e) {}
+}
+
+loadStats();
+loadRuntimeSummary();
+loadAIList();
+loadGrowth();
+loadClusterNodes();
+</script>
+{% endblock %}

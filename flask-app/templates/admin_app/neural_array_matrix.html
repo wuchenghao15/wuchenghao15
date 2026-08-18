@@ -1,0 +1,310 @@
+{% extends "base.html" %}
+
+{% block title %}神经网络阵列矩阵 - MTSCOS AI{% endblock %}
+
+{% block head %}
+<style>
+    .na-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-top: 20px; }
+    .na-card { background: var(--bg-card, #fff); border-radius: 12px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); transition: transform 0.2s, box-shadow 0.2s; }
+    .na-card:hover { transform: translateY(-2px); box-shadow: 0 4px 16px rgba(0,0,0,0.12); }
+    .na-stat { display: flex; align-items: center; gap: 12px; }
+    .na-stat .num { font-size: 28px; font-weight: 700; color: var(--accent, #667eea); }
+    .na-stat .lbl { font-size: 13px; color: var(--text-secondary, #666); }
+    .na-table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+    .na-table th { text-align: left; padding: 8px 12px; font-size: 12px; color: var(--text-secondary, #888); border-bottom: 2px solid var(--border, #eee); }
+    .na-table td { padding: 10px 12px; font-size: 13px; border-bottom: 1px solid var(--border-soft, #f5f5f5); }
+    .na-badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+    .na-badge.online { background: #d4edda; color: #155724; }
+    .na-badge.training { background: #fff3cd; color: #856404; }
+    .na-badge.offline { background: #f8d7da; color: #721c24; }
+    .na-badge.idle { background: #e2e3e5; color: #383d41; }
+    .na-tabs { display: flex; gap: 4px; margin-bottom: 16px; border-bottom: 2px solid var(--border, #eee); flex-wrap: wrap; }
+    .na-tab { padding: 8px 16px; cursor: pointer; border-bottom: 2px solid transparent; font-size: 14px; color: var(--text-secondary, #666); }
+    .na-tab.active { color: var(--accent, #667eea); border-bottom-color: var(--accent, #667eea); font-weight: 600; }
+    .na-search { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+    .na-search input, .na-search select { padding: 8px 12px; border: 1px solid var(--border, #ddd); border-radius: 8px; font-size: 14px; }
+    .na-search input { flex: 1; min-width: 200px; }
+    .na-search button { padding: 8px 16px; background: var(--accent, #667eea); color: #fff; border: none; border-radius: 8px; cursor: pointer; }
+    .na-hb { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+    .na-hb.online { background: #28a745; animation: na-pulse 2s infinite; }
+    .na-hb.training { background: #ffc107; animation: na-pulse 2s infinite; }
+    .na-hb.offline { background: #dc3545; }
+    .na-hb.idle { background: #6c757d; }
+    @keyframes na-pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
+    .na-matrix { display: grid; grid-template-columns: repeat(8, 1fr); gap: 4px; margin: 12px 0; }
+    .na-cell { aspect-ratio: 1; border-radius: 4px; background: #f0f0f0; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #495057; cursor: pointer; transition: transform 0.15s; }
+    .na-cell:hover { transform: scale(1.1); z-index: 1; box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
+    .na-cell.online { background: #28a745; color: #fff; }
+    .na-cell.training { background: #ffc107; color: #212529; }
+    .na-cell.offline { background: #dc3545; color: #fff; }
+    .na-cell.idle { background: #adb5bd; color: #fff; }
+    .na-topo { position: relative; height: 320px; background: var(--bg-soft, #f8f9fa); border-radius: 8px; margin: 12px 0; overflow: hidden; }
+    .na-topo svg { width: 100%; height: 100%; }
+    .na-topo .node { cursor: pointer; }
+    .na-topo .node circle { transition: r 0.2s; }
+    .na-topo .node:hover circle { r: 8; }
+    .na-progress { margin: 8px 0; }
+    .na-progress-bar { height: 8px; background: #e9ecef; border-radius: 4px; overflow: hidden; }
+    .na-progress-fill { height: 100%; background: var(--accent, #667eea); transition: width 0.3s; }
+    .na-cluster-tag { display: inline-block; padding: 2px 8px; margin: 2px; border-radius: 12px; background: var(--bg-soft, #f0f4ff); color: var(--accent, #667eea); font-size: 11px; font-weight: 600; border: 1px solid var(--accent-soft, #c3d4ff); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div style="max-width: 1280px; margin: 0 auto; padding: 20px;">
+    <h1 style="color: var(--text-primary, #333); margin-bottom: 8px;">🔮 神经网络阵列矩阵</h1>
+    <p style="color: var(--text-secondary, #666); margin-bottom: 20px;">AI 阵列治理 · {{ total_nodes|default(0) }} 个阵列节点 · 集群拓扑 · 训练进度</p>
+
+    <div class="na-grid" style="grid-template-columns: repeat(5, 1fr);">
+        <div class="na-card"><div class="na-stat"><div class="num" id="stat-total">--</div><div class="lbl">阵列节点</div></div></div>
+        <div class="na-card"><div class="na-stat"><div class="num" id="stat-online">--</div><div class="lbl">在线</div></div></div>
+        <div class="na-card"><div class="na-stat"><div class="num" id="stat-training">--</div><div class="lbl">训练中</div></div></div>
+        <div class="na-card"><div class="na-stat"><div class="num" id="stat-clusters">--</div><div class="lbl">活跃集群</div></div></div>
+        <div class="na-card"><div class="na-stat"><div class="num" id="stat-throughput">--</div><div class="lbl">吞吐(req/s)</div></div></div>
+    </div>
+
+    <div class="na-tabs">
+        <div class="na-tab active" onclick="switchTab('matrix')">阵列矩阵</div>
+        <div class="na-tab" onclick="switchTab('topo')">神经网络拓扑</div>
+        <div class="na-tab" onclick="switchTab('clusters')">集群节点</div>
+        <div class="na-tab" onclick="switchTab('training')">训练进度</div>
+        <div class="na-tab" onclick="switchTab('heartbeat')">心跳流水</div>
+    </div>
+
+    <div id="tab-matrix">
+        <div class="na-search">
+            <input type="text" id="na-matrix-filter" placeholder="按节点ID/集群过滤..." oninput="loadMatrix()">
+            <select id="na-matrix-state" onchange="loadMatrix()">
+                <option value="">全部状态</option>
+                <option value="online">在线</option>
+                <option value="training">训练中</option>
+                <option value="idle">空闲</option>
+                <option value="offline">离线</option>
+            </select>
+            <button onclick="loadMatrix()">刷新</button>
+        </div>
+        <div class="na-card">
+            <h3 style="margin:0 0 12px 0;font-size:16px;color:var(--text-primary,#333);">阵列节点矩阵 (8×N 网格)</h3>
+            <div class="na-matrix" id="matrix-grid"><div style="grid-column:1/-1;text-align:center;color:#999;padding:20px;">加载中...</div></div>
+            <div style="display:flex;align-items:center;gap:12px;margin-top:8px;font-size:11px;color:var(--text-secondary,#999);flex-wrap:wrap;">
+                <span><span class="na-hb online"></span> 在线</span>
+                <span><span class="na-hb training"></span> 训练中</span>
+                <span><span class="na-hb idle"></span> 空闲</span>
+                <span><span class="na-hb offline"></span> 离线</span>
+            </div>
+        </div>
+    </div>
+
+    <div id="tab-topo" style="display:none;">
+        <div class="na-card">
+            <h3 style="margin:0 0 12px 0;font-size:16px;color:var(--text-primary,#333);">神经网络拓扑视图</h3>
+            <div class="na-topo" id="topo-svg"><p style="text-align:center;color:#999;padding:20px;">加载中...</p></div>
+            <p style="font-size:12px;color:var(--text-secondary,#999);">点击节点查看详细信息, 线条粗细表示权重</p>
+        </div>
+    </div>
+
+    <div id="tab-clusters" style="display:none;">
+        <div class="na-card">
+            <h3 style="margin:0 0 12px 0;font-size:16px;color:var(--text-primary,#333);">集群节点状态</h3>
+            <table class="na-table">
+                <thead><tr><th>心跳</th><th>节点ID</th><th>集群</th><th>角色</th><th>负载</th><th>状态</th><th>最后心跳</th></tr></thead>
+                <tbody id="clusters-tbody"><tr><td colspan="7" style="text-align:center;color:#999;">加载中...</td></tr></tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="tab-training" style="display:none;">
+        <div class="na-card">
+            <h3 style="margin:0 0 12px 0;font-size:16px;color:var(--text-primary,#333);">训练进度</h3>
+            <div id="training-list"><p style="text-align:center;color:#999;">加载中...</p></div>
+        </div>
+    </div>
+
+    <div id="tab-heartbeat" style="display:none;">
+        <div class="na-card">
+            <h3 style="margin:0 0 12px 0;font-size:16px;color:var(--text-primary,#333);">心跳流水 (最近 50 条)</h3>
+            <table class="na-table">
+                <thead><tr><th>时间</th><th>节点ID</th><th>状态</th><th>负载</th><th>消息</th></tr></thead>
+                <tbody id="heartbeat-tbody"><tr><td colspan="5" style="text-align:center;color:#999;">加载中...</td></tr></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function switchTab(name) {
+    document.querySelectorAll('.na-tab').forEach(t => t.classList.remove('active'));
+    event.target.classList.add('active');
+    ['matrix','topo','clusters','training','heartbeat'].forEach(t => {
+        const el = document.getElementById('tab-' + t);
+        if (el) el.style.display = (t === name) ? '' : 'none';
+    });
+    if (name === 'matrix') loadMatrix();
+    if (name === 'topo') loadTopo();
+    if (name === 'clusters') loadClusters();
+    if (name === 'training') loadTraining();
+    if (name === 'heartbeat') loadHeartbeat();
+}
+
+async function loadStats() {
+    try {
+        const r = await fetch('/api/neural_array/stats');
+        const d = await r.json();
+        if (d.success) {
+            document.getElementById('stat-total').textContent = d.total ?? 0;
+            document.getElementById('stat-online').textContent = d.online ?? 0;
+            document.getElementById('stat-training').textContent = d.training ?? 0;
+            document.getElementById('stat-clusters').textContent = d.active_clusters ?? 0;
+            document.getElementById('stat-throughput').textContent = d.throughput ?? 0;
+        }
+    } catch (e) { console.error('stats', e); }
+}
+
+async function loadMatrix() {
+    const q = (document.getElementById('na-matrix-filter')?.value || '').trim();
+    const st = (document.getElementById('na-matrix-state')?.value || '').trim();
+    try {
+        const r = await fetch('/api/neural_array/matrix?q=' + encodeURIComponent(q) + '&state=' + encodeURIComponent(st));
+        const d = await r.json();
+        const grid = document.getElementById('matrix-grid');
+        if (!d.success || !d.nodes?.length) {
+            grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:#999;padding:20px;">无阵列节点</div>';
+            return;
+        }
+        grid.innerHTML = d.nodes.map(n => {
+            const st = n.state || 'idle';
+            const label = (n.node_id || '').slice(-4);
+            return `<div class="na-cell ${st}" title="ID:${escapeHtml(n.node_id)}&#10;集群:${escapeHtml(n.cluster||'-')}&#10;负载:${n.load ?? 0}%&#10;状态:${st}" onclick="showNode('${escapeHtml(n.node_id)}')">${label}</div>`;
+        }).join('');
+    } catch (e) { console.error('matrix', e); }
+}
+
+async function showNode(id) {
+    try {
+        const r = await fetch('/api/neural_array/node?id=' + encodeURIComponent(id));
+        const d = await r.json();
+        if (!d.success) { alert('查询失败'); return; }
+        const n = d.node || {};
+        alert(`节点: ${id}\n集群: ${n.cluster || '-'}\n角色: ${n.role || '-'}\n状态: ${n.state || '-'}\n负载: ${n.load ?? 0}%\n心跳: ${n.last_heartbeat || '-'}`);
+    } catch (e) { console.error('node', e); }
+}
+
+async function loadTopo() {
+    try {
+        const r = await fetch('/api/neural_array/topo');
+        const d = await r.json();
+        const wrap = document.getElementById('topo-svg');
+        if (!d.success || !d.nodes?.length) {
+            wrap.innerHTML = '<p style="text-align:center;color:#999;padding:20px;">无拓扑数据</p>';
+            return;
+        }
+        const nodes = d.nodes || [];
+        const edges = d.edges || [];
+        const W = 800, H = 320;
+        const cx = W / 2, cy = H / 2;
+        const layers = {};
+        nodes.forEach(n => { (layers[n.layer || 0] = layers[n.layer || 0] || []).push(n); });
+        const layerKeys = Object.keys(layers).sort((a, b) => a - b);
+        const layerCount = layerKeys.length || 1;
+        let svg = `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">`;
+        edges.forEach(e => {
+            const a = nodes.find(n => n.id === e.from), b = nodes.find(n => n.id === e.to);
+            if (!a || !b) return;
+            const w = Math.max(0.5, (e.weight || 1) * 2);
+            svg += `<line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" stroke="#c3d4ff" stroke-width="${w}" opacity="0.6"/>`;
+        });
+        nodes.forEach(n => {
+            const cls = n.state || 'idle';
+            const color = cls === 'online' ? '#28a745' : (cls === 'training' ? '#ffc107' : (cls === 'offline' ? '#dc3545' : '#6c757d'));
+            svg += `<g class="node" onclick="showNode('${escapeHtml(n.id)}')"><circle cx="${n.x}" cy="${n.y}" r="6" fill="${color}"/><title>${escapeHtml(n.id)} · ${cls}</title></g>`;
+        });
+        layerKeys.forEach((lk, i) => {
+            const x = (W / (layerCount + 1)) * (i + 1);
+            svg += `<text x="${x}" y="${H - 8}" text-anchor="middle" font-size="10" fill="#999">Layer ${lk}</text>`;
+        });
+        svg += '</svg>';
+        wrap.innerHTML = svg;
+    } catch (e) { console.error('topo', e); }
+}
+
+async function loadClusters() {
+    try {
+        const r = await fetch('/api/neural_array/clusters');
+        const d = await r.json();
+        const tbody = document.getElementById('clusters-tbody');
+        if (!d.success || !d.nodes?.length) {
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#999;">无集群节点</td></tr>';
+            return;
+        }
+        tbody.innerHTML = d.nodes.map(n => {
+            const st = n.state || 'idle';
+            return `<tr>
+                <td><span class="na-hb ${st}"></span></td>
+                <td><code style="font-size:11px;">${escapeHtml(n.node_id || '-')}</code></td>
+                <td><span class="na-cluster-tag">${escapeHtml(n.cluster || '-')}</span></td>
+                <td>${escapeHtml(n.role || '-')}</td>
+                <td>${n.load ?? 0}%</td>
+                <td><span class="na-badge ${st}">${st}</span></td>
+                <td>${escapeHtml(n.last_heartbeat || '-')}</td>
+            </tr>`;
+        }).join('');
+    } catch (e) { console.error('clusters', e); }
+}
+
+async function loadTraining() {
+    try {
+        const r = await fetch('/api/neural_array/training');
+        const d = await r.json();
+        const wrap = document.getElementById('training-list');
+        if (!d.success || !d.items?.length) {
+            wrap.innerHTML = '<p style="text-align:center;color:#999;">无训练任务</p>';
+            return;
+        }
+        wrap.innerHTML = d.items.map(it => {
+            const pct = Math.round((it.progress ?? 0) * 100);
+            const st = it.state || 'idle';
+            return `<div class="na-progress">
+                <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px;">
+                    <span><code style="font-size:11px;">${escapeHtml(it.task_id || '-')}</code> · ${escapeHtml(it.model || '-')}</span>
+                    <span><span class="na-badge ${st}">${st}</span> ${pct}%</span>
+                </div>
+                <div class="na-progress-bar"><div class="na-progress-fill" style="width:${pct}%"></div></div>
+                <div style="font-size:11px;color:var(--text-secondary,#999);margin-top:2px;">epoch ${it.epoch ?? 0}/${it.total_epochs ?? 0} · loss ${it.loss ?? '-'} · 节点 ${escapeHtml(it.node_id || '-')}</div>
+            </div>`;
+        }).join('');
+    } catch (e) { console.error('training', e); }
+}
+
+async function loadHeartbeat() {
+    try {
+        const r = await fetch('/api/neural_array/heartbeat?limit=50');
+        const d = await r.json();
+        const tbody = document.getElementById('heartbeat-tbody');
+        if (!d.success || !d.items?.length) {
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#999;">无心跳记录</td></tr>';
+            return;
+        }
+        tbody.innerHTML = d.items.map(it => {
+            const st = it.state || 'idle';
+            return `<tr>
+                <td>${escapeHtml(it.ts || '-')}</td>
+                <td><code style="font-size:11px;">${escapeHtml(it.node_id || '-')}</code></td>
+                <td><span class="na-badge ${st}">${st}</span></td>
+                <td>${it.load ?? 0}%</td>
+                <td>${escapeHtml(it.message || '-')}</td>
+            </tr>`;
+        }).join('');
+    } catch (e) { console.error('heartbeat', e); }
+}
+
+function escapeHtml(s) {
+    if (s === null || s === undefined) return '';
+    return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+loadStats();
+loadMatrix();
+</script>
+{% endblock %}
