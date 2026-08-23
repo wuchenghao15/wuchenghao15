@@ -1,0 +1,159 @@
+{% extends "base_unified.html" %}
+{% block title %}用户登录{% endblock %}
+{% block page_title %}用户登录{% endblock %}
+
+{% block extra_head %}
+<style>
+.login-container {
+    max-width: 420px;
+    margin: 40px auto;
+    background: var(--mtscos-bg-card);
+    border: 1px solid var(--mtscos-border-light);
+    border-radius: var(--mtscos-radius-xl);
+    padding: 40px;
+    box-shadow: var(--mtscos-shadow-md);
+}
+.login-container h1 {
+    text-align: center;
+    color: var(--mtscos-text-primary);
+    margin-bottom: 6px;
+    font-size: 28px;
+}
+.subtitle {
+    text-align: center;
+    color: var(--mtscos-text-secondary);
+    margin-bottom: 28px;
+    font-size: 13px;
+}
+.form-group { margin-bottom: 18px; }
+.form-group label {
+    display: block;
+    color: var(--mtscos-text-primary);
+    margin-bottom: 8px;
+    font-weight: 600;
+    font-size: 14px;
+}
+.form-group input {
+    width: 100%;
+    padding: 12px 14px;
+    border: 2px solid var(--mtscos-border-light);
+    border-radius: var(--mtscos-radius-md);
+    font-size: 14px;
+    transition: border-color 0.2s;
+    box-sizing: border-box;
+    background: var(--mtscos-bg-card);
+    color: var(--mtscos-text-primary);
+}
+.form-group input:focus {
+    outline: none;
+    border-color: var(--mtscos-primary-base);
+}
+.form-options {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 22px;
+    font-size: 13px;
+}
+.remember-me {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--mtscos-text-secondary);
+    cursor: pointer;
+}
+.forgot-password {
+    color: var(--mtscos-primary-base);
+    text-decoration: none;
+}
+.forgot-password:hover { text-decoration: underline; }
+.btn-login {
+    width: 100%;
+    padding: 14px;
+    background: var(--mtscos-primary-base);
+    color: var(--mtscos-text-inverse);
+    border: none;
+    border-radius: var(--mtscos-radius-md);
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background .2s, transform .2s;
+}
+.btn-login:hover {
+    background: var(--mtscos-primary-dark-2);
+    transform: translateY(-1px);
+}
+.register-link {
+    text-align: center;
+    margin-top: 18px;
+    font-size: 13px;
+    color: var(--mtscos-text-secondary);
+}
+.register-link a {
+    color: var(--mtscos-primary-base);
+    text-decoration: none;
+    font-weight: 600;
+}
+.flash-message {
+    background: var(--mtscos-warning-soft);
+    border: 1px solid var(--mtscos-warning);
+    color: var(--mtscos-warning);
+    padding: 10px 14px;
+    border-radius: var(--mtscos-radius-md);
+    margin-bottom: 16px;
+    font-size: 13px;
+}
+.flash-error { background: var(--mtscos-danger-soft); border-color: var(--mtscos-danger); color: var(--mtscos-danger); }
+.flash-success { background: var(--mtscos-success-soft); border-color: var(--mtscos-success); color: var(--mtscos-success); }
+.home-link { text-align: center; margin-top: 12px; font-size: 12px; }
+.home-link a { color: var(--mtscos-text-tertiary); text-decoration: none; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="login-container">
+    <h1>用户登录</h1>
+    <div class="subtitle">欢迎回来，请使用您的账号登录</div>
+
+    {% if get_flashed_messages %}
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, msg in messages %}
+          <div class="flash-message flash-{{ 'error' if category == 'error' else 'warning' if category == 'message' else category }}">{{ msg }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+    {% endif %}
+
+    <form method="POST" action="/login">
+        <div class="form-group">
+            <label for="username">用户名 / 邮箱</label>
+            <input type="text" id="username" name="username" required
+                   autocomplete="username" placeholder="请输入用户名或邮箱">
+        </div>
+
+        <div class="form-group">
+            <label for="password">密码</label>
+            <input type="password" id="password" name="password" required
+                   autocomplete="current-password" placeholder="请输入密码">
+        </div>
+
+        <div class="form-options">
+            <label class="remember-me">
+                <input type="checkbox" name="remember_me" id="remember_me">
+                记住我
+            </label>
+            <a href="/forgot-password" class="forgot-password">忘记密码？</a>
+        </div>
+
+        <button type="submit" class="btn-login">登 录</button>
+
+        <div class="register-link">
+            还没有账号？<a href="/register">立即注册</a>
+        </div>
+        <div class="home-link">
+            <a href="/"><i class="fas fa-arrow-left"></i> 返回首页</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

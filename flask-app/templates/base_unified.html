@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}MTSCOS AI{% endblock %} - MTSCOS AI</title>
+    <link rel="stylesheet" href="/assets/font-awesome/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --sidebar-w: 230px;
+            --header-h: 60px;
+            --footer-h: 40px;
+        }
+        body {
+            font-family: var(--mtscos-font-sans);
+            background: var(--mtscos-bg-page);
+            color: var(--mtscos-text-primary);
+            min-height: 100vh;
+            display: flex;
+            line-height: 1.6;
+        }
+
+        /* ========== 左侧导航栏 ========== */
+        .uni-sidebar {
+            width: var(--sidebar-w); flex-shrink: 0;
+            background: var(--mtscos-bg-card);
+            border-right: 1px solid var(--mtscos-border-light);
+            position: fixed; top: 0; left: 0; bottom: 0;
+            display: flex; flex-direction: column;
+            z-index: 100;
+            transition: transform .25s ease;
+        }
+        .uni-sidebar-brand {
+            padding: 16px 20px; border-bottom: 1px solid var(--mtscos-border-lighter);
+            display: flex; align-items: center; gap: 10px; flex-shrink: 0;
+        }
+        .uni-sidebar-brand .logo-icon {
+            width: 36px; height: 36px; border-radius: var(--mtscos-radius-md);
+            background: linear-gradient(135deg, var(--mtscos-primary-base), var(--mtscos-primary-dark-2));
+            display: flex; align-items: center; justify-content: center;
+            color: var(--mtscos-text-inverse); font-size: 18px; flex-shrink: 0;
+        }
+        .uni-sidebar-brand .logo-text {
+            font-size: 16px; font-weight: 700; color: var(--mtscos-text-primary);
+        }
+        .uni-sidebar-brand .logo-text small {
+            display: block; font-size: 10px; font-weight: 400;
+            color: var(--mtscos-text-secondary); margin-top: 1px;
+        }
+        .uni-sidebar-nav {
+            flex: 1; overflow-y: auto; padding: 8px 0;
+        }
+        .uni-sidebar-nav::-webkit-scrollbar { width: 4px; }
+        .uni-sidebar-nav::-webkit-scrollbar-thumb {
+            background: var(--mtscos-border-base); border-radius: 2px;
+        }
+        .nav-group { margin-bottom: 8px; }
+        .nav-group-title {
+            font-size: 11px; font-weight: 600; text-transform: uppercase;
+            color: var(--mtscos-text-secondary); padding: 8px 20px 4px;
+            letter-spacing: .5px;
+        }
+        .nav-item {
+            display: flex; align-items: center; gap: 10px;
+            padding: 9px 20px; font-size: 14px; color: var(--mtscos-text-primary);
+            text-decoration: none; transition: background .2s, color .2s;
+            border-left: 3px solid transparent; cursor: pointer;
+        }
+        .nav-item:hover {
+            background: var(--mtscos-bg-page); color: var(--mtscos-primary-base);
+        }
+        .nav-item.active {
+            background: var(--mtscos-primary-soft); color: var(--mtscos-primary-base);
+            font-weight: 600; border-left-color: var(--mtscos-primary-base);
+        }
+        .nav-item i { width: 18px; text-align: center; font-size: 14px; flex-shrink: 0; }
+        .nav-item .nav-arrow {
+            margin-left: auto; font-size: 10px; transition: transform .2s;
+            color: var(--mtscos-text-secondary);
+        }
+        .nav-item.expanded .nav-arrow { transform: rotate(90deg); }
+        .nav-children { overflow: hidden; max-height: 0; transition: max-height .25s ease; }
+        .nav-children.open { max-height: 300px; }
+        .nav-children .nav-item { padding-left: 48px; font-size: 13px; }
+
+        /* ========== 主区域 ========== */
+        .uni-main {
+            flex: 1; margin-left: var(--sidebar-w);
+            display: flex; flex-direction: column; min-height: 100vh;
+        }
+
+        /* ========== 顶部标题栏 ========== */
+        .uni-header {
+            height: var(--header-h); flex-shrink: 0;
+            background: var(--mtscos-bg-card);
+            border-bottom: 1px solid var(--mtscos-border-light);
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 0 24px;
+            position: sticky; top: 0; z-index: 50;
+        }
+        .uni-header-left {
+            display: flex; align-items: center; gap: 14px; min-width: 0;
+        }
+        .uni-header-title {
+            font-size: 18px; font-weight: 700; color: var(--mtscos-text-primary);
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .uni-header-sub {
+            font-size: 13px; color: var(--mtscos-text-secondary);
+            display: flex; align-items: center; gap: 8px;
+        }
+        .uni-header-sub .pill {
+            display: inline-flex; align-items: center; gap: 5px;
+            padding: 3px 10px; border-radius: var(--mtscos-radius-full);
+            font-size: 12px; background: var(--mtscos-primary-soft);
+            color: var(--mtscos-primary-base);
+        }
+        .uni-header-right {
+            display: flex; align-items: center; gap: 12px; flex-shrink: 0;
+        }
+        /* 时钟 */
+        .uni-clock {
+            font-size: 13px; color: var(--mtscos-text-secondary);
+            font-family: var(--mtscos-font-mono);
+            display: flex; align-items: center; gap: 6px;
+        }
+        .uni-clock i { font-size: 14px; color: var(--mtscos-primary-base); }
+        /* 用户头像 */
+        .uni-user {
+            position: relative;
+        }
+        .uni-user-btn {
+            display: flex; align-items: center; gap: 8px; cursor: pointer;
+            padding: 4px 8px; border-radius: var(--mtscos-radius-md);
+            transition: background .2s; border: none; background: transparent;
+        }
+        .uni-user-btn:hover { background: var(--mtscos-bg-page); }
+        .uni-avatar {
+            width: 34px; height: 34px; border-radius: var(--mtscos-radius-full);
+            background: linear-gradient(135deg, var(--mtscos-primary-base), var(--mtscos-primary-dark-2));
+            display: flex; align-items: center; justify-content: center;
+            color: var(--mtscos-text-inverse); font-size: 14px; font-weight: 600;
+            flex-shrink: 0;
+        }
+        .uni-user-info {
+            display: flex; flex-direction: column; line-height: 1.3;
+        }
+        .uni-user-name { font-size: 13px; font-weight: 600; color: var(--mtscos-text-primary); }
+        .uni-user-role { font-size: 11px; color: var(--mtscos-text-secondary); }
+        /* 用户下拉菜单 */
+        .uni-user-dropdown {
+            position: absolute; top: calc(100% + 6px); right: 0;
+            width: 220px; background: var(--mtscos-bg-card);
+            border: 1px solid var(--mtscos-border-light);
+            border-radius: var(--mtscos-radius-lg);
+            box-shadow: var(--mtscos-shadow-md);
+            overflow: hidden;
+            opacity: 0; visibility: hidden; transform: translateY(-8px);
+            transition: opacity .2s, transform .2s, visibility .2s;
+        }
+        .uni-user-dropdown.open {
+            opacity: 1; visibility: visible; transform: translateY(0);
+        }
+        .uni-user-dropdown-header {
+            padding: 14px 16px; border-bottom: 1px solid var(--mtscos-border-lighter);
+        }
+        .uni-user-dropdown-header .dd-name { font-size: 14px; font-weight: 600; }
+        .uni-user-dropdown-header .dd-role { font-size: 12px; color: var(--mtscos-text-secondary); margin-top: 2px; }
+        .uni-user-dropdown-body { padding: 4px 0; }
+        .uni-user-dropdown-body a {
+            display: flex; align-items: center; gap: 10px;
+            padding: 9px 16px; font-size: 13px; color: var(--mtscos-text-primary);
+            text-decoration: none; transition: background .15s;
+        }
+        .uni-user-dropdown-body a:hover { background: var(--mtscos-bg-page); color: var(--mtscos-primary-base); }
+        .uni-user-dropdown-body a i { width: 16px; text-align: center; color: var(--mtscos-text-secondary); }
+
+        /* ========== 主内容区 ========== */
+        .uni-content {
+            flex: 1; padding: 24px 28px; max-width: 1200px; width: 100%;
+        }
+
+        /* ========== 系统注脚 ========== */
+        .uni-footer {
+            flex-shrink: 0; height: var(--footer-h);
+            background: var(--mtscos-bg-card);
+            border-top: 1px solid var(--mtscos-border-light);
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 0 24px; font-size: 12px; color: var(--mtscos-text-secondary);
+        }
+        .uni-footer-left { display: flex; align-items: center; gap: 12px; }
+        .uni-footer-left .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--mtscos-success); }
+        .uni-footer-right { display: flex; align-items: center; gap: 12px; }
+        .uni-footer-right a { color: var(--mtscos-text-secondary); text-decoration: none; }
+        .uni-footer-right a:hover { color: var(--mtscos-primary-base); }
+
+        /* ========== 响应式 ========== */
+        @media (max-width: 900px) {
+            .uni-sidebar { transform: translateX(-100%); }
+            .uni-sidebar.mobile-open { transform: translateX(0); }
+            .uni-main { margin-left: 0; }
+            .uni-header { padding: 0 16px; }
+            .uni-content { padding: 16px; }
+            .uni-user-info { display: none; }
+            .uni-clock { display: none; }
+        }
+    </style>
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
+
+<!-- ========== 左侧导航栏 ========== -->
+<aside class="uni-sidebar" id="uniSidebar">
+    <div class="uni-sidebar-brand">
+        <div class="logo-icon"><i class="fas fa-mountain-sun"></i></div>
+        <div class="logo-text">MTSCOS AI<small>智能学习评估平台</small></div>
+    </div>
+    <nav class="uni-sidebar-nav">
+        {% if sidebar_menus and sidebar_menus._groups %}
+            {% for g in sidebar_menus._groups %}
+            <div class="nav-group">
+                <div class="nav-group-title">{{ g['group'] }}</div>
+                {% for item in g['items'] %}
+                <a class="nav-item {% if request.path == item['url'].split('?')[0] %}active{% endif %}"
+                   href="{{ item['url'] }}">
+                    {{ item['icon']|safe if item['icon'] else '' }}
+                    {% if item['icon'] %}{% else %}<i class="fas fa-circle-dot"></i>{% endif %}
+                    <span>{{ item['label'] }}</span>
+                </a>
+                {% endfor %}
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="nav-group">
+                <div class="nav-group-title">导航</div>
+                <a class="nav-item" href="/"><i class="fas fa-house"></i> <span>返回首页</span></a>
+            </div>
+        {% endif %}
+    </nav>
+</aside>
+
+<!-- ========== 主区域 ========== -->
+<div class="uni-main">
+
+    <!-- 顶部标题栏 -->
+    <header class="uni-header">
+        <div class="uni-header-left">
+            <h1 class="uni-header-title">{% block page_title %}{% endblock %}</h1>
+            {% block header_extra %}{% endblock %}
+        </div>
+        <div class="uni-header-right">
+            <!-- 时间显示 -->
+            <div class="uni-clock" id="uniClock">
+                <i class="fas fa-clock"></i>
+                <span id="uniClockText">--:--:--</span>
+            </div>
+            <!-- 用户头像集用户信息 -->
+            <div class="uni-user" id="uniUser">
+                <button class="uni-user-btn" onclick="uniToggleUserDropdown()">
+                    <div class="uni-avatar">
+                        {% if current_user and current_user.username %}
+                            {{ current_user.username[0]|upper }}
+                        {% else %}
+                            <i class="fas fa-user"></i>
+                        {% endif %}
+                    </div>
+                    <div class="uni-user-info">
+                        <span class="uni-user-name">{{ current_user.username if current_user and current_user.username else '访客' }}</span>
+                        <span class="uni-user-role">{{ get_role_name(current_user.role) if current_user and current_user.role else 'Guest' }}</span>
+                    </div>
+                    <i class="fas fa-chevron-down" style="font-size:10px;color:var(--mtscos-text-secondary)"></i>
+                </button>
+                <div class="uni-user-dropdown" id="uniUserDropdown">
+                    <div class="uni-user-dropdown-header">
+                        <div class="dd-name">{{ current_user.username if current_user and current_user.username else '未登录' }}</div>
+                        <div class="dd-role">{{ get_role_name(current_user.role) if current_user and current_user.role else '请登录' }}</div>
+                    </div>
+                    <div class="uni-user-dropdown-body">
+                        <a href="/settings"><i class="fas fa-gear"></i> 个人设置</a>
+                        <a href="/student_portal"><i class="fas fa-gauge-high"></i> 学习门户</a>
+                        <a href="/"><i class="fas fa-house"></i> 返回首页</a>
+                        {% if current_user and current_user.logged_in %}
+                        <a href="/auth/logout" style="color:var(--mtscos-danger)"><i class="fas fa-right-from-bracket"></i> 退出登录</a>
+                        {% else %}
+                        <a href="/auth/login"><i class="fas fa-right-to-bracket"></i> 立即登录</a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- 主内容区 -->
+    <main class="uni-content">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- 系统注脚 -->
+    <footer class="uni-footer">
+        <div class="uni-footer-left">
+            <span class="dot"></span>
+            <span>系统运行正常</span>
+            <span style="opacity:.5">|</span>
+            <span>{{ system_version if system_version else 'v22.3.0' }}</span>
+        </div>
+        <div class="uni-footer-right">
+            <span>MTSCOS AI &copy; 2024-2026</span>
+            <span style="opacity:.5">|</span>
+            <a href="/">首页</a>
+            <a href="/settings">设置</a>
+        </div>
+    </footer>
+
+</div>
+
+<script>
+// 实时时钟
+function uniUpdateClock() {
+    var el = document.getElementById('uniClockText');
+    if (!el) return;
+    var d = new Date();
+    var h = String(d.getHours()).padStart(2,'0');
+    var m = String(d.getMinutes()).padStart(2,'0');
+    var s = String(d.getSeconds()).padStart(2,'0');
+    el.textContent = h + ':' + m + ':' + s;
+}
+uniUpdateClock();
+setInterval(uniUpdateClock, 1000);
+
+// 用户下拉
+function uniToggleUserDropdown() {
+    var dd = document.getElementById('uniUserDropdown');
+    if (dd) dd.classList.toggle('open');
+}
+// 点击外部关闭下拉
+document.addEventListener('click', function(e) {
+    var user = document.getElementById('uniUser');
+    var dd = document.getElementById('uniUserDropdown');
+    if (user && dd && !user.contains(e.target)) dd.classList.remove('open');
+});
+</script>
+{% block extra_scripts %}{% endblock %}
+</body>
+</html>

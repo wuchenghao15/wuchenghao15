@@ -1,0 +1,698 @@
+/* ============================================================================
+ * MTSCOS 主题系统 · L1 Token 源 (Single Source of Truth)
+ * ============================================================================
+ * ⚠️ 这是全系统配色的唯一修改点 —— 修改此文件全站同步生效
+ *
+ * 体系:
+ *   :root                = 青瓷卷(默认浅色, 宋瓷天青+书卷纸纹)
+ *   [data-theme="dark"]  = 青瓷黛(深色, 墨色青瓷+夜色留白)
+ *   --mtscos-*           = 项目统一语义化Token (主/修/全, 一修改同步)
+ *   --el-*               = Element Plus 标准别名 (指向 --mtscos-*)
+ *   --theme-*            = theme.css 兼容别名   (指向 --mtscos-*)
+ *   --dark-*             = 深色旧系统别名       (指向 --mtscos-*)
+ *
+ * 修改同步机制:
+ *   1. 修改此处某个 --mtscos-* 值
+ *   2. 所有引用 var(--mtscos-xxx) 的CSS/HTML立即自动生效
+ *   3. 通过 Flask after_request 全局注入，保证所有页面都先加载本文件
+ *
+ * flow_id: FLOW-20260823152220-660CB6
+ * contract: §14 IRON_RULE L1 统一主题
+ * ============================================================================ */
+
+/* =========================================================
+ * §1 青瓷卷 (默认浅色主题) —— 宋瓷天青 · 墨画留白 · 书卷纸纹
+ * ========================================================= */
+:root {
+  /* ===========================================================
+   * §1.1 主色系 (天青主色 #5B8FB9 → 青瓷调)
+   * =========================================================== */
+  --mtscos-primary-base:          #5B8FB9;  /* 青瓷卷主色(天青釉色) */
+  --mtscos-primary-light-3:       #7FB0D4;  /* +3 浅 */
+  --mtscos-primary-light-5:       #A0C8E0;  /* +5 更浅 */
+  --mtscos-primary-light-7:       #C3DFEA;  /* +7 最浅 */
+  --mtscos-primary-light-8:       #D6E9F1;  /* +8 极浅 */
+  --mtscos-primary-light-9:       #EAF4F8;  /* +9 透明白 */
+  --mtscos-primary-dark-2:        #457295;  /* -2 深 */
+
+  /* 主色语义化别名 */
+  --mtscos-primary:               var(--mtscos-primary-base);
+  --mtscos-primary-hover:         var(--mtscos-primary-light-3);
+  --mtscos-primary-active:        var(--mtscos-primary-dark-2);
+  --mtscos-primary-soft:          rgba(91, 143, 185, 0.12);
+  --mtscos-primary-strong:        rgba(91, 143, 185, 0.22);
+
+  /* 辅色 (梅子青 #6FA88B) */
+  --mtscos-secondary-base:        #6FA88B;
+  --mtscos-secondary-soft:        rgba(111, 168, 139, 0.12);
+  --mtscos-secondary-text:        #4D8A6D;
+
+  /* 强调色 (曜石金 #C9A961) */
+  --mtscos-accent-base:           #C9A961;
+  --mtscos-accent-soft:           rgba(201, 169, 97, 0.12);
+
+  /* Logo渐变 (青瓷→梅青→曜金) */
+  --mtscos-logo-gradient:         linear-gradient(135deg, #5B8FB9 0%, #6FA88B 55%, #C9A961 100%);
+  --mtscos-hero-gradient:         linear-gradient(135deg, #EAF4F8 0%, #F1EEE5 40%, #E6F0EA 100%);
+  --mtscos-page-gradient:         linear-gradient(180deg, #F7F3EC 0%, #EEF5F3 50%, #F1EEE5 100%);
+  --mtscos-paper-texture:         radial-gradient(ellipse at 20% 10%, rgba(91,143,185,0.05), transparent 60%),
+                                   radial-gradient(ellipse at 80% 90%, rgba(111,168,139,0.05), transparent 55%);
+
+  /* ===========================================================
+   * §1.2 状态色 (语义化, 对齐 contract.yaml severity)
+   * =========================================================== */
+  --mtscos-success-base:          #5C9A6F;  /* 竹叶绿 */
+  --mtscos-success-light-3:       #89BA95;
+  --mtscos-success-light-5:       #AED0B6;
+  --mtscos-success-light-7:       #CDE2D2;
+  --mtscos-success-light-8:       #DDEBE0;
+  --mtscos-success-light-9:       #F0F6F2;
+  --mtscos-success-dark-2:        #457A55;
+  --mtscos-success:               var(--mtscos-success-base);
+  --mtscos-success-soft:          rgba(92, 154, 111, 0.12);
+
+  --mtscos-warning-base:          #C9A961;  /* 稻穗黄 */
+  --mtscos-warning-light-3:       #D9C086;
+  --mtscos-warning-light-5:       #E6D3A5;
+  --mtscos-warning-light-7:       #F0E2BE;
+  --mtscos-warning-light-8:       #F4EACB;
+  --mtscos-warning-light-9:       #FAF3E0;
+  --mtscos-warning-dark-2:        #9D834A;
+  --mtscos-warning:               var(--mtscos-warning-base);
+  --mtscos-warning-soft:          rgba(201, 169, 97, 0.12);
+
+  --mtscos-danger-base:           #C45656;  /* 朱砂红 */
+  --mtscos-danger-light-3:        #D68383;
+  --mtscos-danger-light-5:        #E5A7A7;
+  --mtscos-danger-light-7:        #F0C4C4;
+  --mtscos-danger-light-8:        #F5D3D3;
+  --mtscos-danger-light-9:        #FAE6E6;
+  --mtscos-danger-dark-2:         #9A4444;
+  --mtscos-danger:                var(--mtscos-danger-base);
+  --mtscos-danger-soft:           rgba(196, 86, 86, 0.12);
+  --mtscos-error:                 var(--mtscos-danger-base);
+  --mtscos-error-light-9:         var(--mtscos-danger-light-9);
+
+  --mtscos-critical-base:         #9A4444;
+  --mtscos-critical-light-9:      var(--mtscos-danger-light-9);
+
+  --mtscos-info-base:             #73767A;  /* 墨灰 */
+  --mtscos-info-light-3:          #94979C;
+  --mtscos-info-light-5:          #B2B4B9;
+  --mtscos-info-light-7:          #D0D1D4;
+  --mtscos-info-light-8:          #DDDEE0;
+  --mtscos-info-light-9:          #EFEEEF;
+  --mtscos-info-dark-2:           #595C60;
+  --mtscos-info:                  var(--mtscos-info-base);
+  --mtscos-info-soft:             rgba(115, 118, 122, 0.10);
+
+  /* ===========================================================
+   * §1.3 文字色 (墨色体系)
+   * =========================================================== */
+  --mtscos-text-primary:          #2C2E33;  /* 浓墨 */
+  --mtscos-text-regular:          #4A4C52;  /* 中墨 */
+  --mtscos-text-secondary:        #73767A;  /* 淡墨 */
+  --mtscos-text-placeholder:      #9DA0A6;  /* 极淡墨 */
+  --mtscos-text-disabled:         #C0C4CC;  /* 枯笔 */
+  --mtscos-text-inverse:          #FFFFFF;  /* 纸白 */
+
+  /* ===========================================================
+   * §1.4 背景色 (宣纸体系)
+   * =========================================================== */
+  --mtscos-bg-page:               #F7F3EC;  /* 熟宣米白 */
+  --mtscos-bg-page-2:             #EEF5F3;  /* 淡青纸 */
+  --mtscos-bg-card:               #FFFFFF;  /* 纯白卡 */
+  --mtscos-bg-card-alt:           #F0F6F2;  /* 竹青卡 */
+  --mtscos-bg-sidebar:            rgba(255, 255, 255, 0.72);  /* 侧栏宣纸玻璃 */
+  --mtscos-bg-input:              #FCFAF6;  /* 输入框笺纸 */
+  --mtscos-bg-glass:              rgba(255, 255, 255, 0.68);  /* 米白玻璃态 */
+  --mtscos-bg-glass-strong:       rgba(255, 255, 255, 0.85);  /* 强玻璃 */
+  --mtscos-bg-overlay:            #FFFFFF;   /* 浮层白 */
+  --mtscos-blank:                 #FFFFFF;   /* 纯白底 */
+
+  /* ===========================================================
+   * §1.5 边框色 (淡墨描边)
+   * =========================================================== */
+  --mtscos-border-base:           #D6D9DC;
+  --mtscos-border-light:          #E2E5E9;
+  --mtscos-border-lighter:        #ECEEF1;
+  --mtscos-border-extra-light:    #F3F4F6;
+  --mtscos-border-dark:           #CACDD1;
+  --mtscos-border-darker:         #BFC3C7;
+  --mtscos-border-subtle:         rgba(91, 143, 185, 0.14);
+  --mtscos-border-strong:         rgba(91, 143, 185, 0.26);
+  --mtscos-border-glass:          rgba(255, 255, 255, 0.16);
+  --mtscos-border-glass-strong:   rgba(255, 255, 255, 0.28);
+
+  /* ===========================================================
+   * §1.6 填充色 (水墨层次)
+   * =========================================================== */
+  --mtscos-fill-base:             #F0EFEA;
+  --mtscos-fill-light:            #F6F5F1;
+  --mtscos-fill-lighter:          #FAF9F7;
+  --mtscos-fill-extra-light:      #FCFBF9;
+  --mtscos-fill-dark:             #E7E6E1;
+  --mtscos-fill-darker:           #DCDBD6;
+
+  /* ===========================================================
+   * §1.7 阴影 (宣纸投影 + 青瓷光晕)
+   * =========================================================== */
+  --mtscos-shadow-sm:             0 1px 3px rgba(60, 55, 45, 0.07);
+  --mtscos-shadow-md:             0 4px 14px rgba(60, 55, 45, 0.10);
+  --mtscos-shadow-lg:             0 12px 32px rgba(60, 55, 45, 0.14);
+  --mtscos-shadow-xl:             0 20px 48px rgba(60, 55, 45, 0.18);
+  --mtscos-shadow-card:           0 2px 12px rgba(60, 55, 45, 0.07);
+  --mtscos-shadow-card-hover:     0 6px 20px rgba(91, 143, 185, 0.14);
+  --mtscos-shadow-modal:          0 14px 40px rgba(60, 55, 45, 0.18);
+  --mtscos-shadow-dropdown:       0 4px 18px rgba(60, 55, 45, 0.10);
+  --mtscos-shadow-glow:           0 0 28px rgba(91, 143, 185, 0.18);
+  --mtscos-mask-color:            rgba(255, 250, 245, 0.82);  /* 纸半透遮罩 */
+  --mtscos-mask-extra-light:      rgba(255, 250, 245, 0.40);
+
+  /* ===========================================================
+   * §1.8 字体 (宋体 + 楷体 + 黑体)
+   * =========================================================== */
+  --mtscos-font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+                      'Helvetica Neue', Arial, 'PingFang SC', 'Hiragino Sans GB',
+                      'Microsoft YaHei', 'WenQuanYi Micro Hei', sans-serif;
+  --mtscos-font-serif: 'Songti SC', 'SimSun', 'STSong', 'Source Han Serif SC', serif;
+  --mtscos-font-mono:  'SF Mono', 'Monaco', 'Cascadia Mono', 'Roboto Mono',
+                       'Courier New', 'Fira Code', monospace;
+  --mtscos-font-size-xl:   20px;
+  --mtscos-font-size-lg:   18px;
+  --mtscos-font-size-md:   16px;
+  --mtscos-font-size-base: 14px;
+  --mtscos-font-size-sm:   13px;
+  --mtscos-font-size-xs:   12px;
+  --mtscos-font-weight-regular: 400;
+  --mtscos-font-weight-medium:  500;
+  --mtscos-font-weight-semibold: 600;
+  --mtscos-font-weight-bold:     700;
+  --mtscos-line-height-tight:  1.35;
+  --mtscos-line-height-base:   1.5;
+  --mtscos-line-height-loose:  1.75;
+
+  /* ===========================================================
+   * §1.9 间距 (8px 基数 9级)
+   * =========================================================== */
+  --mtscos-space-unit: 8px;
+  --mtscos-space-05:   4px;
+  --mtscos-space-1:    8px;
+  --mtscos-space-2:   16px;
+  --mtscos-space-3:   24px;
+  --mtscos-space-4:   32px;
+  --mtscos-space-5:   40px;
+  --mtscos-space-6:   48px;
+  --mtscos-space-8:   64px;
+  --mtscos-space-10:  80px;
+  --mtscos-space-12:  96px;
+
+  /* ===========================================================
+   * §1.10 圆角 (6级)
+   * =========================================================== */
+  --mtscos-radius-xs:   2px;
+  --mtscos-radius-sm:   4px;
+  --mtscos-radius-md:   8px;
+  --mtscos-radius-lg:  12px;
+  --mtscos-radius-xl:  16px;
+  --mtscos-radius-2xl: 24px;
+  --mtscos-radius-full: 9999px;
+
+  /* ===========================================================
+   * §1.11 动画 (4级)
+   * =========================================================== */
+  --mtscos-anim-fast:   0.18s cubic-bezier(0.4, 0, 0.2, 1);
+  --mtscos-anim-base:   0.30s cubic-bezier(0.55, 0, 0.1, 1);
+  --mtscos-anim-md:     0.45s cubic-bezier(0.55, 0, 0.1, 1);
+  --mtscos-anim-slow:   0.65s cubic-bezier(0.6, 0, 0.3, 1);
+
+  /* ===========================================================
+   * §1.12 Z-Index (6级)
+   * =========================================================== */
+  --mtscos-z-base:      1;
+  --mtscos-z-docked:  100;
+  --mtscos-z-dropdown:2000;
+  --mtscos-z-sticky:  3000;
+  --mtscos-z-modal:   4000;
+  --mtscos-z-popover: 6000;
+  --mtscos-z-toast:   9999;
+
+  /* 玻璃态模糊 */
+  --mtscos-glass-blur:  12px;
+  --mtscos-glass-blur-s:  8px;
+  --mtscos-glass-blur-xl: 20px;
+
+  /* 最大内容宽度 */
+  --mtscos-max-width: 1680px;
+}
+
+/* =========================================================
+ * §2 青瓷黛 (深色主题) —— 墨夜青瓷 · 夜色留白
+ * 通过 data-theme="dark" 触发
+ * ========================================================= */
+[data-theme="dark"] {
+  --mtscos-primary-base:          #7FB0D4;  /* 亮青 */
+  --mtscos-primary-light-3:       #9FC6E0;
+  --mtscos-primary-light-5:       #B8D5E8;
+  --mtscos-primary-light-7:       #D2E6F0;
+  --mtscos-primary-light-8:       #DFEEF5;
+  --mtscos-primary-light-9:       #EDF6F9;
+  --mtscos-primary-dark-2:        #5B8FB9;
+
+  --mtscos-primary:               var(--mtscos-primary-base);
+  --mtscos-primary-hover:         var(--mtscos-primary-light-3);
+  --mtscos-primary-active:        #457295;
+  --mtscos-primary-soft:          rgba(127, 176, 212, 0.14);
+  --mtscos-primary-strong:        rgba(127, 176, 212, 0.26);
+
+  --mtscos-secondary-base:        #8EC2A7;
+  --mtscos-secondary-soft:        rgba(142, 194, 167, 0.14);
+  --mtscos-secondary-text:        #A7D0B8;
+
+  --mtscos-accent-base:           #D8BF80;
+  --mtscos-accent-soft:           rgba(216, 191, 128, 0.14);
+
+  --mtscos-logo-gradient:         linear-gradient(135deg, #7FB0D4 0%, #8EC2A7 55%, #D8BF80 100%);
+  --mtscos-hero-gradient:         linear-gradient(135deg, #1A2430 0%, #1E2B26 40%, #24251C 100%);
+  --mtscos-page-gradient:         linear-gradient(180deg, #12161C 0%, #151B1A 50%, #1A1C18 100%);
+  --mtscos-paper-texture:         radial-gradient(ellipse at 20% 10%, rgba(127,176,212,0.08), transparent 60%),
+                                   radial-gradient(ellipse at 80% 90%, rgba(142,194,167,0.07), transparent 55%);
+
+  /* 状态色 (深色) */
+  --mtscos-success-base:          #7CB98F;
+  --mtscos-success-light-3:       #A2CBAE;
+  --mtscos-success-light-5:       #BCDBC5;
+  --mtscos-success-light-7:       #D7EBDA;
+  --mtscos-success-light-8:       #E3F0E6;
+  --mtscos-success-light-9:       #EFF6F1;
+  --mtscos-success-dark-2:        #5A986E;
+  --mtscos-success:               var(--mtscos-success-base);
+  --mtscos-success-soft:          rgba(124, 185, 143, 0.14);
+
+  --mtscos-warning-base:          #D8BF80;
+  --mtscos-warning-light-3:       #E2CD97;
+  --mtscos-warning-light-5:       #ECDDAB;
+  --mtscos-warning-light-7:       #F2E7C3;
+  --mtscos-warning-light-8:       #F5EECF;
+  --mtscos-warning-light-9:       #FAF5E4;
+  --mtscos-warning-dark-2:        #B69956;
+  --mtscos-warning:               var(--mtscos-warning-base);
+  --mtscos-warning-soft:          rgba(216, 191, 128, 0.14);
+
+  --mtscos-danger-base:           #D48585;
+  --mtscos-danger-light-3:        #E0A3A3;
+  --mtscos-danger-light-5:        #EBBBBB;
+  --mtscos-danger-light-7:        #F3D3D3;
+  --mtscos-danger-light-8:        #F6DEDE;
+  --mtscos-danger-light-9:        #FBECEC;
+  --mtscos-danger-dark-2:         #B26666;
+  --mtscos-danger:                var(--mtscos-danger-base);
+  --mtscos-danger-soft:           rgba(212, 133, 133, 0.14);
+  --mtscos-error:                 var(--mtscos-danger-base);
+  --mtscos-error-light-9:         var(--mtscos-danger-light-9);
+
+  --mtscos-critical-base:         #B26666;
+  --mtscos-critical-light-9:      var(--mtscos-danger-light-9);
+
+  --mtscos-info-base:             #B2B4B9;
+  --mtscos-info-light-3:          #C8C9CC;
+  --mtscos-info-light-5:          #D9DADD;
+  --mtscos-info-light-7:          #E9E9EB;
+  --mtscos-info-light-8:          #F0F0F1;
+  --mtscos-info-light-9:          #F7F7F8;
+  --mtscos-info-dark-2:           #94979C;
+  --mtscos-info:                  var(--mtscos-info-base);
+  --mtscos-info-soft:             rgba(178, 180, 185, 0.14);
+
+  /* 文字色 (夜墨) */
+  --mtscos-text-primary:          #ECF0F3;  /* 亮灰 */
+  --mtscos-text-regular:          #C9CFD6;  /* 中灰 */
+  --mtscos-text-secondary:        #9AA3AD;  /* 暗灰 */
+  --mtscos-text-placeholder:      #707782;  /* 极暗灰 */
+  --mtscos-text-disabled:         #4A5059;  /* 枯笔 */
+  --mtscos-text-inverse:          #12161C;  /* 墨黑 */
+
+  /* 背景色 (墨夜) */
+  --mtscos-bg-page:               #12161C;  /* 浓墨 */
+  --mtscos-bg-page-2:             #151B1A;  /* 墨青 */
+  --mtscos-bg-card:               #1C2229;  /* 暗墨卡 */
+  --mtscos-bg-card-alt:           #1A2320;  /* 暗青卡 */
+  --mtscos-bg-sidebar:            rgba(28, 34, 41, 0.82);
+  --mtscos-bg-input:              #222A33;
+  --mtscos-bg-glass:              rgba(28, 34, 41, 0.72);
+  --mtscos-bg-glass-strong:       rgba(28, 34, 41, 0.90);
+  --mtscos-bg-overlay:            #1C2229;
+  --mtscos-blank:                 #12161C;
+
+  /* 边框色 (暗墨描边) */
+  --mtscos-border-base:           #3A4149;
+  --mtscos-border-light:          #2F363E;
+  --mtscos-border-lighter:        #282E36;
+  --mtscos-border-extra-light:    #22272E;
+  --mtscos-border-dark:           #464E57;
+  --mtscos-border-darker:         #525B65;
+  --mtscos-border-subtle:         rgba(127, 176, 212, 0.16);
+  --mtscos-border-strong:         rgba(127, 176, 212, 0.30);
+  --mtscos-border-glass:          rgba(255, 255, 255, 0.07);
+  --mtscos-border-glass-strong:   rgba(255, 255, 255, 0.12);
+
+  /* 填充色 (夜色层次) */
+  --mtscos-fill-base:             #2A323C;
+  --mtscos-fill-light:            #232A33;
+  --mtscos-fill-lighter:          #1D232B;
+  --mtscos-fill-extra-light:      #181D24;
+  --mtscos-fill-dark:             #303944;
+  --mtscos-fill-darker:           #37414D;
+
+  /* 阴影 (夜色光晕) */
+  --mtscos-shadow-sm:             0 1px 3px rgba(0, 0, 0, 0.40);
+  --mtscos-shadow-md:             0 4px 14px rgba(0, 0, 0, 0.50);
+  --mtscos-shadow-lg:             0 12px 32px rgba(0, 0, 0, 0.60);
+  --mtscos-shadow-xl:             0 20px 48px rgba(0, 0, 0, 0.70);
+  --mtscos-shadow-card:           0 2px 12px rgba(0, 0, 0, 0.38);
+  --mtscos-shadow-card-hover:     0 6px 20px rgba(127, 176, 212, 0.18);
+  --mtscos-shadow-modal:          0 14px 40px rgba(0, 0, 0, 0.65);
+  --mtscos-shadow-dropdown:       0 4px 18px rgba(0, 0, 0, 0.55);
+  --mtscos-shadow-glow:           0 0 28px rgba(127, 176, 212, 0.22);
+  --mtscos-mask-color:            rgba(10, 14, 20, 0.82);
+  --mtscos-mask-extra-light:      rgba(10, 14, 20, 0.40);
+}
+
+/* =========================================================
+ * §3 Element Plus 标准变量别名 (指向 --mtscos-*)
+ *   作用: 所有使用 --el-* 的代码自动获得统一主题
+ * ========================================================= */
+:root {
+  /* 主色 */
+  --el-color-primary:             var(--mtscos-primary-base);
+  --el-color-primary-light-3:     var(--mtscos-primary-light-3);
+  --el-color-primary-light-5:     var(--mtscos-primary-light-5);
+  --el-color-primary-light-7:     var(--mtscos-primary-light-7);
+  --el-color-primary-light-8:     var(--mtscos-primary-light-8);
+  --el-color-primary-light-9:     var(--mtscos-primary-light-9);
+  --el-color-primary-dark-2:      var(--mtscos-primary-dark-2);
+
+  /* 状态色 */
+  --el-color-success:             var(--mtscos-success-base);
+  --el-color-success-light-3:     var(--mtscos-success-light-3);
+  --el-color-success-light-5:     var(--mtscos-success-light-5);
+  --el-color-success-light-7:     var(--mtscos-success-light-7);
+  --el-color-success-light-8:     var(--mtscos-success-light-8);
+  --el-color-success-light-9:     var(--mtscos-success-light-9);
+  --el-color-success-dark-2:      var(--mtscos-success-dark-2);
+
+  --el-color-warning:             var(--mtscos-warning-base);
+  --el-color-warning-light-3:     var(--mtscos-warning-light-3);
+  --el-color-warning-light-5:     var(--mtscos-warning-light-5);
+  --el-color-warning-light-7:     var(--mtscos-warning-light-7);
+  --el-color-warning-light-8:     var(--mtscos-warning-light-8);
+  --el-color-warning-light-9:     var(--mtscos-warning-light-9);
+  --el-color-warning-dark-2:      var(--mtscos-warning-dark-2);
+
+  --el-color-danger:              var(--mtscos-danger-base);
+  --el-color-danger-light-3:      var(--mtscos-danger-light-3);
+  --el-color-danger-light-5:      var(--mtscos-danger-light-5);
+  --el-color-danger-light-7:      var(--mtscos-danger-light-7);
+  --el-color-danger-light-8:      var(--mtscos-danger-light-8);
+  --el-color-danger-light-9:      var(--mtscos-danger-light-9);
+  --el-color-danger-dark-2:       var(--mtscos-danger-dark-2);
+
+  --el-color-error:               var(--mtscos-error);
+  --el-color-error-light-9:       var(--mtscos-error-light-9);
+  --el-color-critical:            var(--mtscos-critical-base);
+  --el-color-critical-light-9:    var(--mtscos-critical-light-9);
+
+  --el-color-info:                var(--mtscos-info-base);
+  --el-color-info-light-3:        var(--mtscos-info-light-3);
+  --el-color-info-light-5:        var(--mtscos-info-light-5);
+  --el-color-info-light-7:        var(--mtscos-info-light-7);
+  --el-color-info-light-8:        var(--mtscos-info-light-8);
+  --el-color-info-light-9:        var(--mtscos-info-light-9);
+  --el-color-info-dark-2:         var(--mtscos-info-dark-2);
+
+  /* 文字 */
+  --el-text-color-primary:        var(--mtscos-text-primary);
+  --el-text-color-regular:        var(--mtscos-text-regular);
+  --el-text-color-secondary:      var(--mtscos-text-secondary);
+  --el-text-color-placeholder:    var(--mtscos-text-placeholder);
+  --el-text-color-disabled:       var(--mtscos-text-disabled);
+
+  /* 背景 */
+  --el-bg-color:                  var(--mtscos-blank);
+  --el-bg-color-page:             var(--mtscos-bg-page);
+  --el-bg-color-overlay:          var(--mtscos-bg-overlay);
+
+  /* 边框 */
+  --el-border-color:              var(--mtscos-border-base);
+  --el-border-color-light:        var(--mtscos-border-light);
+  --el-border-color-lighter:      var(--mtscos-border-lighter);
+  --el-border-color-extra-light:  var(--mtscos-border-extra-light);
+  --el-border-color-dark:         var(--mtscos-border-dark);
+  --el-border-color-darker:       var(--mtscos-border-darker);
+
+  /* 填充 */
+  --el-fill-color:                var(--mtscos-fill-base);
+  --el-fill-color-light:          var(--mtscos-fill-light);
+  --el-fill-color-lighter:        var(--mtscos-fill-lighter);
+  --el-fill-color-extra-light:    var(--mtscos-fill-extra-light);
+  --el-fill-color-dark:           var(--mtscos-fill-dark);
+  --el-fill-color-darker:         var(--mtscos-fill-darker);
+  --el-fill-color-blank:          var(--mtscos-blank);
+
+  /* 遮罩 */
+  --el-mask-color:                var(--mtscos-mask-color);
+  --el-mask-color-extra-light:    var(--mtscos-mask-extra-light);
+
+  /* 字体 */
+  --el-font-family:               var(--mtscos-font-sans);
+  --el-font-family-mono:          var(--mtscos-font-mono);
+  --el-font-size-extra-large:     var(--mtscos-font-size-xl);
+  --el-font-size-large:           var(--mtscos-font-size-lg);
+  --el-font-size-medium:          var(--mtscos-font-size-md);
+  --el-font-size-base:            var(--mtscos-font-size-base);
+  --el-font-size-small:           var(--mtscos-font-size-sm);
+  --el-font-size-extra-small:     var(--mtscos-font-size-xs);
+  --el-font-weight-primary:       var(--mtscos-font-weight-medium);
+  --el-font-weight-regular:       var(--mtscos-font-weight-regular);
+  --el-font-weight-secondary:     var(--mtscos-font-weight-semibold);
+  --el-font-weight-bold:          var(--mtscos-font-weight-bold);
+  --el-line-height-primary:       var(--mtscos-line-height-base);
+  --el-line-height-regular:       var(--mtscos-line-height-tight);
+  --el-line-height-large:         var(--mtscos-line-height-loose);
+
+  /* 圆角 */
+  --el-border-radius-small:       var(--mtscos-radius-sm);
+  --el-border-radius-base:        var(--mtscos-radius-md);
+  --el-border-radius-round:       20px;
+  --el-border-radius-circle:      100%;
+
+  /* 阴影 */
+  --el-box-shadow:                var(--mtscos-shadow-md);
+  --el-box-shadow-light:          var(--mtscos-shadow-sm);
+  --el-box-shadow-lighter:        0 1px 2px rgba(0,0,0,0.04);
+  --el-box-shadow-dark:           var(--mtscos-shadow-lg);
+
+  /* z-index */
+  --el-index-normal:              var(--mtscos-z-base);
+  --el-index-top:                 1000;
+  --el-index-popper:              var(--mtscos-z-dropdown);
+  --el-index-overlay:             3000;
+  --el-index-modal:               var(--mtscos-z-modal);
+  --el-index-drawer:              5000;
+  --el-index-toast:               var(--mtscos-z-toast);
+
+  /* 动画时长 */
+  --el-transition-duration:       0.30s;
+  --el-transition-duration-fast:  0.18s;
+  --el-transition-duration-medium:0.45s;
+  --el-transition-duration-slow:  0.65s;
+}
+
+/* =========================================================
+ * §4 theme.css 兼容别名 (指向 --mtscos-*)
+ *   作用: 前端 student_portal / exam 等页面无需修改
+ * ========================================================= */
+:root {
+  --theme-primary:                var(--mtscos-primary-base);
+  --theme-primary-light:          var(--mtscos-primary-light-3);
+  --theme-primary-dark:           var(--mtscos-primary-dark-2);
+  --theme-primary-accent:         var(--mtscos-secondary-base);
+  --theme-primary-soft:           var(--mtscos-primary-soft);
+  --theme-primary-hover:          var(--mtscos-primary-strong);
+  --theme-primary-text:           var(--mtscos-primary-light-3);
+  --theme-primary-text-bright:    var(--mtscos-primary-light-5);
+
+  --theme-secondary:              var(--mtscos-secondary-base);
+  --theme-secondary-soft:         var(--mtscos-secondary-soft);
+  --theme-secondary-text:         var(--mtscos-secondary-text);
+
+  --theme-success:                var(--mtscos-success-base);
+  --theme-success-soft:           var(--mtscos-success-soft);
+  --theme-warning:                var(--mtscos-warning-base);
+  --theme-warning-soft:           var(--mtscos-warning-soft);
+  --theme-danger:                 var(--mtscos-danger-base);
+  --theme-danger-soft:            var(--mtscos-danger-soft);
+  --theme-danger-text:            var(--mtscos-danger-light-3);
+  --theme-info:                   var(--mtscos-primary-base);
+  --theme-info-soft:              var(--mtscos-primary-soft);
+
+  --theme-text-primary:           var(--mtscos-text-primary);
+  --theme-text-secondary:         var(--mtscos-text-secondary);
+  --theme-text-muted:             var(--mtscos-text-placeholder);
+  --theme-text-faint:             var(--mtscos-text-disabled);
+
+  --theme-bg-page:                var(--mtscos-page-gradient);
+  --theme-bg-page-alt:            var(--mtscos-page-gradient);
+  --theme-bg-sidebar:             var(--mtscos-bg-sidebar);
+  --theme-bg-card:                var(--mtscos-bg-card);
+  --theme-bg-card-alt:            var(--mtscos-bg-card-alt);
+  --theme-bg-glass:               var(--mtscos-bg-glass);
+  --theme-bg-glass-strong:        var(--mtscos-bg-glass-strong);
+  --theme-bg-input:               var(--mtscos-bg-input);
+
+  --theme-border-subtle:          var(--mtscos-border-subtle);
+  --theme-border-strong:          var(--mtscos-border-strong);
+  --theme-border-glass:           var(--mtscos-border-glass);
+  --theme-border-glass-strong:    var(--mtscos-border-glass-strong);
+
+  --theme-shadow-sm:              var(--mtscos-shadow-sm);
+  --theme-shadow-md:              var(--mtscos-shadow-md);
+  --theme-shadow-lg:              var(--mtscos-shadow-lg);
+  --theme-shadow-glow:            var(--mtscos-shadow-glow);
+
+  --theme-radius-sm:              var(--mtscos-radius-sm);
+  --theme-radius-md:              var(--mtscos-radius-md);
+  --theme-radius-lg:              var(--mtscos-radius-lg);
+  --theme-radius-full:            var(--mtscos-radius-full);
+
+  --theme-space-1:                var(--mtscos-space-1);
+  --theme-space-2:                var(--mtscos-space-2);
+  --theme-space-3:                var(--mtscos-space-3);
+  --theme-space-4:                var(--mtscos-space-4);
+  --theme-space-5:                var(--mtscos-space-5);
+  --theme-space-6:                var(--mtscos-space-6);
+  --theme-space-8:                var(--mtscos-space-8);
+  --theme-space-10:               var(--mtscos-space-10);
+
+  --theme-glass-blur:             var(--mtscos-glass-blur);
+  --theme-glass-blur-strong:      var(--mtscos-glass-blur-xl);
+
+  --theme-font-sans:              var(--mtscos-font-sans);
+  --theme-font-mono:              var(--mtscos-font-mono);
+
+  --theme-logo-gradient:          var(--mtscos-logo-gradient);
+  --theme-max-width:              var(--mtscos-max-width);
+}
+
+/* =========================================================
+ * §5 深色旧系统 & student_base 兼容别名
+ *   作用: 旧版 --dark-* 代码自动获得统一语义
+ * ========================================================= */
+:root {
+  --dark-bg-primary:              var(--mtscos-bg-page);
+  --dark-bg-secondary:            var(--mtscos-bg-page-2);
+  --dark-bg-card:                 var(--mtscos-bg-card);
+  --dark-bg-surface:              var(--mtscos-bg-glass);
+  --dark-border:                  var(--mtscos-border-subtle);
+  --dark-text-primary:            var(--mtscos-text-primary);
+  --dark-text-secondary:          var(--mtscos-text-secondary);
+}
+
+/* 深色模式下 --dark-* 取夜色调 */
+[data-theme="dark"] {
+  --dark-bg-primary:              var(--mtscos-bg-page);
+  --dark-bg-secondary:            var(--mtscos-bg-page-2);
+  --dark-bg-card:                 var(--mtscos-bg-card);
+  --dark-bg-surface:              var(--mtscos-bg-glass);
+  --dark-border:                  var(--mtscos-border-subtle);
+  --dark-text-primary:            var(--mtscos-text-primary);
+  --dark-text-secondary:          var(--mtscos-text-secondary);
+}
+
+/* =========================================================
+ * §6 mtscos_design_tokens.css 扩展变量兼容
+ * ========================================================= */
+:root {
+  --mtscos-spacing-unit:          var(--mtscos-space-unit);
+  --mtscos-spacing-xs:            var(--mtscos-space-05);
+  --mtscos-spacing-sm:            var(--mtscos-space-1);
+  --mtscos-spacing-md:            var(--mtscos-space-2);
+  --mtscos-spacing-lg:            var(--mtscos-space-3);
+  --mtscos-spacing-xl:            var(--mtscos-space-4);
+  --mtscos-spacing-2xl:           var(--mtscos-space-6);
+  --mtscos-spacing-3xl:           var(--mtscos-space-8);
+  --mtscos-spacing-4xl:           var(--mtscos-space-12);
+
+  --mtscos-radius-xs:             var(--mtscos-radius-xs);
+  --mtscos-radius-sm:             var(--mtscos-radius-sm);
+  --mtscos-radius-md:             var(--mtscos-radius-md);
+  --mtscos-radius-lg:             var(--mtscos-radius-lg);
+  --mtscos-radius-xl:             var(--mtscos-radius-xl);
+  --mtscos-radius-pill:           var(--mtscos-radius-full);
+
+  --mtscos-shadow-card:           var(--mtscos-shadow-card);
+  --mtscos-shadow-card-hover:     var(--mtscos-shadow-card-hover);
+  --mtscos-shadow-modal:          var(--mtscos-shadow-modal);
+  --mtscos-shadow-dropdown:       var(--mtscos-shadow-dropdown);
+
+  /* 按钮四维 (L3组件层引用它们) */
+  --mtscos-btn-primary-bg:         var(--mtscos-primary);
+  --mtscos-btn-primary-text:       var(--mtscos-text-inverse);
+  --mtscos-btn-primary-border:     var(--mtscos-primary);
+  --mtscos-btn-primary-hover-bg:   var(--mtscos-primary-hover);
+  --mtscos-btn-primary-active-bg:  var(--mtscos-primary-active);
+
+  --mtscos-btn-success-bg:         var(--mtscos-success);
+  --mtscos-btn-success-text:       var(--mtscos-text-inverse);
+  --mtscos-btn-success-hover-bg:   var(--mtscos-success-light-3);
+  --mtscos-btn-success-active-bg:  var(--mtscos-success-dark-2);
+
+  --mtscos-btn-warning-bg:         var(--mtscos-warning);
+  --mtscos-btn-warning-text:       var(--mtscos-text-inverse);
+  --mtscos-btn-warning-hover-bg:   var(--mtscos-warning-light-3);
+  --mtscos-btn-warning-active-bg:  var(--mtscos-warning-dark-2);
+
+  --mtscos-btn-danger-bg:          var(--mtscos-danger);
+  --mtscos-btn-danger-text:        var(--mtscos-text-inverse);
+  --mtscos-btn-danger-hover-bg:    var(--mtscos-danger-light-3);
+  --mtscos-btn-danger-active-bg:   var(--mtscos-danger-dark-2);
+
+  --mtscos-btn-info-bg:            var(--mtscos-info);
+  --mtscos-btn-info-text:          var(--mtscos-text-inverse);
+  --mtscos-btn-info-hover-bg:      var(--mtscos-info-light-3);
+  --mtscos-btn-info-active-bg:     var(--mtscos-info-dark-2);
+
+  --mtscos-btn-secondary-bg:       var(--mtscos-blank);
+  --mtscos-btn-secondary-text:     var(--mtscos-text-regular);
+  --mtscos-btn-secondary-border:   var(--mtscos-border-base);
+  --mtscos-btn-secondary-hover-bg:    var(--mtscos-primary-light-9);
+  --mtscos-btn-secondary-hover-text:  var(--mtscos-primary-base);
+  --mtscos-btn-secondary-hover-border: var(--mtscos-primary-base);
+}
+
+/* =========================================================
+ * §7 通用玻璃卡 / 通用按钮 辅助类 (可选工具类)
+ * ========================================================= */
+.mtscos-glass-card {
+  background: var(--mtscos-bg-glass);
+  backdrop-filter: blur(var(--mtscos-glass-blur));
+  -webkit-backdrop-filter: blur(var(--mtscos-glass-blur));
+  border: 1px solid var(--mtscos-border-glass);
+  border-radius: var(--mtscos-radius-lg);
+  box-shadow: var(--mtscos-shadow-card);
+}
+.mtscos-primary-btn {
+  background: linear-gradient(135deg, var(--mtscos-primary-base), var(--mtscos-secondary-base));
+  color: var(--mtscos-text-inverse);
+  border: none;
+  border-radius: var(--mtscos-radius-md);
+  padding: var(--mtscos-space-1) var(--mtscos-space-3);
+  box-shadow: var(--mtscos-shadow-card);
+  transition: all var(--mtscos-anim-base);
+}
+.mtscos-primary-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--mtscos-shadow-card-hover), var(--mtscos-shadow-glow);
+}
+
+/* End of _theme_tokens_source.css — 修改此处全站同步生效 */

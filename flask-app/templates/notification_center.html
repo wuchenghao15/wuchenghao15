@@ -1,0 +1,126 @@
+{% extends "base_unified.html" %}
+{% block title %}通知中心{% endblock %}
+{% block page_title %}通知中心{% endblock %}
+
+{% block extra_head %}
+<style>
+.tabs { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
+.tab {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 8px 16px; border-radius: var(--mtscos-radius-full); font-size: 13px;
+    background: var(--mtscos-bg-card); border: 1px solid var(--mtscos-border-light);
+    color: var(--mtscos-text-secondary); cursor: pointer; text-decoration: none; transition: all .2s;
+}
+.tab.active, .tab:hover { background: var(--mtscos-warning); color: var(--mtscos-text-inverse); border-color: transparent; }
+
+.toolbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+.count-info { font-size: 14px; color: var(--mtscos-text-secondary); }
+.count-info b { color: var(--mtscos-text-primary); }
+.link-btn { font-size: 13px; color: var(--mtscos-primary-base); text-decoration: none; display: inline-flex; align-items: center; gap: 6px; background: none; border: none; cursor: pointer; }
+.link-btn:hover { text-decoration: underline; }
+
+.panel {
+    background: var(--mtscos-bg-card); border: 1px solid var(--mtscos-border-light);
+    border-radius: var(--mtscos-radius-xl); box-shadow: var(--mtscos-shadow-card); overflow: hidden;
+}
+.notif-item { display: flex; gap: 14px; padding: 18px 20px; border-bottom: 1px solid var(--mtscos-border-lighter); position: relative; }
+.notif-item:last-child { border-bottom: none; }
+.notif-item.unread { background: var(--mtscos-warning-soft); }
+.notif-item.unread::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--mtscos-warning); }
+.notif-ic {
+    width: 44px; height: 44px; border-radius: var(--mtscos-radius-md); flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center; font-size: 18px;
+}
+.ic-system { background: var(--mtscos-primary-soft); color: var(--mtscos-primary-base); }
+.ic-wrong { background: var(--mtscos-danger-soft); color: var(--mtscos-danger); }
+.ic-reward { background: var(--mtscos-secondary-soft); color: var(--mtscos-secondary-base); }
+.ic-welcome { background: var(--mtscos-success-soft); color: var(--mtscos-success); }
+.ic-homework { background: var(--mtscos-warning-soft); color: var(--mtscos-warning); }
+.notif-main { flex: 1; min-width: 0; }
+.notif-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 4px; }
+.notif-title { font-size: 15px; font-weight: 600; }
+.notif-time { font-size: 12px; color: var(--mtscos-text-secondary); white-space: nowrap; }
+.notif-content { font-size: 13px; color: var(--mtscos-text-secondary); line-height: 1.6; }
+.notif-tags { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+.chip { font-size: 11px; padding: 2px 9px; border-radius: var(--mtscos-radius-full); background: var(--mtscos-bg-page); color: var(--mtscos-text-secondary); }
+.chip.unread { background: var(--mtscos-danger-soft); color: var(--mtscos-danger); }
+.chip.priority { background: var(--mtscos-warning-soft); color: var(--mtscos-warning); }
+
+.empty { text-align: center; padding: 70px 20px; color: var(--mtscos-text-secondary); }
+.empty i { font-size: 56px; margin-bottom: 16px; display: block; color: var(--mtscos-border-dark); }
+.empty h3 { font-size: 18px; color: var(--mtscos-text-primary); margin-bottom: 6px; }
+.empty p { font-size: 13px; }
+
+.btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 10px 22px; border-radius: var(--mtscos-radius-md); text-decoration: none;
+    font-weight: 600; font-size: 13px; border: none; cursor: pointer;
+    background: var(--mtscos-primary-base); color: var(--mtscos-text-inverse); transition: background .2s;
+}
+.btn:hover { background: var(--mtscos-primary-dark-2); }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- 筛选标签 -->
+<div class="tabs">
+    <a class="tab active" href="#"><i class="fas fa-inbox"></i> 全部</a>
+    <a class="tab" href="#"><i class="fas fa-circle-dot"></i> 未读</a>
+    <a class="tab" href="#"><i class="fas fa-gear"></i> 系统</a>
+    <a class="tab" href="#"><i class="fas fa-graduation-cap"></i> 学习</a>
+</div>
+
+<!-- 工具栏 -->
+<div class="toolbar">
+    <span class="count-info">共 <b>{% if notifications %}{{ notifications|length }}{% else %}0{% endif %}</b> 条通知</span>
+    {% if current_user and current_user.id %}
+    <form method="post" action="/api/notifications/mark_all_read" style="display:inline">
+        <button type="submit" class="link-btn"><i class="fas fa-check-double"></i> 全部标记为已读</button>
+    </form>
+    {% endif %}
+</div>
+
+<!-- 通知列表 -->
+<div class="panel">
+    {% if notifications %}
+        {% for n in notifications %}
+        <div class="notif-item {% if not n.is_read %}unread{% endif %}">
+            <div class="notif-ic
+                {% if n.type == 'wrong' %}ic-wrong
+                {% elif n.type == 'reward' %}ic-reward
+                {% elif n.type == 'welcome' %}ic-welcome
+                {% elif n.type == 'homework' %}ic-homework
+                {% else %}ic-system{% endif %}">
+                <i class="fas
+                    {% if n.type == 'wrong' %}fa-circle-xmark
+                    {% elif n.type == 'reward' %}fa-gift
+                    {% elif n.type == 'welcome' %}fa-hand-wave
+                    {% elif n.type == 'homework' %}fa-book
+                    {% else %}fa-bell{% endif %}"></i>
+            </div>
+            <div class="notif-main">
+                <div class="notif-head">
+                    <div class="notif-title">{{ n.title|default(n.type_label|default('系统通知')) }}</div>
+                    <div class="notif-time">{{ n.time_ago|default(n.created_at|default('')) }}</div>
+                </div>
+                {% if n.content %}<div class="notif-content">{{ n.content }}</div>{% endif %}
+                <div class="notif-tags">
+                    {% if n.type_label %}<span class="chip">{{ n.type_label }}</span>{% endif %}
+                    {% if not n.is_read %}<span class="chip unread">未读</span>{% endif %}
+                    {% if n.priority %}<span class="chip priority">优先级 {{ n.priority }}</span>{% endif %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+        <div class="empty">
+            <i class="fas fa-bell-slash"></i>
+            <h3>暂无通知数据</h3>
+            <p>当前没有可显示的通知。当系统或老师向您发送通知时，将在此处展示。</p>
+            {% if not current_user or not current_user.id %}
+            <a href="/auth/login" class="btn" style="margin-top:18px"><i class="fas fa-right-to-bracket"></i> 登录查看通知</a>
+            {% endif %}
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

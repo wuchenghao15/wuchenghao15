@@ -1,0 +1,307 @@
+{% extends "base_unified.html" %}
+{% block title %}学生门户{% endblock %}
+{% block page_title %}学生门户{% endblock %}
+
+{% block header_extra %}
+<div class="uni-header-sub">
+    {% if user %}
+    <span class="pill"><i class="fas fa-user-graduate"></i> {{ user.username }}</span>
+    {% if grade %}<span class="pill"><i class="fas fa-school"></i> {{ grade }}</span>{% endif %}
+    {% if education_type_label %}<span class="pill education"><i class="fas fa-book-open"></i> {{ education_type_label }}</span>{% endif %}
+    <a href="/student_portal?tab=notifications" class="icon-btn bell" title="通知中心" style="width:34px;height:34px;font-size:15px">
+        <i class="fas fa-bell"></i>
+        {% if unread_count %}<span class="badge">{{ unread_count }}</span>{% endif %}
+    </a>
+    {% endif %}
+</div>
+<style>
+.uni-header-sub .pill { display:inline-flex; align-items:center; gap:5px; padding:3px 10px; border-radius:var(--mtscos-radius-full); font-size:12px; background:var(--mtscos-bg-page); color:var(--mtscos-text-secondary); border:1px solid var(--mtscos-border-light); }
+.uni-header-sub .pill.education { background:var(--mtscos-primary-soft); color:var(--mtscos-primary-base); border-color:transparent; }
+.uni-header-sub .icon-btn { position:relative; display:inline-flex; align-items:center; justify-content:center; border-radius:var(--mtscos-radius-md); background:var(--mtscos-bg-page); border:1px solid var(--mtscos-border-light); color:var(--mtscos-text-primary); text-decoration:none; transition:background .2s,color .2s,border-color .2s; }
+.uni-header-sub .icon-btn:hover { background:var(--mtscos-primary-base); color:var(--mtscos-text-inverse); border-color:var(--mtscos-primary-base); }
+.uni-header-sub .bell .badge { position:absolute; top:-6px; right:-6px; background:var(--mtscos-danger); color:var(--mtscos-text-inverse); font-size:11px; min-width:18px; height:18px; border-radius:var(--mtscos-radius-full); display:flex; align-items:center; justify-content:center; padding:0 4px; }
+</style>
+{% endblock %}
+
+{% block extra_head %}
+<style>
+/* ========== 统计卡片 ========== */
+.stats-grid {
+    display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px; margin-bottom: 24px;
+}
+.stat-card {
+    background: var(--mtscos-bg-card); border: 1px solid var(--mtscos-border-light);
+    border-radius: var(--mtscos-radius-xl); padding: 18px;
+    box-shadow: var(--mtscos-shadow-card);
+    transition: transform .25s, box-shadow .25s, border-color .25s;
+}
+.stat-card:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--mtscos-shadow-card-hover);
+    border-color: var(--mtscos-primary-soft);
+}
+.stat-card .si {
+    width: 40px; height: 40px; border-radius: var(--mtscos-radius-md);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; margin-bottom: 10px;
+}
+.si.blue   { background: var(--mtscos-primary-soft);  color: var(--mtscos-primary-base); }
+.si.green  { background: var(--mtscos-success-soft);  color: var(--mtscos-success); }
+.si.orange { background: var(--mtscos-warning-soft);  color: var(--mtscos-warning); }
+.si.purple { background: var(--mtscos-secondary-soft); color: var(--mtscos-secondary-base); }
+.si.red    { background: var(--mtscos-danger-soft);   color: var(--mtscos-danger); }
+.stat-card .sv { font-size: 26px; font-weight: 700; color: var(--mtscos-text-primary); }
+.stat-card .sl { font-size: 12px; color: var(--mtscos-text-secondary); margin-top: 2px; }
+
+/* ========== 快捷入口 ========== */
+.quick-grid {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px;
+}
+.quick-card {
+    background: var(--mtscos-bg-card); border: 1px solid var(--mtscos-border-light);
+    border-radius: var(--mtscos-radius-xl); padding: 22px;
+    text-decoration: none; color: var(--mtscos-text-primary);
+    display: flex; flex-direction: column; align-items: center; gap: 10px;
+    box-shadow: var(--mtscos-shadow-card);
+    transition: transform .25s, box-shadow .25s, border-color .25s;
+}
+.quick-card:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--mtscos-shadow-card-hover);
+    border-color: var(--mtscos-primary-base);
+}
+.quick-card .qi {
+    width: 52px; height: 52px; border-radius: var(--mtscos-radius-lg);
+    display: flex; align-items: center; justify-content: center; font-size: 22px;
+}
+.quick-card .qt { font-size: 15px; font-weight: 600; }
+.quick-card .qd { font-size: 12px; color: var(--mtscos-text-secondary); }
+
+/* ========== 双栏面板 ========== */
+.cols { display: grid; grid-template-columns: 1.3fr 1fr; gap: 24px; }
+.panel {
+    background: var(--mtscos-bg-card); border: 1px solid var(--mtscos-border-light);
+    border-radius: var(--mtscos-radius-xl); box-shadow: var(--mtscos-shadow-card); overflow: hidden;
+}
+.panel-head {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 20px; border-bottom: 1px solid var(--mtscos-border-lighter);
+}
+.panel-head h2 {
+    font-size: 16px; font-weight: 700; display: flex; align-items: center; gap: 8px;
+    color: var(--mtscos-text-primary);
+}
+.panel-head .more {
+    font-size: 13px; color: var(--mtscos-primary-base); text-decoration: none; transition: opacity .2s;
+}
+.panel-head .more:hover { opacity: .8; }
+.panel-body { padding: 8px 0; }
+
+/* ========== 列表项 ========== */
+.list-item {
+    display: flex; align-items: center; gap: 14px;
+    padding: 14px 20px; border-bottom: 1px solid var(--mtscos-border-lighter);
+    text-decoration: none; color: inherit; transition: background .2s;
+}
+.list-item:last-child { border-bottom: none; }
+.list-item:hover { background: var(--mtscos-bg-page); }
+.li-icon {
+    width: 40px; height: 40px; border-radius: var(--mtscos-radius-md); flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center; font-size: 16px;
+    background: var(--mtscos-primary-soft); color: var(--mtscos-primary-base);
+}
+.li-main { flex: 1; min-width: 0; }
+.li-title {
+    font-size: 14px; font-weight: 600;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.li-meta {
+    font-size: 12px; color: var(--mtscos-text-secondary); margin-top: 3px;
+    display: flex; gap: 12px; flex-wrap: wrap;
+}
+.li-meta span { display: inline-flex; align-items: center; gap: 4px; }
+.li-tag {
+    font-size: 11px; padding: 2px 8px; border-radius: var(--mtscos-radius-full); flex-shrink: 0;
+    background: var(--mtscos-success-soft); color: var(--mtscos-success);
+}
+.li-tag.draft { background: var(--mtscos-info-soft); color: var(--mtscos-info); }
+.li-arrow { color: var(--mtscos-text-secondary); font-size: 14px; }
+
+.empty {
+    text-align: center; padding: 40px 20px; color: var(--mtscos-text-secondary);
+}
+.empty i { font-size: 36px; margin-bottom: 10px; display: block; color: var(--mtscos-border-dark); }
+
+/* ========== 未登录 ========== */
+.login-box {
+    max-width: 460px; margin: 60px auto;
+    background: var(--mtscos-bg-card);
+    border: 1px solid var(--mtscos-border-light); border-radius: var(--mtscos-radius-xl);
+    box-shadow: var(--mtscos-shadow-md); padding: 48px 36px; text-align: center;
+}
+.login-box .licon {
+    width: 72px; height: 72px; border-radius: var(--mtscos-radius-xl); margin: 0 auto 18px;
+    background: linear-gradient(135deg, var(--mtscos-primary-base), var(--mtscos-primary-dark-2));
+    color: var(--mtscos-text-inverse); font-size: 32px;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: var(--mtscos-shadow-glow);
+}
+.login-box h1 { font-size: 22px; margin-bottom: 8px; }
+.login-box p { color: var(--mtscos-text-secondary); font-size: 14px; margin-bottom: 24px; }
+
+.btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 12px 28px; border-radius: var(--mtscos-radius-md); text-decoration: none;
+    font-weight: 600; font-size: 14px; cursor: pointer; border: none;
+    background: var(--mtscos-primary-base); color: var(--mtscos-text-inverse);
+    transition: background .2s, transform .2s;
+}
+.btn:hover { background: var(--mtscos-primary-dark-2); transform: translateY(-2px); }
+.btn-outline {
+    background: transparent; color: var(--mtscos-text-primary);
+    border: 1px solid var(--mtscos-border-base);
+}
+.btn-outline:hover {
+    background: var(--mtscos-bg-page); border-color: var(--mtscos-primary-base);
+    color: var(--mtscos-primary-base);
+}
+
+@media (max-width: 900px) {
+    .stats-grid { grid-template-columns: repeat(2, 1fr); }
+    .quick-grid { grid-template-columns: repeat(2, 1fr); }
+    .cols { grid-template-columns: 1fr; }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+{% if user %}
+    <!-- 统计卡片 -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="si blue"><i class="fas fa-file-pen"></i></div>
+            <div class="sv">{{ exam_count|default(0) }}</div>
+            <div class="sl">可用考试</div>
+        </div>
+        <div class="stat-card">
+            <div class="si green"><i class="fas fa-clipboard-check"></i></div>
+            <div class="sv">{{ test_count|default(0) }}</div>
+            <div class="sl">可用测试</div>
+        </div>
+        <div class="stat-card">
+            <div class="si orange"><i class="fas fa-calendar-day"></i></div>
+            <div class="sv">{{ practice_count|default(0) }}</div>
+            <div class="sl">每日练习</div>
+        </div>
+        <div class="stat-card">
+            <div class="si purple"><i class="fas fa-coins"></i></div>
+            <div class="sv">{{ stats.points|default(0) }}</div>
+            <div class="sl">积分</div>
+        </div>
+        <div class="stat-card">
+            <div class="si red"><i class="fas fa-fire"></i></div>
+            <div class="sv">{{ stats.streak_days|default(0) }}</div>
+            <div class="sl">连续学习(天)</div>
+        </div>
+    </div>
+
+    <!-- 快捷入口 -->
+    <div class="quick-grid">
+        <a class="quick-card" href="/exam_system/exams">
+            <div class="qi" style="background:var(--mtscos-primary-soft);color:var(--mtscos-primary-base)"><i class="fas fa-file-pen"></i></div>
+            <div class="qt">进入考试</div>
+            <div class="qd">参加推荐考试</div>
+        </a>
+        <a class="quick-card" href="/exam_system/tests">
+            <div class="qi" style="background:var(--mtscos-success-soft);color:var(--mtscos-success)"><i class="fas fa-clipboard-check"></i></div>
+            <div class="qt">进入测试</div>
+            <div class="qd">日常测试练习</div>
+        </a>
+        <a class="quick-card" href="/exam_system/daily_practice">
+            <div class="qi" style="background:var(--mtscos-warning-soft);color:var(--mtscos-warning)"><i class="fas fa-calendar-day"></i></div>
+            <div class="qt">每日练习</div>
+            <div class="qd">今日学习计划</div>
+        </a>
+        <a class="quick-card" href="/wrong_book">
+            <div class="qi" style="background:var(--mtscos-danger-soft);color:var(--mtscos-danger)"><i class="fas fa-circle-xmark"></i></div>
+            <div class="qt">错题本</div>
+            <div class="qd">复习错题</div>
+        </a>
+    </div>
+
+    <!-- 双栏：即将开始的考试 + 通知 -->
+    <div class="cols">
+        <div class="panel">
+            <div class="panel-head">
+                <h2><i class="fas fa-clock" style="color:var(--mtscos-primary-base)"></i> 即将开始的考试</h2>
+                <a class="more" href="/exam_system/exams">查看全部 <i class="fas fa-chevron-right"></i></a>
+            </div>
+            <div class="panel-body">
+                {% if upcoming_exams %}
+                    {% for exam in upcoming_exams %}
+                    <a class="list-item" href="/exam/start/{{ exam.id }}">
+                        <div class="li-icon"><i class="fas fa-file-pen"></i></div>
+                        <div class="li-main">
+                            <div class="li-title">{{ exam.title }}</div>
+                            <div class="li-meta">
+                                {% if exam.duration %}<span><i class="fas fa-hourglass-half"></i> {{ exam.duration }}分钟</span>{% endif %}
+                                {% if exam.question_count %}<span><i class="fas fa-list-ol"></i> {{ exam.question_count }}题</span>{% endif %}
+                                {% if exam.passing_score %}<span><i class="fas fa-flag-checkered"></i> 及格{{ exam.passing_score }}分</span>{% endif %}
+                                {% if exam.category %}<span><i class="fas fa-tag"></i> {{ exam.category }}</span>{% endif %}
+                            </div>
+                        </div>
+                        <span class="li-tag">{{ exam.status|default('进行中') }}</span>
+                        <i class="fas fa-chevron-right li-arrow"></i>
+                    </a>
+                    {% endfor %}
+                {% else %}
+                    <div class="empty">
+                        <i class="fas fa-inbox"></i>
+                        <div>暂无即将开始的考试</div>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="panel">
+            <div class="panel-head">
+                <h2><i class="fas fa-bell" style="color:var(--mtscos-warning)"></i> 最近通知</h2>
+                <a class="more" href="/student_portal?tab=notifications">查看全部 <i class="fas fa-chevron-right"></i></a>
+            </div>
+            <div class="panel-body">
+                {% if notifications %}
+                    {% for n in notifications[:5] %}
+                    <a class="list-item" href="/student_portal?tab=notifications">
+                        <div class="li-icon" style="background:var(--mtscos-warning-soft);color:var(--mtscos-warning)">
+                            <i class="fas fa-bell"></i>
+                        </div>
+                        <div class="li-main">
+                            <div class="li-title">{{ n.title|default(n.type_label|default('系统通知')) }}</div>
+                            <div class="li-meta">
+                                {% if n.type_label %}<span><i class="fas fa-tag"></i> {{ n.type_label }}</span>{% endif %}
+                                {% if n.time_ago %}<span><i class="fas fa-clock"></i> {{ n.time_ago }}</span>{% endif %}
+                            </div>
+                        </div>
+                        {% if not n.is_read %}<span class="li-tag" style="background:var(--mtscos-danger-soft);color:var(--mtscos-danger)">未读</span>{% endif %}
+                    </a>
+                    {% endfor %}
+                {% else %}
+                    <div class="empty">
+                        <i class="fas fa-bell-slash"></i>
+                        <div>暂无通知</div>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+{% else %}
+    <!-- 未登录或无数据 -->
+    <div class="login-box">
+        <div class="licon"><i class="fas fa-graduation-cap"></i></div>
+        <h1>学生门户</h1>
+        <p>请先登录以查看您的学习门户、考试与通知信息。</p>
+        <a href="/auth/login" class="btn"><i class="fas fa-right-to-bracket"></i> 立即登录</a>
+        <a href="/" class="btn btn-outline" style="margin-left:8px"><i class="fas fa-house"></i> 返回首页</a>
+    </div>
+{% endif %}
+{% endblock %}
