@@ -805,6 +805,13 @@ SYSTEM_REQUIRED_DAEMONS = [
         "inspect_cycle": 600,
     },
     {
+        "process_name": "sys_feature_evolution",
+        "duty": "AI建议+模拟环境功能演进守护: 未完成标记扫描(TODO/FIXME/占位/NotImplementedError)+未挂载引擎检测+模拟环境GAP_PROPOSAL磋商共识决策+确定性完善(缺失__init__.py沙盒先行promote)+拓展/挂载建议落池+git自动上传+落库投喂(900s轮巡)",
+        "mount_source": "SYSTEM_REQ",
+        "work_body": "            # AI建议+模拟环境功能演进: 调用ai_feature_evolution_engine.py once\n            try:\n                import subprocess\n                engine_py = os.path.join(os.path.dirname(ENGINE_DIR), 'engines', 'ai_feature_evolution_engine.py')\n                r = subprocess.run([sys.executable, engine_py, 'once'],\n                    timeout=840, capture_output=True, text=True)\n                if r.returncode == 0:\n                    _log('FEATURE-EVO: cycle done')\n                else:\n                    _log(f'FEATURE-EVO: cycle failed rc={r.returncode}')\n            except subprocess.TimeoutExpired:\n                _log('FEATURE-EVO: timeout (840s)')\n            except Exception as e:\n                _log(f'FEATURE-EVO error: {e}')",
+        "inspect_cycle": 900,
+    },
+    {
         "process_name": "sys_deep_inspection",
         "duty": "深度巡检守护: 页面/路由巡检+源代码逐行检查+AI团队路由+自动修复+全生命周期追踪",
         "mount_source": "SYSTEM_REQ",
