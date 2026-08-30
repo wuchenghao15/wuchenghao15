@@ -35,6 +35,104 @@ import ai_arduino_detect_engine as _detect  # noqa: E402
 arduino_bp = Blueprint('arduino_session', __name__)
 
 
+def _check_arduino_api_permission():
+    """Arduino SA 守卫 · 用户权限.md 硬条款：
+    仅 wuchenghao15 (SA) 且 VIKEY + SZU100 双密钥同时在线可访问 /admin_app/arduino_ide 及 /api/arduino/* 。
+    返回 (allow: bool, response: Optional[Response])；allow=False 时调用方直接返回 response。
+    违反统一 403 + 错误码 ARDUINO_SA_ONLY。"""
+    from flask import jsonify, request
+    username = (session.get('username') or '').strip()
+    role_canonical = (session.get('role_canonical') or '').strip()
+    is_sa = (username.lower() == 'wuchenghao15') or (role_canonical.lower() == 'super_admin')
+    # ---- 审计落库准备 ----
+    extra = {
+        'ip': request.remote_addr,
+        'ua': request.headers.get('User-Agent','')[:300],
+        'session_id': session.sid if getattr(session, 'sid', None) else session.get('_session_id',''),
+        'path': request.path,
+        'method': request.method,
+    }
+    def _write_audit(severity, message, **kwargs):
+        try:
+            from app.middlewares.vikey_enforcement_middleware import VikeyEnforcementMiddleware as V
+            V._log_automation_console(
+                'arduino_sa_guard', message, severity=severity,
+                extra=dict(extra, **kwargs))
+        except Exception:
+            pass
+    if not is_sa:
+        _write_audit('warning', 'ARDUINO_SA_ONLY: 非SA角色访问Arduino被拒',
+                     username=username, role=role_canonical)
+        return False, (jsonify({
+            'success': False,
+            'error': '仅超级管理员(wuchenghao15)可访问 Arduino 管理接口与页面',
+            'error_code': 'ARDUINO_SA_ONLY',
+            'status_code': 403,
+        }), 403)
+    # ---- 双密钥 AND ----
+    try:
+        from app.middlewares.vikey_enforcement_middleware import vikey_enforcement
+        dual = vikey_enforcement.get_dual_hardware_status(
+            username=username, role=role_canonical,
+            ip=extra.get('ip'), ua=extra.get('ua'), session_id=extra.get('session_id'))
+    except Exception as e:
+        _write_audit('critical', f'ARDUINO_SA_ONLY: 双密钥检测异常: {e}',
+                     username=username, role=role_canonical)
+        return False, (jsonify({
+            'success': False,
+            'error': 'Arduino 访问：双密钥检测异常，请重新插入 VIKEY + SZU100',
+            'error_code': 'ARDUINO_SA_ONLY',
+            'status_code': 403,
+        }), 403)
+    if not dual.get('both_authenticated'):
+        reason = []
+        if not (dual.get('vikey') or {}).get('present'):
+            reason.append('未检测到 VIKEY 加密狗')
+        elif not (dual.get('vikey') or {}).get('sa_bound_ok'):
+            reason.append('VIKEY 未绑定超级管理员')
+        if not (dual.get('szu100') or {}).get('present'):
+            reason.append('未检测到 SZU100 专用U盘')
+        elif not (dual.get('szu100') or {}).get('is_authentic'):
+            reason.append('SZU100 正版校验失败（疑似伪造改名U盘）')
+        if not reason:
+            reason.append('双密钥未同时通过认证')
+        _write_audit('critical', 'ARDUINO_SA_ONLY: SA用户双密钥未同时通过',
+                     username=username, role=role_canonical, reason='; '.join(reason))
+        return False, (jsonify({
+            'success': False,
+            'error': 'Arduino 需要同时插入 VIKEY 加密狗 和 SZU100 专用U盘：' + '; '.join(reason),
+            'error_code': 'ARDUINO_SA_ONLY',
+            'reason': '; '.join(reason),
+            'vikey_status': (dual.get('vikey') or {}).get('status'),
+            'szu100_status': (dual.get('szu100') or {}).get('auth_status'),
+            'status_code': 403,
+        }), 403)
+    _write_audit('info', 'ARDUINO_SA_ONLY: 访问允许 (双密钥)',
+                 username=username, role=role_canonical)
+    return True, None
+
+
+@arduino_bp.before_request
+def _arduino_sa_only_guard():
+    """路由级 before_request 守卫：/admin_app/arduino_ide + /api/arduino/* 统一走 _check_arduino_api_permission
+    仅 temp-login (§13.2 临时登录弹窗) 放行 login_required 级别。"""
+    path = (request.path or '').lower()
+    is_arduino_route = (
+        path.startswith('/api/arduino/')
+        or path == '/api/arduino'
+        or '/admin_app/arduino_ide' in path
+    )
+    if not is_arduino_route:
+        return None
+    if path.endswith('/session/temp-login') or path.endswith('/events/poll'):
+        # §13.1 登录弹窗 + 轮询公共接口：保持 _check_login 原先未登录即可访问
+        return None
+    allowed, resp = _check_arduino_api_permission()
+    if not allowed:
+        return resp
+    return None
+
+
 # ============================================================
 # §13.2 临时用户登录验证 (无 session 时弹窗登录走此 API)
 # ============================================================

@@ -3384,8 +3384,12 @@ def _mt_vikey_enforcement_check():
 
         path = request.path
         username = session.get('username', '')
-
-        result = vikey_enforcement.check_vikey_enforcement(path, username)
+        extra = {
+            'ip': request.remote_addr,
+            'ua': request.headers.get('User-Agent','')[:300],
+            'session_id': session.sid if getattr(session,'sid',None) else session.get('_session_id','')
+        }
+        result = vikey_enforcement.check_vikey_enforcement(path, username, extra=extra)
 
         if not result['allowed']:
             if request.path.startswith('/api/'):
@@ -3393,6 +3397,7 @@ def _mt_vikey_enforcement_check():
                     'success': False,
                     'error': result['reason'],
                     'vikey_status': result.get('vikey_status'),
+                    'szu100_status': result.get('szu100_status'),
                     'network_status': result.get('network_status'),
                     'status_code': 403,
                 }), 403
@@ -4177,6 +4182,33 @@ def _mt_sys_container_ctx_injector():
             _MT_VIKEY_CACHE["ts"] = _vk_now
             _MT_VIKEY_CACHE["status"] = dict(vikey_status)
 
+        # ========== SA 双密钥 layout_mode 注入 ==========
+        try:
+            from app.middlewares.vikey_enforcement_middleware import vikey_enforcement as _mt_dual_vk
+            _mt_dual_uname = user.get('username') or session.get('username', '') or ''
+            _mt_dual_role = user.get('role_name') or user.get('role') or session.get('role', '')
+            _mt_extra = {
+                'ip': request.remote_addr,
+                'ua': request.headers.get('User-Agent','')[:300],
+                'session_id': session.sid if getattr(session,'sid',None) else session.get('_session_id',''),
+            }
+            _dual = _mt_dual_vk.get_dual_hardware_status(username=_mt_dual_uname, role=_mt_dual_role,
+                                                         **{k:v for k,v in _mt_extra.items() if k in ('ip','ua','session_id')})
+            layout_mode = _dual.get('layout_mode') or 'STANDARD'
+            dual_authenticated = bool(_dual.get('both_authenticated'))
+            sa_proprietary = bool(dual_authenticated and (_mt_dual_uname.lower()=='wuchenghao15' or str(_mt_dual_role).lower()=='super_admin'))
+            # SA + 非双钥 → 已由 before_request 拦截到登录；这里保险强制 STANDARD
+            if (not dual_authenticated) and (_mt_dual_uname.lower()=='wuchenghao15' or str(_mt_dual_role).lower()=='super_admin'):
+                layout_mode = 'STANDARD'
+            vikey_serial = (_dual.get('vikey') or {}).get('serial') if dual_authenticated else None
+            szu100_volume = (_dual.get('szu100') or {}).get('volume_name') if dual_authenticated else None
+        except Exception:
+            layout_mode = 'STANDARD'
+            dual_authenticated = False
+            sa_proprietary = False
+            vikey_serial = None
+            szu100_volume = None
+
         ctx = {
             'container': {
                 'version': _MT_SYS_CONTAINER_VERSION,
@@ -4200,7 +4232,13 @@ def _mt_sys_container_ctx_injector():
             'vikey_present': vikey_status.get('present', False),
             'vikey_count': vikey_status.get('count', 0),
             'vikey_has_super_admin': vikey_status.get('has_super_admin_key', False),
-            'vikey_serial': vikey_status.get('super_admin_serial'),
+            'vikey_serial': vikey_serial or vikey_status.get('super_admin_serial'),
+            # ---- SA 双密钥 layout 自动切换 ----
+            'layout_mode': layout_mode,
+            'dual_authenticated': dual_authenticated,
+            'sa_proprietary': sa_proprietary,
+            'szu100_volume': szu100_volume,
+            'dual_hardware': _dual if sa_proprietary else {'both_authenticated': False, 'layout_mode': 'STANDARD'},
         }
         return ctx
     except Exception:
@@ -8743,6 +8781,56 @@ def api_health_check():
         })
     except Exception as e:
         return jsonify({'success': False, 'status': 'degraded', 'error': str(e)}), 503
+
+
+@app.route('/api/hardware/dual-status', methods=['GET'])
+def api_hardware_dual_status():
+    """双硬件密钥状态 + SA 专有 UI 建议。
+    - 未登录：401
+    - SA 用户：完整信息（both_authenticated / layout_mode / serial / volume_name）
+    - 非SA 用户：layout_mode=STANDARD，敏感字段(serial/volume_name)清空，返回 both_authenticated=False
+    """
+    try:
+        from app.middlewares.vikey_enforcement_middleware import vikey_enforcement as _mt_dual
+        username = session.get('username', '') or ''
+        if not username:
+            # 会话缺省无用户名 → 视为未登录。401 不重定向(防盗链保持原状)
+            return jsonify({
+                'success': False,
+                'error': '未登录',
+                'status_code': 401,
+                'both_authenticated': False,
+                'layout_mode': 'STANDARD',
+            }), 401
+        role = (session.get('role') or session.get('role_name') or '')
+        extra = {
+            'ip': request.remote_addr,
+            'ua': request.headers.get('User-Agent','')[:300],
+            'session_id': session.sid if getattr(session,'sid',None) else session.get('_session_id',''),
+        }
+        dual = _mt_dual.get_dual_hardware_status(
+            username=username, role=role,
+            ip=extra.get('ip'), ua=extra.get('ua'), session_id=extra.get('session_id'))
+        is_sa = username.lower() == 'wuchenghao15' or str(role).lower() == 'super_admin'
+        if not is_sa:
+            # 非SA：敏感字段清零，强制 layout_mode=STANDARD
+            dual['vikey']['serial'] = None
+            dual['vikey'].pop('sa_bound_ok', None)
+            dual['szu100']['volume_name'] = None
+            dual['both_authenticated'] = False
+            dual['layout_mode'] = 'STANDARD'
+            dual.pop('username', None)
+        dual.setdefault('success', True)
+        dual['is_sa'] = bool(is_sa)
+        return jsonify(dual)
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'status_code': 500,
+            'both_authenticated': False,
+            'layout_mode': 'STANDARD',
+        }), 500
 
 
 @app.route('/api/homepage/stats')
