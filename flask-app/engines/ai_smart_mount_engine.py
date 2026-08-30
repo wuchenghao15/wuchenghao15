@@ -812,6 +812,13 @@ SYSTEM_REQUIRED_DAEMONS = [
         "inspect_cycle": 900,
     },
     {
+        "process_name": "sys_org_growth",
+        "duty": "模拟环境驱动组织成长守护: 采摘模拟产出+拓展建议→ARCH_UPGRADE磋商共识决策→功能拓展域建议落池(uid幂等)→对应域AI员工自动雇佣(4上限,INSERT四表)→EigenFlux专家自动邀请(3上限,两表+邀请日志)→组织一致性校验+落库投喂(1200s轮巡)",
+        "mount_source": "SYSTEM_REQ",
+        "work_body": "            # 模拟环境驱动组织成长: 调用ai_org_growth_engine.py once\n            try:\n                import subprocess\n                engine_py = os.path.join(os.path.dirname(ENGINE_DIR), 'engines', 'ai_org_growth_engine.py')\n                r = subprocess.run([sys.executable, engine_py, 'once'],\n                    timeout=1140, capture_output=True, text=True)\n                if r.returncode == 0:\n                    _log('ORG-GROWTH: cycle done')\n                else:\n                    _log(f'ORG-GROWTH: cycle failed rc={r.returncode}')\n            except subprocess.TimeoutExpired:\n                _log('ORG-GROWTH: timeout (1140s)')\n            except Exception as e:\n                _log(f'ORG-GROWTH error: {e}')",
+        "inspect_cycle": 1200,
+    },
+    {
         "process_name": "sys_deep_inspection",
         "duty": "深度巡检守护: 页面/路由巡检+源代码逐行检查+AI团队路由+自动修复+全生命周期追踪",
         "mount_source": "SYSTEM_REQ",
