@@ -13,6 +13,5 @@ bp = Blueprint('legal_bp', __name__)
 
 @bp.route('/stats/overview', methods=['GET'])
 def stats_overview():
-    return jsonify({'status':'ok','code':0,'data':{'module':'legal','routes_implemented':1}}})
+    return jsonify({'status':'ok','code':0,'data':{'module':'legal','routes_implemented':1}})
 
-return bp
