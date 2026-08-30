@@ -3399,6 +3399,7 @@ def _mt_vikey_enforcement_check():
                     'vikey_status': result.get('vikey_status'),
                     'szu100_status': result.get('szu100_status'),
                     'network_status': result.get('network_status'),
+                    'terminal_status': result.get('terminal_status'),
                     'status_code': 403,
                 }), 403
 
@@ -8820,6 +8821,10 @@ def api_hardware_dual_status():
             dual['both_authenticated'] = False
             dual['layout_mode'] = 'STANDARD'
             dual.pop('username', None)
+        elif is_sa and not dual.get('both_authenticated'):
+            # SA 但双钥/终端未全通过（含终端未绑定）→ 敏感字段同样清零
+            dual['vikey']['serial'] = None
+            dual['szu100']['volume_name'] = None
         dual.setdefault('success', True)
         dual['is_sa'] = bool(is_sa)
         return jsonify(dual)

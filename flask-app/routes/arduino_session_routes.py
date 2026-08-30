@@ -94,6 +94,9 @@ def _check_arduino_api_permission():
             reason.append('未检测到 SZU100 专用U盘')
         elif not (dual.get('szu100') or {}).get('is_authentic'):
             reason.append('SZU100 正版校验失败（疑似伪造改名U盘）')
+        _term = dual.get('terminal') or {}
+        if _term.get('required') and _term.get('bound') is not True:
+            reason.append('必须从插钥终端(服务器本机)访问')
         if not reason:
             reason.append('双密钥未同时通过认证')
         _write_audit('critical', 'ARDUINO_SA_ONLY: SA用户双密钥未同时通过',
