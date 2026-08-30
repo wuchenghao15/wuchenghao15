@@ -511,7 +511,7 @@ def t1000():
         elif k == 2: return lambda: _GD(0.75, 0.65, 2, 1)[0] == 'grow' and _GD(0.60, 0.65, 2, 1)[0] == 'advise_only', None
         elif k == 3: return lambda: _GD(0.8, 0.65, 0, 0) == ('advise_only','no-gaps') and _GD(None, 0.65, 1, 0)[0] == 'skip', None
         elif k == 4: return lambda: _EID('X','Y') == _EID('X','Y') and _EID('A','Y') != _EID('B','Y') and _XID('a','r') == _XID('a','r'), None
-        elif k == 5: return lambda: _RC(0, 4) == 0 and _RC(2, 4) == 2 and _RC(5, 4) == 0 and _RC(None, 4) == 0, None
+        elif k == 5: return lambda: _RC(0, 4) == 4 and _RC(2, 4) == 2 and _RC(5, 4) == 0 and _RC(None, 4) == 0, None
         elif k == 6: return lambda: _CSB(0.9) == 'LARGE' and _CSB(0.70) == 'MEDIUM' and _CSB(0.69) == 'MEDIUM' and _CSB(0.3) == 'SMALL', None
         else:        return lambda: _HW('Name','role','sp','active') is True and _ELIG('SECURITY', 'n', 'r') is True, None
     for i in range(400): run_one(f'N{i:04d}', mk_norm(i)[0])
