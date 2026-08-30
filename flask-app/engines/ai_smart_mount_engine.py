@@ -798,6 +798,13 @@ SYSTEM_REQUIRED_DAEMONS = [
         "inspect_cycle": 600,
     },
     {
+        "process_name": "sys_ai_edu_bank_suggested",
+        "duty": "AI建议教育域守护: 五域扫描更新(教辅同步/题库元数据/听力题/母题接替/历年习题新鲜度)+教育引擎文件智能修复(备份+验证+回滚)+git自动上传+落库投喂(600s轮巡)",
+        "mount_source": "SYSTEM_REQ",
+        "work_body": "            # AI建议教育域扫描更新: 调用ai_suggested_edu_bank_engine.py once\n            try:\n                import subprocess\n                engine_py = os.path.join(os.path.dirname(ENGINE_DIR), 'engines', 'ai_suggested_edu_bank_engine.py')\n                r = subprocess.run([sys.executable, engine_py, 'once'],\n                    timeout=540, capture_output=True, text=True)\n                if r.returncode == 0:\n                    _log('EDU-BANK: cycle done')\n                else:\n                    _log(f'EDU-BANK: cycle failed rc={r.returncode}')\n            except subprocess.TimeoutExpired:\n                _log('EDU-BANK: timeout (540s)')\n            except Exception as e:\n                _log(f'EDU-BANK error: {e}')",
+        "inspect_cycle": 600,
+    },
+    {
         "process_name": "sys_deep_inspection",
         "duty": "深度巡检守护: 页面/路由巡检+源代码逐行检查+AI团队路由+自动修复+全生命周期追踪",
         "mount_source": "SYSTEM_REQ",
