@@ -136,9 +136,17 @@ def advice_uid(kind, path):
 
 
 def upload_eligible(promoted, verified, path):
-    """上传资格判定（纯函数）：仅 promote成功+验证通过 的 .py 可上传。"""
+    """上传资格判定（纯函数）：仅 promote成功+验证通过 的 .py，且强制白名单
+    （flask-app 根内 + 无 SKIP 目录段），1:1 对齐沙盒/上传安全约束。"""
     p = (path or '').replace('\\', '/').strip()
-    return bool(promoted) and bool(verified) and p.endswith('.py')
+    if not p.endswith('.py'):
+        return False
+    for seg in p.split('/'):
+        if seg in _UPLOAD_SKIP_DIRS:
+            return False
+    if not (p == _UPLOAD_ROOT or p.startswith(_UPLOAD_ROOT + '/')):
+        return False
+    return bool(promoted) and bool(verified)
 
 
 def consensus_label(consensus):

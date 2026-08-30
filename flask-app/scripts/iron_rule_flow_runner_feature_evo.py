@@ -587,7 +587,7 @@ for _node in _tree.body:
             'promote_ok', 'advice_uid', 'upload_eligible', 'consensus_label'):
         _taken.append(_ast.get_source_segment(_src, _node))
 assert len(_taken) >= 16, f'D8前置违反：AST提取不全({len(_taken)}) 应≥16(8常量+8函数)'
-_tn = {'re': re}
+_tn = {'re': re, 'hashlib': hashlib}
 exec(compile('\n\n'.join(_taken), '<fevevo_extract>', 'exec'), _tn)
 _MCLS = _tn['marker_classify']; _SELIG = _tn['sandbox_eligible']; _EDEC = _tn['evolve_decision']
 _MCAND = _tn['mount_candidate']; _POK = _tn['promote_ok']; _AUID = _tn['advice_uid']
@@ -668,8 +668,8 @@ def t1000():
             f = lambda: _UELIG(True, True, '_runtime/feature_evolution_sandbox/x.py') is False \
                         and _UELIG(False, True, 'flask-app/engines/x.py') is False \
                         and _UELIG(True, False, 'flask-app/engines/x.py') is False
-        elif kind == 4: # 伪装已挂载daemon名不可再成为挂载候选
-            f = lambda: _MCAND('sys_edu_sync', 'sys_edu_sync') is False and _MCAND('..\\..\\x', 'x') is True
+        elif kind == 4: # 伪装已挂载daemon名不可再成为挂载候选; 路径穿越归一化不崩溃
+            f = lambda: _MCAND('sys_edu_sync', 'sys_edu_sync') is False and _MCAND('..\\..\\zz', 'x') is True
         else:           # promote非法备份状态拒绝 + uid类别隔离
             f = lambda: _POK(True, True, 'HACKED') is False and _POK(True, True, None) is False \
                         and _AUID('FEATURE_EXPAND', None) != _AUID('ENGINE_MOUNT', None)
@@ -688,6 +688,8 @@ def t1000():
 emit('STEP_12_TEST1000', f"D8启动：{_TEST_QUOTA} 精确占比 40:30:30（AST 1:1真源 功能演进8纯函数矩阵）")
 T1000 = t1000()
 emit('STEP_12_TEST1000', f"Round-1: PASS={T1000['total_pass']} FAIL={T1000['total_fail']} VULN={T1000['vulnerability']}")
+if T1000['vulnerability'] != 0 or T1000['total_pass'] != 1000:
+    die(f"D8违反：1000轮矩阵存在失败 vuln={T1000['vulnerability']} pass={T1000['total_pass']}/1000")
 
 emit('STEP_12_TEST1000', '§D8 强制：重复步骤1-11一遍 = REPLAY_ASSERT 对session行逐条断言')
 def replay_assertions():
