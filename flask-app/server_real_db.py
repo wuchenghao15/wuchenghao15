@@ -3314,6 +3314,136 @@ def _mt_sys_container_session_loader():
     return None
 
 
+# ---------- 防盗链拦截：before_request（用户权限.md 硬条款） ----------
+# 规则：所有页面禁止盗链。未授权(guest)session 且 Referer 非法：
+#   - HTML页面请求（外站引用 / 无Referer直达非白名单页）→ 302 重定向首页 /index?from=hotlink_blocked
+#   - API请求（外站Referer）→ 403 JSON code=HOTLINK_BLOCKED
+#   - 静态资源外站引用（经典盗链）→ 403
+# 白名单：首页(/、/index)、auth、静态、健康检查、本站Referer；已登录用户全放行。
+_MT_HOTLINK_WHITELIST_PATHS = {
+    '/', '/index', '/favicon.ico', '/robots.txt',
+    '/auth/login', '/auth/register', '/auth/logout', '/auth/forgot_password',
+    '/auth/session_health', '/auth/check_username',
+}
+_MT_HOTLINK_WHITELIST_PREFIXES = (
+    '/static/', '/assets/', '/auth/', '/_ui/', '/api/auth/',
+    '/api/health', '/api/system_version', '/api/system_logo',
+)
+_MT_HOTLINK_OWN_HOSTS = {'localhost', '127.0.0.1', '::1'}
+_MT_HOTLINK_LOG_THROTTLE = {}
+
+
+def _mt_hotlink_parse_netloc(netloc):
+    """解析 netloc → (hostname, port)；畸形/伪造端口(非纯数字)返回 None（不信任）。
+    防伪造绕过：'127.0.0.1:8888.evil.com' / '127.0.0.1:8888@evil.com' 均判非法。"""
+    n = (netloc or '').lower().strip()
+    if not n:
+        return None
+    if n.startswith('['):
+        host, _, rest = n.partition(']')
+        host = host.lstrip('[')
+        port = rest[1:] if rest.startswith(':') else ''
+    else:
+        host, _, port = n.partition(':')
+    if port and not port.isdigit():
+        return None
+    return (host, port)
+
+
+def _mt_hotlink_decision(*, path, method, referer, request_host, logged_in):
+    """纯函数判定（便于§14千轮测试，不依赖 flask request）：
+    返回 (action, reason)；action ∈ 'allow' | 'redirect'(→/index) | 'forbid'(403)。
+    判定顺序（防盗链优先级）：
+      1) 安全方法/已登录 → 放行
+      2) 外站Referer（盗链）：静态/API → 403；首页/auth白名单页 → 放行；其余页面 → 302 /index
+      3) 无Referer：白名单 → 放行；API/静态 → 放行；其余页面 → 302 /index（先经首页）
+      4) 本站Referer → 放行
+    """
+    p = (path or '/').split('?', 1)[0]
+    if method in ('OPTIONS', 'HEAD'):
+        return ('allow', 'safe-method')
+    if logged_in:
+        return ('allow', 'authorized')
+    own = (request_host or '').lower()
+    own_parsed = _mt_hotlink_parse_netloc(own)
+    allowed_hosts = _MT_HOTLINK_OWN_HOSTS | {own}
+    if own_parsed:
+        allowed_hosts.add(own_parsed[0])
+    ref = (referer or '').strip()
+    netloc = ''
+    if ref:
+        try:
+            from urllib.parse import urlparse as _up
+            netloc = (_up(ref).netloc or '').lower()
+        except Exception:
+            netloc = ''
+    ref_parsed = _mt_hotlink_parse_netloc(netloc) if netloc else None
+    if ref and not (ref_parsed and ref_parsed[0] in allowed_hosts
+                    and own_parsed and ref_parsed[1] == own_parsed[1]):
+        # ---- 外站/伪造 Referer = 盗链（白名单前缀不适用，防静态资源被外站盗链）----
+        if _is_static_request(p):
+            return ('forbid', 'foreign-referer-static')
+        if p.startswith('/api/'):
+            return ('forbid', 'foreign-referer-api')
+        if p in _MT_HOTLINK_WHITELIST_PATHS:
+            return ('allow', 'whitelist-page-foreign-ref')
+        return ('redirect', 'foreign-referer-page')
+    if not ref:
+        # ---- 无 Referer（直达/新标签页）：guest 非白名单页面必须先经首页；API/静态不拦 ----
+        if p in _MT_HOTLINK_WHITELIST_PATHS or p.startswith(_MT_HOTLINK_WHITELIST_PREFIXES):
+            return ('allow', 'whitelist')
+        if p.startswith('/api/') or _is_static_request(p):
+            return ('allow', 'no-referer-nonpage')
+        return ('redirect', 'no-referer-page')
+    return ('allow', 'same-site')
+
+
+def _mt_hotlink_audit(kind, reason, throttle_seconds):
+    """阻断事件落库 automation_console_logs（同IP同类限频，非致命）。"""
+    try:
+        now = time.time()
+        key = (request.remote_addr or '?', kind)
+        if now - _MT_HOTLINK_LOG_THROTTLE.get(key, 0) < throttle_seconds:
+            return
+        _MT_HOTLINK_LOG_THROTTLE[key] = now
+        with _get_conn(APP_DB) as c:
+            c.execute(
+                "INSERT INTO automation_console_logs(timestamp,level,source,message,extra_json,eigenflux_flag) "
+                "VALUES(datetime('now','localtime'),?,?,?,?,1)",
+                ('warning', 'hotlink_guard',
+                 f'HOTLINK_BLOCKED: {kind} {reason} {request.method} {request.path}',
+                 json.dumps({'ip': request.remote_addr,
+                             'referer': (request.headers.get('Referer') or '')[:300],
+                             'ua': _ua()[:200], 'path': request.path}, ensure_ascii=False)))
+            c.commit()
+    except Exception:
+        pass
+
+
+@app.before_request
+def _mt_hotlink_guard():
+    """防盗链拦截：未授权session + 非法Referer → 页面302到/index / API与静态403 (HOTLINK_BLOCKED)"""
+    try:
+        action, reason = _mt_hotlink_decision(
+            path=request.path, method=request.method,
+            referer=request.headers.get('Referer'), request_host=request.host,
+            logged_in=bool(_current_safe_user().get('logged_in')))
+        if action == 'allow':
+            return None
+        request.__mt_hotlink_blocked__ = reason
+        if action == 'forbid':
+            _mt_hotlink_audit('forbid', reason, 60)
+            return jsonify({'success': False, 'code': 'HOTLINK_BLOCKED',
+                            'message': '禁止盗链：请从本站页面访问',
+                            'from': 'hotlink_blocked'}), 403
+        _mt_hotlink_audit('redirect', reason, 10)
+        return redirect('/index?from=hotlink_blocked', code=302)
+    except Exception as _e:
+        import logging as _lg_hl
+        _lg_hl.warning(f"[hotlink-guard] before_request err: {_e}")
+        return None
+
+
 # ---------- VIKEY 系统锁定检查：before_request ----------
 @app.before_request
 def _mt_vikey_lock_check():
@@ -8648,6 +8778,7 @@ except Exception as _red_init_exc:
 
 
 @app.route('/')
+@app.route('/index')
 @system_container('homepage', require_auth='guest')
 def index():
     version, info, latest = get_version_info()
