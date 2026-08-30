@@ -219,14 +219,15 @@ def expert_identity(domain, role):
 
 
 def round_cap(current, limit):
-    """单轮创建上限（纯函数）：超限则截断，返回可创建数量。负数/非法→0。"""
+    """单轮创建上限（纯函数）：已创建 current 后，本轮可新创建数量 = max(0, limit - current)
+    负数/非法→0。"""
     try:
         cur = int(current); lim = int(limit)
     except (TypeError, ValueError):
         return 0
     if cur < 0 or lim < 0:
         return 0
-    return max(0, min(lim, lim if cur >= lim else lim - cur)) if cur <= lim else 0
+    return max(0, lim - cur)
 
 
 def eligibility_ok(target, name, role):
@@ -243,7 +244,7 @@ def eligibility_ok(target, name, role):
 
 
 def consensus_to_size_bucket(consensus):
-    """共识分档→扩展规模桶（纯函数）：>=0.85→大型 / >=0.70→中型 / 其余→小型。
+    """共识分档→扩展规模桶（纯函数）：>=0.85→大型 / >=0.65→中型 / 其余→小型。
     非法→小型（fail-safe）。"""
     try:
         c = float(consensus)
@@ -253,7 +254,7 @@ def consensus_to_size_bucket(consensus):
         return 'SMALL'
     if c >= 0.85:
         return 'LARGE'
-    if c >= 0.70:
+    if c >= 0.65:
         return 'MEDIUM'
     return 'SMALL'
 
