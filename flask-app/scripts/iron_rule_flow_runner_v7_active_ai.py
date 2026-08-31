@@ -551,7 +551,7 @@ def t1000():
             return lambda: len(m)==2 and m[0]['quality']>=m[1]['quality'] and len(m[0]['content'])<=400
         else:
             return lambda: _PS(8,2)==0.8 and _PS(10,0)==1.0 and _PAP(['数据库索引缺失导致查询性能瓶颈','页面异常需要处理','短'])[0]['issue_type']=='bottleneck' and len(_PAP([]))==3 and _OF()=='OFFLINE_ONLY'
-    for i in range(400): run_one(f'N{i:04d}', mk_norm(i)[0])
+    for i in range(400): run_one(f'N{i:04d}', mk_norm(i))
     # ABNORMAL 300 = 6×50
     def mk_abn(i):
         k = i % 6
