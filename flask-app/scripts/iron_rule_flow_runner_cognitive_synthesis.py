@@ -484,7 +484,7 @@ for _node in _tree.body:
         for _t in _node.targets:
             if isinstance(_t, _ast.Name) and _t.id in (
                     '_MIN_CONSENSUS','_MAX_NEW_EMPLOYEES','_MAX_NEW_EXPERTS','_MAX_NEW_ENSEMBLES',
-                    '_MAX_NEW_TEMPLATES','_MAX_NEW_RULE_DRAFTS','_MSG_TOP_K','_SKIP_DIRS'):
+                    '_MAX_NEW_TEMPLATES','_MAX_NEW_RULE_DRAFTS','_MSG_TOP_K','_SKIP_DIRS','_ASSOC_RULES'):
                 _taken.append(_ast.get_source_segment(_src, _node))
     if isinstance(_node, _ast.FunctionDef) and _node.name in (
             'classify_assoc','synth_decision','cogn_uid','cap_remaining','topic_trust',
