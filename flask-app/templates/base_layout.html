@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="{{ theme_mode or 'dark' }}" data-art-theme="{{ art_theme or 'aurora' }}">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="referrer" content="same-origin">
+  <title>{% block title %}MTSCOS AI 管理系统{% endblock %}</title>
+
+  {# === 设计 Token + 布局壳 + 组件库 (Art Design Pro 视觉融合 v1.4.0) === #}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/mtscos_design_tokens.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/mtscos_layout.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/mtscos_components.css') }}">
+
+  {# === 艺术动效层 + 组件库 + 主题 (与 mtscos_layout 共存) === #}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/art_layer.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/art_components.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/art_themes.css') }}">
+
+  {# === SA 专有界面样式 (条件加载) === #}
+  {% if sa_proprietary %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/sa_proprietary.css') }}">
+  {% endif %}
+
+  {% block extra_head %}{% endblock %}
+</head>
+<body class="layout-mode-{{ layout_mode or 'STANDARD' }}
+            {% if sa_proprietary %}sa-proprietary{% endif %}"
+      data-layout-mode="{{ layout_mode or 'STANDARD' }}"
+      data-dual-authenticated="{{ 'true' if dual_authenticated else 'false' }}"
+      data-is-super-admin="{{ 'true' if is_super_admin_container else 'false' }}"
+      data-terminal-bound="{{ 'true' if terminal_bound else 'false' }}"
+      data-user-container="{{ user_container_hash or '' }}">
+
+  {# === 艺术渐变背景 + 粒子画布 + 鼠标光斑 (来自 art_layer.css) === #}
+  <div class="art-gradient-bg" aria-hidden="true"></div>
+  <canvas class="art-particle-canvas" id="artParticles" aria-hidden="true"></canvas>
+  <div class="art-cursor-glow" id="artCursorGlow" aria-hidden="true"></div>
+
+  {# === SA 未绑定终端提示横幅 === #}
+  <div class="mtscos-terminal-warn" role="alert">
+    ⚠ 当前终端未绑定插钥终端,SA 操作已降级为 STANDARD 模式。请在绑定终端访问。
+  </div>
+
+  {# === 统一布局壳 (.mtscos-layout) === #}
+  <div class="mtscos-layout" data-layout-mode="{{ layout_mode or 'STANDARD' }}">
+
+    {# --- 侧边栏 --- #}
+    {% block sidebar %}
+    <aside class="mtscos-sidebar" data-collapsed="{{ 'true' if sidebar_collapsed else 'false' }}"
+           role="navigation" aria-label="主导航">
+      {# Logo 区 #}
+      <div class="mtscos-sidebar-logo">
+        {% block sidebar_brand %}
+        <span class="mtscos-sidebar-logo-text">MTSCOS AI</span>
+        {% endblock %}
+      </div>
+
+      {# 折叠按钮 (桌面端) #}
+      <button type="button" class="mtscos-sidebar-collapse-btn"
+              id="mtscosSidebarCollapseBtn" aria-label="折叠侧边栏" title="折叠/展开">«</button>
+
+      {# 导航组 (子模板可覆盖) #}
+      <nav class="mtscos-nav">
+        {% block sidebar_nav %}
+        {# 默认导航(子模板可覆盖此 block 自定义菜单) #}
+        <div class="mtscos-nav-group">
+          <div class="mtscos-nav-group-label">主控台</div>
+          <a href="/admin_app/dashboard" class="mtscos-nav-item{% if active_nav == 'dashboard' %} is-active{% endif %}">
+            <span class="mtscos-nav-item-icon">📊</span>
+            <span class="mtscos-nav-item-text">仪表盘</span>
+          </a>
+          <a href="/admin_app/dev_flow_dashboard" class="mtscos-nav-item{% if active_nav == 'dev_flow' %} is-active{% endif %}">
+            <span class="mtscos-nav-item-icon">📋</span>
+            <span class="mtscos-nav-item-text">开发流程看板</span>
+          </a>
+        </div>
+        <div class="mtscos-nav-group">
+          <div class="mtscos-nav-group-label">AI 中枢</div>
+          <a href="/admin_app/eigenflux_center" class="mtscos-nav-item{% if active_nav == 'eigenflux' %} is-active{% endif %}">
+            <span class="mtscos-nav-item-icon">🌐</span>
+            <span class="mtscos-nav-item-text">EigenFlux 中心</span>
+          </a>
+          <a href="/admin_app/ai_team_hub" class="mtscos-nav-item{% if active_nav == 'ai_team' %} is-active{% endif %}">
+            <span class="mtscos-nav-item-icon">🤖</span>
+            <span class="mtscos-nav-item-text">AI 团队枢纽</span>
+          </a>
+          <a href="/admin_app/brain_bank_explorer" class="mtscos-nav-item{% if active_nav == 'brain_bank' %} is-active{% endif %}">
+            <span class="mtscos-nav-item-icon">🧠</span>
+            <span class="mtscos-nav-item-text">脑库探索器</span>
+          </a>
+          <a href="/admin_app/neural_array_matrix" class="mtscos-nav-item{% if active_nav == 'neural' %} is-active{% endif %}">
+            <span class="mtscos-nav-item-icon">⚡</span>
+            <span class="mtscos-nav-item-text">神经网络阵列</span>
+          </a>
+        </div>
+        <div class="mtscos-nav-group">
+          <div class="mtscos-nav-group-label">运维</div>
+          <a href="/admin_app/monitor" class="mtscos-nav-item{% if active_nav == 'monitor' %} is-active{% endif %}">
+            <span class="mtscos-nav-item-icon">📡</span>
+            <span class="mtscos-nav-item-text">系统监控</span>
+          </a>
+          <a href="/admin_app/security_dashboard" class="mtscos-nav-item{% if active_nav == 'security' %} is-active{% endif %}">
+            <span class="mtscos-nav-item-icon">🔒</span>
+            <span class="mtscos-nav-item-text">安全仪表盘</span>
+          </a>
+          <a href="/admin_app/enhanced_settings" class="mtscos-nav-item{% if active_nav == 'settings' %} is-active{% endif %}">
+            <span class="mtscos-nav-item-icon">⚙️</span>
+            <span class="mtscos-nav-item-text">系统设置</span>
+          </a>
+        </div>
+        {% endblock %}
+      </nav>
+    </aside>
+    {% endblock %}
+
+    {# --- 主区 --- #}
+    <div class="mtscos-main">
+
+      {# --- 顶栏 --- #}
+      <header class="mtscos-header" role="banner">
+        {# 移动端折叠按钮 #}
+        <button type="button" class="mtscos-sidebar-toggle"
+                id="mtscosSidebarToggle" aria-label="切换侧边栏" title="菜单">☰</button>
+
+        {# 页面标题 #}
+        <h1 class="mtscos-header-title">{% block header_title %}{{ page_title or '仪表盘' }}{% endblock %}</h1>
+
+        {# 操作区 #}
+        <div class="mtscos-header-actions">
+          {% block header_actions %}
+          {# SA 双钥匙状态徽章 (仅 SA 模式显示) #}
+          {% if is_super_admin_container %}
+          <span class="mtscos-sa-status" data-dual="{{ 'true' if dual_authenticated else 'false' }}"
+                title="超级管理员双钥匙状态">
+            <span class="mtscos-sa-status-dot"></span>
+            {% if dual_authenticated %}双钥匙已认证{% else %}双钥匙未启用{% endif %}
+          </span>
+          {% endif %}
+
+          {# 主题切换器 #}
+          <div class="mtscos-theme-switcher" id="mtscosThemeSwitcher" role="group" aria-label="主题切换">
+            <div class="mtscos-theme-dot{% if art_theme == 'aurora' or not art_theme %} is-active{% endif %}"
+                 data-theme="aurora" title="极光" role="button" tabindex="0" aria-label="极光主题"></div>
+            <div class="mtscos-theme-dot{% if art_theme == 'twilight' %} is-active{% endif %}"
+                 data-theme="twilight" title="暮光" role="button" tabindex="0" aria-label="暮光主题"></div>
+            <div class="mtscos-theme-dot{% if art_theme == 'dawn' %} is-active{% endif %}"
+                 data-theme="dawn" title="晨曦" role="button" tabindex="0" aria-label="晨曦主题"></div>
+            <div class="mtscos-theme-dot{% if art_theme == 'ink' %} is-active{% endif %}"
+                 data-theme="ink" title="墨韵" role="button" tabindex="0" aria-label="墨韵主题"></div>
+          </div>
+          {% endblock %}
+        </div>
+      </header>
+
+      {# --- 标签页条 (可选,通过 show_tabs 控制) --- #}
+      {% if show_tabs and tabs %}
+      <nav class="mtscos-tabs" role="tablist" aria-label="标签页">
+        {% for tab in tabs %}
+        <a href="{{ tab.url }}" class="mtscos-tab-item{% if tab.active %} is-active{% endif %}"
+           role="tab" aria-selected="{{ 'true' if tab.active else 'false' }}">
+          <span>{{ tab.title }}</span>
+          {% if tab.closable %}
+          <span class="mtscos-tab-close" role="button" aria-label="关闭 {{ tab.title }}">×</span>
+          {% endif %}
+        </a>
+        {% endfor %}
+      </nav>
+      {% endif %}
+
+      {# --- 面包屑 (可选) --- #}
+      {% block breadcrumb %}
+      {% if breadcrumbs %}
+      <nav class="mtscos-breadcrumb" aria-label="面包屑">
+        {% for crumb in breadcrumbs %}
+          {% if not loop.last %}
+          <a href="{{ crumb.url }}" class="mtscos-breadcrumb-item"
+             data-clickable="true">{{ crumb.title }}</a>
+          <span class="mtscos-breadcrumb-separator">/</span>
+          {% else %}
+          <span class="mtscos-breadcrumb-item is-current">{{ crumb.title }}</span>
+          {% endif %}
+        {% endfor %}
+      </nav>
+      {% endif %}
+      {% endblock %}
+
+      {# --- 主内容 --- #}
+      <main class="mtscos-content" role="main" data-page-type="{{ page_type or 'default' }}">
+        <div class="mtscos-page" id="mtscosPage">
+          {% block content %}{% endblock %}
+        </div>
+      </main>
+    </div>
+  </div>
+
+  {# === 隐性双钥匙自动检测 (所有页面通用) === #}
+  <script src="{{ url_for('static', filename='js/client-key-detect.js') }}"></script>
+  <script>
+    (function () {
+      function _startDualKeyPolling() {
+        if (!window.ClientKeyDetect || !ClientKeyDetect.startAutoPolling) return;
+        ClientKeyDetect.startAutoPolling({
+          onDualKeyLogin: function (data) {
+            console.log('[base-layout] SA 双钥匙自动登录成功, 刷新页面');
+            setTimeout(function () { window.location.reload(); }, 1000);
+          },
+          onKeyRemoved: function (info) {
+            console.log('[base-layout] 双钥匙拔出, 跳转首页');
+            setTimeout(function () { window.location.href = '/'; }, 1000);
+          },
+        });
+      }
+      setTimeout(_startDualKeyPolling, 3000);
+    })();
+  </script>
+
+  {# === 侧边栏折叠/移动端切换 + 主题切换 + 艺术动效 === #}
+  <script>
+    (function () {
+      var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+      // === 粒子画布 (与旧 admin_app/base.html 兼容,性能 ≤2% CPU) ===
+      var canvas = document.getElementById('artParticles');
+      if (canvas && !reduceMotion) {
+        var ctx = canvas.getContext('2d');
+        var particles = [];
+        var PARTICLE_COUNT = 60;
+        var colors = ['rgba(64,158,255,0.5)', 'rgba(16,185,129,0.5)',
+                      'rgba(139,92,246,0.5)', 'rgba(249,115,22,0.4)'];
+
+        function resizeCanvas() {
+          canvas.width = window.innerWidth;
+          canvas.height = window.innerHeight;
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        for (var i = 0; i < PARTICLE_COUNT; i++) {
+          particles.push({
+            x: Math.random() * canvas.width,
+            y: Math.random() * canvas.height,
+            vx: (Math.random() - 0.5) * 0.3,
+            vy: (Math.random() - 0.5) * 0.3,
+            r: Math.random() * 2 + 0.5,
+            color: colors[Math.floor(Math.random() * colors.length)],
+            alpha: Math.random() * 0.5 + 0.2
+          });
+        }
+
+        function drawParticles() {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          for (var j = 0; j < particles.length; j++) {
+            var p = particles[j];
+            p.x += p.vx; p.y += p.vy;
+            if (p.x < 0 || p.x > canvas.width) p.vx *= -1;
+            if (p.y < 0 || p.y > canvas.height) p.vy *= -1;
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+            ctx.fillStyle = p.color;
+            ctx.globalAlpha = p.alpha;
+            ctx.fill();
+          }
+          ctx.globalAlpha = 1;
+          requestAnimationFrame(drawParticles);
+        }
+        drawParticles();
+      }
+
+      // === 鼠标光斑跟随 ===
+      var glow = document.getElementById('artCursorGlow');
+      if (glow && !reduceMotion) {
+        var mouseX = window.innerWidth / 2, mouseY = window.innerHeight / 2;
+        var glowX = mouseX, glowY = mouseY;
+        document.addEventListener('mousemove', function (e) {
+          mouseX = e.clientX; mouseY = e.clientY;
+        });
+        function updateGlow() {
+          glowX += (mouseX - glowX) * 0.08;
+          glowY += (mouseY - glowY) * 0.08;
+          glow.style.left = glowX + 'px';
+          glow.style.top = glowY + 'px';
+          requestAnimationFrame(updateGlow);
+        }
+        updateGlow();
+      }
+
+      // === 主题切换 (优先 localStorage,其次服务端注入) ===
+      var switcher = document.getElementById('mtscosThemeSwitcher');
+      if (switcher) {
+        var dots = switcher.querySelectorAll('.mtscos-theme-dot');
+        var savedTheme = localStorage.getItem('art-theme') || '{{ art_theme or "aurora" }}';
+        applyTheme(savedTheme);
+
+        for (var k = 0; k < dots.length; k++) {
+          (function (dot) {
+            dot.addEventListener('click', function () {
+              var theme = dot.getAttribute('data-theme');
+              applyTheme(theme);
+              localStorage.setItem('art-theme', theme);
+            });
+            dot.addEventListener('keydown', function (e) {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                dot.click();
+              }
+            });
+          })(dots[k]);
+        }
+
+        function applyTheme(theme) {
+          document.documentElement.setAttribute('data-art-theme', theme);
+          for (var m = 0; m < dots.length; m++) {
+            dots[m].classList.toggle('is-active', dots[m].getAttribute('data-theme') === theme);
+          }
+        }
+      }
+
+      // === 侧边栏折叠 (桌面端) ===
+      var collapseBtn = document.getElementById('mtscosSidebarCollapseBtn');
+      var sidebar = document.querySelector('.mtscos-sidebar');
+      if (collapseBtn && sidebar) {
+        collapseBtn.addEventListener('click', function () {
+          var collapsed = sidebar.getAttribute('data-collapsed') === 'true';
+          sidebar.setAttribute('data-collapsed', collapsed ? 'false' : 'true');
+          localStorage.setItem('mtscos-sidebar-collapsed', !collapsed);
+        });
+        // 恢复折叠状态
+        var saved = localStorage.getItem('mtscos-sidebar-collapsed');
+        if (saved !== null) {
+          sidebar.setAttribute('data-collapsed', saved === 'true' ? 'true' : 'false');
+        }
+      }
+
+      // === 移动端侧边栏切换 ===
+      var toggleBtn = document.getElementById('mtscosSidebarToggle');
+      if (toggleBtn && sidebar) {
+        toggleBtn.addEventListener('click', function () {
+          sidebar.classList.toggle('is-mobile-open');
+        });
+        // 点击主区关闭移动端侧边栏
+        var main = document.querySelector('.mtscos-main');
+        if (main) {
+          main.addEventListener('click', function () {
+            if (sidebar.classList.contains('is-mobile-open')) {
+              sidebar.classList.remove('is-mobile-open');
+            }
+          });
+        }
+      }
+    })();
+  </script>
+
+  {% block extra_scripts %}{% endblock %}
+
+  {% if sa_proprietary %}
+  <script src="{{ url_for('static', filename='js/sa_proprietary.js') }}"></script>
+  {% endif %}
+</body>
+</html>

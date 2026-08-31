@@ -1,0 +1,1397 @@
+/* ============================================================================
+ * MTSCOS 页面类型扩展 (Art Design Pro 对齐版)
+ * ============================================================================
+ * §14 IRON_RULE · STEP_9_EXECUTE · 子步骤9-4 页面类型扩展
+ * flow_id: flow_frontend_refactor_20260831_145440
+ * contract_version: 1.4.0
+ *
+ * 设计目标(对齐 .trae/rules/设计规范.md + Art Design Pro 视觉融合方案):
+ *   6 类页面布局扩展(基于 .mtscos-content[data-page-type]):
+ *     §1 DASHBOARD  仪表盘   - KPI 卡片网格 + 图表网格 + 活动流
+ *     §2 LIST       列表页    - 筛选栏 + 表格 + 分页 + 批量操作栏
+ *     §3 FORM       表单页    - 水平/垂直/内联 表单布局 + 校验态 + 分组
+ *     §4 DETAIL     详情页    - 描述列表 + 标签页 + 操作按钮组
+ *     §5 FULLSCREEN 全屏页   - 画布/IDE/终端 + 浮动工具栏
+ *     §6 EXCEPTION  异常页    - 404/403/500 hero + 重试按钮
+ *
+ * 依赖:
+ *   <link rel="stylesheet" href="/static/css/mtscos_design_tokens.css">
+ *   <link rel="stylesheet" href="/static/css/mtscos_layout.css">  ← 布局壳
+ *   <link rel="stylesheet" href="/static/css/mtscos_pages.css">   ← 本文件
+ *
+ * 用法:
+ *   <main class="mtscos-content" data-page-type="dashboard">
+ *     <div class="mtscos-kpi-grid">...</div>
+ *   </main>
+ *   <main class="mtscos-content" data-page-type="list">
+ *     <div class="mtscos-filter-bar">...</div>
+ *     <div class="mtscos-table-wrapper">...</div>
+ *   </main>
+ *
+ * 命名空间: .mtscos-kpi-*, .mtscos-filter-*, .mtscos-table-*, .mtscos-form-*,
+ *           .mtscos-desc-*, .mtscos-action-*, .mtscos-canvas-*, .mtscos-exception-*
+ * ============================================================================ */
+
+/* ============================================================================
+ * §1 DASHBOARD 仪表盘页
+ *    KPI 卡片网格 + 图表网格 + 活动流
+ * ============================================================================ */
+
+/* KPI 网格(响应式 4 列 → 2 列 → 1 列) */
+.mtscos-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--adp-space-5);
+  margin-bottom: var(--adp-space-6);
+}
+@media (max-width: 1280px) {
+  .mtscos-kpi-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 640px) {
+  .mtscos-kpi-grid { grid-template-columns: 1fr; }
+}
+
+/* 单个 KPI 卡片 */
+.mtscos-kpi-card {
+  background: var(--adp-kpi-bg);
+  border-radius: var(--adp-kpi-radius);
+  padding: var(--adp-kpi-padding);
+  box-shadow: var(--adp-kpi-shadow);
+  border: 1px solid var(--el-border-color-lighter);
+  transition: var(--adp-card-transition);
+  position: relative;
+  overflow: hidden;
+}
+.mtscos-kpi-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--adp-shadow-lg);
+}
+.mtscos-kpi-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: var(--kpi-accent, var(--el-color-primary));
+  opacity: 0.8;
+}
+.mtscos-kpi-card[data-accent="success"] { --kpi-accent: var(--el-color-success); }
+.mtscos-kpi-card[data-accent="warning"] { --kpi-accent: var(--el-color-warning); }
+.mtscos-kpi-card[data-accent="danger"]  { --kpi-accent: var(--el-color-danger); }
+.mtscos-kpi-card[data-accent="info"]    { --kpi-accent: var(--el-color-info); }
+
+.mtscos-kpi-title {
+  color: var(--adp-kpi-title-color);
+  font-size: var(--el-font-size-base, 14px);
+  margin-bottom: var(--adp-space-2);
+}
+.mtscos-kpi-value {
+  color: var(--adp-kpi-value-color);
+  font-size: var(--adp-kpi-value-size, 28px);
+  font-weight: var(--el-font-weight-bold, 700);
+  line-height: 1.2;
+  margin-bottom: var(--adp-space-2);
+}
+.mtscos-kpi-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--adp-space-2);
+  font-size: var(--el-font-size-extra-small, 12px);
+  color: var(--el-text-color-secondary);
+}
+.mtscos-kpi-trend {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 1px var(--adp-space-2);
+  border-radius: var(--adp-radius-sm);
+  font-weight: var(--el-font-weight-primary, 600);
+}
+.mtscos-kpi-trend[data-up="true"] {
+  color: var(--el-color-success);
+  background: var(--el-color-success-light-9);
+}
+.mtscos-kpi-trend[data-up="false"] {
+  color: var(--el-color-danger);
+  background: var(--el-color-danger-light-9);
+}
+
+/* 图表网格 */
+.mtscos-chart-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--adp-space-5);
+  margin-bottom: var(--adp-space-6);
+}
+@media (max-width: 1024px) {
+  .mtscos-chart-grid { grid-template-columns: 1fr; }
+}
+.mtscos-chart-card {
+  background: var(--adp-card-bg);
+  border: var(--adp-card-border);
+  border-radius: var(--adp-card-radius);
+  padding: var(--adp-card-padding);
+  box-shadow: var(--adp-card-shadow);
+}
+.mtscos-chart-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--adp-space-4);
+}
+.mtscos-chart-card-title {
+  font-size: var(--el-font-size-large, 16px);
+  font-weight: var(--el-font-weight-primary, 600);
+  color: var(--el-text-color-primary);
+}
+.mtscos-chart-canvas-wrapper {
+  position: relative;
+  height: 280px;
+  min-height: 280px;
+}
+
+/* 活动流 */
+.mtscos-activity-feed { display: flex; flex-direction: column; gap: var(--adp-space-3); }
+.mtscos-activity-item {
+  display: flex;
+  gap: var(--adp-space-3);
+  padding: var(--adp-space-3);
+  border-radius: var(--adp-radius-md);
+  transition: var(--adp-transition-colors);
+}
+.mtscos-activity-item:hover { background: var(--el-fill-color-light); }
+.mtscos-activity-avatar {
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  background: var(--el-color-primary-light-7);
+  color: var(--el-color-primary);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; font-weight: 600;
+  flex-shrink: 0;
+}
+.mtscos-activity-content { flex: 1; min-width: 0; }
+.mtscos-activity-text {
+  color: var(--el-text-color-primary);
+  font-size: var(--el-font-size-base, 14px);
+  margin-bottom: 4px;
+}
+.mtscos-activity-time {
+  color: var(--el-text-color-secondary);
+  font-size: var(--el-font-size-extra-small, 12px);
+}
+
+/* Avatar 主题色变体 */
+.mtscos-activity-avatar[data-variant="success"] {
+  background: var(--el-color-success-light-7);
+  color: var(--el-color-success);
+}
+.mtscos-activity-avatar[data-variant="warning"] {
+  background: var(--el-color-warning-light-7);
+  color: var(--el-color-warning);
+}
+.mtscos-activity-avatar[data-variant="info"] {
+  background: var(--el-color-info-light-7);
+  color: var(--el-color-info);
+}
+.mtscos-activity-avatar[data-variant="danger"] {
+  background: var(--el-color-danger-light-7);
+  color: var(--el-color-danger);
+}
+
+/* 仪表盘 Hero 动作条副标题 */
+.mtscos-action-bar-subtitle {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--el-text-color-secondary);
+  margin-left: 8px;
+}
+.mtscos-action-bar-subtitle::before {
+  content: '·';
+  margin-right: 8px;
+  opacity: 0.4;
+}
+
+/* Stagger 级联动效容器 (子元素按顺序延迟入场) */
+.mtscos-stagger > * {
+  opacity: 0;
+  transform: translateY(12px);
+  animation: mtscos-stagger-in var(--adp-duration-base, 240ms) var(--adp-ease-out) forwards;
+}
+.mtscos-stagger > *:nth-child(1) { animation-delay: 0.02s; }
+.mtscos-stagger > *:nth-child(2) { animation-delay: 0.08s; }
+.mtscos-stagger > *:nth-child(3) { animation-delay: 0.14s; }
+.mtscos-stagger > *:nth-child(4) { animation-delay: 0.20s; }
+.mtscos-stagger > *:nth-child(5) { animation-delay: 0.26s; }
+.mtscos-stagger > *:nth-child(6) { animation-delay: 0.32s; }
+@keyframes mtscos-stagger-in {
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* 通用 slide-up 单一入场动画 */
+.adp-slide-up {
+  opacity: 0;
+  transform: translateY(16px);
+  animation: adp-slide-up var(--adp-duration-base, 240ms) var(--adp-ease-out, ease-out) forwards;
+  animation-delay: 0.02s;
+}
+@keyframes adp-slide-up {
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* 图表卡片容器 (DASHBOARD 扩展) */
+.mtscos-chart-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: var(--adp-space-5);
+}
+@media (max-width: 1024px) {
+  .mtscos-chart-grid { grid-template-columns: 1fr; }
+}
+.mtscos-chart-card {
+  background: var(--adp-card-bg);
+  border: var(--adp-card-border);
+  border-radius: var(--adp-card-radius);
+  padding: var(--adp-card-padding);
+  box-shadow: var(--adp-card-shadow);
+  transition: var(--adp-transition-all);
+}
+.mtscos-chart-card:hover {
+  box-shadow: var(--adp-shadow-md);
+  transform: translateY(-2px);
+}
+.mtscos-chart-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--adp-space-4);
+}
+.mtscos-chart-card-title {
+  font-size: var(--el-font-size-large, 16px);
+  font-weight: var(--el-font-weight-primary, 600);
+  color: var(--el-text-color-primary);
+  margin: 0;
+}
+.mtscos-chart-card-body {
+  min-height: 0;
+}
+
+/* 4 列统计网格 (KPI 细分) */
+.mtscos-stat-grid-4 {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--adp-space-4);
+}
+@media (max-width: 768px) {
+  .mtscos-stat-grid-4 { grid-template-columns: repeat(2, 1fr); }
+}
+.mtscos-stat-item { display: flex; flex-direction: column; }
+.mtscos-stat-label {
+  font-size: 12px;
+  color: var(--el-text-color-secondary);
+  margin-bottom: 4px;
+}
+.mtscos-stat-value {
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1.2;
+  margin-bottom: var(--adp-space-1);
+}
+.mtscos-stat-value[data-accent="primary"] { color: var(--el-color-primary); }
+.mtscos-stat-value[data-accent="success"] { color: var(--el-color-success); }
+.mtscos-stat-value[data-accent="warning"] { color: var(--el-color-warning); }
+.mtscos-stat-value[data-accent="danger"]  { color: var(--el-color-danger); }
+.mtscos-stat-value[data-accent="info"]    { color: var(--el-color-info); }
+
+/* 次级文字样式 (通用, 避免内联 color:var(...)) */
+.mtscos-text-secondary { color: var(--el-text-color-secondary); }
+.mtscos-text-placeholder { color: var(--el-text-color-placeholder); }
+.mtscos-text-small { font-size: 12px; line-height: 1.5; }
+.mtscos-text-muted { color: var(--el-text-color-secondary); font-size: 12px; }
+
+/* ============================================================================
+ * §2 LIST 列表页
+ *    筛选栏 + 表格 + 分页 + 批量操作栏
+ * ============================================================================ */
+
+/* 筛选栏 */
+.mtscos-filter-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--adp-space-3);
+  padding: var(--adp-space-4) var(--adp-space-5);
+  background: var(--adp-card-bg);
+  border: var(--adp-card-border);
+  border-radius: var(--adp-card-radius);
+  box-shadow: var(--adp-shadow-xs);
+  margin-bottom: var(--adp-space-4);
+  flex-wrap: wrap;
+}
+.mtscos-filter-item {
+  display: flex; align-items: center; gap: var(--adp-space-2);
+  font-size: var(--el-font-size-base, 14px);
+  color: var(--el-text-color-regular);
+}
+.mtscos-filter-label {
+  color: var(--el-text-color-secondary);
+  white-space: nowrap;
+}
+.mtscos-filter-actions {
+  margin-left: auto;
+  display: flex; gap: var(--adp-space-2);
+}
+
+/* 表格容器 */
+.mtscos-table-wrapper {
+  background: var(--adp-card-bg);
+  border: var(--adp-card-border);
+  border-radius: var(--adp-card-radius);
+  box-shadow: var(--adp-shadow-xs);
+  overflow: hidden;
+  margin-bottom: var(--adp-space-4);
+}
+.mtscos-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--el-font-size-base, 14px);
+}
+.mtscos-table thead {
+  background: var(--adp-table-header-bg);
+  color: var(--adp-table-header-color);
+}
+.mtscos-table th {
+  padding: 0 var(--adp-table-cell-padding-x);
+  height: var(--adp-table-header-height);
+  text-align: left;
+  font-weight: var(--el-font-weight-primary, 600);
+  border-bottom: var(--adp-table-border);
+  white-space: nowrap;
+}
+.mtscos-table td {
+  padding: 0 var(--adp-table-cell-padding-x);
+  height: var(--adp-table-row-height);
+  color: var(--el-text-color-regular);
+  border-bottom: var(--adp-table-border);
+}
+.mtscos-table tbody tr {
+  transition: background var(--adp-duration-fast) var(--adp-ease-out);
+}
+.mtscos-table tbody tr:hover {
+  background: var(--adp-table-row-hover-bg);
+}
+.mtscos-table tbody tr:last-child td { border-bottom: none; }
+.mtscos-table-row-selected {
+  background: var(--el-color-primary-light-9) !important;
+}
+.mtscos-table-cell-actions {
+  display: flex; gap: var(--adp-space-2);
+  justify-content: flex-end;
+}
+.mtscos-table-cell-actions > a,
+.mtscos-table-cell-actions > button {
+  padding: 4px var(--adp-space-2);
+  font-size: var(--el-font-size-extra-small, 12px);
+  border-radius: var(--adp-radius-sm);
+  color: var(--el-color-primary);
+  background: transparent;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: var(--adp-transition-colors);
+}
+.mtscos-table-cell-actions > a:hover,
+.mtscos-table-cell-actions > button:hover {
+  background: var(--el-color-primary-light-9);
+  border-color: var(--el-color-primary-light-7);
+}
+.mtscos-table-cell-actions .is-danger { color: var(--el-color-danger); }
+.mtscos-table-cell-actions .is-danger:hover {
+  background: var(--el-color-danger-light-9);
+  border-color: var(--el-color-danger-light-5);
+}
+
+/* 分页 */
+.mtscos-pagination {
+  display: flex;
+  align-items: center;
+  gap: var(--adp-space-1);
+  justify-content: flex-end;
+  padding: var(--adp-space-3) var(--adp-space-5);
+}
+.mtscos-pagination-info {
+  color: var(--el-text-color-secondary);
+  font-size: var(--el-font-size-extra-small, 12px);
+  margin-right: auto;
+}
+.mtscos-pagination-btn {
+  min-width: 32px; height: 32px;
+  padding: 0 var(--adp-space-2);
+  display: inline-flex; align-items: center; justify-content: center;
+  border: 1px solid var(--el-border-color);
+  background: transparent;
+  border-radius: var(--adp-radius-md);
+  color: var(--el-text-color-regular);
+  cursor: pointer;
+  transition: var(--adp-transition-colors);
+  font-size: var(--el-font-size-base, 14px);
+}
+.mtscos-pagination-btn:hover:not(:disabled) {
+  color: var(--el-color-primary);
+  border-color: var(--el-color-primary);
+}
+.mtscos-pagination-btn.is-active {
+  background: var(--el-color-primary);
+  color: #fff;
+  border-color: var(--el-color-primary);
+}
+.mtscos-pagination-btn:disabled {
+  opacity: 0.5; cursor: not-allowed;
+}
+
+/* 批量操作栏 */
+.mtscos-batch-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--adp-space-3);
+  padding: var(--adp-space-3) var(--adp-space-5);
+  background: var(--el-color-primary-light-9);
+  border: 1px solid var(--el-color-primary-light-7);
+  border-radius: var(--adp-radius-md);
+  margin-bottom: var(--adp-space-3);
+}
+.mtscos-batch-info {
+  color: var(--el-color-primary);
+  font-size: var(--el-font-size-base, 14px);
+  font-weight: var(--el-font-weight-primary, 600);
+}
+
+/* ============================================================================
+ * §3 FORM 表单页
+ *    水平/垂直/内联 表单布局 + 校验态 + 分组
+ * ============================================================================ */
+.mtscos-form { width: 100%; }
+.mtscos-form-item {
+  margin-bottom: var(--adp-form-item-margin-bottom);
+  display: flex;
+  align-items: flex-start;
+}
+.mtscos-form-label {
+  width: var(--adp-form-label-width);
+  padding-right: var(--adp-space-3);
+  text-align: right;
+  color: var(--adp-form-label-color);
+  font-size: var(--el-font-size-base, 14px);
+  line-height: var(--adp-form-input-height);
+  flex-shrink: 0;
+}
+.mtscos-form-label.is-required::before {
+  content: '*';
+  color: var(--el-color-danger);
+  margin-right: 4px;
+}
+.mtscos-form-content { flex: 1; min-width: 0; }
+.mtscos-form-input,
+.mtscos-form-textarea,
+.mtscos-form-select {
+  width: 100%;
+  height: var(--adp-form-input-height);
+  padding: 0 var(--adp-space-3);
+  border: var(--adp-form-input-border);
+  border-radius: var(--adp-form-input-radius);
+  background: var(--el-bg-color);
+  color: var(--el-text-color-primary);
+  font-size: var(--el-font-size-base, 14px);
+  transition: border-color var(--adp-duration-fast) var(--adp-ease-out),
+              box-shadow var(--adp-duration-fast) var(--adp-ease-out);
+  outline: none;
+}
+.mtscos-form-textarea {
+  height: auto;
+  min-height: 80px;
+  padding: var(--adp-space-2) var(--adp-space-3);
+  line-height: 1.5;
+  resize: vertical;
+}
+.mtscos-form-input:focus,
+.mtscos-form-textarea:focus,
+.mtscos-form-select:focus {
+  border: var(--adp-form-input-border-focus);
+  box-shadow: var(--adp-form-input-shadow-focus);
+}
+.mtscos-form-item[data-state="error"] .mtscos-form-input,
+.mtscos-form-item[data-state="error"] .mtscos-form-textarea,
+.mtscos-form-item[data-state="error"] .mtscos-form-select {
+  border-color: var(--el-color-danger);
+}
+.mtscos-form-item[data-state="success"] .mtscos-form-input,
+.mtscos-form-item[data-state="success"] .mtscos-form-textarea,
+.mtscos-form-item[data-state="success"] .mtscos-form-select {
+  border-color: var(--el-color-success);
+}
+.mtscos-form-help {
+  margin-top: var(--adp-space-1);
+  font-size: var(--el-font-size-extra-small, 12px);
+  color: var(--el-text-color-secondary);
+}
+.mtscos-form-error-msg {
+  margin-top: var(--adp-space-1);
+  font-size: var(--el-font-size-extra-small, 12px);
+  color: var(--el-color-danger);
+}
+
+/* 垂直表单 */
+.mtscos-form-vertical .mtscos-form-item {
+  flex-direction: column;
+  align-items: stretch;
+}
+.mtscos-form-vertical .mtscos-form-label {
+  width: auto;
+  text-align: left;
+  padding: 0 0 var(--adp-space-1) 0;
+  line-height: 1.5;
+}
+
+/* 内联表单 */
+.mtscos-form-inline {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--adp-space-3);
+}
+.mtscos-form-inline .mtscos-form-item {
+  margin-bottom: 0;
+  width: auto;
+}
+.mtscos-form-inline .mtscos-form-label {
+  width: auto;
+  padding-right: var(--adp-space-2);
+}
+
+/* 表单分组 */
+.mtscos-form-section {
+  margin-bottom: var(--adp-space-6);
+  padding: var(--adp-space-5) var(--adp-space-6);
+  background: var(--adp-card-bg);
+  border: var(--adp-card-border);
+  border-radius: var(--adp-card-radius);
+}
+.mtscos-form-section-title {
+  font-size: var(--el-font-size-large, 16px);
+  font-weight: var(--el-font-weight-primary, 600);
+  color: var(--el-text-color-primary);
+  margin-bottom: var(--adp-space-4);
+  padding-bottom: var(--adp-space-3);
+  border-bottom: var(--adp-table-border);
+}
+
+/* 表单底部按钮 */
+.mtscos-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--adp-space-3);
+  padding-top: var(--adp-space-5);
+  border-top: var(--adp-table-border);
+}
+
+/* ============================================================================
+ * §4 DETAIL 详情页
+ *    描述列表 + 标签页 + 操作按钮组
+ * ============================================================================ */
+.mtscos-desc-list {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--adp-space-4) var(--adp-space-6);
+  padding: var(--adp-space-5) var(--adp-space-6);
+  background: var(--adp-card-bg);
+  border: var(--adp-card-border);
+  border-radius: var(--adp-card-radius);
+}
+@media (max-width: 768px) {
+  .mtscos-desc-list { grid-template-columns: 1fr; }
+}
+.mtscos-desc-item { display: flex; flex-direction: column; gap: 4px; }
+.mtscos-desc-term {
+  color: var(--el-text-color-secondary);
+  font-size: var(--el-font-size-extra-small, 12px);
+}
+.mtscos-desc-detail {
+  color: var(--el-text-color-primary);
+  font-size: var(--el-font-size-base, 14px);
+  word-break: break-all;
+}
+
+/* 详情页操作按钮组 */
+.mtscos-action-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--adp-space-3);
+  padding: var(--adp-space-4) var(--adp-space-6);
+  background: var(--adp-card-bg);
+  border: var(--adp-card-border);
+  border-radius: var(--adp-card-radius);
+  margin-bottom: var(--adp-space-4);
+}
+.mtscos-action-bar-title {
+  font-size: var(--el-font-size-large, 16px);
+  font-weight: var(--el-font-weight-primary, 600);
+  color: var(--el-text-color-primary);
+  flex: 1;
+}
+.mtscos-action-bar-actions {
+  display: flex; gap: var(--adp-space-2);
+}
+
+/* ============================================================================
+ * §5 FULLSCREEN 全屏页
+ *    画布/IDE/终端 + 浮动工具栏
+ * ============================================================================ */
+.mtscos-content[data-page-type="fullscreen"] {
+  padding: 0;
+  background: var(--el-bg-color);
+}
+.art-content[data-page-type="fullscreen"] {
+  padding: 0;
+  background: var(--el-bg-color);
+}
+.mtscos-canvas-stage {
+  position: relative;
+  width: 100%;
+  height: calc(100vh - var(--adp-header-height) - var(--adp-tabs-height));
+  background: var(--el-bg-color-page);
+  overflow: hidden;
+}
+.mtscos-canvas-toolbar {
+  position: absolute;
+  top: var(--adp-space-3);
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: var(--adp-space-1);
+  padding: var(--adp-space-1) var(--adp-space-2);
+  background: var(--adp-card-bg);
+  border: var(--adp-card-border);
+  border-radius: var(--adp-radius-pill);
+  box-shadow: var(--adp-shadow-lg);
+  z-index: 10;
+}
+.mtscos-canvas-toolbar-btn {
+  width: 32px; height: 32px;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: transparent;
+  border: none;
+  border-radius: 50%;
+  color: var(--el-text-color-regular);
+  cursor: pointer;
+  transition: var(--adp-transition-colors);
+}
+.mtscos-canvas-toolbar-btn:hover {
+  background: var(--el-fill-color-light);
+  color: var(--el-color-primary);
+}
+.mtscos-canvas-toolbar-btn.is-active {
+  background: var(--el-color-primary-light-9);
+  color: var(--el-color-primary);
+}
+
+/* IDE / 终端容器 */
+.mtscos-ide-container {
+  display: grid;
+  grid-template-columns: 200px 1fr;
+  height: 100%;
+  background: var(--el-bg-color);
+}
+.mtscos-ide-sidebar {
+  background: var(--el-bg-color-page);
+  border-right: var(--adp-card-border);
+  overflow-y: auto;
+  padding: var(--adp-space-3);
+}
+.mtscos-ide-main {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.mtscos-ide-editor {
+  flex: 1;
+  overflow: auto;
+  padding: var(--adp-space-4);
+  font-family: 'SF Mono', Monaco, Menlo, Consolas, monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  background: var(--el-bg-color);
+  color: var(--el-text-color-primary);
+}
+.mtscos-ide-terminal {
+  height: 200px;
+  border-top: var(--adp-card-border);
+  background: var(--el-bg-color-page);
+  padding: var(--adp-space-3);
+  font-family: 'SF Mono', Monaco, Menlo, Consolas, monospace;
+  font-size: 12px;
+  color: var(--el-text-color-regular);
+  overflow-y: auto;
+}
+
+/* ============================================================================
+ * §5.1 IDE 全屏工作区扩展
+ *    双栏编辑器 / 顶部工具栏 / 输出面板 Tabs
+ * ============================================================================ */
+.mtscos-ide-workbench {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--el-bg-color-page);
+}
+.mtscos-ide-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--adp-space-3);
+  padding: var(--adp-space-2) var(--adp-space-4);
+  background: var(--el-bg-color);
+  border-bottom: var(--adp-card-border);
+  box-shadow: var(--adp-shadow-xs);
+  flex-shrink: 0;
+}
+.mtscos-ide-toolbar-left,
+.mtscos-ide-toolbar-center,
+.mtscos-ide-toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: var(--adp-space-2);
+  flex-wrap: wrap;
+}
+.mtscos-ide-device-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--adp-space-1);
+  padding: 4px var(--adp-space-2);
+  background: var(--el-fill-color-light);
+  border-radius: var(--adp-radius-pill);
+  font-size: var(--el-font-size-extra-small, 12px);
+  color: var(--el-text-color-regular);
+  font-weight: var(--el-font-weight-primary, 500);
+}
+.mtscos-ide-led {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}
+.mtscos-ide-led.is-on {
+  background: var(--el-color-success);
+  box-shadow: 0 0 6px var(--el-color-success);
+  animation: mtscos-ide-led-pulse 1.8s ease-in-out infinite;
+}
+@keyframes mtscos-ide-led-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
+}
+.mtscos-ide-autosave-hint {
+  font-size: var(--el-font-size-extra-small, 12px);
+  color: var(--el-text-color-secondary);
+}
+.mtscos-ide-split {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  gap: 1px;
+  background: var(--el-border-color-lighter, #ebeef5);
+  overflow: hidden;
+}
+.mtscos-ide-pane {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  background: var(--el-bg-color);
+  overflow: hidden;
+}
+.mtscos-ide-pane[data-weight="editor"] { flex: 2; }
+.mtscos-ide-pane[data-weight="output"] { flex: 1; }
+
+.mtscos-ide-pane-header {
+  display: flex;
+  gap: var(--adp-space-2);
+  padding: var(--adp-space-1) var(--adp-space-2);
+  background: var(--el-bg-color-page);
+  border-bottom: var(--adp-card-border);
+  flex-shrink: 0;
+}
+.mtscos-ide-pane-header select {
+  padding: 4px 8px;
+  font-size: var(--el-font-size-extra-small, 12px);
+  border: var(--adp-card-border);
+  border-radius: var(--adp-radius-sm);
+  background: var(--el-bg-color);
+  color: var(--el-text-color-regular);
+  outline: none;
+}
+.mtscos-ide-pane-header select:focus {
+  border-color: var(--el-color-primary);
+}
+.mtscos-ide-code {
+  flex: 1;
+  width: 100%;
+  border: none;
+  padding: var(--adp-space-3);
+  font-family: 'SF Mono', Monaco, Menlo, Consolas, monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  resize: none;
+  outline: none;
+  background: var(--el-bg-color);
+  color: var(--el-text-color-primary);
+  tab-size: 2;
+  box-sizing: border-box;
+}
+.mtscos-ide-pane-status {
+  display: flex;
+  justify-content: space-between;
+  padding: 4px var(--adp-space-3);
+  background: var(--el-bg-color-page);
+  border-top: var(--adp-card-border);
+  font-size: var(--el-font-size-extra-small, 12px);
+  color: var(--el-text-color-secondary);
+  flex-shrink: 0;
+}
+.mtscos-ide-unsaved {
+  color: var(--el-color-warning);
+  font-weight: var(--el-font-weight-primary, 600);
+}
+
+.mtscos-ide-tabs {
+  display: flex;
+  border-bottom: var(--adp-card-border);
+  background: var(--el-bg-color-page);
+  flex-shrink: 0;
+}
+.mtscos-ide-tab {
+  padding: 8px var(--adp-space-4);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: var(--el-font-size-extra-small, 12px);
+  color: var(--el-text-color-secondary);
+  border-bottom: 2px solid transparent;
+  transition: var(--adp-transition-colors);
+  white-space: nowrap;
+}
+.mtscos-ide-tab:hover {
+  color: var(--el-text-color-primary);
+  background: var(--el-fill-color-light);
+}
+.mtscos-ide-tab.is-active {
+  color: var(--el-color-primary);
+  border-bottom-color: var(--el-color-primary);
+  font-weight: var(--el-font-weight-primary, 600);
+}
+.mtscos-ide-tab-content {
+  flex: 1;
+  display: none;
+  overflow: auto;
+  min-height: 0;
+}
+.mtscos-ide-tab-content.is-active {
+  display: block;
+}
+.mtscos-ide-output {
+  margin: 0;
+  padding: var(--adp-space-3);
+  font-family: 'SF Mono', Monaco, Menlo, Consolas, monospace;
+  font-size: 12px;
+  color: var(--el-text-color-primary);
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  line-height: 1.6;
+  background: var(--el-bg-color);
+  min-height: 100%;
+  box-sizing: border-box;
+}
+
+/* ============================================================================
+ * §5.2 通用 Modal / Dialog
+ * ============================================================================ */
+.mtscos-dialog-overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--el-overlay-color, rgba(0, 0, 0, 0.5));
+  backdrop-filter: blur(2px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: var(--adp-z-modal, 2000);
+  animation: mtscos-dialog-fade var(--adp-duration-base) var(--adp-ease-out);
+}
+@keyframes mtscos-dialog-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.mtscos-dialog {
+  background: var(--el-bg-color-overlay, #fff);
+  border-radius: var(--adp-radius-md);
+  min-width: 360px;
+  max-width: 560px;
+  width: calc(100% - 48px);
+  box-shadow: var(--adp-shadow-xl);
+  overflow: hidden;
+  border: var(--adp-card-border);
+  animation: mtscos-dialog-rise var(--adp-duration-base) var(--adp-ease-out-back);
+}
+.mtscos-dialog[data-size="small"] { min-width: 320px; max-width: 440px; }
+.mtscos-dialog[data-size="large"] { min-width: 520px; max-width: 720px; }
+@keyframes mtscos-dialog-rise {
+  from { opacity: 0; transform: translateY(16px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+.mtscos-dialog-header {
+  display: flex;
+  align-items: center;
+  gap: var(--adp-space-2);
+  padding: var(--adp-space-4) var(--adp-space-5);
+  background: linear-gradient(135deg, var(--el-color-primary), var(--el-color-primary-light-3));
+  color: #fff;
+}
+.mtscos-dialog-header[data-variant="warning"] {
+  background: linear-gradient(135deg, var(--el-color-warning), var(--el-color-warning-light-3));
+}
+.mtscos-dialog-header[data-variant="danger"] {
+  background: linear-gradient(135deg, var(--el-color-danger), var(--el-color-danger-light-3));
+}
+.mtscos-dialog-header[data-variant="success"] {
+  background: linear-gradient(135deg, var(--el-color-success), var(--el-color-success-light-3));
+}
+.mtscos-dialog-title {
+  margin: 0;
+  font-size: var(--el-font-size-base, 14px);
+  font-weight: var(--el-font-weight-primary, 600);
+}
+.mtscos-dialog-icon {
+  font-size: 20px;
+  line-height: 1;
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.1));
+}
+.mtscos-dialog-body {
+  padding: var(--adp-space-5);
+  color: var(--el-text-color-regular);
+  font-size: var(--el-font-size-base, 14px);
+  line-height: 1.6;
+}
+.mtscos-dialog-hint {
+  color: var(--el-text-color-secondary);
+  margin-bottom: var(--adp-space-4);
+  font-size: var(--el-font-size-base, 14px);
+}
+.mtscos-dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--adp-space-2);
+  padding: var(--adp-space-3) var(--adp-space-5);
+  background: var(--el-bg-color-page);
+  border-top: var(--adp-card-border);
+}
+
+/* ============================================================================
+ * §5.3 通用按钮变体
+ * ============================================================================ */
+.mtscos-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 6px 16px;
+  height: 32px;
+  border: 1px solid transparent;
+  border-radius: var(--adp-radius-sm);
+  font-size: var(--el-font-size-base, 14px);
+  font-weight: var(--el-font-weight-primary, 500);
+  cursor: pointer;
+  transition: var(--adp-transition-all);
+  user-select: none;
+  white-space: nowrap;
+  background: transparent;
+  color: var(--el-text-color-regular);
+  box-sizing: border-box;
+}
+.mtscos-btn:hover { opacity: 0.88; transform: translateY(-1px); }
+.mtscos-btn:active { transform: translateY(0); }
+.mtscos-btn.is-default {
+  background: var(--el-bg-color);
+  border-color: var(--el-border-color, #dcdfe6);
+  color: var(--el-text-color-regular);
+}
+.mtscos-btn.is-default:hover {
+  border-color: var(--el-color-primary);
+  color: var(--el-color-primary);
+}
+.mtscos-btn.is-primary {
+  background: var(--el-color-primary);
+  color: #fff;
+}
+.mtscos-btn.is-success {
+  background: var(--el-color-success);
+  color: #fff;
+}
+.mtscos-btn.is-warning {
+  background: var(--el-color-warning);
+  color: #fff;
+}
+.mtscos-btn.is-danger {
+  background: var(--el-color-danger);
+  color: #fff;
+}
+.mtscos-btn.is-info {
+  background: var(--el-color-info);
+  color: #fff;
+}
+.mtscos-btn.is-brand {
+  background: var(--mtscos-brand-color, #00979d);
+  color: #fff;
+}
+.mtscos-btn.is-sm { padding: 4px 10px; height: 26px; font-size: 12px; }
+.mtscos-btn.is-lg { padding: 10px 22px; height: 40px; font-size: 15px; }
+
+/* ============================================================================
+ * §6 EXCEPTION 异常页
+ *    404/403/500 hero + 重试按钮
+ * ============================================================================ */
+.mtscos-content[data-page-type="exception"] {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: calc(100vh - var(--adp-header-height));
+}
+.mtscos-exception-hero {
+  text-align: center;
+  max-width: 480px;
+  padding: var(--adp-space-10) var(--adp-space-6);
+}
+.mtscos-exception-code {
+  font-size: 96px;
+  font-weight: var(--el-font-weight-bold, 700);
+  line-height: 1;
+  background: linear-gradient(135deg, var(--el-color-primary), var(--el-color-warning));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin-bottom: var(--adp-space-4);
+}
+.mtscos-exception-title {
+  font-size: var(--el-font-size-extra-large, 20px);
+  font-weight: var(--el-font-weight-primary, 600);
+  color: var(--el-text-color-primary);
+  margin-bottom: var(--adp-space-3);
+}
+.mtscos-exception-desc {
+  color: var(--el-text-color-secondary);
+  font-size: var(--el-font-size-base, 14px);
+  line-height: 1.6;
+  margin-bottom: var(--adp-space-6);
+}
+.mtscos-exception-actions {
+  display: flex;
+  justify-content: center;
+  gap: var(--adp-space-3);
+}
+
+/* 异常态色码 */
+.mtscos-exception-hero[data-code="403"] .mtscos-exception-code {
+  background: linear-gradient(135deg, var(--el-color-warning), var(--el-color-danger));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.mtscos-exception-hero[data-code="500"] .mtscos-exception-code {
+  background: linear-gradient(135deg, var(--el-color-danger), var(--el-color-info));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* ============================================================================
+ * §7 通用页面元素
+ * ============================================================================ */
+
+/* 空状态 */
+.mtscos-empty {
+  text-align: center;
+  padding: var(--adp-space-12) var(--adp-space-6);
+  color: var(--el-text-color-secondary);
+}
+.mtscos-empty-icon {
+  font-size: 64px;
+  margin-bottom: var(--adp-space-4);
+  opacity: 0.4;
+}
+.mtscos-empty-text {
+  font-size: var(--el-font-size-base, 14px);
+  margin-bottom: var(--adp-space-4);
+}
+
+/* 加载骨架屏 */
+.mtscos-skeleton-line {
+  height: 14px;
+  background: linear-gradient(90deg,
+    var(--el-fill-color-light) 25%,
+    var(--el-fill-color) 50%,
+    var(--el-fill-color-light) 75%);
+  background-size: 200% 100%;
+  border-radius: var(--adp-radius-sm);
+  animation: mtscos-skeleton-shimmer 1.5s ease infinite;
+  margin-bottom: var(--adp-space-3);
+}
+@keyframes mtscos-skeleton-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* 状态徽章 */
+.mtscos-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px var(--adp-space-2);
+  height: 22px;
+  border-radius: var(--adp-radius-pill);
+  font-size: var(--el-font-size-extra-small, 12px);
+  font-weight: var(--el-font-weight-primary, 600);
+}
+.mtscos-status-badge::before {
+  content: '';
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.mtscos-status-badge[data-status="success"] {
+  color: var(--el-color-success);
+  background: var(--el-color-success-light-9);
+}
+.mtscos-status-badge[data-status="warning"] {
+  color: var(--el-color-warning);
+  background: var(--el-color-warning-light-9);
+}
+.mtscos-status-badge[data-status="danger"] {
+  color: var(--el-color-danger);
+  background: var(--el-color-danger-light-9);
+}
+.mtscos-status-badge[data-status="info"] {
+  color: var(--el-color-info);
+  background: var(--el-color-info-light-9);
+}
+
+/* ============================================================================
+ * §8 暗色主题适配
+ * ============================================================================ */
+[data-theme="dark"] .mtscos-kpi-card,
+[data-theme="dark"] .mtscos-chart-card,
+[data-theme="dark"] .mtscos-filter-bar,
+[data-theme="dark"] .mtscos-table-wrapper,
+[data-theme="dark"] .mtscos-form-section,
+[data-theme="dark"] .mtscos-desc-list,
+[data-theme="dark"] .mtscos-action-bar,
+[data-theme="dark"] .mtscos-ide-toolbar,
+[data-theme="dark"] .mtscos-ide-pane,
+[data-theme="dark"] .mtscos-ide-code,
+[data-theme="dark"] .mtscos-ide-output,
+[data-theme="dark"] .mtscos-dialog,
+[data-theme="dark"] .mtscos-chart-grid > .mtscos-chart-card {
+  background: var(--el-bg-color-overlay);
+  border-color: var(--el-border-color);
+}
+[data-theme="dark"] .mtscos-table thead {
+  background: var(--el-fill-color);
+}
+[data-theme="dark"] .mtscos-ide-sidebar,
+[data-theme="dark"] .mtscos-ide-terminal,
+[data-theme="dark"] .mtscos-ide-pane-header,
+[data-theme="dark"] .mtscos-ide-pane-status,
+[data-theme="dark"] .mtscos-ide-tabs,
+[data-theme="dark"] .mtscos-ide-split,
+[data-theme="dark"] .mtscos-dialog-footer,
+[data-theme="dark"] .mtscos-ide-workbench {
+  background: rgba(15, 23, 42, 0.6);
+}
+[data-theme="dark"] .mtscos-exception-code {
+  opacity: 0.9;
+}
+[data-theme="dark"] .mtscos-dialog {
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+[data-theme="dark"] .mtscos-ide-split {
+  background: var(--el-border-color-darker, #4c4d4f);
+}
+[data-theme="dark"] .mtscos-btn.is-default {
+  background: var(--el-bg-color-page);
+}
+
+/* ============================================================================
+ * §9 动效降级
+ * ============================================================================ */
+@media (prefers-reduced-motion: reduce) {
+  .mtscos-kpi-card,
+  .mtscos-chart-card,
+  .mtscos-activity-item,
+  .mtscos-pagination-btn,
+  .mtscos-table tbody tr,
+  .mtscos-canvas-toolbar-btn,
+  .mtscos-btn,
+  .mtscos-ide-tab,
+  .mtscos-dialog,
+  .mtscos-dialog-overlay {
+    transition: none !important;
+  }
+  .mtscos-kpi-card:hover,
+  .mtscos-btn:hover,
+  .mtscos-chart-card:hover { transform: none !important; }
+  .mtscos-skeleton-line { animation: none !important; }
+  .mtscos-status-badge::before { animation: none !important; }
+  .mtscos-ide-led.is-on { animation: none !important; }
+  .mtscos-dialog { animation: none !important; }
+  .mtscos-dialog-overlay { animation: none !important; }
+  .mtscos-stagger > * { animation: none !important; opacity: 1 !important; transform: none !important; }
+  .adp-slide-up { animation: none !important; opacity: 1 !important; transform: none !important; }
+  .mtscos-stagger-in,
+  .adp-slide-up-in-key { animation: none !important; }
+  .mtscos-hb.is-online { animation: none !important; }
+}
+
+/* ============================================================================
+ * §10 通用工具类 & EigenFlux 专家中心配套
+ * ============================================================================ */
+
+/* ---------- 按钮: secondary 别名 (等价 default 语义, 更柔和) ---------- */
+.mtscos-btn.is-secondary {
+  background: var(--el-bg-color);
+  border-color: var(--el-border-color, #dcdfe6);
+  color: var(--el-text-color-regular);
+}
+.mtscos-btn.is-secondary:hover {
+  border-color: var(--el-color-primary);
+  color: var(--el-color-primary);
+}
+
+/* ---------- 宽度工具 ---------- */
+.mtscos-w-48  { width: 48px !important; }
+.mtscos-w-100 { width: 100px !important; }
+.mtscos-w-110 { width: 110px !important; }
+.mtscos-w-140 { width: 140px !important; }
+.mtscos-w-160 { width: 160px !important; }
+.mtscos-w-180 { width: 180px !important; }
+.mtscos-w-320 { width: 320px !important; }
+.mtscos-w-560 { max-width: 560px; }
+
+/* ---------- 文本对齐工具 ---------- */
+.mtscos-text-left   { text-align: left !important; }
+.mtscos-text-center { text-align: center !important; }
+.mtscos-text-right  { text-align: right !important; }
+
+/* ---------- 单行省略 ---------- */
+.mtscos-ellipsis {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ---------- 次要辅助行 (action-bar 中的副标题说明) ---------- */
+.mtscos-caption {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--el-text-color-secondary);
+  margin-left: 8px;
+  display: inline-block;
+}
+
+/* ---------- 下划线标签页 (LIST 通用) ---------- */
+.mtscos-underline-tabs {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  border-bottom: 2px solid var(--el-border-color-lighter);
+  margin-bottom: var(--adp-space-4);
+  overflow-x: auto;
+}
+.mtscos-underline-tab {
+  padding: var(--adp-space-3) var(--adp-space-5);
+  color: var(--el-text-color-secondary);
+  font-size: var(--el-font-size-base, 14px);
+  cursor: pointer;
+  white-space: nowrap;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  transition: var(--adp-transition-colors), border-color var(--adp-duration-fast) var(--adp-ease-out);
+}
+.mtscos-underline-tab:hover { color: var(--el-text-color-primary); }
+.mtscos-underline-tab.is-active {
+  color: var(--el-color-primary);
+  border-bottom-color: var(--el-color-primary);
+  font-weight: var(--el-font-weight-primary, 600);
+}
+
+/* ---------- 心跳点 (EigenFlux/AI 员工在线指示) ---------- */
+@keyframes adp-pulse-soft {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%      { opacity: 0.6; transform: scale(0.85); }
+}
+.mtscos-hb {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+  background: var(--el-color-danger);
+}
+.mtscos-hb.is-online {
+  background: var(--el-color-success);
+  animation: adp-pulse-soft 2s var(--adp-ease-in-out) infinite;
+}
+
+/* ---------- stagger 序列动画: 根据子元素位置自动分配延迟 (替代内联 animation-delay) ---------- */
+.mtscos-stagger > *:nth-child(1) { animation-delay: 0.02s; }
+.mtscos-stagger > *:nth-child(2) { animation-delay: 0.08s; }
+.mtscos-stagger > *:nth-child(3) { animation-delay: 0.14s; }
+.mtscos-stagger > *:nth-child(4) { animation-delay: 0.20s; }
+.mtscos-stagger > *:nth-child(5) { animation-delay: 0.26s; }
+.mtscos-stagger > *:nth-child(6) { animation-delay: 0.32s; }
+.mtscos-stagger > *:nth-child(7) { animation-delay: 0.38s; }
+.mtscos-stagger > *:nth-child(8) { animation-delay: 0.44s; }
+.mtscos-stagger > *:nth-child(n+9) { animation-delay: 0.50s; }
+
+/* adp-slide-up 的整段延迟标记 (用于容器级错开) */
+.adp-slide-up[data-delay="1"] { animation-delay: 0.10s; }
+.adp-slide-up[data-delay="2"] { animation-delay: 0.22s; }
+.adp-slide-up[data-delay="3"] { animation-delay: 0.26s; }
+.adp-slide-up[data-delay="4"] { animation-delay: 0.30s; }
+
+/* ---------- 进度条组件 (协作任务/学习进度等) ---------- */
+.mtscos-progress {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.mtscos-progress-track {
+  flex: 1;
+  height: 6px;
+  background: var(--el-fill-color-light);
+  border-radius: 9999px;
+  overflow: hidden;
+}
+.mtscos-progress-fill {
+  height: 100%;
+  background: var(--el-color-primary);
+  border-radius: 9999px;
+  transition: width var(--adp-duration-base) var(--adp-ease-out);
+}
+.mtscos-progress-text {
+  font-size: 12px;
+  color: var(--el-text-color-secondary);
+  min-width: 36px;
+  text-align: right;
+}
+
+/* ---------- 空行/占位符文字 (表格内空态) ---------- */
+.mtscos-placeholder {
+  color: var(--el-text-color-placeholder);
+}
+
+/* ---------- 表格列宽类 (语义化替代 th/td 内联 width) ---------- */
+.mtscos-col-w48  { width: 48px; }
+.mtscos-col-w100 { width: 100px; }
+.mtscos-col-w110 { width: 110px; }
+.mtscos-col-w120 { width: 120px; }
+.mtscos-col-w140 { width: 140px; }
+.mtscos-col-w160 { width: 160px; }
+.mtscos-col-w180 { width: 180px; }

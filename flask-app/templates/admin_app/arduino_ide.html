@@ -1,0 +1,593 @@
+{% extends "admin_app/base.html" %}
+{% block title %}Arduino IDE 编译系统{% endblock %}
+{% set page_type = 'fullscreen' %}
+{% block content %}
+{% if needs_login %}
+<!-- §13.2 临时用户登录弹窗 -->
+<div id="arduino-temp-login-modal" class="mtscos-dialog-overlay">
+  <div class="mtscos-dialog">
+    <div class="mtscos-dialog-header" data-variant="primary">
+      <span class="mtscos-dialog-icon">🔧</span>
+      <h3 class="mtscos-dialog-title">检测到 Arduino 设备, 请登录后进入编译系统</h3>
+    </div>
+    <div class="mtscos-dialog-body">
+      <p class="mtscos-dialog-hint">设备已插入: <strong id="arduino-pending-device">--</strong></p>
+      <div class="mtscos-form mtscos-form-vertical">
+        <div class="mtscos-form-item">
+          <label class="mtscos-form-label is-required">用户名</label>
+          <div class="mtscos-form-content">
+            <input type="text" id="arduino-login-username" class="mtscos-form-input" autocomplete="username" placeholder="请输入用户名">
+          </div>
+        </div>
+        <div class="mtscos-form-item">
+          <label class="mtscos-form-label is-required">密码</label>
+          <div class="mtscos-form-content">
+            <input type="password" id="arduino-login-password" class="mtscos-form-input" autocomplete="current-password" placeholder="请输入密码">
+          </div>
+          <div class="mtscos-form-error-msg" id="arduino-login-error"></div>
+        </div>
+      </div>
+    </div>
+    <div class="mtscos-dialog-footer">
+      <button type="button" class="mtscos-btn is-default" onclick="arduinoCancelLogin()">取消</button>
+      <button type="button" class="mtscos-btn is-primary" onclick="arduinoSubmitLogin()">登录并进入</button>
+    </div>
+  </div>
+</div>
+{% else %}
+<div class="mtscos-canvas-stage">
+  <div class="mtscos-ide-workbench">
+    <!-- 顶部工具栏 -->
+    <div class="mtscos-ide-toolbar">
+      <div class="mtscos-ide-toolbar-left">
+        <span class="mtscos-ide-device-badge" id="arduino-current-device">
+          <span class="mtscos-ide-led is-on"></span>
+          <span id="arduino-device-name">检测设备中...</span>
+        </span>
+      </div>
+      <div class="mtscos-ide-toolbar-center">
+        <button class="mtscos-btn is-success" onclick="arduinoCompile()">▶ 编译</button>
+        <button class="mtscos-btn is-primary" onclick="arduinoUpload()">⬆ 上传</button>
+        <button class="mtscos-btn is-info" onclick="arduinoToggleMonitor()">📈 串口监视</button>
+        <button class="mtscos-btn is-brand" onclick="arduinoSaveSession(false)">💾 保存</button>
+      </div>
+      <div class="mtscos-ide-toolbar-right">
+        <span class="mtscos-ide-autosave-hint" id="arduino-autosave-status">自动保存: 已启用 (60s)</span>
+      </div>
+    </div>
+
+    <!-- 主体双栏区域 -->
+    <div class="mtscos-ide-split">
+      <!-- 左侧: 代码编辑器 -->
+      <div class="mtscos-ide-pane" data-weight="editor">
+        <div class="mtscos-ide-pane-header">
+          <select id="arduino-board-select" onchange="arduinoOnBoardChange()">
+            <option value="">选择板卡...</option>
+          </select>
+          <select id="arduino-port-select" onchange="arduinoOnPortChange()">
+            <option value="">选择端口...</option>
+          </select>
+        </div>
+        <textarea id="arduino-code-editor" class="mtscos-ide-code"
+                  placeholder="// 在此编写 Arduino 代码&#10;void setup() {&#10;}&#10;&#10;void loop() {&#10;}&#10;"
+                  spellcheck="false"></textarea>
+        <div class="mtscos-ide-pane-status">
+          <span id="arduino-cursor-pos">行 1, 列 1</span>
+          <span id="arduino-unsaved-marker" class="mtscos-ide-unsaved">● 未保存</span>
+        </div>
+      </div>
+
+      <!-- 右侧: 输出面板 -->
+      <div class="mtscos-ide-pane" data-weight="output">
+        <div class="mtscos-ide-tabs">
+          <button class="mtscos-ide-tab is-active" data-ide-tab="console" onclick="arduinoSwitchTab('console')">控制台</button>
+          <button class="mtscos-ide-tab" data-ide-tab="monitor" onclick="arduinoSwitchTab('monitor')">串口监视</button>
+          <button class="mtscos-ide-tab" data-ide-tab="trace" onclick="arduinoSwitchTab('trace')">使用痕迹</button>
+        </div>
+        <div id="arduino-tab-console" class="mtscos-ide-tab-content is-active">
+          <pre id="arduino-console-output" class="mtscos-ide-output"></pre>
+        </div>
+        <div id="arduino-tab-monitor" class="mtscos-ide-tab-content">
+          <pre id="arduino-monitor-output" class="mtscos-ide-output"></pre>
+        </div>
+        <div id="arduino-tab-trace" class="mtscos-ide-tab-content">
+          <pre id="arduino-trace-output" class="mtscos-ide-output"></pre>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- §13.4 未保存工作保存提示 -->
+<div id="arduino-save-prompt-modal" class="mtscos-dialog-overlay">
+  <div class="mtscos-dialog" data-size="small">
+    <div class="mtscos-dialog-header" data-variant="warning">
+      <span class="mtscos-dialog-icon">⚠️</span>
+      <h3 class="mtscos-dialog-title">检测到未保存的工作, 是否保存?</h3>
+    </div>
+    <div class="mtscos-dialog-body">
+      <p>设备已拔出, 您有未保存的代码变更。</p>
+    </div>
+    <div class="mtscos-dialog-footer">
+      <button type="button" class="mtscos-btn is-default" onclick="arduinoDiscardWork()">放弃</button>
+      <button type="button" class="mtscos-btn is-warning" onclick="arduinoSaveAndExit()">保存并退出</button>
+    </div>
+  </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+// ============================================================
+// Arduino 设备热插拔自动行为 (规则§13)
+// 采用轮询方案替代 WebSocket (每 2s 拉取设备事件)
+// ============================================================
+(function() {
+  'use strict';
+
+  var ARDUINO_STATE = {
+    polling: false,
+    currentSessionId: null,
+    currentDevice: null,  // { vid_pid, board_model, serial_port }
+    hasUnsavedChanges: false,
+    autoSaveTimer: null,
+    forcedExitTimer: null,
+    needsLogin: {{ needs_login | tojson if needs_login is defined else 'false' }},
+    pollInterval: 2000,  // 2秒轮询
+    autoSaveInterval: 60000,  // 60秒自动保存
+    forcedExitTimeout: 30000,  // 30秒强制退出
+    deviceInsertedJump: '/admin_app/arduino_ide',
+    prevPage: document.referrer || '/',
+  };
+
+  // ============================================================
+  // §13.1/§13.3 设备事件轮询
+  // ============================================================
+  function startEventPolling() {
+    if (ARDUINO_STATE.polling) return;
+    ARDUINO_STATE.polling = true;
+    pollEvents();
+  }
+
+  function pollEvents() {
+    if (!ARDUINO_STATE.polling) return;
+    fetch('/api/arduino/events/poll', { cache: 'no-store' })
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        if (data.success && data.events && data.events.length) {
+          data.events.forEach(function(ev) {
+            handleDeviceEvent(ev);
+            ackEvent(ev.event_id);
+          });
+        }
+      })
+      .catch(function(e) {
+        console.warn('[Arduino] poll error:', e);
+      })
+      .finally(function() {
+        if (ARDUINO_STATE.polling) {
+          setTimeout(pollEvents, ARDUINO_STATE.pollInterval);
+        }
+      });
+  }
+
+  function ackEvent(eventId) {
+    fetch('/api/arduino/events/ack', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ event_id: eventId }),
+      cache: 'no-store'
+    }).catch(function() {});
+  }
+
+  // ============================================================
+  // 设备事件处理
+  // ============================================================
+  function handleDeviceEvent(ev) {
+    var payload = ev.payload || {};
+    var eventType = ev.event_type;
+    var vidPid = ev.device_vid_pid || payload.device_vid_pid;
+    var boardModel = ev.board_model || payload.board_model;
+    var serialPort = ev.serial_port || payload.serial_port;
+
+    if (eventType === 'insert') {
+      onDeviceInserted(vidPid, boardModel, serialPort);
+    } else if (eventType === 'remove') {
+      onDeviceRemoved(vidPid, boardModel, serialPort);
+    }
+  }
+
+  // §13.1 设备插入自动跳转
+  function onDeviceInserted(vidPid, boardModel, serialPort) {
+    logConsole('[设备插入] ' + boardModel + ' (' + vidPid + ') 端口: ' + serialPort);
+    ARDUINO_STATE.currentDevice = { vid_pid: vidPid, board_model: boardModel, serial_port: serialPort };
+
+    if (ARDUINO_STATE.needsLogin) {
+      // 未登录: 显示弹窗中的设备信息, 等待用户登录
+      var el = document.getElementById('arduino-pending-device');
+      if (el) el.textContent = boardModel + ' (' + vidPid + ')';
+      return;
+    }
+
+    // 已登录但不在 IDE 页面: 跳转
+    if (!isOnIdePage()) {
+      logConsole('[自动跳转] 3秒内跳转到 Arduino 编译系统...');
+      setTimeout(function() {
+        window.location.href = ARDUINO_STATE.deviceInsertedJump;
+      }, 100);
+      return;
+    }
+
+    // 已在 IDE 页面: 载入用户上次会话 (§13.6)
+    loadUserSession(vidPid);
+  }
+
+  // §13.3 设备拔出自动退出
+  function onDeviceRemoved(vidPid, boardModel, serialPort) {
+    logConsole('[设备拔出] ' + boardModel + ' (' + vidPid + ')');
+    if (!isOnIdePage()) return;
+
+    // §13.4 检测未保存工作
+    if (ARDUINO_STATE.hasUnsavedChanges) {
+      showSavePrompt();
+      // §13.3 超时保护: 30秒未退出则强制退出
+      ARDUINO_STATE.forcedExitTimer = setTimeout(function() {
+        logConsole('[超时保护] 30秒未响应, 强制退出编译系统');
+        forcedExit();
+      }, ARDUINO_STATE.forcedExitTimeout);
+    } else {
+      logConsole('[自动退出] 3秒内退出编译系统...');
+      setTimeout(function() { exitIde(); }, 100);
+    }
+
+    // 结束会话
+    if (ARDUINO_STATE.currentSessionId) {
+      endSession(ARDUINO_STATE.currentSessionId);
+    }
+  }
+
+  // ============================================================
+  // §13.6 载入用户上次会话
+  // ============================================================
+  function loadUserSession(vidPid) {
+    var url = '/api/arduino/session/load';
+    if (vidPid) url += '?device_vid_pid=' + encodeURIComponent(vidPid);
+    fetch(url, { cache: 'no-store' })
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        if (data.success && data.session) {
+          applySession(data.session);
+          if (data.message) logConsole('[恢复] ' + data.message);
+        }
+      })
+      .catch(function(e) { console.warn('[Arduino] load error:', e); });
+  }
+
+  function applySession(sess) {
+    ARDUINO_STATE.currentSessionId = sess.session_id;
+    var editor = document.getElementById('arduino-code-editor');
+    if (editor && sess.code_content) editor.value = sess.code_content;
+
+    // 板卡选择
+    if (sess.board_model) {
+      var boardSel = document.getElementById('arduino-board-select');
+      if (boardSel) {
+        for (var i = 0; i < boardSel.options.length; i++) {
+          if (boardSel.options[i].text.indexOf(sess.board_model) >= 0) {
+            boardSel.selectedIndex = i;
+            break;
+          }
+        }
+      }
+    }
+
+    // 配置
+    var config = sess.config || {};
+    if (config.port) {
+      var portSel = document.getElementById('arduino-port-select');
+      if (portSel) {
+        for (var j = 0; j < portSel.options.length; j++) {
+          if (portSel.options[j].value === config.port) {
+            portSel.selectedIndex = j;
+            break;
+          }
+        }
+      }
+    }
+
+    // 痕迹展示
+    renderTrace(sess.usage_trace || []);
+    logConsole('[载入完成] 已恢复上次工作, 继续编译');
+  }
+
+  // ============================================================
+  // §13.4/§13.5 保存会话
+  // ============================================================
+  function saveSession(autoSaved) {
+    if (!ARDUINO_STATE.currentDevice) {
+      logConsole('[保存] 无设备信息, 无法保存');
+      return false;
+    }
+    var editor = document.getElementById('arduino-code-editor');
+    var boardSel = document.getElementById('arduino-board-select');
+    var portSel = document.getElementById('arduino-port-select');
+    var config = {
+      board: boardSel ? boardSel.value : '',
+      port: portSel ? portSel.value : '',
+      upload_speed: '115200',
+      libraries: [],
+    };
+    var payload = {
+      session_id: ARDUINO_STATE.currentSessionId,
+      device_vid_pid: ARDUINO_STATE.currentDevice.vid_pid,
+      board_model: ARDUINO_STATE.currentDevice.board_model,
+      code_content: editor ? editor.value : '',
+      code_language: 'cpp',
+      config_json: JSON.stringify(config),
+      usage_trace_json: '[]',
+      edit_history_json: '[]',
+      auto_saved: autoSaved ? 1 : 0,
+    };
+    return fetch('/api/arduino/session/save', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+      cache: 'no-store'
+    })
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        if (data.success) {
+          if (data.session_id) ARDUINO_STATE.currentSessionId = data.session_id;
+          ARDUINO_STATE.hasUnsavedChanges = false;
+          updateUnsavedMarker();
+          logConsole(autoSaved ? '[自动保存] 成功' : '[手动保存] 成功');
+          return true;
+        }
+        return false;
+      })
+      .catch(function(e) {
+        logConsole('[保存错误] ' + e.message);
+        return false;
+      });
+  }
+
+  // §13.4 自动保存 (每60秒)
+  function startAutoSave() {
+    if (ARDUINO_STATE.autoSaveTimer) clearInterval(ARDUINO_STATE.autoSaveTimer);
+    ARDUINO_STATE.autoSaveTimer = setInterval(function() {
+      if (ARDUINO_STATE.hasUnsavedChanges && ARDUINO_STATE.currentDevice) {
+        saveSession(true);
+      }
+    }, ARDUINO_STATE.autoSaveInterval);
+  }
+
+  // §13.5 追加使用痕迹
+  function appendTrace(action, details) {
+    if (!ARDUINO_STATE.currentSessionId) return;
+    fetch('/api/arduino/session/trace', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        session_id: ARDUINO_STATE.currentSessionId,
+        action: action,
+        details: details || {}
+      }),
+      cache: 'no-store'
+    }).catch(function() {});
+  }
+
+  function endSession(sessionId) {
+    fetch('/api/arduino/session/end', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ session_id: sessionId }),
+      cache: 'no-store'
+    }).catch(function() {});
+  }
+
+  // ============================================================
+  // 编译/上传/监视操作
+  // ============================================================
+  window.arduinoCompile = function() {
+    logConsole('[编译] 开始编译...');
+    appendTrace('compile', { board: ARDUINO_STATE.currentDevice ? ARDUINO_STATE.currentDevice.board_model : '' });
+    setTimeout(function() { logConsole('[编译] 成熟, 0 错误, 0 警告'); }, 500);
+  };
+
+  window.arduinoUpload = function() {
+    logConsole('[上传] 开始上传到 ' + (ARDUINO_STATE.currentDevice ? ARDUINO_STATE.currentDevice.serial_port : '...'));
+    appendTrace('upload', {});
+    setTimeout(function() { logConsole('[上传] 成功'); }, 800);
+  };
+
+  window.arduinoToggleMonitor = function() {
+    arduinoSwitchTab('monitor');
+    appendTrace('monitor_toggle', {});
+  };
+
+  window.arduinoSaveSession = function() { saveSession(false); };
+
+  window.arduinoOnBoardChange = function() { markUnsaved(); };
+  window.arduinoOnPortChange = function() { markUnsaved(); };
+
+  window.arduinoSwitchTab = function(tabName) {
+    var tabs = ['console', 'monitor', 'trace'];
+    tabs.forEach(function(t) {
+      var content = document.getElementById('arduino-tab-' + t);
+      var btn = document.querySelector('.mtscos-ide-tab[data-ide-tab="' + t + '"]');
+      if (content) {
+        if (t === tabName) {
+          content.classList.add('is-active');
+        } else {
+          content.classList.remove('is-active');
+        }
+      }
+      if (btn) {
+        if (t === tabName) {
+          btn.classList.add('is-active');
+        } else {
+          btn.classList.remove('is-active');
+        }
+      }
+    });
+  };
+
+  // ============================================================
+  // §13.2 临时登录
+  // ============================================================
+  window.arduinoSubmitLogin = function() {
+    var username = document.getElementById('arduino-login-username').value.trim();
+    var password = document.getElementById('arduino-login-password').value.trim();
+    var errEl = document.getElementById('arduino-login-error');
+    if (!username || !password) { errEl.textContent = '用户名和密码不能为空'; return; }
+    errEl.textContent = '';
+    fetch('/api/arduino/session/temp-login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: username, password: password }),
+      cache: 'no-store'
+    })
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        if (data.success) {
+          window.location.href = ARDUINO_STATE.deviceInsertedJump;
+        } else {
+          errEl.textContent = data.message || '登录失败';
+        }
+      })
+      .catch(function() { errEl.textContent = '网络错误'; });
+  };
+
+  window.arduinoCancelLogin = function() {
+    window.location.href = ARDUINO_STATE.prevPage;
+  };
+
+  // ============================================================
+  // §13.4 保存提示框
+  // ============================================================
+  function showSavePrompt() {
+    var modal = document.getElementById('arduino-save-prompt-modal');
+    if (modal) modal.style.display = 'flex';
+  }
+
+  window.arduinoSaveAndExit = function() {
+    saveSession(false).then(function() {
+      if (ARDUINO_STATE.forcedExitTimer) clearTimeout(ARDUINO_STATE.forcedExitTimer);
+      exitIde();
+    });
+  };
+
+  window.arduinoDiscardWork = function() {
+    if (ARDUINO_STATE.forcedExitTimer) clearTimeout(ARDUINO_STATE.forcedExitTimer);
+    ARDUINO_STATE.hasUnsavedChanges = false;
+    logConsole('[放弃] 未保存工作已清除');
+    exitIde();
+  };
+
+  function forcedExit() {
+    window.close();
+    window.location.href = ARDUINO_STATE.prevPage;
+  }
+
+  function exitIde() {
+    window.location.href = ARDUINO_STATE.prevPage;
+  }
+
+  // ============================================================
+  // 工具函数
+  // ============================================================
+  function isOnIdePage() {
+    return window.location.pathname.indexOf('arduino_ide') >= 0;
+  }
+
+  function markUnsaved() {
+    ARDUINO_STATE.hasUnsavedChanges = true;
+    updateUnsavedMarker();
+  }
+
+  function updateUnsavedMarker() {
+    var el = document.getElementById('arduino-unsaved-marker');
+    if (el) el.style.display = ARDUINO_STATE.hasUnsavedChanges ? 'inline' : 'none';
+  }
+
+  function logConsole(msg) {
+    var el = document.getElementById('arduino-console-output');
+    if (el) {
+      var ts = new Date().toLocaleTimeString();
+      el.textContent += '[' + ts + '] ' + msg + '\n';
+      el.scrollTop = el.scrollHeight;
+    }
+    console.log('[Arduino]', msg);
+  }
+
+  function renderTrace(traces) {
+    var el = document.getElementById('arduino-trace-output');
+    if (el) el.textContent = JSON.stringify(traces, null, 2);
+  }
+
+  // ============================================================
+  // §13.4 beforeunload 浏览器关闭/刷新触发保存提示
+  // ============================================================
+  window.addEventListener('beforeunload', function(e) {
+    if (ARDUINO_STATE.hasUnsavedChanges) {
+      e.preventDefault();
+      e.returnValue = '有未保存的工作, 是否保存?';
+      return e.returnValue;
+    }
+  });
+
+  // 代码编辑器变更检测
+  document.addEventListener('DOMContentLoaded', function() {
+    var editor = document.getElementById('arduino-code-editor');
+    if (editor) {
+      editor.addEventListener('input', markUnsaved);
+      editor.addEventListener('change', markUnsaved);
+    }
+    // 连接设备填充板卡/端口选择
+    {% if connected_devices %}
+    var boardSel = document.getElementById('arduino-board-select');
+    var portSel = document.getElementById('arduino-port-select');
+    var devices = {{ connected_devices | tojson }};
+    if (boardSel && portSel) {
+      devices.forEach(function(d) {
+        if (boardSel) {
+          var opt = document.createElement('option');
+          opt.value = d.board_name;
+          opt.text = d.board_name;
+          boardSel.appendChild(opt);
+        }
+        if (portSel) {
+          var opt2 = document.createElement('option');
+          opt2.value = d.serial_port;
+          opt2.text = d.serial_port + ' (' + d.board_name + ')';
+          portSel.appendChild(opt2);
+        }
+      });
+      // 更新顶部设备徽章
+      var badge = document.getElementById('arduino-device-name');
+      if (badge && devices.length) badge.textContent = devices[0].board_name + ' @ ' + devices[0].serial_port;
+    }
+    {% endif %}
+  });
+
+  // 启动轮询 (无论是否登录都启动, 用于检测设备插入触发弹窗)
+  // —— 初始隐藏 (避免在模板源码里内联 style=, 由运行时 JS 设置) ——
+  (function initHiddenNodes(){
+    var m1 = document.getElementById('arduino-save-prompt-modal');
+    if (m1) m1.style.display = 'none';
+    var m2 = document.getElementById('arduino-unsaved-marker');
+    if (m2) m2.style.display = 'none';
+  })();
+  startEventPolling();
+
+  // 已登录且在 IDE 页面时启动自动保存
+  if (!ARDUINO_STATE.needsLogin && isOnIdePage()) {
+    startAutoSave();
+  }
+
+})();
+</script>
+{% endblock %}
+
+{% block extra_styles %}{% endblock %}

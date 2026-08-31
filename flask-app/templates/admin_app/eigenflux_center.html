@@ -1,0 +1,317 @@
+{# EigenFlux 专家中心 — Art Design Pro LIST 页面样式套用 (flow_frontend_refactor_20260831_145440) #}
+{# 页面类型: LIST · 套 mtscos_pages.css §2 #}
+{% extends "admin_app/base.html" %}
+
+{% block title %}EigenFlux 专家中心 - MTSCOS AI{% endblock %}
+
+{# 通知 admin_app/base.html 本页类型 #}
+{% set page_type = 'list' %}
+{% set active_nav = 'eigenflux' %}
+
+{% block page_title %}EigenFlux 专家中心{% endblock %}
+
+{% block content %}
+{# --- 页面副标题 / 动作条 --- #}
+<div class="mtscos-action-bar adp-slide-up">
+  <div class="mtscos-action-bar-title">
+    🌐 EigenFlux 专家中心
+    <span class="mtscos-caption">
+      管理 {{ total_experts|default(0) }} 名 EigenFlux 注册专家 · 通信 · 协作 · 任务 · 心跳
+    </span>
+  </div>
+  <div class="mtscos-action-bar-actions">
+    <button class="mtscos-btn is-secondary is-sm" onclick="loadAllDatasets()">🔄 刷新全部</button>
+    <button class="mtscos-btn is-primary is-sm" onclick="alert('邀请功能待开发')">+ 邀请专家</button>
+  </div>
+</div>
+
+{# --- 4格 KPI 卡片 (mtscos_pages.css §DASHBOARD 复用) --- #}
+<div class="mtscos-kpi-grid mtscos-stagger">
+  <div class="mtscos-kpi-card" data-accent="primary">
+    <div class="mtscos-kpi-title">注册专家</div>
+    <div class="mtscos-kpi-value" id="stat-total">--</div>
+    <div class="mtscos-kpi-meta"><span class="mtscos-kpi-trend" data-up="true">累计</span></div>
+  </div>
+  <div class="mtscos-kpi-card" data-accent="success">
+    <div class="mtscos-kpi-title">在线活跃</div>
+    <div class="mtscos-kpi-value" id="stat-active">--</div>
+    <div class="mtscos-kpi-meta"><span class="mtscos-status-badge" data-status="success">LIVE</span></div>
+  </div>
+  <div class="mtscos-kpi-card" data-accent="info">
+    <div class="mtscos-kpi-title">消息总量</div>
+    <div class="mtscos-kpi-value" id="stat-msgs">--</div>
+    <div class="mtscos-kpi-meta"><span class="mtscos-text-secondary">5分钟前更新</span></div>
+  </div>
+  <div class="mtscos-kpi-card" data-accent="warning">
+    <div class="mtscos-kpi-title">协作任务</div>
+    <div class="mtscos-kpi-value" id="stat-tasks">--</div>
+    <div class="mtscos-kpi-meta"><span class="mtscos-kpi-trend" data-up="true">进行中</span></div>
+  </div>
+</div>
+
+{# --- 标签页切换 (通用下划线版) --- #}
+<div class="mtscos-underline-tabs adp-slide-up" data-delay="2" role="tablist">
+  <div class="mtscos-underline-tab is-active" role="tab" onclick="switchTab('experts', this)">专家列表</div>
+  <div class="mtscos-underline-tab" role="tab" onclick="switchTab('messages', this)">通信消息</div>
+  <div class="mtscos-underline-tab" role="tab" onclick="switchTab('tasks', this)">协作任务</div>
+  <div class="mtscos-underline-tab" role="tab" onclick="switchTab('teams', this)">专家团队</div>
+</div>
+
+{# --- TAB 1: 专家列表 (LIST 页: 筛选栏 + 表格包装) --- #}
+<div id="tab-experts" class="adp-slide-up" data-delay="3">
+  <div class="mtscos-filter-bar">
+    <div class="mtscos-filter-item">
+      <span class="mtscos-filter-label">搜索:</span>
+      <input type="text" id="ef-search-input" class="mtscos-form-input mtscos-w-320"
+             placeholder="搜索专家名称/ID/专长..." oninput="loadExperts()">
+    </div>
+    <div class="mtscos-filter-item">
+      <span class="mtscos-filter-label">状态:</span>
+      <select id="ef-filter-status" class="mtscos-form-select mtscos-w-140" onchange="loadExperts()">
+        <option value="">全部</option>
+        <option value="active">在线</option>
+        <option value="pending">待审核</option>
+        <option value="offline">离线</option>
+      </select>
+    </div>
+    <div class="mtscos-filter-actions">
+      <button class="mtscos-btn is-primary is-sm" onclick="loadExperts()">🔎 搜索</button>
+    </div>
+  </div>
+
+  <div class="mtscos-table-wrapper">
+    <table class="mtscos-table">
+      <thead>
+        <tr>
+          <th class="mtscos-col-w48">心跳</th>
+          <th>专家名称</th>
+          <th class="mtscos-col-w100">类型</th>
+          <th>EigenFlux ID</th>
+          <th class="mtscos-col-w110">消息收发</th>
+          <th class="mtscos-col-w100">状态</th>
+          <th class="mtscos-col-w180">最后心跳</th>
+          <th class="mtscos-col-w160 mtscos-text-right">操作</th>
+        </tr>
+      </thead>
+      <tbody id="experts-tbody">
+        <tr><td colspan="8" class="mtscos-text-center mtscos-placeholder">加载中...</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{# --- TAB 2: 通信消息 --- #}
+<div id="tab-messages" class="adp-slide-up" data-delay="4" hidden>
+  <div class="mtscos-table-wrapper">
+    <table class="mtscos-table">
+      <thead>
+        <tr>
+          <th class="mtscos-col-w180">时间</th>
+          <th class="mtscos-col-w140">发送方</th>
+          <th class="mtscos-col-w140">接收方</th>
+          <th>消息摘要</th>
+          <th class="mtscos-col-w110">类型</th>
+        </tr>
+      </thead>
+      <tbody id="messages-tbody">
+        <tr><td colspan="5" class="mtscos-text-center mtscos-placeholder">加载中...</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{# --- TAB 3: 协作任务 --- #}
+<div id="tab-tasks" class="adp-slide-up" hidden>
+  <div class="mtscos-table-wrapper">
+    <table class="mtscos-table">
+      <thead>
+        <tr>
+          <th class="mtscos-col-w110">任务ID</th>
+          <th>标题</th>
+          <th class="mtscos-col-w140">分配专家</th>
+          <th class="mtscos-col-w110">状态</th>
+          <th class="mtscos-col-w120">进度</th>
+          <th class="mtscos-col-w180">创建时间</th>
+        </tr>
+      </thead>
+      <tbody id="tasks-tbody">
+        <tr><td colspan="6" class="mtscos-text-center mtscos-placeholder">加载中...</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{# --- TAB 4: 专家团队 --- #}
+<div id="tab-teams" class="adp-slide-up" hidden>
+  <div class="mtscos-table-wrapper">
+    <table class="mtscos-table">
+      <thead>
+        <tr>
+          <th>专家</th>
+          <th class="mtscos-col-w140">角色</th>
+          <th class="mtscos-col-w110">专长</th>
+          <th>负责领域</th>
+          <th class="mtscos-col-w100">状态</th>
+        </tr>
+      </thead>
+      <tbody id="teams-tbody">
+        <tr><td colspan="5" class="mtscos-text-center mtscos-placeholder">加载中...</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+function switchTab(tab, el) {
+  document.querySelectorAll('.mtscos-underline-tab').forEach(t => t.classList.remove('is-active'));
+  if (el) el.classList.add('is-active');
+  ['experts','messages','tasks','teams'].forEach(t => {
+    const div = document.getElementById('tab-' + t);
+    if (!div) return;
+    if (t === tab) div.removeAttribute('hidden');
+    else div.setAttribute('hidden', '');
+  });
+  if (tab === 'experts') loadExperts();
+  if (tab === 'messages') loadMessages();
+  if (tab === 'tasks') loadTasks();
+  if (tab === 'teams') loadTeams();
+}
+
+function fmtTime(s) { return s ? String(s).substring(0, 19) : '--'; }
+
+/* 运行时应用进度条宽度 (data-value → element.style.width, 避免源码内联 style=) */
+function applyProgressFills(root /*:HTMLElement|Document*/) {
+  if (!root) root = document;
+  const nodes = root.querySelectorAll('.mtscos-progress-fill[data-value]');
+  for (let i = 0; i < nodes.length; i++) {
+    const v = Math.max(0, Math.min(100, parseFloat(nodes[i].getAttribute('data-value')) || 0));
+    nodes[i].style.width = v + '%';
+  }
+}
+
+function loadAllDatasets() { loadStats(); loadExperts(); loadMessages(); loadTasks(); loadTeams(); }
+
+async function loadStats() {
+  try {
+    const r = await fetch('/api/eigenflux/center_stats');
+    const d = await r.json();
+    if (d.success) {
+      const map = { total: d.total||0, active: d.active||0, msgs: d.messages||0, tasks: d.tasks||0 };
+      ['total','active','msgs','tasks'].forEach(k => {
+        const el = document.getElementById('stat-' + k);
+        if (el) el.textContent = map[k];
+      });
+    }
+  } catch(e) {}
+}
+
+async function loadExperts() {
+  const q = document.getElementById('ef-search-input')?.value || '';
+  const s = document.getElementById('ef-filter-status')?.value || '';
+  const tbody = document.getElementById('experts-tbody');
+  try {
+    const r = await fetch('/api/eigenflux/experts?q=' + encodeURIComponent(q) + '&status=' + encodeURIComponent(s));
+    const d = await r.json();
+    if (d.success && d.experts && d.experts.length > 0) {
+      tbody.innerHTML = d.experts.map(e => {
+        const st = e.registration_status || 'pending';
+        const hb = (st === 'active') ? 'is-online' : '';
+        const badgeClass = (st === 'active') ? 'success' : (st === 'pending' ? 'warning' : 'info');
+        return `<tr>
+          <td><span class="mtscos-hb ${hb}"></span></td>
+          <td><strong>${e.employee_name || '--'}</strong></td>
+          <td>${e.employee_type || '--'}</td>
+          <td><code>${e.eigenflux_employee_id || '--'}</code></td>
+          <td>↑${e.messages_sent||0} ↓${e.messages_received||0}</td>
+          <td><span class="mtscos-status-badge" data-status="${badgeClass}">${st}</span></td>
+          <td>${fmtTime(e.last_heartbeat)}</td>
+          <td class="mtscos-text-right">
+            <div class="mtscos-table-cell-actions">
+              <button onclick="alert('详情: ' + (e.eigenflux_employee_id||''))">详情</button>
+              <button class="is-danger" onclick="alert('移除: ' + (e.employee_name||''))">移除</button>
+            </div>
+          </td>
+        </tr>`;
+      }).join('');
+    } else {
+      tbody.innerHTML = `<tr><td colspan="8" class="mtscos-text-center mtscos-placeholder">无数据</td></tr>`;
+    }
+  } catch(e) {
+    if (tbody) tbody.innerHTML = `<tr><td colspan="8" class="mtscos-text-center mtscos-placeholder">加载失败</td></tr>`;
+  }
+}
+
+async function loadMessages() {
+  const tbody = document.getElementById('messages-tbody');
+  try {
+    const r = await fetch('/api/eigenflux/messages?limit=50');
+    const d = await r.json();
+    if (d.success && d.messages) {
+      tbody.innerHTML = d.messages.map(m => `<tr>
+        <td>${fmtTime(m.created_at)}</td><td>${m.sender||'--'}</td><td>${m.recipient||'--'}</td>
+        <td class="mtscos-w-560 mtscos-ellipsis">${(m.content||'').substring(0,80)}</td>
+        <td><span class="mtscos-status-badge" data-status="info">${m.message_type||'--'}</span></td>
+      </tr>`).join('');
+    } else { tbody.innerHTML = `<tr><td colspan="5" class="mtscos-text-center mtscos-placeholder">无消息</td></tr>`; }
+  } catch(e) {}
+}
+
+async function loadTasks() {
+  const tbody = document.getElementById('tasks-tbody');
+  try {
+    const r = await fetch('/api/eigenflux/tasks?limit=50');
+    const d = await r.json();
+    if (d.success && d.tasks) {
+      tbody.innerHTML = d.tasks.map(t => {
+        const done = t.status === 'completed';
+        const badgeClass = done ? 'success' : (t.status === 'failed' ? 'danger' : 'warning');
+        const progress = Math.max(0, Math.min(100, t.progress || 0));
+        return `<tr>
+          <td><code>${t.task_id||t.id||'--'}</code></td>
+          <td>${t.title||'--'}</td>
+          <td>${t.assigned_expert||'--'}</td>
+          <td><span class="mtscos-status-badge" data-status="${badgeClass}">${t.status||'--'}</span></td>
+          <td>
+            <div class="mtscos-progress">
+              <div class="mtscos-progress-track">
+                <div class="mtscos-progress-fill" data-value="${progress}"></div>
+              </div>
+              <span class="mtscos-progress-text">${progress}%</span>
+            </div>
+          </td>
+          <td>${fmtTime(t.created_at)}</td>
+        </tr>`;
+      }).join('');
+      applyProgressFills(tbody);
+    } else { tbody.innerHTML = `<tr><td colspan="6" class="mtscos-text-center mtscos-placeholder">无任务</td></tr>`; }
+  } catch(e) {}
+}
+
+async function loadTeams() {
+  const teams = [
+    {name:'架构升级分析师',role:'EigenFlux专家',specialty:'架构',domain:'系统架构升级评估'},
+    {name:'安全审计员',role:'EigenFlux专家',specialty:'安全',domain:'安全漏洞扫描与修复'},
+    {name:'DBA专家',role:'EigenFlux专家',specialty:'数据库',domain:'数据库优化与管理'},
+    {name:'运维工程师',role:'EigenFlux专家',specialty:'运维',domain:'系统运维与监控'},
+    {name:'前端工程师',role:'EigenFlux专家',specialty:'前端',domain:'前端开发与优化'},
+    {name:'后端工程师',role:'EigenFlux专家',specialty:'后端',domain:'后端开发与API'},
+    {name:'AI工程师',role:'EigenFlux专家',specialty:'AI',domain:'AI系统开发与优化'},
+    {name:'数据工程师',role:'EigenFlux专家',specialty:'数据',domain:'数据治理与分析'},
+    {name:'教育专家',role:'EigenFlux专家',specialty:'教育',domain:'教育内容与课程'},
+    {name:'IoT工程师',role:'EigenFlux专家',specialty:'IoT',domain:'Arduino与硬件'},
+    {name:'合规审计员',role:'EigenFlux专家',specialty:'合规',domain:'规则合规与审计'},
+    {name:'性能调优师',role:'EigenFlux专家',specialty:'性能',domain:'系统性能调优'},
+  ];
+  document.getElementById('teams-tbody').innerHTML = teams.map(t => `<tr>
+    <td><strong>${t.name}</strong></td>
+    <td><span class="mtscos-status-badge" data-status="info">${t.role}</span></td>
+    <td>${t.specialty}</td>
+    <td>${t.domain}</td>
+    <td><span class="mtscos-status-badge" data-status="success">在线</span></td>
+  </tr>`).join('');
+}
+
+loadStats();
+loadExperts();
+</script>
+{% endblock %}
