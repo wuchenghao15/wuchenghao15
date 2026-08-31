@@ -833,6 +833,13 @@ SYSTEM_REQUIRED_DAEMONS = [
         "inspect_cycle": 900,
     },
     {
+        "process_name": "sys_system_governance",
+        "duty": "系统治理与AI主动参与守护: 前端排版审计(占位符/权限缺口/重复导航/硬编码)+路由链路闭环+AI主动试探激发+EigenFlux广播技能提取入经验库+脑库投喂频次提升+团队重排建议(1200s轮巡,本地零token)",
+        "mount_source": "SYSTEM_REQ",
+        "work_body": "            # 系统治理与AI主动参与: 调用ai_system_governance_engine.py once\n            try:\n                import subprocess\n                engine_py = os.path.join(os.path.dirname(ENGINE_DIR), 'engines', 'ai_system_governance_engine.py')\n                r = subprocess.run([sys.executable, engine_py, 'once'],\n                    timeout=1140, capture_output=True, text=True)\n                if r.returncode == 0:\n                    _log('SYS-GOV: cycle done')\n                else:\n                    _log(f'SYS-GOV: cycle failed rc={r.returncode}')\n            except subprocess.TimeoutExpired:\n                _log('SYS-GOV: timeout (1140s)')\n            except Exception as e:\n                _log(f'SYS-GOV error: {e}')",
+        "inspect_cycle": 1200,
+    },
+    {
         "process_name": "sys_deep_inspection",
         "duty": "深度巡检守护: 页面/路由巡检+源代码逐行检查+AI团队路由+自动修复+全生命周期追踪",
         "mount_source": "SYSTEM_REQ",
