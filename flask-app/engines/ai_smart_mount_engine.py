@@ -819,6 +819,20 @@ SYSTEM_REQUIRED_DAEMONS = [
         "inspect_cycle": 1200,
     },
     {
+        "process_name": "sys_cognitive_synthesis",
+        "duty": "本地优先高维认知综合守护: 6渠道联想种子聚合(EigenFlux热度簇+9篇规则+建议池+前端TODO+本地推理gap+集群gap)→INNOVATION模拟磋商共识→6类高维产出(功能拓展/前端补齐/权限规则草案/认知AI员工雇佣/本地集合集群阵列拓扑注册/本地推理模板追加+token_savings首行)→4一致性VERIFY→落库投喂(1500s轮巡)",
+        "mount_source": "SYSTEM_REQ",
+        "work_body": "            # 本地优先高维认知综合: 调用ai_cognitive_synthesis_engine.py once\n            try:\n                import subprocess\n                engine_py = os.path.join(os.path.dirname(ENGINE_DIR), 'engines', 'ai_cognitive_synthesis_engine.py')\n                r = subprocess.run([sys.executable, engine_py, 'once'],\n                    timeout=1440, capture_output=True, text=True)\n                if r.returncode == 0:\n                    _log('COG-SYNTH: cycle done')\n                else:\n                    _log(f'COG-SYNTH: cycle failed rc={r.returncode}')\n            except subprocess.TimeoutExpired:\n                _log('COG-SYNTH: timeout (1440s)')\n            except Exception as e:\n                _log(f'COG-SYNTH error: {e}')",
+        "inspect_cycle": 1500,
+    },
+    {
+        "process_name": "sys_edu_thinking",
+        "duty": "教辅思维轮巡守护: 教育域种子4渠道聚合(母题题型×方法模板gap+EigenFlux教育热度+建议池教育项+教辅内容学科覆盖)→GAP_PROPOSAL模拟磋商共识→三类思维产出(邪修解题模型发觉与解析12模板CAP≤6含风险边界标注/巧思巧算解题思路讲解12法CAP≤6/母题分析挂接CAP≤8含变式分析A/B/C三层)→教辅同步建议ETH-*落池→3一致性VERIFY(风险边界/挂接双表/深度合法)→脑库投喂(900s轮巡,本地零token)",
+        "mount_source": "SYSTEM_REQ",
+        "work_body": "            # 教辅思维轮巡: 调用ai_edu_thinking_engine.py once\n            try:\n                import subprocess\n                engine_py = os.path.join(os.path.dirname(ENGINE_DIR), 'engines', 'ai_edu_thinking_engine.py')\n                r = subprocess.run([sys.executable, engine_py, 'once'],\n                    timeout=840, capture_output=True, text=True)\n                if r.returncode == 0:\n                    _log('EDU-THINK: cycle done')\n                else:\n                    _log(f'EDU-THINK: cycle failed rc={r.returncode}')\n            except subprocess.TimeoutExpired:\n                _log('EDU-THINK: timeout (840s)')\n            except Exception as e:\n                _log(f'EDU-THINK error: {e}')",
+        "inspect_cycle": 900,
+    },
+    {
         "process_name": "sys_deep_inspection",
         "duty": "深度巡检守护: 页面/路由巡检+源代码逐行检查+AI团队路由+自动修复+全生命周期追踪",
         "mount_source": "SYSTEM_REQ",
