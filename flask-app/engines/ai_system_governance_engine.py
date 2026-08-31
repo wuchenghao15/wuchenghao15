@@ -153,7 +153,7 @@ def offline_first(force_offline=True):
     return 'OFFLINE_ONLY'
 
 
-def skill_value(learning_value, msg_type):
+def skill_value(learning_value, msg_type=''):
     """消息技能价值评估（纯函数）：≥0.8→HIGH ≥0.4→MEDIUM 其余→LOW；非法→LOW。"""
     if isinstance(learning_value, bool) or not isinstance(learning_value, (int, float)):
         return 'LOW'
