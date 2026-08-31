@@ -71,6 +71,24 @@ _BROADCAST_QUALITY_GATE = 0.5      # 广播内容质量分门槛 (低于则回�
 _PROBE_DEMAND_SOURCES = ('ai_inspection_issues', 'mt_patrol_eigenflux_suggestions', 'mt_ef_anomaly_feeds')
 _PROBE_TARGET_MATCH_MIN = 2        # 目标匹配最少关键词命中数 (低于则排后)
 _PROBE_MAX_DEMANDS = 8             # 单轮最多提取真实需求数
+_MAIN_DB = os.path.normpath(os.path.join(_BASE, '..', '..', '_runtime', 'databases', 'Database', 'app.db'))
+
+
+def _query_main_db(sql, params=(), max_rows=12):
+    """只读查询主库真实数据源 (巡检问题/建议池), 失败返回空列表 (绝不抛出)"""
+    out = []
+    try:
+        if not os.path.isfile(_MAIN_DB):
+            return out
+        c = sqlite3.connect(f'file:{_MAIN_DB}?mode=ro', uri=True, timeout=10)
+        try:
+            for row in c.execute(sql, params).fetchmany(max_rows):
+                out.append(row)
+        finally:
+            c.close()
+    except Exception:
+        pass
+    return out
 
 
 def probe_topic_wellformed(topic):
@@ -331,24 +349,26 @@ class BroadcastCommunicator:
     def _pick_real_demand(self) -> str:
         """从真实需求源(巡检/建议池/异常投喂)提取试探主题 (主动试探核心)"""
         demands = []
+        # 源1: 主库巡检问题 (ai_inspection_issues 在主库, 列: error_message/suggestion_message)
+        for row in _query_main_db("SELECT error_message, suggestion_message FROM ai_inspection_issues ORDER BY rowid DESC LIMIT ?", (_PROBE_MAX_DEMANDS,)):
+            text = ' '.join((str(x).strip() for x in row if x)).strip()
+            if probe_topic_wellformed(text):
+                demands.append(text[:120])
+        # 源2: 主库EigenFlux建议池 (列: finding_message/advice_content)
+        for row in _query_main_db("SELECT finding_message, advice_content FROM mt_patrol_eigenflux_suggestions ORDER BY rowid DESC LIMIT ?", (_PROBE_MAX_DEMANDS,)):
+            text = ' '.join((str(x).strip() for x in row if x)).strip()
+            if probe_topic_wellformed(text):
+                demands.append(text[:120])
+        # 源3: 引擎库异常投喂 (title为4-5字短语, 拼接类型+描述保证信息量)
         try:
             with _LOCK:
                 c = _get_conn()
                 cur = c.cursor()
-                for src in _PROBE_DEMAND_SOURCES:
-                    try:
-                        if src == 'ai_inspection_issues':
-                            cur.execute("SELECT title, description FROM ai_inspection_issues ORDER BY rowid DESC LIMIT ?", (_PROBE_MAX_DEMANDS,))
-                        elif src == 'mt_patrol_eigenflux_suggestions':
-                            cur.execute("SELECT suggestion_title, suggestion_content FROM mt_patrol_eigenflux_suggestions ORDER BY rowid DESC LIMIT ?", (_PROBE_MAX_DEMANDS,))
-                        else:
-                            cur.execute("SELECT anomaly_title, anomaly_description FROM mt_ef_anomaly_feeds ORDER BY rowid DESC LIMIT ?", (_PROBE_MAX_DEMANDS,))
-                        for row in cur.fetchall():
-                            text = ' '.join((str(x).strip() for x in row if x)).strip()
-                            if probe_topic_wellformed(text):
-                                demands.append(text[:120])
-                    except Exception:
-                        continue
+                cur.execute("SELECT anomaly_type, anomaly_title, anomaly_description FROM mt_ef_anomaly_feeds ORDER BY rowid DESC LIMIT ?", (_PROBE_MAX_DEMANDS,))
+                for row in cur.fetchall():
+                    text = ': '.join((str(x).strip() for x in row if x)).strip()
+                    if probe_topic_wellformed(text):
+                        demands.append(text[:120])
                 c.close()
         except Exception:
             pass

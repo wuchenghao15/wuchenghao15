@@ -67,6 +67,24 @@ _PROACTIVITY_TARGET = 0.8          # 主动参与度目标 (主动动作/总动�
 _PROBE_ACTIONS_PER_ROUND = 3       # 每轮主动试探动作数
 _PROBE_SIGNALS_MIN = 1             # 最少有效信号数 (无信号时用固定试探主题保底)
 PROBE_INTERVAL = 300               # VII主动试探轮守护间隔 (300s, 独立于异常驱动)
+_MAIN_DB = os.path.normpath(os.path.join(sys_path, '..', '..', '_runtime', 'databases', 'Database', 'app.db'))
+
+
+def _query_main_db(sql, params=(), max_rows=12):
+    """只读查询主库真实数据源 (巡检问题/建议池), 失败返回空列表 (绝不抛出)"""
+    out = []
+    try:
+        if not os.path.isfile(_MAIN_DB):
+            return out
+        c = sqlite3.connect(f'file:{_MAIN_DB}?mode=ro', uri=True, timeout=10)
+        try:
+            for row in c.execute(sql, params).fetchmany(max_rows):
+                out.append(row)
+        finally:
+            c.close()
+    except Exception:
+        pass
+    return out
 
 
 def probe_signal_wellformed(signal):
@@ -645,25 +663,16 @@ class EigenFluxProactiveEngine:
     def scan_system_signals(self) -> List[str]:
         """扫描系统信号 (建议池/巡检问题), 返回有效试探信号列表"""
         signals = []
-        try:
-            with _LOCK:
-                c = _get_conn()
-                cur = c.cursor()
-                for src in _PROBE_SCAN_SOURCES:
-                    try:
-                        if src == 'mt_patrol_eigenflux_suggestions':
-                            cur.execute("SELECT suggestion_title, suggestion_content FROM mt_patrol_eigenflux_suggestions ORDER BY rowid DESC LIMIT 6")
-                        else:
-                            cur.execute("SELECT title, description FROM ai_inspection_issues ORDER BY rowid DESC LIMIT 6")
-                        for row in cur.fetchall():
-                            text = ' '.join((str(x).strip() for x in row if x)).strip()
-                            if probe_signal_wellformed(text):
-                                signals.append(text[:120])
-                    except Exception:
-                        continue
-                c.close()
-        except Exception:
-            pass
+        # 源1: 主库EigenFlux建议池 (表在主库, 列: finding_message/advice_content)
+        for row in _query_main_db("SELECT finding_message, advice_content FROM mt_patrol_eigenflux_suggestions ORDER BY rowid DESC LIMIT 6"):
+            text = ' '.join((str(x).strip() for x in row if x)).strip()
+            if probe_signal_wellformed(text):
+                signals.append(text[:120])
+        # 源2: 主库巡检问题 (列: error_message/suggestion_message)
+        for row in _query_main_db("SELECT error_message, suggestion_message FROM ai_inspection_issues ORDER BY rowid DESC LIMIT 6"):
+            text = ' '.join((str(x).strip() for x in row if x)).strip()
+            if probe_signal_wellformed(text):
+                signals.append(text[:120])
         # 去重
         seen = set()
         uniq = []

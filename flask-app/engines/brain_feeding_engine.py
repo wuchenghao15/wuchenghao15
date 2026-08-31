@@ -45,6 +45,24 @@ _FEED_QUALITY_THRESHOLD = 0.55     # 投喂质量分门槛 (低于丢弃)
 _FEED_CAP_PER_ROUND = 20           # 单轮投喂上限 (防刷屏)
 _FEED_SOURCES = ('knowledge_pool', 'suggestion_pool', 'broadcast_responses', 'inspection_findings')
 _SOURCE_WEIGHTS = {'knowledge_pool': 0.6, 'suggestion_pool': 0.9, 'broadcast_responses': 0.8, 'inspection_findings': 0.85}
+_MAIN_DB = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', '_runtime', 'databases', 'Database', 'app.db'))
+
+
+def _query_main_db(sql, params=(), max_rows=12):
+    """只读查询主库真实数据源 (巡检问题/建议池), 失败返回空列表 (绝不抛出)"""
+    out = []
+    try:
+        if not os.path.isfile(_MAIN_DB):
+            return out
+        c = sqlite3.connect(f'file:{_MAIN_DB}?mode=ro', uri=True, timeout=10)
+        try:
+            for row in c.execute(sql, params).fetchmany(max_rows):
+                out.append(row)
+        finally:
+            c.close()
+    except Exception:
+        pass
+    return out
 
 
 def feed_quality_score(title, content, source='knowledge_pool'):
@@ -311,23 +329,28 @@ class BrainFeedingEngine:
         pool_sample = random.sample(KNOWLEDGE_POOL, min(max(batch_size, _MIN_FEEDS_PER_ROUND), len(KNOWLEDGE_POOL)))
         for k in pool_sample:
             raw_items.append(('knowledge_pool', k.get('topic', ''), k.get('content', '')))
-        # 源2-4: 系统真实数据源 (建议池/广播回应/巡检发现), 失败静默跳过
+        # 源2: 主库EigenFlux建议池 (表在主库, 列: finding_message/advice_content)
+        for row in _query_main_db("SELECT finding_message, advice_content FROM mt_patrol_eigenflux_suggestions ORDER BY rowid DESC LIMIT 8"):
+            (t, c_) = (str(row[0] or '').strip(), str(row[1] or '').strip())
+            if c_:
+                raw_items.append(('suggestion_pool', t, c_))
+        # 源3: 引擎库广播回应 (mt_ef_broadcast_events 在引擎库)
+        # 源4: 主库巡检发现 (列: error_message/suggestion_message)
+        for row in _query_main_db("SELECT error_message, suggestion_message FROM ai_inspection_issues ORDER BY rowid DESC LIMIT 5"):
+            (t, c_) = (str(row[0] or '').strip()[:80], str(row[1] or '').strip())
+            if c_:
+                raw_items.append(('inspection_findings', t, c_))
         try:
             with self._get_connection() as conn:
                 cursor = conn.cursor()
-                for (src, sql) in (
-                    ('suggestion_pool', "SELECT suggestion_title, suggestion_content FROM mt_patrol_eigenflux_suggestions ORDER BY rowid DESC LIMIT 8"),
-                    ('broadcast_responses', "SELECT topic_title, content FROM mt_ef_broadcast_events WHERE topic_type='probe_demand' ORDER BY rowid DESC LIMIT 5"),
-                    ('inspection_findings', "SELECT title, description FROM ai_inspection_issues ORDER BY rowid DESC LIMIT 5"),
-                ):
-                    try:
-                        cursor.execute(sql)
-                        for row in cursor.fetchall():
-                            (t, c_) = (str(row[0] or '').strip(), str(row[1] or '').strip())
-                            if c_:
-                                raw_items.append((src, t, c_))
-                    except Exception:
-                        continue
+                try:
+                    cursor.execute("SELECT topic_title, content FROM mt_ef_broadcast_events WHERE topic_type='probe_demand' ORDER BY rowid DESC LIMIT 5")
+                    for row in cursor.fetchall():
+                        (t, c_) = (str(row[0] or '').strip(), str(row[1] or '').strip())
+                        if c_:
+                            raw_items.append(('broadcast_responses', t, c_))
+                except Exception:
+                    pass
         except Exception as e:
             logger.debug(f"[投喂VII] 多源采集部分失败(忽略): {e}")
 
