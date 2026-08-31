@@ -525,7 +525,7 @@ def t1000():
         elif k == 2:
             return lambda: _CT('母题变式训练,一题多解举一反三') == 'MOTHER_TOPIC' and _CT('普通常规知识讲解') == 'GENERAL', None
         elif k == 3:
-            return lambda: _TW('构造反证模型', ['审题构造辅助对象', '导出矛盾', '完成证明'], 'LOW', 'UNCONVENTIONAL') is True and _TW('巧算速解模型', ['凑整', '裂项', '验算'], 'MEDIUM', 'QUICK_CALC') is True, None
+            return lambda: _TW('构造反证模型', '按目标结论反向构造并导出矛盾', ['审题构造辅助对象', '导出矛盾', '完成证明'], 'LOW') is True and _TW('巧算速解模型', '速算巧解组合技巧', ['凑整', '裂项', '验算'], 'MEDIUM') is True, None
         elif k == 4:
             return lambda: '放心' in _RB('LOW') and '验算' in _RB('MEDIUM') and '慎用' in _RB('HIGH'), None
         elif k == 5:
