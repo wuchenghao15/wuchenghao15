@@ -7,13 +7,13 @@
   REVIEW → 人工审批队列
 
 flow_id: galaxy_compliance_engine
-version: v23.0.0
+version: v23.1.0 (C5 平台差异化: 抖音/小红书/B站各自词库)
 合规依据:
   C1 《著作权法》— 不搬运不抄袭 (原创性 4 层审查)
   C2 《著作权法》— 引用必须标注出处
   C3 《广告法》— 不使用极限词
   C4 《教育法》— 学科类内容走审批
-  C5 抖音社区规范 — 内容安全
+  C5 平台社区规范 — 按平台差异化审查 (抖音/小红书/B站)
   C6 《个人信息保护法》— 不涉及隐私
   C7 内容来源授权 — 仅自有/授权/公有领域
 """
@@ -59,12 +59,72 @@ SUBJECT_KEYWORDS = [
     'K12', '义务教育', '学科培训', '课外辅导',
 ]
 
-# C5 抖音社区红线 (低俗/虚假/违规)
-DOUYIN_RED_LINES = [
-    '赌博', '博彩', '色情', '色情', '暴力', '恐怖',
+# C5 平台社区红线 — 按平台差异化 (v23.1.0)
+# 通用红线 (所有平台都 BLOCK)
+COMMON_RED_LINES = [
+    '赌博', '博彩', '色情', '暴力', '恐怖',
     '毒品', '枪支', '管制刀', '违法犯罪',
     '虚假宣传', '骗局', '传销', '诈骗',
 ]
+
+# 抖音社区特有红线 (内容安全/导流)
+DOUYIN_RED_LINES = COMMON_RED_LINES + [
+    '私信我', '加我微信', '微我', 'vx', '加QQ',
+    '点击链接', '看主页', '链接在评论', '个人简介有福利',
+    '秒杀', '限时抢购', '仅今天', '手慢无',
+]
+
+# 小红书社区特有红线 (种草/医美/导流)
+XHS_RED_LINES = COMMON_RED_LINES + [
+    '加我微信', '私信我要链接', '推荐加', 'vx',
+    '点击链接', '看我主页', '链接放评论',
+    '医美', '整容', '手术', '玻尿酸', '瘦脸针', '割双眼皮',
+    '代购', '厂家直销', '清仓甩卖', '批发价',
+    '最有效', '根治', '100%有效', '永不反弹',
+]
+
+# B站社区特有红线 (导流/版权/政治敏感)
+BILI_RED_LINES = COMMON_RED_LINES + [
+    '微信公众号', '加QQ', 'QQ群', '私信领资源',
+    '微信扫描', '扫码加群', '跳转链接看完整版',
+    '网盘链接', '提取码', '需要资源私信',
+    '点赞过万更新', '投币过万做下一期',
+    '全站最火', 'UP主必看', '新人必看',
+]
+
+# 平台限流词库统一访问
+_PLATFORM_RESTRICT_MAP = {
+    'douyin': DOUYIN_RED_LINES,
+    'xiaohongshu': XHS_RED_LINES,
+    'bilibili': BILI_RED_LINES,
+    None: COMMON_RED_LINES,
+}
+
+
+def get_platform_red_lines(platform: str = None) -> List[str]:
+    """获取指定平台的限流词库 (含通用红线)"""
+    return _PLATFORM_RESTRICT_MAP.get(platform, COMMON_RED_LINES)
+
+
+def check_platform_rules(text: str, platform: str = None) -> Tuple[str, float, str]:
+    """C5 平台差异化合规检查 (v23.1.0)"""
+    lines = get_platform_red_lines(platform)
+    found = []
+    for w in lines:
+        if w in text:
+            found.append(w)
+    if found:
+        return 'BLOCK', 0.0, f'[{platform or "common"}] 限流词: {", ".join(found[:5])}'
+    # 长度限制 (抖音 ≤ 300, 小红书 ≤ 1000, B站 ≤ 2000)
+    max_len = {'douyin': 300, 'xiaohongshu': 1000, 'bilibili': 2000}.get(platform, 500)
+    if len(text) > max_len:
+        return 'REVIEW', 0.7, f'文本超长: {len(text)} > {max_len}'
+    return 'PASS', 1.0, f'[{platform or "all"}] 平台规则通过'
+
+
+# 兼容旧接口 (默认抖音)
+def check_douyin_rules(text: str) -> Tuple[str, float, str]:
+    return check_platform_rules(text, platform='douyin')
 
 # C6 隐私相关词 (出现则标记 BLOCK)
 PRIVACY_TRIGGERS = [
@@ -298,9 +358,13 @@ def check_source_auth(text: str, source_type: str = 'self_generated') -> Tuple[s
 # ============================================================
 
 def run_compliance_pipeline(content_id: str, content_type: str, text: str,
-                            source_type: str = 'self_generated') -> Dict:
+                            source_type: str = 'self_generated',
+                            platform: str = None) -> Dict:
     """
     跑 C1~C7 全量审查, 写入 mt_galaxy_compliance_log, 返回汇总
+
+    platform: 'douyin' | 'xiaohongshu' | 'bilibili' | None (通用)
+      → C5 和 C3 会根据平台差异化审查
 
     返回:
       {
@@ -316,7 +380,7 @@ def run_compliance_pipeline(content_id: str, content_type: str, text: str,
         'C2_citation':     lambda: check_citation(text),
         'C3_extremes':     lambda: check_extreme_words(text),
         'C4_edu_compliance': lambda: check_subject_compliance(text),
-        'C5_douyin_rules': lambda: check_douyin_rules(text),
+        'C5_douyin_rules': lambda: check_platform_rules(text, platform=platform),
         'C6_privacy':      lambda: check_privacy(text),
         'C7_source_auth':  lambda: check_source_auth(text, source_type),
     }
@@ -342,7 +406,8 @@ def run_compliance_pipeline(content_id: str, content_type: str, text: str,
         elif result == 'REVIEW' and overall != 'BLOCK':
             overall = 'REVIEW'
 
-        lid = log_compliance(content_id, content_type, check_type, result, score, detail[:500])
+        lid = log_compliance(content_id, content_type, check_type, result, score, detail[:500],
+                             platform=platform)
         log_ids.append(lid)
 
     return {
@@ -351,6 +416,7 @@ def run_compliance_pipeline(content_id: str, content_type: str, text: str,
         'logs_created': log_ids,
         'content_id': content_id,
         'content_type': content_type,
+        'platform': platform,
         'checked_at': datetime.now().isoformat(),
     }
 
