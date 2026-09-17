@@ -124,15 +124,37 @@ def get_platform_red_lines(platform: str = None) -> List[str]:
 
 
 def check_platform_rules(text: str, platform: str = None) -> Tuple[str, float, str]:
-    """C5 平台差异化合规检查 (v23.1.0)"""
-    lines = get_platform_red_lines(platform)
-    found = []
-    for w in lines:
-        if w in text:
-            found.append(w)
-    if found:
-        return 'BLOCK', 0.0, f'[{platform or "common"}] 限流词: {", ".join(found[:5])}'
-    # 长度限制 (抖音 ≤ 300, 小红书 ≤ 1000, B站 ≤ 2000)
+    """C5 平台差异化合规检查 (v23.2.1 DB 词库分级)"""
+    # 从 DB 读词 + 级别 (硬编码词默认 BLOCK)
+    hardcoded = _PLATFORM_RESTRICT_MAP.get(platform, COMMON_RED_LINES)
+    db_block = []; db_review = []
+    try:
+        conn = sqlite3.connect(DB_PATH, timeout=5)
+        rows = conn.execute("""
+            SELECT word, level FROM mt_galaxy_platform_restrict
+            WHERE (platform=? OR platform='all') AND level IN ('BLOCK','REVIEW')
+        """, (platform or 'common',)).fetchall()
+        conn.close()
+        for w, lv in rows:
+            (db_block if lv == 'BLOCK' else db_review).append(w)
+    except Exception:
+        pass
+
+    # 硬编码词全部当 BLOCK (向后兼容)
+    all_block = set(hardcoded) | set(db_block)
+    all_review = set(db_review)
+
+    # BLOCK 词先查 (最严格)
+    found_block = [w for w in all_block if w in text]
+    if found_block:
+        return 'BLOCK', 0.0, f'[{platform or "common"}] BLOCK限流词: {", ".join(found_block[:5])}'
+
+    # REVIEW 词其次 (历史政治敏感词走 REVIEW, 不误杀)
+    found_review = [w for w in all_review if w in text]
+    if found_review:
+        return 'REVIEW', 0.6, f'[{platform or "common"}] REVIEW敏感词: {", ".join(found_review[:5])}'
+
+    # 长度限制
     max_len = {'douyin': 300, 'xiaohongshu': 1000, 'bilibili': 2000}.get(platform, 500)
     if len(text) > max_len:
         return 'REVIEW', 0.7, f'文本超长: {len(text)} > {max_len}'
