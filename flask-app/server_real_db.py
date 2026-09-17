@@ -2354,7 +2354,7 @@ _CSRF_EXEMPT_PATHS = [
     # 登录/注册/找回密码 (guest 状态, 没 session csrf_token)
     '/login',
     '/auth/login',
-    '/auth/register',
+    '/auth/register', '/logout', '/forgot_password', '/register',
     '/register',
     '/auth/session_health',
     '/forgot-password',
@@ -3646,7 +3646,7 @@ def _mt_sys_container_session_loader():
 # 白名单：首页(/、/index)、auth、静态、健康检查、本站Referer；已登录用户全放行。
 _MT_HOTLINK_WHITELIST_PATHS = {
     '/', '/index', '/favicon.ico', '/robots.txt',
-    '/login', '/auth/login', '/auth/register', '/auth/logout', '/auth/forgot_password',
+    '/login', '/auth/login', '/auth/register', '/logout', '/forgot_password', '/register', '/auth/logout', '/auth/forgot_password',
     '/auth/session_health', '/auth/check_username',
 }
 _MT_HOTLINK_WHITELIST_PREFIXES = (
@@ -12408,7 +12408,7 @@ _API_PUBLIC_WHITELIST = {
     '/api/theme/get', '/api/theme/recommend', '/api/theme/sunrise_sunset',
     '/api/theme/presets', '/api/user/theme_preferences',
     '/api/homepage/stats', '/api/dev_flow/',
-    '/auth/login', '/auth/logout', '/auth/register', '/auth/csrf_token',
+    '/auth/login', '/auth/logout', '/auth/register', '/logout', '/forgot_password', '/register', '/auth/csrf_token',
     '/auth/check', '/auth/validate', '/auth/session',
     '/auth/session_health',  # 前端 hotplug.js 检查登录态
     # 指纹认证API（登录前需调用终端指纹硬件）
