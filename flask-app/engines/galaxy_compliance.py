@@ -309,7 +309,7 @@ def run_compliance_pipeline(content_id: str, content_type: str, text: str,
         'logs_created': [log_ids]
       }
     """
-    from galaxy_db import log_compliance, get_compliance_summary
+    from engines.galaxy_db import log_compliance
 
     checks = {
         'C1_originality':  lambda: check_originality(text, content_id),
