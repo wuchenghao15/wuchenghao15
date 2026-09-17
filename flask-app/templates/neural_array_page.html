@@ -1,0 +1,133 @@
+{% extends 'base_layout.html' %}
+{% block title %}{{ t('page.neural_array', default='神经网络阵列拓扑') }}{% endblock %}
+
+{% block content %}
+<div class="na-page">
+  <!-- 核心指标 -->
+  <div class="metrics-row">
+    <div class="metric-card metric-daemon"><div class="metric-num">{{ daemons }}</div><div class="metric-label">{{ t('na.daemons', default='守护进程') }}</div></div>
+    <div class="metric-card metric-cluster"><div class="metric-num">{{ clusters }}</div><div class="metric-label">{{ t('na.clusters', default='AI 集群') }}</div></div>
+    <div class="metric-card metric-node"><div class="metric-num">{{ nodes }}</div><div class="metric-label">{{ t('na.nodes', default='集群节点') }}</div></div>
+    <div class="metric-card metric-route"><div class="metric-num">{{ routes }}</div><div class="metric-label">{{ t('na.routes', default='神经路由') }}</div></div>
+  </div>
+
+  <!-- Daemon 状态面板 -->
+  <div class="section-block">
+    <h3 class="section-title">{{ t('na.daemon_status', default='守护进程运行状态') }}</h3>
+    <div class="daemon-grid">
+      {% for d in daemon_list %}
+      <div class="daemon-card daemon-{{ (d['status'] or 'unknown')|lower }}">
+        <div class="daemon-header">
+          <div class="daemon-name">{{ d['daemon_id'][:28] }}</div>
+          <div class="daemon-pid" title="PID">{{ d['pid'] or '—' }}</div>
+        </div>
+        <div class="daemon-meta">
+          <span class="daemon-type">{{ d['daemon_type'] or '?' }}</span>
+          <span class="daemon-status-badge status-{{ (d['status'] or 'unknown')|lower }}">{{ d['status'] or '?' }}</span>
+        </div>
+        <div class="daemon-health">
+          <div class="health-bar"><div class="health-fill" style="width:{{ d['health_score'] or 50 }}%"></div></div>
+          <span class="health-score">{{ d['health_score'] or 0 }}%</span>
+        </div>
+        <div class="daemon-hb">{{ t('na.last_hb', default='最后心跳') }}: {{ (d['last_heartbeat'] or '')[:16] }}</div>
+      </div>
+      {% else %}
+      <div class="empty">{{ t('na.no_daemons', default='暂无守护进程') }}</div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="two-col">
+    <!-- AI 集群 -->
+    <div class="col">
+      <h3 class="section-title">{{ t('na.cluster_list', default='AI 集群拓扑') }}</h3>
+      <table class="data-table">
+        <thead><tr><th>{{ t('na.cluster', default='集群') }}</th><th>{{ t('na.nodes', default='节点数') }}</th><th>{{ t('na.leader', default='Leader') }}</th><th>{{ t('na.status', default='状态') }}</th></tr></thead>
+        <tbody>
+          {% for c in cluster_list %}
+          <tr>
+            <td><strong>{{ c['cluster_name'] or c['cluster_id'] }}</strong></td>
+            <td>{{ c['node_count'] }}</td>
+            <td class="mono">{{ c['leader_node_id'] or '—' }}</td>
+            <td><span class="status-dot status-{{ (c['status'] or 'unknown')|lower }}"></span>{{ c['status'] or '?' }}</td>
+          </tr>
+          {% else %}
+          <tr><td colspan="4" class="empty">{{ t('na.no_clusters', default='暂无集群') }}</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 神经路由 -->
+    <div class="col">
+      <h3 class="section-title">{{ t('na.neural_routes', default='神经网络路由 (Top)') }}</h3>
+      <table class="data-table">
+        <thead><tr><th>{{ t('na.from', default='源模型') }}</th><th>{{ t('na.to', default='目标模型') }}</th><th>{{ t('na.conf', default='置信度') }}</th><th>{{ t('na.hits', default='命中') }}</th></tr></thead>
+        <tbody>
+          {% for r in neural_routes %}
+          <tr>
+            <td class="mono">{{ r['from_model'][:16] }}</td>
+            <td class="mono">{{ r['to_model'][:16] }}</td>
+            <td>
+              <div class="mini-bar">
+                <div class="mini-fill" style="width:{{ (r['confidence'] or 0)*100 }}%"></div>
+              </div>
+              <small>{{ '%.2f'|format(r['confidence'] or 0) }}</small>
+            </td>
+            <td class="num">{{ r['hit_count'] or 0 }}</td>
+          </tr>
+          {% else %}
+          <tr><td colspan="4" class="empty">{{ t('na.no_routes', default='暂无路由') }}</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<style>
+.na-page{padding:20px;max-width:1280px;margin:0 auto}
+.metrics-row{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px}
+.metric-card{padding:20px;border-radius:12px;color:#fff;text-align:center;box-shadow:0 2px 12px rgba(0,0,0,.08)}
+.metric-daemon{background:linear-gradient(135deg,#0f0c29,#302b63,#24243e)}
+.metric-cluster{background:linear-gradient(135deg,#232526,#414345)}
+.metric-node{background:linear-gradient(135deg,#134e5e,#71b280)}
+.metric-route{background:linear-gradient(135deg,#200122,#6f0000)}
+.metric-num{font-size:28px;font-weight:700;line-height:1.2}
+.metric-label{font-size:13px;opacity:.85;margin-top:4px}
+.section-block{margin-bottom:24px}
+.section-title{font-size:16px;margin:0 0 14px;padding-left:10px;border-left:4px solid #302b63;color:#303133}
+.daemon-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
+.daemon-card{padding:14px;border-radius:10px;border:2px solid #ebeef5;background:#fff;transition:all .2s}
+.daemon-card.daemon-running{border-color:#67c23a;background:linear-gradient(135deg,#f0f9eb 0%,#fff 60%)}
+.daemon-card.daemon-down,.daemon-card.daemon-stopped{border-color:#f56c6c;background:linear-gradient(135deg,#fef0f0 0%,#fff 60%)}
+.daemon-card.daemon-unknown{border-color:#e6a23c;background:linear-gradient(135deg,#fdf6ec 0%,#fff 60%)}
+.daemon-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.daemon-name{font-size:13px;font-weight:600;color:#303133}
+.daemon-pid{font-size:11px;color:#909399;background:#f0f0f0;padding:1px 6px;border-radius:4px;font-family:monospace}
+.daemon-meta{display:flex;gap:8px;font-size:11px;color:#606266;margin-bottom:8px;align-items:center}
+.daemon-status-badge{padding:1px 6px;border-radius:6px}
+.status-running{background:#f0f9eb;color:#67c23a}
+.status-down,.status-stopped{background:#fef0f0;color:#f56c6c}
+.status-unknown{background:#fdf6ec;color:#e6a23c}
+.daemon-health{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.health-bar{flex:1;height:6px;background:#ebeef5;border-radius:3px;overflow:hidden}
+.health-fill{height:100%;background:linear-gradient(90deg,#67c23a,#409eff);border-radius:3px;transition:width .3s}
+.health-score{font-size:11px;color:#606266;font-variant-numeric:tabular-nums;width:32px;text-align:right}
+.daemon-hb{font-size:11px;color:#909399}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.data-table{width:100%;border-collapse:collapse;font-size:13px}
+.data-table th,.data-table td{padding:8px;border-bottom:1px solid #ebeef5;text-align:left}
+.data-table th{background:#fafafa;font-weight:600;color:#606266}
+.data-table .mono{font-family:monospace;font-size:12px;color:#606266}
+.data-table .num{font-variant-numeric:tabular-nums;text-align:right}
+.data-table .empty{text-align:center;color:#c0c4cc;padding:20px;border:none}
+.status-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px}
+.status-dot.status-running{background:#67c23a}
+.status-dot.status-down,.status-dot.status-stopped{background:#f56c6c}
+.status-dot.status-unknown{background:#e6a23c}
+.mini-bar{display:inline-block;width:60px;height:6px;background:#ebeef5;border-radius:3px;overflow:hidden;vertical-align:middle;margin-right:6px}
+.mini-fill{height:100%;background:#409eff;border-radius:3px}
+@media(max-width:900px){.metrics-row{grid-template-columns:repeat(2,1fr)}.two-col{grid-template-columns:1fr}}
+</style>
+{% endblock %}
