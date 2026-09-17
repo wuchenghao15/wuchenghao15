@@ -2708,6 +2708,60 @@ def ensure_app_ready():
     except Exception as _api_e:
         print(f'[API-Registrar] 注册失败: {_api_e}')
 
+    # 3. 兜底 catch-all: 补 admin_subpage_routes 注册失败留下的 404 洞
+    # admin_subpage_routes Blueprint 因 endpoint 冲突整体挂载失败 → 所有 /admin_app/<name> 404
+    # 这里直接 app.add_url_rule 兜底, Flask 按注册顺序匹配, 具体路由(在 bp 成功的)先匹配, 兜底最后
+    @app.route('/admin_app/', methods=['GET'], endpoint='_mt_admin_app_root_fallback')
+    def _mt_admin_app_root():
+        from flask import redirect as _r
+        return _r('/admin_app/governance/dashboard')
+
+    @app.route('/admin_app/<path:name>', methods=['GET'], endpoint='_mt_admin_app_catchall_fallback')
+    def _mt_admin_app_catchall(name):
+        """admin_app 兜底 catch-all: 没被任何 bp 接住的 /admin_app/xxx 走这里"""
+        import os as _os
+        from flask import render_template as _rt, session as _sess, redirect as _r
+        # VIKEY 强制校验 (SA 必须有加密狗)
+        uname = (_sess.get('username') or '').lower()
+        is_sa = uname == 'wuchenghao15' or (_sess.get('role') in ('super_admin','admin','sadmin'))
+        if not is_sa:
+            return _r('/admin_app/login')
+        # 优先找独立模板 admin_app/{name}.html
+        tmpl = f'admin_app/{name}.html'
+        full = _os.path.join(_os.path.dirname(__file__), 'templates', tmpl)
+        if _os.path.exists(full):
+            try: return _rt(tmpl)
+            except Exception: pass
+        # 统一 fallback 模板
+        return _rt('admin_fallback.html', name=name)
+
+    # 4. 零散 redirect: 补模板/导航引用但没路由的旧路径
+    _REDIRECT_MAP = {
+        '/exam_system': '/exam_center',
+        '/exam_system/exams': '/exam_center',
+        '/exam_system/tests': '/exam_center',
+        '/exam_system/past_exams': '/exam_center',
+        '/exam_system/daily_practice': '/exam_center',
+        '/ai_chat': '/japanese_page',
+        '/ai-chat': '/japanese_page',
+        '/forgot-password': '/forgot_password',
+        '/mobile/home': '/student_portal',
+        '/mobile/exam': '/exam_center',
+        '/mobile/login': '/login',
+        '/mobile/profile': '/student_portal',
+        '/smart_dashboard': '/admin_app/governance/dashboard',
+        '/adult_placement_test': '/adult_education',
+        '/status': '/system/status',
+        '/wrong_book': '/exam_center',  # 错题本, exam_bp 注册失败时兜底
+    }
+    def _make_redirect(_target):
+        from flask import redirect as _r
+        def _view(): return _r(_target)
+        return _view
+    for _from, _to in _REDIRECT_MAP.items():
+        app.add_url_rule(_from, endpoint=f'_mt_rd_{_from.replace("/","_").lstrip("_")}',
+                         view_func=_make_redirect(_to))
+
     return app
 
 

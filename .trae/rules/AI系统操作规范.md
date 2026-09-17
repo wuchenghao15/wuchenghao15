@@ -6,7 +6,7 @@ description: MTSCOS AI系统操作规范 - AI员工、AI引擎、AI集群、AI�
 RULE_ID: MT_RULE_AI_OPS
 RULE_NAME: AI系统操作规范
 RULE_LEVEL: L2 操作
-RULE_VERSION: v1.2.0
+RULE_VERSION: v1.3.0
 EFFECTIVE_DATE: 2026-08-18
 STATUS: ACTIVE
 VIOLATION_CODE: AI-OPS-RULE-VIOLATION
@@ -15,7 +15,7 @@ RESPONSIBLE_ROLE: super_admin
 DEPENDS_ON: [MT_IRON_RULE_12STEPS, MT_RULE_DEV, MT_RULE_PERM, MT_RULE_SYS_OPS]
 MODIFY_APPROVAL_FLOW: 7_STEP (提议→2管理员同意→EigenFlux 5人磋商≥4/5→SA终审→保密撤回)
 BYPASS_ALLOWED: false
-LAST_CHANGED: 2026-09-07
+LAST_CHANGED: 2026-09-17
 RULE_META_END -->
 # MTSCOS AI 系统操作规范
 
@@ -5311,3 +5311,33 @@ L8 钩子层   AI Hook                    — 组件生命周期事件钩子
 **适用范围**：MTSCOS AI系统所有AI相关操作  
 **优先级**：本规则优先级高于其他开发规则，AI操作必须优先遵循本规范
 **新增章节**：§2.4 AI员工异常与EigenFlux磋商 §9 规则校验中间件与SSOT集成 §12 自动化5大模块功能规范（EigenFlux异常矩阵+权限表+5类Hook说明） §13 4合1安全防护规范(EigenFlux 16类安全事件矩阵 + 5级防爆破 + 6张安全表) §14 AI组件体系职责与约束规范(8类组件层级模型+交互硬约束+自动学习闭环)
+
+---
+
+## 🪐 仙女座 AI 员工与脑库联动（vv1.3.0 新增）
+
+> 本章定义本规则与仙女座引擎（auto_evolution + autosync_andromeda）的强制协作机制。
+> **禁止**仙女座绕过本规则执行任何操作。
+
+
+### A. AI 员工注册 → employee_registry（强制闭环）
+
+| # | 约束 | 仙女座联动 |
+|---|------|-----------|
+| AIO-01 | AI 员工注册**必须**写 mt_andromeda_employee_registry (status='active') | 注册时自动 insert, 心跳自动 update last_heartbeat |
+| AIO-02 | employee_registry status 非 active ≥ 20 名 → **强制** [EMPLOYEE-HEAL] patch bump | rule_version._auto_bump_from_events() 扫描触发 |
+| AIO-03 | 仙女座 AI 专家与 EigenFlux 专家**必须**双向互推 | employee_registry ↔ eigenflux_registrations 同步 |
+
+### B. 脑库增强知识（brain_enhanced_knowledge）
+
+- 规则修改后 15min 内**必须**写 brain_enhanced_knowledge (source='rule_change')
+- 自动 bump 触发后**必须**触发 trigger_type='rule_knowledge_refresh'
+- 脑库空指针 / 知识冲突 → 仙女座 auto_evolution 跳过该阶段
+
+### C. 员工健康度告警
+
+mt_andromeda_employee_registry 每 60s 巡检:
+- last_heartbeat > 5min → status='stale' → 告警
+- 连续 3 次 stale → auto_evolution 自动 re-register
+- re-register 失败 → 触发 §14 STEP-0 预扫 + [EMPLOYEE-HEAL] bump
+
