@@ -73,18 +73,28 @@ __pycache__/
 db_backup_scripts/
 *.sql
 # 2026-08-17 v2.6.1 骨架阶段：保留远端 v2.6.0 的 flask-app/ 整体忽略约定
-# 同时允许 flask-app/ai_engines/ 下 ai_intelligent_upgrade_engine.py + mt_ir14_dev_flow.py
-# 骨架引擎 2 个文件单独入库（11 个 target files 之一）
+#   (当时只放行 ai_intelligent_upgrade_engine.py + mt_ir14_dev_flow.py 2 个骨架引擎文件)
+# 2026-09-17 v22.1.0 架构成熟放开：仙女座 7 阶段引擎 / Volcengine ARK / Neural Hub / autosync 全部入库
+#   - flask-app/engines/ 全放行 (55+ 引擎)
+#   - flask-app/ai_engines/ 全放行 (统一网关 + Ollama + Volcengine + rules_engine)
+#   - flask-app/core/ 放行 (db_path.py WAL 强制等)
+#   - flask-app/static/andromeda_stars_catalog.md 放行 (仙女座恒星表)
+#   - flask-app/modular_start.py / autosync_andromeda.py 放行
+#   - flask-app/server_real_db.py 保持放行 (历史例外)
 flask-app/*
-!flask-app/ai_engines/
-flask-app/ai_engines/*
-!flask-app/ai_engines/ai_intelligent_upgrade_engine.py
-!flask-app/ai_engines/mt_ir14_dev_flow.py
-# v22.7.0 巡检缺口发现引擎架构优化: 允许 flask-app/engines/auto_dev_team_engine.py 入库
-# (5维×3=15硬伤+3运行BUG修复: 算法_py_index复用/权重GapPrioritizer唯一入口/架构4阶段Pipeline/逻辑IR14单事务批量/框架连接池+缓存TTL)
 !flask-app/engines/
-flask-app/engines/*
-!flask-app/engines/auto_dev_team_engine.py
+!flask-app/engines/**/*.py
+!flask-app/ai_engines/
+!flask-app/ai_engines/**/*.py
+!flask-app/core/
+!flask-app/core/**/*.py
+!flask-app/modular_start.py
+!flask-app/autosync_andromeda.py
+!flask-app/server_real_db.py
+!flask-app/static/andromeda_stars_catalog.md
+!flask-app/static/
+!flask-app/templates/
+!flask-app/routes/
 # 2026-08-18 B1守卫P0修复: 允许 flask-app/app/ 下核心修复文件入库
 # (三段式匹配+category分支响应+运行时category推导, TEST_P0_VERIFY 100%通过)
 !flask-app/app/
@@ -135,6 +145,35 @@ flask-app/scripts/tools/*
 .watchdog_pid
 .git_sync_state.json
 
+# ============ 2026-09-10 仙女座主题 v4.0 白名单 ============
+!flask-app/static/assets/
+flask-app/static/assets/*
+!flask-app/static/assets/css/
+flask-app/static/assets/css/*
+!flask-app/static/assets/css/mtscos-design-system.css
+!flask-app/static/assets/_cache/
+flask-app/static/assets/_cache/*
+!flask-app/static/assets/_cache/css/
+flask-app/static/assets/_cache/css/*
+!flask-app/static/assets/_cache/css/mtscos-design-system.css
+!flask-app/src/
+flask-app/src/*
+!flask-app/src/html/
+flask-app/src/html/*
+!flask-app/src/html/assets/
+flask-app/src/html/assets/*
+!flask-app/src/html/assets/css/
+flask-app/src/html/assets/css/*
+!flask-app/src/html/assets/css/mtscos-design-system.css
+# 仙女座主题需要的模板文件
+!flask-app/templates/base.html
+!flask-app/templates/index.html
+!flask-app/static/
+flask-app/static/*
+!flask-app/static/css/
+flask-app/static/css/*
+!flask-app/static/css/mtscos_design_tokens.css
+
 # 大文件归档（不推送）
 archive/
 backups/
@@ -144,6 +183,16 @@ data/snapshots/
 *.wav
 *.mp3
 *.mp4
+
+# ============ 2026-09-10 深度清理产物（28GB+ · 不推送） ============
+_archive/
+_archive
+flask-app/venv/
+flask-app/venv
+.venv/
+.venv
+.venv-1/
+.venv-1
 
 # 数据库文件（仅保留结构，不推送数据）
 Database/

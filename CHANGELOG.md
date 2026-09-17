@@ -1,3 +1,53 @@
+
+## 🚀 v22.1.0 · 仙女座拉马努金自举循环激活 (2026-09-17)
+
+### 🧠 AI 模型全面升级 7b → 14b
+- **通用推理** qwen2.5:7b → **qwen2.5:14b** (dev 档强制主力, 4x 参数)
+- **代码推理** qwen2.5-coder:7b → **qwen2.5-coder:14b** (neural_hub 8 路由全升级)
+- 新增 Ollama 11435 Metal iGPU launch agent (q8_0 KV cache · 5m keep-alive)
+- 端口统一: 11434 (旧 CLI) → **11435** (launch agent, embedding 快 35x)
+
+### 🛡️ Volcengine 火山引擎 ARK 兜底接入
+- 完整 API key 配置 (ark-xxx 格式 · _runtime/config/ai_secrets.json)
+- **三层降级链路**: 本地 14b → 本地 7b → Volcengine 云端 (永不宕机)
+- doubao-1-5-pro/thinking/vision 智能降级 InvalidEndpointOrModel → seed-lite
+- 可用模型 **133 个** (doubao/deepseek/kimi/glm/qwen/wan2)
+
+### ✨ 仙女座 7 阶段自演化引擎 **第一次跑通**
+```
+Stage 0 eigenflux_ingest     吸收 EigenFlux 新消息入脑库
+Stage 1 auto_detect          检测新待演化条目
+Stage 2 auto_retrieve        Ollama 11435 embedding + 向量检索
+Stage 3 auto_associate       写知识图谱 relations
+Stage 4 auto_derive (AI!)    qwen2.5:14b 推理衍生新知识 (25.7s)
+Stage 5 auto_reinforce       强化已有知识 confidence_score
+Stage 6 auto_expand          AI 员工增强建议
+Stage 7 auto_optimize        动态调整阈值
+```
+- 真实 DB 产出: **+205 脑库 / +158 KG nodes / +275 KG relations**
+- 演化产出 (AE-* 前缀) → 反向驱动 eigenflux → 自举循环 🌀
+- 新增 mt_daemon_registry 表 · 注册 17 个 daemon (含仙女座 autosync + auto_evolution)
+
+### 🔧 Flask HTTP timeout 根因彻底修复
+- db_path patch 重定向 flask-app/database/app.db (396MB 真主库)
+- SQLite WAL 强制 + busy_timeout=60s + synchronous=NORMAL
+- **Thread.__init__ 全局 patch**: 33 关键词拦截后台守护线程 → Flask 纯 HTTP
+- autosync checkpoint 挪本地 ~/Library/Application Support/MTSCOS AI/ (OneDrive 冲突)
+- text_uuid 表 UPSERT (DELETE+INSERT) 解决两端内容发散
+
+---
+
+## v7.6.0 - 2026-09-16
+
+### 新增
+- 全面系统升级引擎
+- AI脑库知识增强
+- 错题修复方案完善
+- 权限规则体系升级
+- AI模型库拓展
+- 前端布局优化
+- 移动端适配增强
+
 # 变更日志
 
 本项目所有重要变更均记录于此文件。

@@ -5219,7 +5219,7 @@ L8 钩子层   AI Hook                    — 组件生命周期事件钩子
 #### 14.2.1 AI模型 (AI Model)
 | 项 | 约束 |
 |----|------|
-| 定义 | 推理能力原子资源(本地Ollama qwen2.5系列 / 云端gpt-oss:20b等) |
+| 定义 | 推理能力原子资源(本地Ollama qwen2.5系列 / 云端 volcengine ARK (doubao-seed-2-0-lite / deepseek-v4-pro) 等) |
 | 职责 | 仅提供推理原语(chat/generate/embed), 无自主决策权 |
 | 注册 | 模型必须登记于网关路由表(_ROUTE_STATS可观测), 本地模型走11435/GPU |
 | 选择约束 | 零token优先: 能本地(11435)解决禁止路由云端(11434); 编码任务优先coder模型 |

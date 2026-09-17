@@ -1,8 +1,8 @@
-# MTS 架构 v2.0 / MTS Architecture v2.0
+# MTS 架构 v22.1.0 / MTS Architecture v22.1.0
 
-> **文档版本**: 2.1 | **Document Version**: 2.1
-> **发布日期**: 2026-07-31 | **Updated**: 2026-07-31
-> **架构代号**: MTSCOS AI Architecture | **Codename**: MTSCOS AI Architecture
+> **文档版本**: 22.1.0 | **Document Version**: 22.1.0
+> **发布日期**: 2026-09-17 | **Updated**: 2026-09-17
+> **架构代号**: Andromeda Evolution | **Codename**: MTSCOS AI · Andromeda-Nebula
 > **所属系统**: MTSCOS AI 智能考试系统（v18.2.0）
 >
 > [English Version / 英文版](MT_ARCHITECTURE.en.md)
@@ -402,7 +402,11 @@ v18.2.0 安全层扩展
 #### 与原架构的集成点
 - **表现层**：登录流程重构，admin_app/login 作为后端枢纽统一签发容器令牌
 - **业务层**：超管操作拦截器接入 vikey_auth 服务，规则引擎接入 rule_approval 服务
-- **AI 引擎矩阵**：AI 员工通过 eigenflux_adapter 接入广播网络，与现有 550+ 引擎协同
+- **AI 引擎矩阵 v22.1**：AI 员工通过 eigenflux_adapter 接入广播网络，与 **55+ 引擎 / 17 daemon** 协同
+  - 🆕 **仙女座 7 阶段自演化引擎** (`engines/andromeda_auto_evolution.py`)：eigenflux_ingest → auto_detect → auto_retrieve(Ollama embedding) → auto_associate(图谱) → **auto_derive(qwen2.5:14b 真实 AI 推理)** → auto_reinforce → auto_expand → auto_optimize。26.9s 完整 cycle，产出 +205 脑库 / +275 KG relations / 反向驱动 eigenflux 自举循环
+  - **autosync_andromeda.py**：Mac mini 双向同步 (Phase A mini→dev / Phase B dev→mini)，checkpoint 挪 ~/Library/Application Support/MTSCOS AI/ (解决 OneDrive 冲突)，text_uuid 表 UPSERT 解决内容发散
+  - **Flask Thread patch**：`modular_start.py` 在 import 时 patch `Thread.__init__`，33 关键词拦截后台守护线程 → Flask 纯 HTTP server，彻底解决 HTTP timeout
+  - **SQLite WAL 强制**：`core/db_path.py` patch_sqlite3_connect 强制 WAL + busy_timeout=60s + synchronous=NORMAL + 候选目录首位 flask-app/database
 - **权限层**：容器 user_group / permission_code 与现有 RBAC 16 角色体系对齐
 
 ---
@@ -426,7 +430,15 @@ v18.2.0 安全层扩展
 │   └── 向量数据库
 ├── AI 层
 │   ├── AI 引擎集群
-│   ├── Ollama 本地模型
+│   ├── Ollama 11435 (Metal iGPU · launch agent · q8_0 KV cache · 24GB 共享)
+│   │   ├── qwen2.5:14b 🥇 dev 档通用主力 (2.2s/字)
+│   │   ├── qwen2.5:7b 🥈 通用兜底 (1.5s/字, OOM/超时自动降级)
+│   │   ├── qwen2.5-coder:14b 🆕 neural_hub 代码主力 (8 路由)
+│   │   ├── qwen2.5-coder:7b 代码兜底
+│   │   ├── nomic-embed-text 🧠 768维向量 (0.3s · 仙女座 Stage 2)
+│   │   └── Volcengine ARK 🛡️ 云端兜底 (133 模型 · ark.cn-beijing.volces.com)
+│   │       · doubao-seed-2-0-lite (默认兜底, 3.6s)
+│   │       · deepseek-v4-pro (数学/逻辑)
 │   └── API 模型服务
 └── 基础设施层
     ├── Docker 容器
@@ -561,7 +573,7 @@ MTS 架构 v2.0 里程碑
 | 服务器端口 | 8888 |
 | 学习周期 | 30 分钟 |
 | 数据库类型 | SQLite |
-| AI 模型 | Ollama 本地模型 |
+| AI 模型 | Ollama 11435 Metal iGPU (5 模型 · 25.7GB) + Volcengine ARK 🛡️ 兜底 |
 
 ### C. 版本变更记录
 

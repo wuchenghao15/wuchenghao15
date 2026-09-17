@@ -18,17 +18,17 @@ description: "MTSCOS 本地 Ollama 零积分 AI 工具链(ai 命令/统一网关
 | `flask-app/ai_engines/ai_ollama_engine.py` | Ollama 引擎（chat/classify/review/bug_analyze，含 use_coder） |
 | `flask-app/ai_engines/local_ai_mcp_server.py` | MCP 工具：local_ai_chat / _think / _code / _code_review / _bug_locate / _health |
 
-## 模型与路由（极致本地优先，云端默认关闭）
-- 本地模型（`ollama list`）：`qwen2.5:7b`（通用）、`qwen2.5-coder:7b`（编码）。
-- 路由在 `_route_chat()`：**本地 Ollama（零 token）为唯一默认通路**；云端火山方舟 ark **默认禁用**，不"一失败就上云"。
+## 模型与路由（本地优先 · 云端兜底已启用）
+- 本地模型（`ollama list`）：`qwen2.5:14b`（通用主力 · dev 档强制首选）、`qwen2.5:7b`（通用兜底）、`qwen2.5-coder:14b`（代码主力）、`qwen2.5-coder:7b`（代码兜底）、`nomic-embed-text`（768维向量）。
+- 路由在 `_route_chat()`：**本地 Ollama（零 token）为第一通路**；本地 14b 失败自动降级 7b；7b 也挂 → **Volcengine ARK 云端兜底**（已配 API key，默认激活）。
 - **本地瞬时失败重试**：本地在线但单次调用失败（模型冷启动/换模型/网络抖动）时，本地重试 `_LOCAL_MAX_ATTEMPTS=3` 次（退避 1.5s/4s，`_LOCAL_RETRY_BACKOFF`），吸收抖动后仍走本地，不再因此泄漏云端 token；成功结果带 `local_attempts`。
-- **云端门控** `_cloud_fallback_enabled()`：仅当环境变量 `MTSCOS_AI_ALLOW_CLOUD=1/true/yes/on` 才允许云端应急；默认关闭时本地真不可用返回 `route=local_only_unavailable`、`cloud_blocked=true`、零云端 token，错误文案提示启动 Ollama 或临时开云。
-- **命中率可观测**：`_ROUTE_STATS` 记 local/cloud/local_retry/blocked_cloud/none；`health()` 输出 `routing_stats`、`local_hit_rate`、`cloud_volcengine.fallback_enabled`，体检/诊断展示"云端兜底关闭(纯本地零token)"。
-- `use_coder=True`（code/review/bug/optimize/auto_fix）自动选 `qwen2.5-coder:7b`；交互式 `ai chat/code/think` 走 `_ollama_stream`（纯本地流式），流式失败回退 `_route_chat`（同样受云端门控）。
-- 应急：Ollama 起不来又必须出结果时，用户在**自己的 Terminal** `MTSCOS_AI_ALLOW_CLOUD=1 ai "..."` 临时上云；用完取消该变量。
+- **三层降级链路**：① qwen2.5:14b/coder:14b（主力） → ② qwen2.5:7b/coder:7b（本地兜底） → ③ Volcengine ARK 133 模型（云端兜底 · doubao-seed-2-0-lite 默认）。InvalidEndpointOrModel 自动降级 doubao 系列。
+- **命中率可观测**：`_ROUTE_STATS` 记 local/cloud/local_retry/native；`health()` 输出 `routing_stats`、`local_hit_rate`、`cloud_volcengine.fallback_enabled=true`。
+- `use_coder=True`（code/review/bug/optimize/auto_fix）自动选 `qwen2.5-coder:14b`；交互式 `ai chat/code/think` 走 `_ollama_stream`（纯本地流式），流式失败回退 `_route_chat`（本地重试 → 云端兜底）。
+- **Ollama 端口统一**：11435（launch agent · Metal iGPU · q8_0 KV cache · 5m keep-alive），embedding 0.3s（比旧 11434 CLI 快 35x）。
 
 ## 本地模型规则约束层（`_PROJECT_RULES`，强制注入、无例外）
-本地 7b 模型不懂项目规范，**必须**通过 system prompt 强制注入硬规则，否则会产出裸路由/假数据/硬编码颜色/越权链接。
+本地模型（14b/7b 均含）不懂项目规范，**必须**通过 system prompt 强制注入硬规则，否则会产出裸路由/假数据/硬编码颜色/越权链接。
 - 常量 `_PROJECT_RULES`（对齐 `.trae/rules` 九篇规范）9 条：①路由必鉴权（`@system_container`/`_check_login`/`_check_admin`，禁裸路由）②带 `user_id` 端点必做归属校验防 IDOR（学生只访问本人、教职/SA 可跨查、`manual_adjust` 限教职）③SQLite 唯一数据源禁假数据 ④前端用 `var(--el-*)` 设计 Token 禁硬编码色 ⑤学生/前台页禁链 `/admin_app/*`（admin 命名空间）⑥AI 优先本地推理零 token ⑦4 空格/120 字符/Service 层/`{code,message,data,timestamp}` 统一响应/输入白名单校验 ⑧规则文档禁弱约束词（应该/建议/尽量…改必须/禁止）⑨大改动走 §14 十二步骤、规则改 7 步审批。
 - 拼装助手 `_with_rules(system)` = 角色说明 + `_CODE_RULES`（只输出代码/禁 shell 指令）+ `_PROJECT_RULES`，**调用方无法豁免**。
 - 已强制注入点：`code()`、`optimize_file()`、`auto_fix` 文件生成 `opt_system`（均 `_with_rules(...)`）；`review()` 在审查输入前注入 7 项规则审查清单并标记 `rules_enforced=True`。
