@@ -1,0 +1,116 @@
+language: [zh, en]
+
+name: battle_analysis
+type: hypergraph
+tags: [military, history, battle, conflict]
+
+description:
+  zh: '战役分析模板 - 从军事史料中提取战役的多方参战信息及结果分析'
+  en: 'Battle Analysis Template - Extract multi-party battle information and outcome analysis from military historical sources'
+
+output:
+  description:
+    zh: '战役中多方参战力量及其结果分析'
+    en: 'Multi-party combat forces and outcome analysis in battles'
+  entities:
+    description:
+      zh: '参战方实体'
+      en: 'Combatant entities'
+    fields:
+      - name: name
+        type: str
+        description:
+          zh: '参战方名称，如国家名、军队名、指挥官名'
+          en: 'Combatant name such as country name, army name, commander name'
+        required: true
+      - name: category
+        type: str
+        description:
+          zh: '参战方类型：nation(国家)/military(军队)/organization(组织)/commander(指挥官)'
+          en: 'Combatant type: nation/military/organization/commander'
+        required: true
+      - name: description
+        type: str
+        description:
+          zh: '参战方简介，包括实力、背景'
+          en: 'Brief description of combatant including strength and background'
+        required: false
+  relations:
+    description:
+      zh: '战役事件及其参战方分组'
+      en: 'Battle events with grouped combatants'
+    fields:
+      - name: battle_name
+        type: str
+        description:
+          zh: '战役名称'
+          en: 'Battle name'
+        required: true
+      - name: attackers
+        type: list
+        description:
+          zh: '攻击方参战者列表'
+          en: 'List of attackers/attackers'
+        required: true
+      - name: defenders
+        type: list
+        description:
+          zh: '防御方参战者列表'
+          en: 'List of defenders'
+        required: true
+      - name: action
+        type: str
+        description:
+          zh: '战斗行动描述'
+          en: 'Description of battle actions'
+        required: true
+      - name: outcome
+        type: str
+        description:
+          zh: '战役结果：victory(胜利)/defeat(失败)/draw(平局)'
+          en: 'Battle outcome: victory/defeat/draw'
+        required: true
+      - name: reasoning
+        type: str
+        description:
+          zh: '胜败原因分析'
+          en: 'Analysis of victory or defeat reasons'
+        required: false
+
+guideline:
+  target:
+    zh: '你是一位专业的军事历史分析师，擅长从史料中提取战役的参战方信息和战术分析。'
+    en: 'You are a professional military history analyst skilled at extracting combatant information and tactical analysis from historical sources.'
+  rules_for_entities:
+    zh:
+      - '提取战役中涉及的独立参战方，包括国家、军队、组织或个人'
+      - '统一参战方名称：国家用全称，军队用正式番号'
+      - '指挥官单独作为实体提取时，应标注其所属阵营'
+      - 'description应说明参战方的实力规模和主要特点'
+    en:
+      - 'Extract independent combatants involved in the battle, including nations, armies, organizations, or individuals'
+      - 'Standardize combatant names: use full names for nations, formal designations for armies'
+      - 'When extracting commanders as separate entities, indicate their affiliation'
+      - 'Description should explain the combatant's strength scale and main characteristics'
+  rules_for_relations:
+    zh:
+      - '严格区分攻击方和防御方，避免仅依赖原文的表述顺序'
+      - '同一参战方出现在多个列表中（如既是攻击方又是支援方），应选择最核心的角色归类'
+      - 'action应描述具体的战斗行动，如：发起进攻、包围、坚守阵地等'
+      - 'outcome基于战役最终结果判断，而非某一方的主观声称'
+      - 'reasoning应从战略、战术、资源、地形等多角度分析胜败原因'
+    en:
+      - 'Strictly distinguish attackers and defenders, avoid relying solely on source text order'
+      - 'When the same combatant appears in multiple lists, choose the most central role for classification'
+      - 'Action should describe specific battle actions such as: launching offensive, encirclement, holding position'
+      - 'Outcome should be based on final battle result, not one party's claims'
+      - 'Reasoning should analyze victory/defeat from multiple perspectives: strategy, tactics, resources, terrain'
+
+identifiers:
+  entity_id: name
+  relation_id: '{battle_name}'
+  relation_members: [attackers, defenders]
+
+display:
+  entity_label: '{name}'
+  relation_label: '{battle_name}'

@@ -1,0 +1,604 @@
+'''
+Created on Nov 25, 2017
+
+@author: arun
+'''
+
+from cog.core import Record
+import logging
+import os
+import os.path
+from os import listdir
+from os.path import isfile
+from os.path import join
+import pickle
+import socket
+import uuid
+from .core import Table
+from . import config
+from .config import CogConfig
+import xxhash
+import csv
+import shlex
+from collections import OrderedDict
+
+
+# functions
+
+# Direction prefix bytes for edge-table keys. Using a 1-byte prefix (was a
+# 9-byte string suffix "__:out:__"/"__:in:__") shrinks hash input and avoids
+# per-lookup Python string concatenation.
+_OUT_PREFIX = b'\x00'
+_IN_PREFIX = b'\x01'
+
+
+def out_nodes(v):
+    return _OUT_PREFIX + v.encode('utf-8') if type(v) is str else _OUT_PREFIX + v
+
+
+def in_nodes(v):
+    return _IN_PREFIX + v.encode('utf-8') if type(v) is str else _IN_PREFIX + v
+
+
+# https://www.w3.org/TR/n-triples/#sec-n-triples-language
+def hash_predicate(predicate):
+    return str(xxhash.xxh32(predicate, seed=2).intdigest())
+
+
+def parse_tripple(tripple):
+    tokens = shlex.split(tripple)
+    subject = tokens[0].strip()
+    predicate = tokens[1].strip()
+    object = tokens[2].strip()
+    context = None
+
+    if len(tokens) > 3:  # nQuad
+        context = tokens[3].strip()
+
+    return subject, predicate, object, context
+
+
+class CacheData:
+    __slots__ = ('store_position', 'value')
+    
+    def __init__(self, position, value):
+        self.store_position = position
+        self.value = value
+
+    def __str__(self):
+        return f"CacheData(position: {self.store_position}, value: {self.value})"
+
+    __repr__ = __str__
+
+class Cog:
+    """
+    Read index file, record records stored in 'store' and write out new store file. 
+    Update index with position in store.
+    
+    Args:
+        flush_interval: Number of writes before auto-flush per store.
+                       1 = flush every write (safest, default)
+                       0 = manual flush only (fastest, use sync())
+                       N>1 = flush every N writes with async background threads
+    """
+
+    def __init__(self, shared_cache=None, flush_interval=1, config=None):
+        self.logger = logging.getLogger(__name__)
+        self.config = config if config is not None else CogConfig()
+        self.flush_interval = flush_interval
+        self.logger.info(f"Cog init (flush_interval={flush_interval})")
+        self.namespaces = {}
+        self.current_table = None
+        self.shared_cache = shared_cache
+        self.cache = OrderedDict()
+        '''creates Cog instance files.'''
+        if os.path.exists(self.config.cog_instance_sys_file()):
+            f = open(self.config.cog_instance_sys_file(), "rb")
+            self.m_info = pickle.load(f)
+            self.instance_id = self.m_info["m_instance_id"]
+            f.close()
+        else:
+            self.instance_id = self.init_instance(self.config.COG_DEFAULT_NAMESPACE)
+
+        '''Create default namespace and table.'''
+        self.create_or_load_namespace(self.config.COG_DEFAULT_NAMESPACE)
+
+        '''Load all table names but lazy load actual tables on request.'''
+        for name in self.list_tables():
+            if name not in self.namespaces:
+                self.namespaces[name] = None
+
+    def init_instance(self, namespace):
+        '''
+        Initiates cog instance - called the 'c instance' for the first time
+        :param namespace:
+        :return:
+        '''
+
+        instance_id = str(uuid.uuid4())
+        if not os.path.exists(self.config.cog_instance_sys_dir()): os.makedirs(self.config.cog_instance_sys_dir())
+
+        m_file = dict()
+        m_file["m_instance_id"] = instance_id
+        m_file["host_name"] = socket.gethostname()
+        m_file["host_ip"] = socket.gethostname()
+
+        f = open(self.config.cog_instance_sys_file(), 'wb')
+        pickle.dump(m_file, f)
+        f.close()
+        self.logger.info("Cog sys file created.")
+        os.mkdir(self.config.cog_data_dir(namespace))
+        self.logger.info("Database created: " + namespace)
+        self.logger.info("done.")
+        return instance_id
+
+    def create_or_load_namespace(self, namespace):
+        if not os.path.exists(self.config.cog_data_dir(namespace)):
+            os.mkdir(self.config.cog_data_dir(namespace))
+            self.logger.info("Created new namespace: " + self.config.cog_data_dir(namespace))
+            '''add namespace to dict'''
+            self.namespaces[namespace] = {}
+        else:
+            self.logger.info("Using existing namespace: " + self.config.cog_data_dir(namespace))
+            self.load_namespace(namespace)
+
+        self.current_namespace = namespace
+
+    def is_namespace(self, namespace):
+        return os.path.exists(self.config.cog_data_dir(namespace))
+
+    def create_table(self, table_name, namespace):
+        table = Table(table_name, namespace, self.instance_id, self.config, 
+                      shared_cache=self.shared_cache, flush_interval=self.flush_interval)
+        self.current_namespace = namespace
+        self.current_table = table
+        self.namespaces[namespace][table_name] = table
+
+    def load_namespace(self, namespace):
+        if namespace not in self.namespaces:
+            self.namespaces[namespace] = {}
+            table_names = set()
+            for index_file_name in os.listdir(self.config.cog_data_dir(namespace)):
+                # migration artifacts (rollback backups, aborted temp files)
+                # live next to the real store/index files and must be ignored.
+                if index_file_name.endswith(('.v3_backup', '.v4_tmp')):
+                    continue
+                if self.config.INDEX not in index_file_name:
+                    continue
+                try:
+                    id = self.config.index_id(index_file_name)
+                except ValueError:
+                    self.logger.warning(
+                        "skipping unrecognized file in namespace '%s': %s", namespace, index_file_name)
+                    continue
+                table_name = self.config.get_table_name(index_file_name)
+                if table_name in table_names:
+                    continue
+                table_names.add(table_name)
+                self.logger.info("loading index: id: {}, table name: {}".format(id, table_name))
+                try:
+                    self.load_table(table_name, namespace)
+                    self.refresh_cache(table_name, namespace)
+                except Exception as e:
+                    # One unloadable table (e.g. still in legacy 3.x format) must
+                    # not make the rest of the namespace unreachable.
+                    broken = self.namespaces[namespace].pop(table_name, None)
+                    if broken is not None:
+                        if self.current_table is broken:
+                            self.current_table = None
+                        try:
+                            broken.close()
+                        except Exception:
+                            pass
+                    self.logger.error(
+                        "failed to load table '%s' in namespace '%s' "
+                        "(file may need migration, see cog.migrate): %s", table_name, namespace, e)
+        self.current_namespace = namespace
+
+    def load_table(self, name, namespace):
+        # this method should not refresh cache since it's used in many places, this is basically "context switch" method.
+        if namespace not in self.namespaces:
+            self.namespaces[namespace] = {}
+        self.logger.debug("loading table: " + name)
+
+        if name not in self.namespaces[namespace]:
+            self.namespaces[namespace][name] = Table(name, namespace, self.instance_id, self.config,
+                                                     shared_cache=self.shared_cache,
+                                                     flush_interval=self.flush_interval)
+            self.logger.debug("created new table: " + name)
+
+        self.current_table = self.namespaces[namespace][name]
+        self.logger.debug("SET table {} in namespace {}. ".format(name, namespace))
+
+    def refresh_cache(self, name, namespace):
+        self.current_table = self.namespaces[namespace][name]
+        # scan table to refresh cache
+        for r in self.scanner():
+            pass
+
+    def refresh_all(self):
+        for ns in self.namespaces:
+            table = self.namespaces[ns]
+
+        # scan table to refresh cache
+        for r in self.scanner():
+            pass
+
+    def print_cache_info(self):
+        print("::: cache info ::: {}, {}, {}".format(self.current_namespace, self.current_table.table_meta.name,
+                                                     self.current_table.store.store_cache.size()))
+
+    def begin_batch(self):
+        """
+        Enable batch mode on all tables in the current namespace.
+        Defers flush() until end_batch() is called for better bulk insert performance.
+        """
+        if self.current_namespace in self.namespaces and self.namespaces[self.current_namespace]:
+            for table in self.namespaces[self.current_namespace].values():
+                if table:
+                    table.store.begin_batch()
+
+    def end_batch(self):
+        """
+        End batch mode and flush all pending writes to disk.
+        """
+        if self.current_namespace in self.namespaces and self.namespaces[self.current_namespace]:
+            for table in self.namespaces[self.current_namespace].values():
+                if table:
+                    table.store.end_batch()
+
+    def sync(self):
+        """
+        Force flush all pending writes to disk across all tables.
+        Blocks until all flushes are complete.
+        """
+        for name, space in self.namespaces.items():
+            if space is None:
+                continue
+            for table_name, table in space.items():
+                if table:
+                    table.sync()
+
+    def close(self):
+        for name, space in self.namespaces.items():
+            if space is None:
+                continue
+            for name, table in space.items():
+                self.logger.info("closing.. : " + table.table_meta.name)
+                table.close()
+
+    def list_tables(self):
+        p = set(())
+        self.logger.debug("LIST TABLES, current namespace: " + str(self.current_namespace))
+        path = self.config.cog_data_dir(self.current_namespace)
+        if not os.path.exists(path):
+            return p
+        files = [f for f in listdir(path) if isfile(join(path, f))]
+        for f in files:
+            p.add(f.split("-")[0])
+        return list(p)
+
+    def get_table(self, name, namespace=None):
+        """Return a Table object without mutating current_table.
+
+        Ensures the table is loaded (creates it on first access) but does not
+        change self.current_table, making it safe to call in tight loops where
+        the caller caches the reference.
+        """
+        ns = namespace or self.current_namespace
+        if ns not in self.namespaces:
+            self.namespaces[ns] = {}
+        tables = self.namespaces[ns]
+        if name not in tables:
+            tables[name] = Table(name, ns, self.instance_id, self.config,
+                                 shared_cache=self.shared_cache,
+                                 flush_interval=self.flush_interval)
+        return tables[name]
+
+    def use_namespace(self, namespace):
+        self.current_namespace = namespace
+        return self
+
+    def use_table(self, name):
+        '''
+        :param name:
+        :param namespace:
+        :return:
+        '''
+        if name not in self.namespaces[self.current_namespace] or self.namespaces[self.current_namespace][name]:
+            self.load_table(name, self.current_namespace)
+        else:
+            self.current_table = self.namespaces[self.current_namespace][name]
+
+        return self
+
+    def put(self, data):
+        assert isinstance(data.key, (str, bytes)), "key must be str or bytes."
+        position = self.current_table.store.save(data)
+        self.current_table.indexer.put(data.key, position, self.current_table.store)
+
+    def put_list(self, data):
+        '''
+        Creates or appends to a list. If the key does not exist a new list is created, else it appends.
+        Uses O(1) lookup instead of O(n) value chain traversal.
+        :param data:
+        :return:
+        '''
+        assert isinstance(data.key, (str, bytes)), "key must be str or bytes."
+        assert type(data.value) is str, "Only string type is supported."
+        # Use O(1) head lookup instead of O(n) full record load
+        record, head_pos = self.current_table.indexer.get_head_only(data.key, self.current_table.store)
+        new_record = Record(data.key, data.value, value_type='l')
+        if record is not None:
+            new_record.set_value_link(head_pos)
+        position = self.current_table.store.save(new_record)
+        self.current_table.indexer.put(new_record.key, position, self.current_table.store)
+
+    def put_set(self, data):
+        """
+        Add a value to a set. Deduplicates via in-memory cache.
+        Optimized: Uses O(1) head lookup instead of O(n) value chain traversal.
+        """
+        assert isinstance(data.key, (str, bytes)), "key must be str or bytes."
+        assert isinstance(data.value, str), "Only string type is supported."
+
+        cache_key = (self.current_table.table_meta.name, data.key)
+
+        # Check cache for deduplication
+        if cache_key in self.cache:
+            cache_data = self.cache[cache_key]
+            if data.value in cache_data.value:
+                # Already exists, skip write
+                return
+            # Add to existing set
+            new_record = Record(data.key, data.value, value_type='l')
+            new_record.set_value_link(cache_data.store_position)
+            position = self.current_table.store.save(new_record)
+            self.current_table.indexer.put(new_record.key, position, self.current_table.store)
+            cache_data.value.add(data.value)
+            cache_data.store_position = position
+            self.cache.move_to_end(cache_key)
+            return
+
+        # Cache miss - use O(1) head lookup instead of O(n) full load
+        head_record, head_pos = self.current_table.indexer.get_head_only(data.key, self.current_table.store)
+        
+        if head_record is None:
+            # First value for this key
+            new_record = Record(data.key, data.value, value_type='l')
+            position = self.current_table.store.save(new_record)
+            self.current_table.indexer.put(new_record.key, position, self.current_table.store)
+            self.cache[cache_key] = CacheData(position, {data.value})
+        else:
+            # Key exists but not in cache - load full record for deduplication
+            record = self.current_table.indexer.get(data.key, self.current_table.store)
+            existing_values = set(record.value)  # set() works on both list and set
+            if data.value not in existing_values:
+                new_record = Record(data.key, data.value, value_type='l')
+                new_record.set_value_link(head_pos)
+                position = self.current_table.store.save(new_record)
+                self.current_table.indexer.put(new_record.key, position, self.current_table.store)
+                existing_values.add(data.value)
+                self.cache[cache_key] = CacheData(position, existing_values)
+            else:
+                self.cache[cache_key] = CacheData(head_pos, existing_values)
+
+        # Cache eviction (once, outside if/else)
+        if len(self.cache) > self.config.LEVEL_2_CACHE_SIZE:
+            self.cache.popitem(last=False)
+        self.cache.move_to_end(cache_key)
+
+    def get(self, key):
+        """Retrieve the record for *key* from the current table.
+
+        The returned record may be a shared cached object.  Callers must
+        not mutate it; treat it as read-only.
+        """
+        if key in self.cache:
+            return self.cache[key]
+        return self.current_table.indexer.get(key, self.current_table.store)
+
+    def scanner(self, table=None, scan_filter=None):
+        scan_itr = self.current_table.indexer.scanner(self.current_table.store) if not table else table.indexer.scanner(
+            table.store)
+        for r in scan_itr:
+            if scan_filter:
+                yield scan_filter.process(r.key)
+            else:
+                yield r
+
+    def delete(self, key):
+        self.current_table.indexer.delete(key, self.current_table.store)
+        cache_key = (self.current_table.table_meta.name, key)
+        if cache_key in self.cache:
+            del self.cache[cache_key]
+
+    def delete_edge(self, vertex1, predicate, vertex2):
+        """
+        Deletes edge in both directions.
+        :param vertex1:
+        :param predicate:
+        :param vertex2:
+        :return:
+        """
+        predicate_hashed = hash_predicate(predicate)
+        out_object = self.use_table(predicate_hashed).get(out_nodes(vertex1))
+
+        # if out vertex1 points to a list, then update else delete.
+        if out_object:
+            if out_object.value_type == 'l':
+                other_values = []
+                for v in out_object.value:
+                    if v != vertex2:
+                        other_values.append(v)
+
+                # update: delete and put_set
+                self.use_table(predicate_hashed).delete(out_nodes(vertex1))
+                for ov in other_values:
+                    self.use_table(predicate_hashed).put_set(Record(out_nodes(vertex1), ov))
+            else:
+                self.use_table(predicate_hashed).delete(out_nodes(vertex1))
+
+        in_object = self.use_table(predicate_hashed).get(in_nodes(vertex2))
+        # if in vertex2 points to a list, then update else delete.
+        if in_object:
+            if in_object.value_type == 'l':
+                other_values = []
+                for v in in_object.value:
+                    if v != vertex1:
+                        other_values.append(v)
+
+                # update: delete and put_set
+                self.use_table(predicate_hashed).delete(in_nodes(vertex2))
+                for ov in other_values:
+                    self.use_table(predicate_hashed).put_set(Record(in_nodes(vertex2), ov))
+            else:
+                self.use_table(predicate_hashed).delete(in_nodes(vertex2))
+
+    def put_node(self, vertex1, predicate, vertex2):
+        """
+         Graph method
+        :param vertex1: string
+        :param predicate:
+        :param vertex2:
+        :return:
+
+        A - B
+        A - C
+        B - C
+        B - D put_node
+        C - D
+        ======
+        A => [B,C]
+        B => [A,D]
+        C => [A,B,D]
+        D => [B]
+        """
+        # add to node set
+        predicate_hashed = hash_predicate(predicate)
+        self.use_table(self.config.GRAPH_EDGE_SET_TABLE_NAME).put(Record(str(predicate_hashed), predicate))
+        self.use_table(self.config.GRAPH_NODE_SET_TABLE_NAME).put(Record(vertex1, ""))
+        self.use_table(self.config.GRAPH_NODE_SET_TABLE_NAME).put(Record(vertex2, ""))
+        self.use_table(predicate_hashed).put_set(Record(out_nodes(vertex1), vertex2))
+        self.use_table(predicate_hashed).put_set(Record(in_nodes(vertex2), vertex1))
+
+    def put_new_edge(self, vertex1, predicate, vertex2):
+        """
+        Graph method
+        :param vertex1: string
+        :param predicate:
+        :param vertex2:
+        :return:
+        """
+        predicate_hashed = hash_predicate(predicate)
+        self.use_table(self.config.GRAPH_EDGE_SET_TABLE_NAME).put(Record(str(predicate_hashed), predicate))
+        self.use_table(self.config.GRAPH_NODE_SET_TABLE_NAME).put(Record(vertex1, ""))
+        self.use_table(self.config.GRAPH_NODE_SET_TABLE_NAME).put(Record(vertex2, ""))
+        self.use_table(predicate_hashed).put(Record(out_nodes(vertex1), vertex2))
+        self.use_table(predicate_hashed).put(Record(in_nodes(vertex2), vertex1))
+
+    def update_edge(self, vertex1, predicate, vertex2):
+        """
+        Replace all edges from vertex1 (for this predicate) with a single edge to vertex2.
+        
+        This is an internal method used by Graph.put(update=True). It:
+        1. Removes all existing outgoing edges from vertex1
+        2. Removes vertex1 from all old targets' incoming edge lists
+        3. Creates a new edge from vertex1 to vertex2
+        
+        :param vertex1: source vertex
+        :param predicate: edge predicate  
+        :param vertex2: new target vertex (replaces all existing targets)
+        :return:
+        
+        WARNING: Thread Safety
+        This method is NOT atomic. The sequence of read-delete-reinsert operations
+        on incoming edge lists is susceptible to race conditions in concurrent
+        environments. If another thread adds an edge to the same target between
+        the read and delete operations, that edge may be lost. For concurrent
+        access, external synchronization (e.g., locking) is required.
+        """
+        predicate_hashed = hash_predicate(predicate)
+
+        # Get vertex1's current outgoing edges (the old targets)
+        out_object = self.use_table(predicate_hashed).get(out_nodes(vertex1))
+        if out_object:
+            # Collect old targets to clean up their incoming edges
+            if out_object.value_type == 'l' or out_object.value_type == 'u':
+                old_targets = list(out_object.value)
+            else:
+                old_targets = [out_object.value]
+            
+            # Delete vertex1's outgoing edges
+            self.use_table(predicate_hashed).delete(out_nodes(vertex1))
+            
+            # Remove vertex1 from each old target's incoming edge list
+            for old_target in old_targets:
+                in_object = self.use_table(predicate_hashed).get(in_nodes(old_target))
+                if in_object:
+                    if in_object.value_type == 'l' or in_object.value_type == 'u':
+                        # Multi-value: keep all incoming edges except from vertex1
+                        other_sources = [v for v in in_object.value if v != vertex1]
+                        self.use_table(predicate_hashed).delete(in_nodes(old_target))
+                        for src in other_sources:
+                            self.use_table(predicate_hashed).put_set(Record(in_nodes(old_target), src))
+                    else:
+                        # Single value: delete only if it's from vertex1
+                        if in_object.value == vertex1:
+                            self.use_table(predicate_hashed).delete(in_nodes(old_target))
+
+        # Create the new edge (both directions)
+        self.put_node(vertex1, predicate, vertex2)
+
+    def load_triples(self, graph_data_path, graph_name):
+        """
+       :param graph_data_path: 
+       :param graph_name: 
+       :param delimiter:
+       :return: 
+       """
+        self.create_or_load_namespace(graph_name)
+        self.load_table(self.config.GRAPH_NODE_SET_TABLE_NAME, graph_name)
+        with open(graph_data_path) as f:
+            for line in f:
+                subject, predicate, object, context = parse_tripple(line)
+                self.load_table(hash_predicate(predicate), graph_name)
+                self.put_node(subject, predicate, object)
+
+    def load_edgelist(self, edgelist_file_path, graph_name, predicate="none"):
+        """
+        Graph method
+        :param edgelist_file_path:
+        :param graph_name:
+        :param predicate:
+        :return:
+        """
+        self.create_or_load_namespace(graph_name)
+        self.load_table(self.config.GRAPH_NODE_SET_TABLE_NAME, graph_name)
+        with open(edgelist_file_path) as f:
+            for line in f:
+                tokens = line.split()
+                v1 = tokens[0].strip()
+                v2 = tokens[1].strip()
+                # put_node handles table loading internally, no need to call load_table here
+                self.put_node(v1, predicate, v2)
+
+    def load_csv(self, file_name, id_column_name, graph_name):
+        """
+        Load CSV into in graph, you must select on of the columns as ID.
+        :param file_name:
+        :param id_column_name:
+        :param graph_name
+        :return:
+        """
+        self.create_or_load_namespace(graph_name)
+        self.load_table(self.config.GRAPH_NODE_SET_TABLE_NAME, graph_name)
+        with open(file_name) as csv_file:
+            reader = csv.DictReader(csv_file)
+            for row in reader:
+                for k in row:
+                    subject = row[id_column_name]
+                    predicate = k
+                    obj = row[k]
+                    self.put_node(subject, predicate, obj)
+                    self.logger.info("""loaded: __:{0} {1} {2} .""".format(subject, predicate, obj))

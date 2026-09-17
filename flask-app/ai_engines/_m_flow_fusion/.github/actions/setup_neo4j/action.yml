@@ -1,0 +1,80 @@
+# Composite action — spin up a Neo4j+GDS container for integration tests.
+name: "Setup Neo4j (GDS)"
+description: >
+  Start a Neo4j Docker container with APOC and Graph Data Science plugins
+  enabled, then wait until the database is accepting Cypher queries.
+
+inputs:
+  neo4j-version:
+    description: "Neo4j Docker image tag"
+    required: false
+    default: "5.21"
+  neo4j-password:
+    description: "Auth password for the neo4j user"
+    required: false
+    default: "m_flow_test_password"
+
+outputs:
+  neo4j-url:
+    description: "Bolt connection string"
+    value: "bolt://localhost:7687"
+  neo4j-username:
+    description: "Database user"
+    value: "neo4j"
+  neo4j-password:
+    description: "Database password (mirrors input)"
+    value: ${{ inputs.neo4j-password }}
+
+runs:
+  using: composite
+  steps:
+    # ── 1. Launch container ─────────────────────────────────────────────
+    - name: Launch Neo4j container
+      shell: bash
+      env:
+        NEO4J_TAG: ${{ inputs.neo4j-version }}
+        NEO4J_PWD: ${{ inputs.neo4j-password }}
+      run: |
+        set -euo pipefail
+        docker run -d --name neo4j-test \
+          -p 7474:7474 -p 7687:7687 \
+          -e NEO4J_AUTH="neo4j/${NEO4J_PWD}" \
+          -e NEO4J_PLUGINS='["apoc","graph-data-science"]' \
+          -e NEO4J_dbms_security_procedures_unrestricted='apoc.*,gds.*' \
+          -e NEO4J_apoc_export_file_enabled=true \
+          -e NEO4J_apoc_import_file_enabled=true \
+          "neo4j:${NEO4J_TAG}"
+
+    # ── 2. Health-check loop ────────────────────────────────────────────
+    - name: Wait until Neo4j is healthy
+      shell: bash
+      env:
+        NEO4J_PWD: ${{ inputs.neo4j-password }}
+      run: |
+        set -euo pipefail
+        MAX_WAIT=120
+        ELAPSED=0
+        echo "Polling Neo4j readiness (max ${MAX_WAIT}s)…"
+        until docker exec neo4j-test \
+              cypher-shell -u neo4j -p "${NEO4J_PWD}" "RETURN 1" >/dev/null 2>&1; do
+          sleep 3
+          ELAPSED=$((ELAPSED + 3))
+          if [ "${ELAPSED}" -ge "${MAX_WAIT}" ]; then
+            echo "::error::Neo4j did not become ready within ${MAX_WAIT}s"
+            docker logs neo4j-test
+            exit 1
+          fi
+          echo "  …${ELAPSED}s elapsed"
+        done
+        echo "Neo4j is accepting queries."
+
+    # ── 3. Verify GDS plugin ───────────────────────────────────────────
+    - name: Verify GDS plugin
+      shell: bash
+      env:
+        NEO4J_PWD: ${{ inputs.neo4j-password }}
+      run: |
+        set -euo pipefail
+        docker exec neo4j-test cypher-shell -u neo4j -p "${NEO4J_PWD}" \
+          "CALL gds.version() YIELD gdsVersion RETURN gdsVersion"
+        echo "GDS plugin loaded successfully."

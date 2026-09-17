@@ -251,4 +251,3 @@ bp = Blueprint('neural_array_bp', __name__)
 @system_container()
 def stats_overview():
     return jsonify({'status':'ok','code':0,'data':{'module':'neural_array','routes_implemented':1}})
-

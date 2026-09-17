@@ -1,0 +1,42 @@
+# M-Flow CI environment bootstrap
+# Provisions Python + uv, syncs all project extras, writes telemetry stub.
+name: m_flow-setup
+description: Set up M-Flow development environment for CI
+
+inputs:
+  python-version:
+    description: Python version to install
+    default: "3.11.x"
+  extra-dependencies:
+    description: Additional uv extras (space-separated)
+    default: ""
+  rebuild-lockfile:
+    description: Delete and regenerate uv.lock
+    default: "false"
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065  # v5
+      with:
+        python-version: ${{ inputs.python-version }}
+
+    - uses: astral-sh/setup-uv@e4db8464a088ece1b920f60402e813ea4de65b8f  # v4
+      with:
+        enable-cache: true
+
+    - if: inputs.rebuild-lockfile == 'true'
+      shell: bash
+      run: rm -f uv.lock && uv lock
+
+    - shell: bash
+      env:
+        EXTRAS: ${{ inputs.extra-dependencies }}
+      run: |
+        flags="--extra api --extra docs --extra evals --extra codegraph"
+        flags="$flags --extra ollama --extra dev --extra neo4j --extra redis"
+        for e in $EXTRAS; do flags="$flags --extra $e"; done
+        uv sync $flags
+
+    - shell: bash
+      run: echo "ci-runner" > .anon_id

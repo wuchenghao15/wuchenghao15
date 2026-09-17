@@ -1,0 +1,41 @@
+# Minimal Compose file used alongside the Helm chart for local testing.
+# Production deployments should use the Helm templates directly.
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: m_flow-backend:latest
+    container_name: m_flow-helm-backend
+    ports:
+      - "8000:8000"
+    environment:
+      HOST: "0.0.0.0"
+      ENVIRONMENT: local
+      PYTHONPATH: /opt/m_flow
+    networks: [mflow]
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: 4GB
+
+  db:
+    image: pgvector/pgvector:pg17
+    container_name: m_flow-helm-pg
+    environment:
+      POSTGRES_USER: mflow_user
+      POSTGRES_PASSWORD: mflow_dev_pw
+      POSTGRES_DB: mflow_helm
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks: [mflow]
+
+networks:
+  mflow:
+
+volumes:
+  pg_data:

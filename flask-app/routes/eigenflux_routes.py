@@ -116,4 +116,3 @@ bp = Blueprint('eigenflux_bp', __name__)
 @system_container()
 def stats_overview():
     return jsonify({'status':'ok','code':0,'data':{'module':'eigenflux','routes_implemented':1}})
-

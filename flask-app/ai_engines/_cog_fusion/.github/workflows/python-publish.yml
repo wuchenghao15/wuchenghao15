@@ -1,0 +1,67 @@
+# This workflow builds and uploads a Python package with Twine when a release
+# is created. The upload is gated behind the full test suite: the `deploy` job
+# declares `needs: test`, so PyPI publishing only happens if every matrix test
+# job passes on the exact ref being released.
+name: Upload Python Package
+
+on:
+  release:
+    types: [created]
+
+jobs:
+  # Gate: run the suite on the released ref across all supported Pythons.
+  # If any of these fail, `deploy` is skipped and nothing is published.
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.9', '3.10', '3.11', '3.12']
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Run tests
+        run: |
+          python -m pytest test/ --ignore=test/bench.py --ignore=test/benchmark.py -m "not cloud"
+
+  deploy:
+    needs: test          # only publish if every test matrix job passed
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install build & twine
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install --upgrade build twine
+
+      - name: Build package
+        run: |
+          rm -rf dist build *.egg-info
+          python -m build
+
+      - name: Publish to PyPI
+        env:
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
+        run: |
+          twine upload dist/*

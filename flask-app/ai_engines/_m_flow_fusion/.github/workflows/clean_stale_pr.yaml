@@ -1,0 +1,38 @@
+# M-flow CI — Automatically label and close stale pull requests.
+# Runs daily at midnight UTC. PRs inactive for 60 days are marked "stale";
+# if still inactive after 7 more days they are closed automatically.
+name: housekeeping | Close Stale Pull Requests
+
+on:
+  schedule:
+    - cron: "0 0 * * *"       # every day at 00:00 UTC
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
+jobs:
+  prune-stale-prs:
+    name: Mark and close stale PRs
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout source (required by actions/stale)
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
+
+      - name: Run stale-PR lifecycle
+        uses: actions/stale@5bef64f19d7facfb25b37b414482c7164d639639  # v9
+        with:
+          days-before-stale: 60
+          days-before-close: 7
+          stale-pr-message: >-
+            This pull request has been automatically flagged as **stale** because
+            there has been no activity for 60 days.
+            It will be closed in 7 days unless new activity occurs.
+          close-pr-message: >-
+            Closing this pull request after prolonged inactivity.
+            Feel free to reopen it if work resumes.
+          stale-pr-label: "stale"
+          exempt-pr-labels: "keep-open,work-in-progress"

@@ -1,0 +1,562 @@
+# M-Flow CI — end-to-end integration tests: server, telemetry, deduplication, caching, and more.
+# Validates the full pipeline across multiple functional domains in isolation.
+name: "e2e-gate | End-to-End Functional Tests"
+
+permissions: {contents: read}
+
+on:
+  workflow_call:
+    inputs:
+      python-version:
+        required: false
+        type: string
+        default: '3.11.x'
+    secrets:
+      LLM_MODEL: {required: true}
+      LLM_ENDPOINT: {required: false}
+      LLM_API_KEY: {required: true}
+      LLM_API_VERSION: {required: false}
+      EMBEDDING_MODEL: {required: true}
+      EMBEDDING_ENDPOINT: {required: false}
+      EMBEDDING_API_KEY: {required: true}
+      EMBEDDING_API_VERSION: {required: false}
+      OPENAI_API_KEY: {required: true}
+      AWS_ACCESS_KEY_ID: {required: false}
+      AWS_SECRET_ACCESS_KEY: {required: false}
+
+jobs:
+
+  server-boot:
+    runs-on: ubuntu-22.04
+    name: "Server startup validation"
+    steps:
+      - name: Fetch repository
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
+        with: {fetch-depth: 0}
+
+      - name: Bootstrap M-Flow environment
+        uses: ./.github/actions/m_flow_setup
+        with:
+          python-version: '3.11.x'
+
+      - name: Assert server starts cleanly
+        env:
+          ENV: 'dev'
+          LLM_MODEL: ${{ secrets.LLM_MODEL }}
+          LLM_ENDPOINT: ${{ secrets.LLM_ENDPOINT }}
+          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+          LLM_API_VERSION: ${{ secrets.LLM_API_VERSION }}
+          EMBEDDING_MODEL: ${{ secrets.EMBEDDING_MODEL }}
+          EMBEDDING_DIMENSIONS: "1536"
+          EMBEDDING_ENDPOINT: ${{ secrets.EMBEDDING_ENDPOINT }}
+          EMBEDDING_API_KEY: ${{ secrets.EMBEDDING_API_KEY }}
+          EMBEDDING_API_VERSION: ${{ secrets.EMBEDDING_API_VERSION }}
+        run: uv run python ./m_flow/tests/test_m_flow_server_start.py
+
+  telemetry-unit:
+    runs-on: ubuntu-22.04
+    name: "Telemetry subsystem check"
+    steps:
+      - name: Pull source tree
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
+
+      - name: Bootstrap M-Flow environment
+        uses: ./.github/actions/m_flow_setup
+        with:
+          python-version: '3.11.x'
+
+      - name: Assert telemetry hooks fire correctly
+        env:
+          LLM_MODEL: ${{ secrets.LLM_MODEL }}
+          LLM_ENDPOINT: ${{ secrets.LLM_ENDPOINT }}
+          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+          LLM_API_VERSION: ${{ secrets.LLM_API_VERSION }}
+          EMBEDDING_MODEL: ${{ secrets.EMBEDDING_MODEL }}
+          EMBEDDING_DIMENSIONS: "1536"
+          EMBEDDING_ENDPOINT: ${{ secrets.EMBEDDING_ENDPOINT }}
+          EMBEDDING_API_KEY: ${{ secrets.EMBEDDING_API_KEY }}
+          EMBEDDING_API_VERSION: ${{ secrets.EMBEDDING_API_VERSION }}
+        run: uv run python ./m_flow/tests/test_telemetry.py
+
+  telemetry-pipeline:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+    name: "Telemetry with live pipeline"
+    steps:
+      - name: Pull source tree
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
+
+      - name: Bootstrap M-Flow environment
+        uses: ./.github/actions/m_flow_setup
+        with:
+          python-version: '3.11.x'
+
+      - name: Write anonymous telemetry identifier
+        run: |
+          echo "test-machine" > .anon_id
+
+      - name: Run pipeline with telemetry active
+        env:
+          ENV: 'local'
+          LLM_MODEL: ${{ secrets.LLM_MODEL }}
+          LLM_ENDPOINT: ${{ secrets.LLM_ENDPOINT }}
+          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+          LLM_API_VERSION: ${{ secrets.LLM_API_VERSION }}
+          EMBEDDING_MODEL: ${{ secrets.EMBEDDING_MODEL }}
+          EMBEDDING_DIMENSIONS: "1536"
+          EMBEDDING_ENDPOINT: ${{ secrets.EMBEDDING_ENDPOINT }}
+          EMBEDDING_API_KEY: ${{ secrets.EMBEDDING_API_KEY }}
+          EMBEDDING_API_VERSION: ${{ secrets.EMBEDDING_API_VERSION }}
+        run: uv run python ./m_flow/tests/test_library.py
+
+  dedup-validation:
+    runs-on: ubuntu-latest
+    name: "Deduplication logic (PGVector)"
+    defaults:
+      run: {shell: bash}
+    services:
+      postgres:
+        image: pgvector/pgvector:pg17
+        env: {POSTGRES_USER: m_flow, POSTGRES_PASSWORD: m_flow, POSTGRES_DB: m_flow_db}
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports: ["5432:5432"]
+    steps:
+      - name: Fetch repository
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
+
+      - name: Bootstrap M-Flow environment
+        uses: ./.github/actions/m_flow_setup
+        with:
+          python-version: '3.11.x'
+          extra-dependencies: "postgres"
+
+      - name: Assert deduplication produces correct results
+        env:
+          ENV: 'dev'
+          ENABLE_BACKEND_ACCESS_CONTROL: 'false'
+          LLM_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          EMBEDDING_MODEL: ${{ secrets.EMBEDDING_MODEL }}
+          EMBEDDING_DIMENSIONS: "1536"
+          EMBEDDING_ENDPOINT: ${{ secrets.EMBEDDING_ENDPOINT }}
+          EMBEDDING_API_KEY: ${{ secrets.EMBEDDING_API_KEY }}
+          EMBEDDING_API_VERSION: ${{ secrets.EMBEDDING_API_VERSION }}
+        run: uv run python ./m_flow/tests/test_deduplication.py
+
+  s3-storage:
+    if: false
+    runs-on: ubuntu-22.04
+    name: "S3 bucket read/write"
+    steps:
+      - name: Pull source tree
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
+
+      - name: Bootstrap M-Flow environment
+        uses: ./.github/actions/m_flow_setup
+        with:
+          python-version: '3.11.x'
+          extra-dependencies: "aws"
+
+      - name: Validate S3 storage operations
+        env:
+          ENV: 'dev'
+          LLM_MODEL: ${{ secrets.LLM_MODEL }}
+          LLM_ENDPOINT: ${{ secrets.LLM_ENDPOINT }}
+          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+          LLM_API_VERSION: ${{ secrets.LLM_API_VERSION }}
+          EMBEDDING_MODEL: ${{ secrets.EMBEDDING_MODEL }}
+          EMBEDDING_DIMENSIONS: "1536"
+          EMBEDDING_ENDPOINT: ${{ secrets.EMBEDDING_ENDPOINT }}
+          EMBEDDING_API_KEY: ${{ secrets.EMBEDDING_API_KEY }}
+          EMBEDDING_API_VERSION: ${{ secrets.EMBEDDING_API_VERSION }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        run: uv run python ./m_flow/tests/test_s3.py
+
+  parallel-db-access:
+    runs-on: ubuntu-22.04
+    name: "Concurrent async database usage"
+    steps:
+      - name: Pull source tree
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
+
+      - name: Bootstrap M-Flow environment
+        uses: ./.github/actions/m_flow_setup
+        with:
+          python-version: '3.11.x'
+
+      - name: Confirm dependency resolution
+        run: echo "Dependencies already installed in setup"
+
+      - name: Verify parallel database operations
+        env:
+          ENV: 'dev'
+          LLM_MODEL: ${{ secrets.LLM_MODEL }}
+          LLM_ENDPOINT: ${{ secrets.LLM_ENDPOINT }}
+          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+          LLM_API_VERSION: ${{ secrets.LLM_API_VERSION }}
+          EMBEDDING_MODEL: ${{ secrets.EMBEDDING_MODEL }}
+          EMBEDDING_DIMENSIONS: "1536"
+          EMBEDDING_ENDPOINT: ${{ secrets.EMBEDDING_ENDPOINT }}
+          EMBEDDING_API_KEY: ${{ secrets.EMBEDDING_API_KEY }}
+          EMBEDDING_API_VERSION: ${{ secrets.EMBEDDING_API_VERSION }}
+        run: uv run python ./m_flow/tests/test_parallel_databases.py
+
+  dataset-handler:
+    runs-on: ubuntu-22.04
+    name: "Dataset DB handler assertions"
+    steps:
+      - name: Pull source tree
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
+
+      - name: Bootstrap M-Flow environment
+        uses: ./.github/actions/m_flow_setup
+        with:
+          python-version: '3.11.x'
+
+      - name: Verify dataset database handler
+        env:
+          ENV: 'dev'
+          LLM_MODEL: ${{ secrets.LLM_MODEL }}
+          LLM_ENDPOINT: ${{ secrets.LLM_ENDPOINT }}
+          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+          LLM_API_VERSION: ${{ secrets.LLM_API_VERSION }}
+          EMBEDDING_MODEL: ${{ secrets.EMBEDDING_MODEL }}
+          EMBEDDING_DIMENSIONS: "1536"
+          EMBEDDING_ENDPOINT: ${{ secrets.EMBEDDING_ENDPOINT }}
+          EMBEDDING_API_KEY: ${{ secrets.EMBEDDING_API_KEY }}
+          EMBEDDING_API_VERSION: ${{ secrets.EMBEDDING_API_VERSION }}
+        run: uv run python ./m_flow/tests/test_dataset_database_handler.py
+
+  dataset-deletion:
+    runs-on: ubuntu-22.04
+    name: "Dataset deletion correctness"
+    steps:
+      - name: Pull source tree
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
+
+      - name: Bootstrap M-Flow environment
+        uses: ./.github/actions/m_flow_setup
+        with:
+          python-version: '3.11.x'
+
+      - name: Verify dataset deletion logic
+        env:
+          ENV: 'dev'
+          LLM_MODEL: ${{ secrets.LLM_MODEL }}
+          LLM_ENDPOINT: ${{ secrets.LLM_ENDPOINT }}
+          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+          LLM_API_VERSION: ${{ secrets.LLM_API_VERSION }}
+          EMBEDDING_MODEL: ${{ secrets.EMBEDDING_MODEL }}
+          EMBEDDING_DIMENSIONS: "1536"
+          EMBEDDING_ENDPOINT: ${{ secrets.EMBEDDING_ENDPOINT }}
+          EMBEDDING_API_KEY: ${{ secrets.EMBEDDING_API_KEY }}
+          EMBEDDING_API_VERSION: ${{ secrets.EMBEDDING_API_VERSION }}
+        run: uv run python ./m_flow/tests/test_dataset_delete.py
+
+  permissions-scenarios:
+    runs-on: ubuntu-22.04
+    name: "Permission boundary verification"
+    steps:
+      - name: Pull source tree
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
+
+      - name: Bootstrap M-Flow environment
+        uses: ./.github/actions/m_flow_setup
+        with:
+          python-version: '3.11.x'
+
+      - name: Confirm dependency resolution
+        run: echo "Dependencies already installed in setup"
+
+      - name: Exercise permission scenarios
+        env:
+          ENV: 'dev'
+          LLM_MODEL: ${{ secrets.LLM_MODEL }}
+          LLM_ENDPOINT: ${{ secrets.LLM_ENDPOINT }}
+          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+          LLM_API_VERSION: ${{ secrets.LLM_API_VERSION }}
+          EMBEDDING_MODEL: ${{ secrets.EMBEDDING_MODEL }}
+          EMBEDDING_DIMENSIONS: "1536"
+          EMBEDDING_ENDPOINT: ${{ secrets.EMBEDDING_ENDPOINT }}
+          EMBEDDING_API_KEY: ${{ secrets.EMBEDDING_API_KEY }}
+          EMBEDDING_API_VERSION: ${{ secrets.EMBEDDING_API_VERSION }}
+        run: uv run python ./m_flow/tests/test_permissions.py
+
+  multi-tenancy-scenarios:
+    runs-on: ubuntu-22.04
+    name: "Multi-tenant isolation check"
+    steps:
+      - name: Pull source tree
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
+
+      - name: Bootstrap M-Flow environment
+        uses: ./.github/actions/m_flow_setup
+        with:
+          python-version: '3.11.x'
+
+      - name: Validate tenant isolation
+        env:
+          ENV: 'dev'
+          LLM_MODEL: ${{ secrets.LLM_MODEL }}
+          LLM_ENDPOINT: ${{ secrets.LLM_ENDPOINT }}
+          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+          LLM_API_VERSION: ${{ secrets.LLM_API_VERSION }}
+          EMBEDDING_MODEL: ${{ secrets.EMBEDDING_MODEL }}
+          EMBEDDING_DIMENSIONS: "1536"
+          EMBEDDING_ENDPOINT: ${{ secrets.EMBEDDING_ENDPOINT }}
+          EMBEDDING_API_KEY: ${{ secrets.EMBEDDING_API_KEY }}
+          EMBEDDING_API_VERSION: ${{ secrets.EMBEDDING_API_VERSION }}
+        run: uv run python ./m_flow/tests/test_multi_tenancy.py
+
+  graph-edge-ingestion:
+    runs-on: ubuntu-22.04
+    name: "Graph edge ingestion correctness"
+    steps:
+      - name: Pull source tree
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
+
+      - name: Bootstrap M-Flow environment
+        uses: ./.github/actions/m_flow_setup
+        with:
+          python-version: '3.11.x'
+
+      - name: Confirm dependency resolution
+        run: echo "Dependencies already installed in setup"
+
+      - name: Validate edge ingestion pipeline
+        env:
+          ENV: 'dev'
+          LLM_MODEL: ${{ secrets.LLM_MODEL }}
+          LLM_ENDPOINT: ${{ secrets.LLM_ENDPOINT }}
+          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+          LLM_API_VERSION: ${{ secrets.LLM_API_VERSION }}
+          EMBEDDING_MODEL: ${{ secrets.EMBEDDING_MODEL }}
+          EMBEDDING_DIMENSIONS: "1536"
+          EMBEDDING_ENDPOINT: ${{ secrets.EMBEDDING_ENDPOINT }}
+          EMBEDDING_API_KEY: ${{ secrets.EMBEDDING_API_KEY }}
+          EMBEDDING_API_VERSION: ${{ secrets.EMBEDDING_API_VERSION }}
+        run: uv run python ./m_flow/tests/test_edge_ingestion.py
+
+  concurrent-subprocess-access:
+    runs-on: ubuntu-latest
+    name: "Subprocess concurrency (Kuzu + Redis)"
+    defaults:
+      run: {shell: bash}
+    services:
+      postgres:
+        image: pgvector/pgvector:pg17
+        env: {POSTGRES_USER: m_flow, POSTGRES_PASSWORD: m_flow, POSTGRES_DB: m_flow_db}
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports: ["5432:5432"]
+      redis:
+        image: redis:7
+        ports: ["6379:6379"]
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 5
+    steps:
+      - name: Fetch repository
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
+
+      - name: Bootstrap M-Flow environment
+        uses: ./.github/actions/m_flow_setup
+        with:
+          python-version: '3.11.x'
+          extra-dependencies: "postgres redis"
+
+      - name: Validate concurrent subprocess access (Kuzu/Lancedb/Postgres/Redis)
+        env:
+          ENV: dev
+          LLM_MODEL: ${{ secrets.LLM_MODEL }}
+          LLM_ENDPOINT: ${{ secrets.LLM_ENDPOINT }}
+          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+          LLM_API_VERSION: ${{ secrets.LLM_API_VERSION }}
+          EMBEDDING_MODEL: ${{ secrets.EMBEDDING_MODEL }}
+          EMBEDDING_DIMENSIONS: "1536"
+          EMBEDDING_ENDPOINT: ${{ secrets.EMBEDDING_ENDPOINT }}
+          EMBEDDING_API_KEY: ${{ secrets.EMBEDDING_API_KEY }}
+          EMBEDDING_API_VERSION: ${{ secrets.EMBEDDING_API_VERSION }}
+          GRAPH_DATABASE_PROVIDER: 'kuzu'
+          CACHING: true
+          CACHE_BACKEND: 'redis'
+          SHARED_KUZU_LOCK: true
+          DB_PROVIDER: 'postgres'
+          DB_NAME: 'm_flow_db'
+          DB_HOST: '127.0.0.1'
+          DB_PORT: 5432
+          DB_USERNAME: m_flow
+          DB_PASSWORD: m_flow
+        run: uv run python ./m_flow/tests/test_concurrent_subprocess_access.py
+
+  concept-extraction:
+    runs-on: ubuntu-22.04
+    name: "Concept extraction accuracy"
+    steps:
+
+      - name: Pull source tree
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
+
+      - name: Bootstrap M-Flow environment
+        uses: ./.github/actions/m_flow_setup
+        with:
+          python-version: '3.11.x'
+
+      - name: Confirm dependency resolution
+        run: echo "Dependencies already installed in setup"
+
+      - name: Validate concept extraction output
+        env:
+          ENV: 'dev'
+          LLM_MODEL: ${{ secrets.LLM_MODEL }}
+          LLM_ENDPOINT: ${{ secrets.LLM_ENDPOINT }}
+          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+          LLM_API_VERSION: ${{ secrets.LLM_API_VERSION }}
+          EMBEDDING_MODEL: ${{ secrets.EMBEDDING_MODEL }}
+          EMBEDDING_DIMENSIONS: "1536"
+          EMBEDDING_ENDPOINT: ${{ secrets.EMBEDDING_ENDPOINT }}
+          EMBEDDING_API_KEY: ${{ secrets.EMBEDDING_API_KEY }}
+          EMBEDDING_API_VERSION: ${{ secrets.EMBEDDING_API_VERSION }}
+        run: uv run python ./m_flow/tests/tasks/concept_extraction/entity_extraction_test.py
+
+
+  conversation-sessions-redis:
+    runs-on: ubuntu-latest
+    name: "Conversation history (Redis backend)"
+    defaults:
+      run: {shell: bash}
+    services:
+      postgres:
+        image: pgvector/pgvector:pg17
+        env: {POSTGRES_USER: m_flow, POSTGRES_PASSWORD: m_flow, POSTGRES_DB: m_flow_db}
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports: ["5432:5432"]
+      redis:
+        image: redis:7
+        ports: ["6379:6379"]
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 5
+    steps:
+      - name: Fetch repository
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
+
+      - name: Bootstrap M-Flow environment
+        uses: ./.github/actions/m_flow_setup
+        with:
+          python-version: '3.11.x'
+          extra-dependencies: "postgres redis"
+
+      - name: Validate conversation session persistence (Redis)
+        env:
+          ENV: 'dev'
+          LLM_MODEL: ${{ secrets.LLM_MODEL }}
+          LLM_ENDPOINT: ${{ secrets.LLM_ENDPOINT }}
+          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+          LLM_API_VERSION: ${{ secrets.LLM_API_VERSION }}
+          EMBEDDING_MODEL: ${{ secrets.EMBEDDING_MODEL }}
+          EMBEDDING_DIMENSIONS: "1536"
+          EMBEDDING_ENDPOINT: ${{ secrets.EMBEDDING_ENDPOINT }}
+          EMBEDDING_API_KEY: ${{ secrets.EMBEDDING_API_KEY }}
+          EMBEDDING_API_VERSION: ${{ secrets.EMBEDDING_API_VERSION }}
+          GRAPH_DATABASE_PROVIDER: 'kuzu'
+          CACHING: true
+          CACHE_BACKEND: 'redis'
+          DB_PROVIDER: 'postgres'
+          DB_NAME: 'm_flow_db'
+          DB_HOST: '127.0.0.1'
+          DB_PORT: 5432
+          DB_USERNAME: m_flow
+          DB_PASSWORD: m_flow
+        run: uv run python ./m_flow/tests/test_conversation_history.py
+
+  conversation-sessions-fs:
+    runs-on: ubuntu-latest
+    name: "Conversation history (filesystem backend)"
+    defaults:
+      run: {shell: bash}
+    services:
+      postgres:
+        image: pgvector/pgvector:pg17
+        env: {POSTGRES_USER: m_flow, POSTGRES_PASSWORD: m_flow, POSTGRES_DB: m_flow_db}
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports: ["5432:5432"]
+    steps:
+      - name: Fetch repository
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
+
+      - name: Bootstrap M-Flow environment
+        uses: ./.github/actions/m_flow_setup
+        with:
+          python-version: '3.11.x'
+          extra-dependencies: "postgres"
+
+      - name: Validate conversation session persistence (FS)
+        env:
+          ENV: dev
+          LLM_MODEL: ${{ secrets.LLM_MODEL }}
+          LLM_ENDPOINT: ${{ secrets.LLM_ENDPOINT }}
+          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+          LLM_API_VERSION: ${{ secrets.LLM_API_VERSION }}
+          EMBEDDING_MODEL: ${{ secrets.EMBEDDING_MODEL }}
+          EMBEDDING_DIMENSIONS: "1536"
+          EMBEDDING_ENDPOINT: ${{ secrets.EMBEDDING_ENDPOINT }}
+          EMBEDDING_API_KEY: ${{ secrets.EMBEDDING_API_KEY }}
+          EMBEDDING_API_VERSION: ${{ secrets.EMBEDDING_API_VERSION }}
+          GRAPH_DATABASE_PROVIDER: 'kuzu'
+          CACHING: true
+          CACHE_BACKEND: 'fs'
+          DB_PROVIDER: 'postgres'
+          DB_NAME: 'm_flow_db'
+          DB_HOST: '127.0.0.1'
+          DB_PORT: 5432
+          DB_USERNAME: m_flow
+          DB_PASSWORD: m_flow
+        run: uv run python ./m_flow/tests/test_conversation_history.py
+
+  pipeline-cache:
+    runs-on: ubuntu-22.04
+    name: "Pipeline result caching"
+    steps:
+      - name: Fetch repository
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
+        with: {fetch-depth: 0}
+
+      - name: Bootstrap M-Flow environment
+        uses: ./.github/actions/m_flow_setup
+        with:
+          python-version: '3.11.x'
+
+      - name: Validate pipeline cache behaviour
+        env:
+          ENV: 'dev'
+          LLM_MODEL: ${{ secrets.LLM_MODEL }}
+          LLM_ENDPOINT: ${{ secrets.LLM_ENDPOINT }}
+          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+          LLM_API_VERSION: ${{ secrets.LLM_API_VERSION }}
+          EMBEDDING_MODEL: ${{ secrets.EMBEDDING_MODEL }}
+          EMBEDDING_DIMENSIONS: "1536"
+          EMBEDDING_ENDPOINT: ${{ secrets.EMBEDDING_ENDPOINT }}
+          EMBEDDING_API_KEY: ${{ secrets.EMBEDDING_API_KEY }}
+          EMBEDDING_API_VERSION: ${{ secrets.EMBEDDING_API_VERSION }}
+        run: uv run python ./m_flow/tests/test_pipeline_cache.py

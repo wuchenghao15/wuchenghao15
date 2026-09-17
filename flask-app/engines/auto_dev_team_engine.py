@@ -825,7 +825,9 @@ def implementation():
         route = gap.route
         return f'''# 补充CRUD操作: {gap.title}
 # 路由组: {route}
+@system_container(require_auth='admin')
 @app.route('{route}/create', methods=['POST'])
+@system_container(require_auth='admin')
 def create():
     """创建"""
     data = request.get_json()
@@ -833,6 +835,7 @@ def create():
     return jsonify({{'status': 'success', 'data': data}})
 
 @app.route('{route}/update/<int:item_id>', methods=['PUT'])
+@system_container(require_auth='admin')
 def update(item_id):
     """更新"""
     data = request.get_json()
@@ -840,6 +843,7 @@ def update(item_id):
     return jsonify({{'status': 'success', 'data': data}})
 
 @app.route('{route}/delete/<int:item_id>', methods=['DELETE'])
+@system_container(require_auth='admin')
 def delete(item_id):
     """删除"""
     # 实现删除逻辑
@@ -851,6 +855,7 @@ def delete(item_id):
         route = gap.route
         return f'''# 补充API: {gap.title}
 @app.route('{route}', methods=['GET', 'POST'])
+@system_container(require_auth='login')
 def api_endpoint():
     """{gap.description}"""
     try:

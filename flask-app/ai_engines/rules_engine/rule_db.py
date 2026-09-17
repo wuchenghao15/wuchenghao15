@@ -19,7 +19,7 @@ from datetime import datetime
 from typing import Optional
 
 
-# 主库路径 (与系统主 DB 一致)
+# 主库路径 (仙女座 v5.0 修复: 从 app.db 改为 mtscos.db)
 _DB_PATH = os.path.abspath(
     os.path.join(
         os.path.dirname(__file__),
@@ -29,22 +29,26 @@ _DB_PATH = os.path.abspath(
         "_runtime",
         "databases",
         "Database",
-        "app.db",
+        "mtscos.db",
     )
 )
 
-# 若主库不存在, 回退到 ai_engines/app.db (历史路径)
-_AI_ENGINE_DB = os.path.abspath(
-    os.path.join(os.path.dirname(__file__), "..", "app.db")
-)
+# 兼容回退 (历史路径 app.db / ai_engines/app.db)
+_LEGACY_PATHS = [
+    os.path.abspath(
+        os.path.join(os.path.dirname(__file__), "..", "..", "..", "_runtime", "databases", "Database", "app.db")
+    ),
+    os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "app.db")),
+]
 
 
 def _resolve_db_path() -> str:
-    """优先使用主库, 回退到 ai_engines/app.db, 最后临时 :memory:"""
+    """优先 mtscos.db, 回退 legacy app.db, 最后 :memory:"""
     if os.path.exists(_DB_PATH):
         return _DB_PATH
-    if os.path.exists(_AI_ENGINE_DB):
-        return _AI_ENGINE_DB
+    for p in _LEGACY_PATHS:
+        if os.path.exists(p):
+            return p
     return ":memory:"
 
 
@@ -115,10 +119,13 @@ class RuleDB:
         self._ensure_tables()
 
     def _get_conn(self) -> sqlite3.Connection:
-        # busy_timeout=10s: 15个daemon并发写库, 避免规则治理写入被 "database is locked" 丢失
-        conn = sqlite3.connect(self.db_path, timeout=10.0)
+        # 🔧 仙女座 v5.0: timeout=30s + WAL + checkpoint=10000
+        conn = sqlite3.connect(self.db_path, timeout=30.0)
         conn.row_factory = sqlite3.Row
-        conn.execute("PRAGMA busy_timeout = 10000")
+        conn.execute("PRAGMA busy_timeout = 30000")
+        conn.execute("PRAGMA journal_mode = WAL")
+        conn.execute("PRAGMA wal_autocheckpoint = 10000")
+        conn.execute("PRAGMA synchronous = NORMAL")
         return conn
 
     def _ensure_tables(self) -> None:

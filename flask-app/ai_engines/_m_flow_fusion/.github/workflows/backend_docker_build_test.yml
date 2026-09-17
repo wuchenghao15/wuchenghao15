@@ -1,0 +1,46 @@
+# M-flow CI — verify that the backend Dockerfile compiles without errors.
+# This workflow only builds the image locally; it never pushes to a registry.
+name: build-gate | M-flow Backend Docker Build
+
+on:
+  workflow_call:
+
+permissions: {contents: read}
+
+env:
+  # Replace with your AWS account ID when deploying to ECR
+  AWS_DEV_ACCOUNT: "000000000000"
+
+jobs:
+  verify-docker-build:
+    name: Compile backend Docker image (dry-run)
+    runs-on: ubuntu-22.04
+    timeout-minutes: 20
+
+    steps:
+      - name: Pull repository
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
+
+      - name: Assemble image tag
+        id: tag
+        run: |
+          SHA="$(git rev-parse --short HEAD)"
+          TS="$(date +%Y%m%d%H%M%S)"
+          echo "version=dev-${TS}-${SHA}" >> "$GITHUB_OUTPUT"
+
+      - name: Run dockerize script (build only)
+        env:
+          DOCKER_TAG: ${{ steps.tag.outputs.version }}
+        run: |
+          image_name="m_flow" \
+            docker_login="false" \
+            version="${DOCKER_TAG}" \
+            account="${{ env.AWS_DEV_ACCOUNT }}" \
+            app_dir="." \
+            publish="false" \
+            ./bin/dockerize
+
+      - name: Report built tag
+        run: |
+          TAG="$(cat /tmp/.DOCKER_IMAGE_VERSION)"
+          echo "::notice ::M-flow backend image built successfully — tag ${TAG}"

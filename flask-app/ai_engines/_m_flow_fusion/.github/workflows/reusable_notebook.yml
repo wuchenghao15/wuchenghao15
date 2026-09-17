@@ -1,0 +1,78 @@
+# M-Flow — reusable Jupyter executor (nbconvert --execute).
+# -----------------------------------------------------------------------------
+# Callers pass notebook-location; secrets wire embedding + LLM env for CI.
+# -----------------------------------------------------------------------------
+name: reusable | Notebook Executor
+
+concurrency:
+  cancel-in-progress: false
+  group: mflow-nb-${{ github.run_id }}-${{ github.run_attempt }}
+
+on:
+  workflow_call:
+    inputs:
+      notebook-location:
+        description: Relative path to the .ipynb file to execute
+        required: true
+        type: string
+      python-version:
+        default: "3.11.x"
+        description: CPython version (e.g. "3.11")
+        required: false
+        type: string
+    secrets:
+      LLM_API_KEY:
+        required: true
+      OPENAI_API_KEY:
+        required: true
+      EMBEDDING_MODEL:
+        required: true
+      EMBEDDING_ENDPOINT:
+        required: true
+      EMBEDDING_API_KEY:
+        required: true
+      EMBEDDING_API_VERSION:
+        required: true
+
+permissions: { contents: read }
+
+env:
+  RUNTIME__LOG_LEVEL: ERROR
+
+jobs:
+  mflow_nbconvert_gate:
+    if: false  # notebook runner not configured
+    name: Execute ${{ inputs.notebook-location }}
+    runs-on: ubuntu-22.04
+    timeout-minutes: 25
+
+    defaults:
+      run: { shell: bash }
+
+    env:
+      ENV: dev
+      LLM_API_KEY:            ${{ secrets.OPENAI_API_KEY }}
+      OPENAI_API_KEY:         ${{ secrets.OPENAI_API_KEY }}
+      EMBEDDING_MODEL:        ${{ secrets.EMBEDDING_MODEL }}
+      EMBEDDING_DIMENSIONS: "1536"
+      EMBEDDING_ENDPOINT:     ${{ secrets.EMBEDDING_ENDPOINT }}
+      EMBEDDING_API_KEY:      ${{ secrets.EMBEDDING_API_KEY }}
+      EMBEDDING_API_VERSION:  ${{ secrets.EMBEDDING_API_VERSION }}
+
+    steps:
+      - name: Fetch git workspace
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
+
+      - name: Provision Python + M-flow (incl. notebook extra)
+        uses: ./.github/actions/m_flow_setup
+        with:
+          python-version: ${{ inputs.python-version }}
+          extra-dependencies: "notebook"
+
+      - name: nbconvert execute with 1200s cell budget
+        run: |
+          uv run jupyter nbconvert \
+            --to notebook \
+            --execute "${{ inputs.notebook-location }}" \
+            --output executed_notebook.ipynb \
+            --ExecutePreprocessor.timeout=1200

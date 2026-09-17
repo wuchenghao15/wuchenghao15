@@ -1,0 +1,40 @@
+# M-flow CI — smoke-test the full stack via docker compose.
+# Builds all images, starts every service, waits for readiness, then tears down.
+name: integration-gate | Docker Compose Smoke Test
+
+on:
+  workflow_call:
+
+permissions: {contents: read}
+
+jobs:
+  compose-smoke-test:
+    name: Build, start, and verify docker compose stack
+    runs-on: ubuntu-22.04
+    timeout-minutes: 15
+    env:
+      ENVIRONMENT: dev
+      ENV: dev
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
+
+      - name: Prepare Docker Buildx
+        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f  # v3
+
+      - name: Build all images
+        run: docker compose -f docker-compose.yml build
+
+      - name: Start services in background
+        run: docker compose -f docker-compose.yml up -d
+
+      - name: Allow services to initialise
+        run: |
+          echo "Waiting 30s for containers to stabilise..."
+          sleep 30
+          docker compose -f docker-compose.yml ps
+
+      - name: Tear down stack
+        if: always()
+        run: docker compose -f docker-compose.yml down --volumes --remove-orphans

@@ -1,0 +1,106 @@
+# This workflow uses actions that are not certified by GitHub.
+# They are provided by a third-party and are governed by
+# separate terms of service, privacy policy, and support
+# documentation.
+#
+# Microsoft Security DevOps (MSDO) is a command line application which integrates static analysis tools into the development cycle.
+# MSDO installs, configures and runs the latest versions of static analysis tools
+# (including, but not limited to, SDL/security and compliance tools).
+#
+# The Microsoft Security DevOps action is currently in beta and runs on the windows-latest queue,
+# as well as Windows self hosted agents. ubuntu-latest support coming soon.
+#
+# For more information about the action , check out https://github.com/microsoft/security-devops-action
+#
+# Please note this workflow do not integrate your GitHub Org with Microsoft Defender For DevOps. You have to create an integration
+# and provide permission before this can report data back to azure.
+# Read the official documentation here : https://learn.microsoft.com/en-us/azure/defender-for-cloud/quickstart-onboard-github
+
+name: "Microsoft Defender For Devops"
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+  schedule:
+    - cron: '43 17 * * 6'
+
+permissions:
+  contents: read
+
+jobs:
+  MSDO:
+    # currently only windows-latest is supported
+    runs-on: windows-latest
+    permissions:
+      contents: read
+      security-events: write  # for github/codeql-action/upload-sarif below
+
+    steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+    - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6
+      with:
+        dotnet-version: |
+          5.0.x
+          6.0.x
+    - name: Run Microsoft Security DevOps
+      uses: microsoft/security-devops-action@08976cb623803b1b36d7112d4ff9f59eae704de0 # v1.12.0
+      id: msdo
+      with:
+        # checkov is intentionally excluded from this MSDO step.
+        # MSDO 0.215.0's guardian.cmd wrapper treats checkov's exit code 1
+        # (emitted whenever any violation is found, even below the active severity
+        # threshold) as a fatal "tool error" and breaks the build even when
+        # "Active results: 0" and "Found no breaking results." The .checkov.yaml
+        # soft-fail setting is never read by the guardian wrapper.
+        # IaC security scanning continues below in this same MSDO job identity.
+        # That preserves the existing GitHub code-scanning configuration while
+        # avoiding the guardian.cmd/checkov exit-code bug in the MSDO wrapper.
+        tools: eslint,templateanalyzer,terrascan
+    - name: Upload results to Security tab
+      uses: github/codeql-action/upload-sarif@b96794f015dfd88f77b49b1c93e0fa7110f94c63 # v4
+      with:
+        sarif_file: ${{ steps.msdo.outputs.sarifFile }}
+
+    - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
+      with:
+        python-version: "3.12"
+
+    - name: Install Checkov
+      run: pip install -r .github/requirements/checkov.txt --require-hashes
+
+    - name: Run Checkov
+      shell: pwsh
+      env:
+        PYTHONUTF8: "1"
+      run: |
+        New-Item -ItemType Directory -Force reports | Out-Null
+        checkov --directory . --framework kubernetes helm dockerfile github_actions secrets bicep arm --soft-fail --output sarif --output json --output-file-path reports
+        if (-not (Test-Path reports/results_sarif.sarif)) {
+          $sarif = Get-ChildItem -Path reports -Recurse -Filter *.sarif | Select-Object -First 1
+          if ($null -eq $sarif) { throw "Checkov did not produce a SARIF file" }
+          Copy-Item $sarif.FullName reports/results_sarif.sarif
+        }
+        if (-not (Test-Path reports/results_json.json)) {
+          $json = Get-ChildItem -Path reports -Recurse -Filter *.json | Select-Object -First 1
+          if ($null -eq $json) { throw "Checkov did not produce a JSON file" }
+          Copy-Item $json.FullName reports/results_json.json
+        }
+
+    # checkov's SARIF exporter includes checks it internally marked SKIPPED
+    # (via the inline `# checkov:skip=` comments / `checkov.io/skipN`
+    # annotations already on the Helm chart) as ordinary un-suppressed
+    # results - it never uses SARIF's own `suppressions` field, so GitHub
+    # opens a fresh alert for the same already-suppressed finding on every
+    # single run (see #6035/#6036, #6112-6115, #6128-6131). checkov's JSON
+    # output does correctly record the skip, so cross-reference it here
+    # instead of re-dismissing the same alerts by hand forever.
+    - name: Filter checkov's own suppressed checks out of the SARIF
+      run: python .github/scripts/filter_checkov_skipped.py reports/results_json.json reports/results_sarif.sarif reports/checkov.sarif
+
+    - name: Upload Checkov results to Security tab
+      uses: github/codeql-action/upload-sarif@b96794f015dfd88f77b49b1c93e0fa7110f94c63 # v4
+      if: always()
+      with:
+        sarif_file: reports/checkov.sarif

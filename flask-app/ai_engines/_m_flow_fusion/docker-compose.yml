@@ -1,0 +1,226 @@
+# =============================================================================
+# M-flow — Docker Compose Stack
+# Usage:
+#   docker compose up                      # backend only
+#   docker compose --profile ui up         # backend + frontend
+#   docker compose --profile neo4j up      # backend + Neo4j
+#   docker compose --profile postgres up   # backend + Postgres
+#   docker compose --profile mcp up        # backend + MCP server
+#   docker compose --profile playground up # backend + face recognition
+# =============================================================================
+
+x-common-env: &common-env
+  HOST: "0.0.0.0"
+  ENVIRONMENT: local
+  LOG_LEVEL: INFO
+
+services:
+  # ---------------------------------------------------------------------------
+  # Core: M-flow Backend API
+  # ---------------------------------------------------------------------------
+  mflow-api:
+    container_name: m_flow
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - .env:/opt/m_flow/.env
+    environment:
+      <<: *common-env
+      DEBUG: "false"  # Set "true" to enable debugpy
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      - "8000:8000"
+      - "9230:9230"   # debugpy
+    networks:
+      - m_flow-network
+    deploy:
+      resources:
+        limits:
+          cpus: "4.0"
+          memory: 8GB
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ---------------------------------------------------------------------------
+  # MCP Server — Model Context Protocol for IDE integration
+  # ---------------------------------------------------------------------------
+  mflow-mcp:
+    container_name: m_flow-mcp
+    profiles: [mcp]
+    build:
+      context: .
+      dockerfile: m_flow-mcp/Dockerfile
+    volumes:
+      - .env:/opt/m_flow/.env
+    environment:
+      <<: *common-env
+      DEBUG: "false"
+      TRANSPORT_MODE: sse
+      # Database — should mirror the main backend service
+      DB_PROVIDER: "${DB_PROVIDER:-sqlite}"
+      DB_HOST: "${DB_HOST:-host.docker.internal}"
+      DB_PORT: "${DB_PORT:-5432}"
+      DB_NAME: "${DB_NAME:-mflow_store}"
+      DB_USERNAME: "${DB_USERNAME:-m_flow}"
+      DB_PASSWORD: "${DB_PASSWORD:-m_flow}"
+      MCP_LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: "1"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      - "8001:8000"   # MCP port (offset to avoid clash with backend)
+      - "9231:9230"   # MCP debugger (offset from backend's 9230)
+    networks:
+      - m_flow-network
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: 6GB
+
+  # ---------------------------------------------------------------------------
+  # Frontend — Next.js Console UI  (profile: ui)
+  # ---------------------------------------------------------------------------
+  frontend:
+    container_name: m_flow-frontend
+    profiles: [ui]
+    build:
+      context: ./m_flow-frontend
+      dockerfile: Dockerfile
+    volumes:
+      - ./m_flow-frontend/src:/frontend/src
+      - ./m_flow-frontend/public:/frontend/public
+    ports:
+      - "3000:3000"
+    networks:
+      - m_flow-network
+    depends_on:
+      - mflow-api
+
+  # ---------------------------------------------------------------------------
+  # Infrastructure: Graph DB  (profile: neo4j)
+  # ---------------------------------------------------------------------------
+  neo4j:
+    image: neo4j:5
+    container_name: m_flow-neo4j
+    profiles: [neo4j]
+    environment:
+      NEO4J_AUTH: neo4j/mflow-dev-neo4j
+      NEO4J_PLUGINS: '["apoc", "graph-data-science"]'
+    ports:
+      - "7474:7474"
+      - "7687:7687"
+    networks:
+      - m_flow-network
+    volumes:
+      - neo4j_data:/data
+
+  # ---------------------------------------------------------------------------
+  # Infrastructure: Vector-capable Postgres  (profile: postgres)
+  # ---------------------------------------------------------------------------
+  postgres:
+    image: pgvector/pgvector:pg17
+    container_name: m_flow-postgres
+    profiles: [postgres]
+    environment:
+      POSTGRES_USER: m_flow
+      POSTGRES_PASSWORD: m_flow
+      POSTGRES_DB: mflow_store
+    ports:
+      - "5432:5432"
+    networks:
+      - m_flow-network
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  # ---------------------------------------------------------------------------
+  # Infrastructure: ChromaDB  (profile: chromadb)
+  # ---------------------------------------------------------------------------
+  chromadb:
+    image: chromadb/chroma:0.6.3
+    container_name: m_flow-chromadb
+    profiles: [chromadb]
+    environment:
+      IS_PERSISTENT: "TRUE"
+      CHROMA_SERVER_AUTH_CREDENTIALS: "${VECTOR_DB_KEY}"
+      CHROMA_SERVER_AUTH_CREDENTIALS_PROVIDER: chromadb.auth.token.TokenConfigServerAuthCredentialsProvider
+      CHROMA_SERVER_AUTH_TOKEN_TRANSPORT_HEADER: AUTHORIZATION
+      CHROMA_SERVER_AUTH_PROVIDER: chromadb.auth.token.TokenAuthServerProvider
+    volumes:
+      - chromadb_data:/chroma/chroma/
+    networks:
+      - m_flow-network
+    ports:
+      - "3002:8000"
+
+  # ---------------------------------------------------------------------------
+  # Infrastructure: Redis  (profile: redis)
+  # ---------------------------------------------------------------------------
+  redis:
+    image: redis:7-alpine
+    container_name: m_flow-redis
+    profiles: [redis]
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "6379:6379"
+    networks:
+      - m_flow-network
+    volumes:
+      - redis_data:/data
+
+  redisinsight:
+    image: redislabs/redisinsight:latest
+    container_name: m_flow-redisinsight
+    profiles: [redis]
+    restart: unless-stopped
+    ports:
+      - "5540:5540"
+    networks:
+      - m_flow-network
+
+  # ---------------------------------------------------------------------------
+  # Playground: Face Recognition  (profile: playground)
+  # ---------------------------------------------------------------------------
+  # Requires: git clone https://github.com/FlowElement-xinliuyuansu/fanjing-face-recognition.git
+  #           in the parent directory (../fanjing-face-recognition).
+  # Models: download via scripts/download_model.py etc., or copy into ./models/
+  # Shared secret: set FACE_API_KEY in .env (same key for both services).
+  fanjing-face:
+    container_name: fanjing-face-recognition
+    profiles: [playground]
+    build:
+      context: ../fanjing-face-recognition
+      dockerfile: Dockerfile
+    volumes:
+      - ../fanjing-face-recognition/models:/app/models
+      - ../fanjing-face-recognition/data:/app/data
+    environment:
+      HOST: "0.0.0.0"
+      PORT: "5001"
+      FACE_API_KEY: "${FACE_API_KEY:-}"
+      PYTHONUNBUFFERED: "1"
+    ports:
+      - "5001:5001"
+    networks:
+      - m_flow-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5001/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+# =============================================================================
+networks:
+  m_flow-network:
+    name: m_flow-network
+
+volumes:
+  neo4j_data:
+  postgres_data:
+  chromadb_data:
+  redis_data:

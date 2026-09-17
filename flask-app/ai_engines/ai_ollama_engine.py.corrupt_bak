@@ -1,0 +1,201 @@
+# -*- coding: utf-8 -*-
+"""
+Ollama 本地推理引擎
+====================
+适配 MTSCOS AI 项目 ai_local_inference_engine 统一入口
+机型适配：Apple M5 / 24GB RAM / 10核 (4P+6E)
+主力模型：qwen2.5:7b（约4.7GB，30-50 tok/s）
+兜底模型：qwen2.5:3b（约1.9GB，60-80 tok/s）
+
+职责：
+- 调用 Ollama API (http://localhost:11434) 进行本地推理
+- 零 token 消耗（本地模型，不调云API）
+- 落库 mt_local_ai_inference_log + mt_local_ai_token_savings
+- 支持 chat / classify / review / bug_analyze 四类推理
+- 新增功能：翻译
+- 新增功能：自动熔断机制，异常/超时立即终止不等待
+"""
+from __future__ import annotations
+
+import json
+import os
+import sqlite3
+import time
+import urllib.request
+import urllib.error
+from datetime import datetime
+from typing import Any, Dict, List, Optional
+
+# Ollama 服务地址
+_OLLAMA_HOST = os.environ.get("OLLAMA_HOST", "http://localhost:11434")
+_OLLAMA_API = _OLLAMA_HOST + "/api"
+
+# 机型适配（Apple M5 / 24GB）
+_HW_PROFILE = {
+    "chip": "Apple M5",
+    "cores": 10,
+    "memory_gb": 24,
+    "primary_model": "qwen2.5:7b",
+    "fallback_model": "qwen2.5:3b",
+    "coding_model": "qwen2.5-coder:7b",  # 编码专用模型
+    "expected_tok_s_7b": 40,   # 7B 预估 30-50 tok/s
+    "expected_tok_s_3b": 70,   # 3B 预估 60-80 tok/s
+}
+
+# 熔断机制配置
+_CIRCUIT_BREAKER = {
+    "state": "closed",  # 状态: closed正常, open熔断开启, half-open半开探测
+    "failure_count": 0,
+    "max_consecutive_failures": 3,  # 连续3次失败触发熔断
+    "open_since": 0.0,
+    "reset_wait_seconds": 30,  # 熔断后等待30秒自动进入半开探测状态
+    "max_total_request_timeout": 120  # 全局最大请求超时，超过直接终止
+}
+
+# 数据库路径
+_AI_ENGINES_DIR = os.path.dirname(os.path.abspath(__file__))
+_APP_DB = os.path.join(_AI_ENGINES_DIR, "app.db")
+
+
+def _get_conn() -> sqlite3.Connection:
+    conn = sqlite3.connect(_APP_DB, timeout=5)
+    conn.row_factory = sqlite3.Row
+    return conn
+
+
+def _ensure_tables() -> None:
+    """确保 mt_local_ai_inference_log + mt_local_ai_token_savings 表存在"""
+    conn = _get_conn()
+    conn.executescript("""
+    CREATE TABLE IF NOT EXISTS mt_local_ai_inference_log (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        flow_id TEXT,
+        inference_kind TEXT NOT NULL,
+        model_name TEXT NOT NULL,
+        prompt_tokens INTEGER DEFAULT 0,
+        completion_tokens INTEGER DEFAULT 0,
+        duration_ms INTEGER DEFAULT 0,
+        tokens_saved INTEGER DEFAULT 0,
+        success INTEGER DEFAULT 0,
+        error_msg TEXT,
+        request_preview TEXT,
+        response_preview TEXT,
+        triggered_at TEXT NOT NULL
+    );
+    CREATE TABLE IF NOT EXISTS mt_local_ai_inference_log (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        flow_id TEXT,
+        inference_kind TEXT NOT NULL,
+        model_name TEXT NOT NULL,
+        prompt_tokens INTEGER DEFAULT 0,
+        completion_tokens INTEGER DEFAULT 0,
+        duration_ms INTEGER DEFAULT 0,
+        tokens_saved INTEGER DEFAULT 0,
+        success INTEGER DEFAULT 0,
+        error_msg TEXT,
+        request_preview TEXT,
+        response_preview TEXT,
+        triggered_at TEXT NOT NULL
+    );
+    CREATE TABLE IF NOT EXISTS mt_local_ai_token_savings (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        stat_date TEXT NOT NULL,
+        total_inferences INTEGER DEFAULT 0,
+        total_tokens_saved INTEGER DEFAULT 0,
+        total_duration_ms INTEGER DEFAULT 0,
+        updated_at TEXT NOT NULL
+    );
+    """)
+    conn.commit()
+    conn.close()
+
+
+def _check_circuit_breaker() -> None:
+    """检查熔断状态，触发熔断时直接抛出异常终止流程"""
+    now = time.time()
+    if _CIRCUIT_BREAKER["state"] == "open":
+        # 检查是否到了探测时间
+        if now - _CIRCUIT_BREAKER["open_since"] >= _CIRCUIT_BREAKER["reset_wait_seconds"]:
+            _CIRCUIT_BREAKER["state"] = "half-open"
+        else:
+            raise RuntimeError(f"[熔断触发] Ollama服务连续失败超过阈值，剩余冷却时间 {int(_CIRCUIT_BREAKER['reset_wait_seconds'] - (now - _CIRCUIT_BREAKER['open_since']))}s，禁止请求")
+    elif _CIRCUIT_BREAKER["state"] == "half-open":
+        # 半开状态允许1次探测请求
+        return
+
+
+def _mark_success() -> None:
+    """标记调用成功，重置熔断状态"""
+    _CIRCUIT_BREAKER["failure_count"] = 0
+    if _CIRCUIT_BREAKER["state"] != "closed":
+        _CIRCUIT_BREAKER["state"] = "closed"
+
+
+def _mark_failure() -> None:
+    """标记调用失败，累计失败计数，达到阈值触发熔断"""
+    now = time.time()
+    _CIRCUIT_BREAKER["failure_count"] += 1
+    if _CIRCUIT_BREAKER["state"] == "half-open" or _CIRCUIT_BREAKER["failure_count"] >= _CIRCUIT_BREAKER["max_consecutive_failures"]:
+        _CIRCUIT_BREAKER["state"] = "open"
+        _CIRCUIT_BREAKER["open_since"] = now
+
+
+def is_available() -> bool:
+    """检查 Ollama 服务是否可用"""
+    try:
+        req = urllib.request.Request(_OLLAMA_API + "/tags", method="GET")
+        with urllib.request.urlopen(req, timeout=3) as resp:
+            return resp.status == 200
+    except Exception:
+        _mark_failure()
+        return False
+
+
+def list_models() -> List[str]:
+    """列出已下载的模型"""
+    try:
+        req = urllib.request.Request(_OLLAMA_API + "/tags", method="GET")
+        with urllib.request.urlopen(req, timeout=5) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+            _mark_success()
+            return [m["name"] for m in data.get("models", [])]
+    except Exception as e:
+        _mark_failure()
+        raise RuntimeError(f"获取模型列表失败: {str(e)}") from e
+
+
+def _select_model(prefer_7b: bool = True, use_coder: bool = False) -> str:
+    """根据已下载模型选择主力或兜底模型"""
+    models = list_models()
+    primary = _HW_PROFILE["primary_model"]
+    fallback = _HW_PROFILE["fallback_model"]
+    coding = _HW_PROFILE["coding_model"]
+    # 编码任务优先使用编码专用模型
+    if use_coder and coding in models:
+        return coding
+    if prefer_7b and primary in models:
+        return primary
+    if fallback in models:
+        return fallback
+    # 兜底：返回第一个可用模型
+    return models[0] if models else primary
+
+
+def _call_ollama(model: str, prompt: str, system: str = "", stream: bool = False) -> Dict[str, Any]:
+    """调用 Ollama /api/chat 接口，带熔断和强超时机制"""
+    # 前置熔断检查
+    _check_circuit_breaker()
+    
+    payload = {
+        "model": model,
+        "messages": [],
+        "stream": stream,
+        "options": {
+            "temperature": 0.7,
+            "top_p": 0.9,
+            "num_predict": 2048,
+        }
+    }
+    if system:
+        payload["messages"].append({"role": "system", "content": system})
+    payload["messages"].append({"role": "user

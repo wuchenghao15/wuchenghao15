@@ -1,0 +1,65 @@
+name: Publish to PyPI
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.11"
+      - run: uv sync --extra dev
+      - run: uv run pytest -x -q
+        timeout-minutes: 10
+
+  publish:
+    needs: test
+    runs-on: ubuntu-latest
+
+    environment:
+      name: pypi
+      url: https://pypi.org/p/axoniq
+
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: src/axon/web/frontend/package-lock.json
+
+      - name: Build frontend
+        working-directory: src/axon/web/frontend
+        run: npm ci && npm run build
+
+      - uses: astral-sh/setup-uv@v5
+
+      - name: Build sdist and wheel independently
+        run: |
+          uv build --sdist
+          uv build --wheel
+
+      - name: Verify wheel contains source
+        run: |
+          python3 -c "
+          import zipfile, sys, pathlib
+          whl = next(p for p in pathlib.Path('dist').iterdir() if p.suffix == '.whl')
+          with zipfile.ZipFile(whl) as z:
+            py_files = [n for n in z.namelist() if n.endswith('.py')]
+            print(f'Wheel contains {len(py_files)} Python files')
+            if len(py_files) < 10:
+              print('ERROR: Wheel appears empty — aborting publish')
+              sys.exit(1)
+          "
+
+      - run: uv publish

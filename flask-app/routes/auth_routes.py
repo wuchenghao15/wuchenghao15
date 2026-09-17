@@ -464,6 +464,7 @@ def _find_user_in_db(username):
 #  /auth/check_username —— 前端用户名小点指示器核心接口
 # ============================================================
 @auth_bp.route('/check_username', methods=['GET'])
+@system_container(require_auth='login')
 def check_username():
     """匿名检查用户名是否存在（前端状态指示器：绿/红/灰）
 
@@ -547,6 +548,7 @@ def check_username():
 #  源参考: server_real_db.py L8622-L9500（精简版，去掉 SSL/VIKEY/EigenFlux 等高级流程）
 # ============================================================
 @auth_bp.route('/login', methods=['GET', 'POST'])
+@system_container(require_auth='login')
 def login():
     """登录主路由
 
@@ -839,6 +841,7 @@ def login():
 #  /auth/forgot_password —— 找回密码（安全且可用实现）
 # ============================================================
 @auth_bp.route('/forgot_password', methods=['GET', 'POST'])
+@system_container(require_auth='login')
 def forgot_password():
     """渲染并处理忘记密码流程.
 
@@ -1046,6 +1049,7 @@ def _send_password_reset_email(email: str, username: str, token: str):
 
 
 @auth_bp.route('/reset_password', methods=['GET', 'POST'])
+@system_container(require_auth='login')
 def reset_password():
     """GET 渲染页面，POST 提交新密码并更新用户密码。
 
@@ -1150,6 +1154,7 @@ def reset_password():
 #  /auth/logout —— 退出登录
 # ============================================================
 @auth_bp.route('/logout', methods=['POST', 'GET'])
+@system_container(require_auth='login')
 def logout():
     """退出登录：清空 session 后重定向到首页"""
     session.clear()
@@ -1162,6 +1167,7 @@ def logout():
 #  /auth/session_health —— 会话健康检查
 # ============================================================
 @auth_bp.route('/session_health', methods=['GET'])
+@system_container(require_auth='login')
 def session_health():
     """返回当前 session 状态（用于前端检测登录状态）"""
     if 'user_id' not in session:
@@ -1180,6 +1186,99 @@ def session_health():
         },
         'login_time': session.get('login_time'),
         'ip': session.get('ip'),
+    })
+
+
+# ============================================================
+#  /auth/register —— 用户注册（4协议+规则告知+数据使用说明+同意落库）
+#  §14 flow_id=flow_register_agreement_20260909_001 FINAL_DONE
+#  规则§数据库唯一数据源：注册信息写入 SQLite users 表，禁止假数据
+# ============================================================
+@auth_bp.route('/register', methods=['GET', 'POST'])
+@system_container(require_auth='login')
+def register():
+    """用户注册：校验同意状态 → 写入数据库 → 落库 agreed_version"""
+    if request.method == 'GET':
+        return render_template('register.html')
+
+    # POST: JSON 注册
+    data = request.get_json(silent=True) or {}
+    username = (data.get('username') or '').strip()
+    password = data.get('password') or ''
+    agreed = data.get('agreed', False)
+
+    # 1) 必须勾选同意
+    if not agreed:
+        return jsonify({'success': False, 'message': '请先阅读并同意用户协议、规则告知、注册通告及数据使用说明'})
+
+    # 2) 用户名格式校验（复用现有校验函数）
+    fmt = _validate_username_format(username)
+    if not fmt.get('ok'):
+        return jsonify({'success': False, 'message': fmt.get('msg', '用户名格式不合法')})
+    if len(username) < 3 or len(username) > 20:
+        return jsonify({'success': False, 'message': '用户名长度须 3-20 字符'})
+    if not username.replace('_', '').isalnum():
+        return jsonify({'success': False, 'message': '用户名仅支持字母、数字、下划线'})
+
+    # 3) 密码长度校验
+    if len(password) < 6:
+        return jsonify({'success': False, 'message': '密码长度不少于 6 位'})
+
+    # 4) 检查用户名是否已存在
+    existing = _find_user_in_db(username)
+    if existing:
+        return jsonify({'success': False, 'message': '该用户名已被注册'})
+
+    # 5) 写入数据库（优先写入 app.db 的 users 表）
+    import sqlite3 as _sq
+    hashed = _hash_password_hex(password)  # SHA256 hex
+    import time as _time
+    registered = False
+    for db_path in _candidate_user_dbs():
+        try:
+            conn = _sq.connect(db_path, timeout=10)
+            conn.execute('PRAGMA busy_timeout=10000')
+            # 检查 users 表结构
+            cols = [r[1] for r in conn.execute('PRAGMA table_info(users)').fetchall()]
+            if not cols:
+                conn.close()
+                continue
+            # 构造 INSERT（只填充存在的列）
+            col_map = {
+                'username': username,
+                'password': _hash_password(password),      # base64 (auth.db 兼容)
+                'password_hash': hashed,                    # hex (app.db 兼容)
+                'role': 'guest',
+                'status': 'active',
+                'created_at': _time.strftime('%Y-%m-%d %H:%M:%S'),
+                'agreed': 1,
+                'agreed_version': 'v1.0_20260909',
+            }
+            insert_cols = [c for c in col_map if c in cols]
+            placeholders = ', '.join(['?'] * len(insert_cols))
+            values = [col_map[c] for c in insert_cols]
+            conn.execute(
+                f'INSERT INTO users ({", ".join(insert_cols)}) VALUES ({placeholders})',
+                values
+            )
+            conn.commit()
+            conn.close()
+            registered = True
+            break
+        except Exception:
+            try:
+                conn.close()
+            except Exception:
+                pass
+            continue
+
+    if not registered:
+        return jsonify({'success': False, 'message': '注册失败，数据库不可写入，请联系管理员'})
+
+    return jsonify({
+        'success': True,
+        'message': '注册成功，请使用新账号登录',
+        'redirect': '/auth/login'
     })
 
 

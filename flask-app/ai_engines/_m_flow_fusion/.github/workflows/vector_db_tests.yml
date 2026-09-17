@@ -1,0 +1,143 @@
+# ┌──────────────────────────────────────────────────────────────────────────┐
+# │ M-Flow CI Pipeline: Vector Database Provider Verification               │
+# │                                                                          │
+# │ Validates embedding storage and retrieval against each supported vector │
+# │ backend: PostgreSQL/PGVector and LanceDB. ChromaDB support is currently │
+# │ suspended and will be re-enabled when the integration is stabilised.    │
+# │                                                                          │
+# │ Owner: M-Flow Platform Engineering                                      │
+# └──────────────────────────────────────────────────────────────────────────┘
+name: "vector-db | Embedding Store Verification"
+
+on:
+  workflow_call:
+    inputs:
+      databases:
+        type: string
+        default: "all"
+        required: false
+        description: "Vector backends to test (comma-separated or 'all')"
+    secrets:
+      POSTGRES_PASSWORD: {required: false}
+
+permissions: {contents: read}
+
+concurrency:
+  group: mflow-vecdb-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+
+  # ── ChromaDB embedding store ──────────────────────────────────────────
+  chromadb-assertions:
+    if: ${{ inputs.databases == 'all' || contains(inputs.databases, 'chromadb') }}
+    timeout-minutes: 15
+    runs-on: ubuntu-22.04
+    name: "chromadb-embedding-store"
+    defaults: {run: {shell: bash}}
+    services:
+      chromadb:
+        image: chromadb/chroma:0.6.3
+        env:
+          CHROMA_SERVER_AUTH_CREDENTIALS: "test-token"
+          CHROMA_SERVER_AUTH_CREDENTIALS_PROVIDER: "chromadb.auth.token.TokenAuthCredentialsProvider"
+          CHROMA_SERVER_AUTH_PROVIDER: "chromadb.auth.token.TokenAuthServerProvider"
+        ports: ["3002:8000"]
+    env:
+      ENV: 'dev'
+      VECTOR_DB_PROVIDER: chromadb
+      VECTOR_DB_URL: http://localhost:3002
+      VECTOR_DB_KEY: test-token
+      LLM_MODEL: ${{ secrets.LLM_MODEL }}
+      LLM_ENDPOINT: ${{ secrets.LLM_ENDPOINT }}
+      LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+      LLM_API_VERSION: ${{ secrets.LLM_API_VERSION }}
+      EMBEDDING_MODEL: ${{ secrets.EMBEDDING_MODEL }}
+      EMBEDDING_DIMENSIONS: "1536"
+      EMBEDDING_ENDPOINT: ${{ secrets.EMBEDDING_ENDPOINT }}
+      EMBEDDING_API_KEY: ${{ secrets.EMBEDDING_API_KEY }}
+      EMBEDDING_API_VERSION: ${{ secrets.EMBEDDING_API_VERSION }}
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
+        with: {fetch-depth: 0}
+      - uses: ./.github/actions/m_flow_setup
+        with: {python-version: "${{ inputs.python-version }}", extra-dependencies: "chromadb"}
+      - name: "Execute ChromaDB assertions"
+        run: uv run python ./m_flow/tests/test_chromadb.py
+
+  # ── PGVector embedding store ───────────────────────────────────────────
+  pgvector-assertions:
+    if: ${{ inputs.databases == 'all' || contains(inputs.databases, 'postgres') }}
+    timeout-minutes: 20
+    runs-on: ubuntu-22.04
+    name: "pgvector-embedding-store"
+    defaults: {run: {shell: bash}}
+    env:
+      ENV: 'dev'
+      ENABLE_BACKEND_ACCESS_CONTROL: 'false'
+      LLM_MODEL: ${{ secrets.LLM_MODEL }}
+      LLM_ENDPOINT: ${{ secrets.LLM_ENDPOINT }}
+      LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+      LLM_API_VERSION: ${{ secrets.LLM_API_VERSION }}
+      EMBEDDING_MODEL: ${{ secrets.EMBEDDING_MODEL }}
+      EMBEDDING_DIMENSIONS: "1536"
+      EMBEDDING_ENDPOINT: ${{ secrets.EMBEDDING_ENDPOINT }}
+      EMBEDDING_API_KEY: ${{ secrets.EMBEDDING_API_KEY }}
+      EMBEDDING_API_VERSION: ${{ secrets.EMBEDDING_API_VERSION }}
+      VECTOR_DB_PROVIDER: 'pgvector'
+      DB_PROVIDER: 'postgres'
+      DB_NAME: 'mflow_store'
+      DB_HOST: '127.0.0.1'
+      DB_PORT: 5432
+      DB_USERNAME: m_flow
+      DB_PASSWORD: m_flow
+    services:
+      postgres:
+        image: pgvector/pgvector:pg17
+        env: {POSTGRES_USER: m_flow, POSTGRES_PASSWORD: "m_flow", POSTGRES_DB: mflow_store}
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports: ["5432:5432"]
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
+        name: "Clone M-Flow repository"
+        with: {fetch-depth: 0}
+
+      - uses: ./.github/actions/m_flow_setup
+        name: "Configure runtime environment"
+        with: {python-version: "${{ inputs.python-version }}", extra-dependencies: "postgres"}
+
+      - name: "Execute PGVector assertions"
+        run: uv run python ./m_flow/tests/test_pgvector.py
+
+  # ── LanceDB embedding store ────────────────────────────────────────────
+  lancedb-assertions:
+    timeout-minutes: 15
+    runs-on: ubuntu-22.04
+    name: "lancedb-embedding-store"
+    defaults: {run: {shell: bash}}
+    env:
+      ENV: 'dev'
+      LLM_MODEL: ${{ secrets.LLM_MODEL }}
+      LLM_ENDPOINT: ${{ secrets.LLM_ENDPOINT }}
+      LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+      LLM_API_VERSION: ${{ secrets.LLM_API_VERSION }}
+      EMBEDDING_MODEL: ${{ secrets.EMBEDDING_MODEL }}
+      EMBEDDING_DIMENSIONS: "1536"
+      EMBEDDING_ENDPOINT: ${{ secrets.EMBEDDING_ENDPOINT }}
+      EMBEDDING_API_KEY: ${{ secrets.EMBEDDING_API_KEY }}
+      EMBEDDING_API_VERSION: ${{ secrets.EMBEDDING_API_VERSION }}
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
+        name: "Clone M-Flow repository"
+        with: {fetch-depth: 0}
+
+      - uses: ./.github/actions/m_flow_setup
+        name: "Configure runtime environment"
+        with: {python-version: "${{ inputs.python-version }}"}
+
+      - name: "Execute LanceDB assertions"
+        run: uv run python ./m_flow/tests/test_lancedb.py

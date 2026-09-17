@@ -1,0 +1,80 @@
+# This workflow runs Python tests on pull requests and pushes
+name: Python Tests
+
+on:
+  push:
+    branches: [ master, main ]
+  pull_request:
+    branches: [ master, main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.9', '3.10', '3.11', '3.12']
+
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -e ".[dev]"
+    
+    - name: Run tests with coverage
+      run: |
+        python -m pytest test/ -v --ignore=test/bench.py --ignore=test/benchmark.py -m "not cloud" --cov=cog --cov-report=xml --junitxml=junit.xml -o junit_family=legacy
+    
+    - name: Upload coverage to Codecov
+      if: matrix.python-version == '3.12'
+      uses: codecov/codecov-action@v5
+      with:
+        files: ./coverage.xml
+        fail_ci_if_error: false
+        verbose: true
+        token: ${{ secrets.CODECOV_TOKEN }}
+    
+    - name: Upload test results to Codecov
+      if: ${{ !cancelled() && matrix.python-version == '3.12' }}
+      uses: codecov/codecov-action@v5
+      with:
+        files: ./junit.xml
+        fail_ci_if_error: false
+        token: ${{ secrets.CODECOV_TOKEN }}
+        report_type: test_results
+    
+    - name: Run quick benchmark (optional)
+      run: |
+        python test/benchmark.py --quick --skip-individual
+      continue-on-error: true
+
+  cloud-parity:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'  # only on merge, not on every PR
+    needs: test                       # run after unit tests pass
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python 3.12
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -e ".[dev]"
+
+    - name: Run cloud parity tests
+      if: env.COGDB_API_KEY != ''
+      env:
+        COGDB_API_KEY: ${{ secrets.COGDB_API_KEY }}
+      run: |
+        python -m pytest test/test_cloud_parity.py -v

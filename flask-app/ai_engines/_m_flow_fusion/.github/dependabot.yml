@@ -1,0 +1,89 @@
+version: 2
+updates:
+  # ---------------------------------------------------------------------------
+  # Python dependencies (pyproject.toml)
+  #
+  # Strategy: monthly cadence with grouped PRs.
+  #   - "python-minor-and-patch" bundles all non-breaking bumps into one PR
+  #     so reviewers see at most one routine PR per month.
+  #   - "python-major" surfaces breaking bumps in a separate PR for individual
+  #     review (e.g. pydantic 2 -> 3, neo4j 6 -> 7).
+  #
+  # versioning-strategy: "increase-if-necessary"
+  #   We deliberately suppress "constraint-relaxation" PRs (e.g. widening
+  #   `<16.0.0` -> `<17.0.0` in pyproject.toml just because a new upstream major
+  #   was released). Those PRs add review noise but never change the installed
+  #   version (the lockfile already pins a working release). With this strategy,
+  #   Dependabot only proposes a manifest change when the existing constraint
+  #   would actually block a needed update (e.g. a security fix). Lockfile-only
+  #   updates within the existing range and security PRs still flow through.
+  # ---------------------------------------------------------------------------
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    open-pull-requests-limit: 5
+    versioning-strategy: "increase-if-necessary"
+    groups:
+      python-minor-and-patch:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
+      python-major:
+        patterns:
+          - "*"
+        update-types:
+          - "major"
+
+  # ---------------------------------------------------------------------------
+  # GitHub Actions
+  #
+  # Same monthly + grouped strategy. Major action bumps (e.g. checkout v4 -> v6,
+  # codeql-action v3 -> v4) deserve separate review because they typically
+  # require workflow-wide audits.
+  #
+  # patterns: ["*"] is set explicitly so that SHA-pinned actions
+  # (e.g. `uses: actions/first-interaction@<sha>`) are also bundled into the
+  # same group rather than producing standalone PRs whenever upstream tags
+  # repoint to a newer commit.
+  # ---------------------------------------------------------------------------
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    open-pull-requests-limit: 3
+    groups:
+      actions-minor-and-patch:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
+      actions-major:
+        patterns:
+          - "*"
+        update-types:
+          - "major"
+
+  # ---------------------------------------------------------------------------
+  # Docker images (already on a sensible monthly cadence; left as-is)
+  # ---------------------------------------------------------------------------
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    open-pull-requests-limit: 3
+
+  - package-ecosystem: "docker"
+    directory: "/m_flow-frontend"
+    schedule:
+      interval: "monthly"
+    open-pull-requests-limit: 3
+
+  - package-ecosystem: "docker"
+    directory: "/m_flow-mcp"
+    schedule:
+      interval: "monthly"
+    open-pull-requests-limit: 3

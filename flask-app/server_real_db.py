@@ -4630,16 +4630,107 @@ def _mt_sys_container_ctx_injector():
 
         try:
             from core.services.lunar_calendar_service import lunar_calendar_service  # type: ignore[import]
+            # ══ PATCH: 按 session i18n_lang 动态翻译 ══
+            _mt_lang = session.get('i18n_lang', 'zh_CN')
+            _mt_lang_map = {'zh_CN': 'zh', 'zh_TW': 'zh_tw', 'ja_JP': 'ja', 'en_US': 'en'}
+            _mt_service_lang = _mt_lang_map.get(_mt_lang, 'zh')
+
             lunar_display = lunar_calendar_service.get_display_text(lang='zh')
             lunar_display_en = lunar_calendar_service.get_display_text(lang='en')
             lunar_date = lunar_calendar_service.get_lunar_date_string()
             is_special_day = lunar_calendar_service.is_first_or_fifteenth()
             lunar_countdown = lunar_calendar_service.get_countdown()
-            buddha_festivals = lunar_calendar_service.get_buddha_info()
-            buddha_festivals_en = lunar_calendar_service._get_lunar_festivals_en(
-                lunar_countdown.get('lunar_month', 0),
-                lunar_countdown.get('lunar_day', 0)
-            )
+
+            # ══ BUILD: buddha_festivals = 今天 + 未来 30 天佛/道/农历/公历节日 ══
+            import datetime as _dt_mt
+            buddha_festivals = []
+            _seen_fests = set()
+            _tday = _dt_mt.date.today()
+
+            # 合并两个事件源: (1) 旧字典 BUDDHIST_FESTIVALS_LUNAR/SOLAR (45+17条)
+            #               (2) 扩充事件库 LUNAR_BUDDHIST_EVENTS (76+ 佛道儒各宗派)
+            try:
+                from core.services.auto_plans.plan_lunar_buddhist import LUNAR_BUDDHIST_EVENTS
+                _expanded = True
+            except Exception:
+                _expanded = False
+
+            for _offset in range(31):  # 0~30 天
+                _target = _tday + _dt_mt.timedelta(days=_offset)
+                _ly, _lm, _ld, _isleap = lunar_calendar_service._solar_to_lunar(_target)
+                # 源 1: 旧字典 (lunar + solar)
+                _lunars = lunar_calendar_service._get_lunar_festivals(_lm, _ld)
+                _solars = lunar_calendar_service._get_solar_festivals(_target.month, _target.day)
+                for _fn in (_lunars + _solars):
+                    if _fn not in _seen_fests:
+                        _seen_fests.add(_fn)
+                        _lbl = f"今日 {_fn}" if _offset == 0 else f"{_offset}天后 {_fn}"
+                        buddha_festivals.append(_lbl)
+                # 源 2: 扩充事件库 (按 month/day 匹配)
+                if _expanded:
+                    for _ev in LUNAR_BUDDHIST_EVENTS:
+                        _em, _ed = _ev.get('month', 0), _ev.get('day', 0)
+                        # day=-1 表示估算日(月中), 简化: 只要 month 匹配且 day>0 才精确匹配
+                        if _em == _lm and _ed > 0 and _ed == _ld:
+                            _fn = _ev.get('event', '')
+                            if _fn and _fn not in _seen_fests:
+                                _seen_fests.add(_fn)
+                                _lbl = f"今日 {_fn}" if _offset == 0 else f"{_offset}天后 {_fn}"
+                                buddha_festivals.append(_lbl)
+            buddha_festivals_en = []  # 翻译由下面统一处理
+
+            # ── 动态翻译 lunar_countdown 中文字段 ──
+            if _mt_service_lang != 'zh' and lunar_countdown:
+                try:
+                    def _t(zh_text, domain='lunar'):
+                        """从 mt_i18n_keys 翻译 zh_text → 目标语言"""
+                        col = {'zh_tw':'zh_tw','ja':'ja_jp','en':'en_us'}.get(_mt_service_lang, 'zh_cn')
+                        if col == 'zh_cn': return zh_text
+                        import sqlite3 as _sq
+                        _db = _sq.connect(os.path.join(os.path.dirname(__file__), 'database', 'app.db'))
+                        # 按原文查 key (mt_i18n_keys.zh_cn = 原文)
+                        row = _db.execute(f"SELECT {col} FROM mt_i18n_keys WHERE zh_cn=? AND {col}!='' ORDER BY length({col}) DESC LIMIT 1", (zh_text,)).fetchone()
+                        _db.close()
+                        if row and row[0]: return row[0]
+                        return zh_text
+
+                    # 翻译 countdown 各字段
+                    if lunar_countdown.get('festival_today'):
+                        lunar_countdown['festival_today'] = _t(lunar_countdown['festival_today'])
+                    if lunar_countdown.get('countdown_type'):
+                        lunar_countdown['countdown_type'] = _t(lunar_countdown['countdown_type'])
+                    # year_ganzhi 如 "丙午" 不需要翻 (通用)
+                    # animal 如 "马" 需要翻
+                    if lunar_countdown.get('animal'):
+                        lunar_countdown['animal'] = _t(lunar_countdown['animal'], 'zodiac')
+
+                    # 翻译 buddha_festivals 字符串列表 "今日 春节" / "8天后 中秋节"
+                    if buddha_festivals:
+                        import re as _re_mt
+                        for _i, _lbl in enumerate(buddha_festivals):
+                            m = _re_mt.match(r'^(今日|(\d+)天后)\s+(.+)$', _lbl)
+                            if m:
+                                _prefix = m.group(1)  # "今日" or "N天后"
+                                _fname = m.group(3)   # 节日名
+                                _fname_t = _t(_fname, 'events')
+                                _prefix_t = _t(_prefix, 'festival_prefix')
+                                buddha_festivals[_i] = f"{_prefix_t} {_fname_t}"
+                except Exception:
+                    pass  # 翻译失败不阻断页面
+
+            # ── zh_TW 额外用 OpenCC 繁化 ──
+            if _mt_lang == 'zh_TW' and (lunar_countdown or buddha_festivals):
+                try:
+                    import opencc as _oc
+                    _twc = _oc.OpenCC('s2t')
+                    if lunar_countdown:
+                        for f in ('festival_today','countdown_type','animal'):
+                            if lunar_countdown.get(f):
+                                lunar_countdown[f] = _twc.convert(lunar_countdown[f])
+                    if buddha_festivals:
+                        buddha_festivals = [_twc.convert(x) for x in buddha_festivals]
+                except Exception:
+                    pass
         except Exception:
             lunar_display = ""
             lunar_display_en = ""

@@ -1,0 +1,59 @@
+{
+  "$schema": "mtscos-watchdog-config-v1",
+  "meta": {
+    "version": "1.0.0",
+    "created_at": "2026-08-06T00:00:00+08:00",
+    "description": "MTSCOS AI System Watchdog Configuration — default fallback config. Auto-generated when missing."
+  },
+  "watchdog": {
+    "enabled": true,
+    "interval_seconds": 30,
+    "pid_dir": "pids",
+    "log_dir": "logs",
+    "max_restart_attempts": 3,
+    "restart_cooldown_seconds": 60,
+    "auto_start_on_missing_pid": false
+  },
+  "services": {
+    "flask-main": {
+      "name": "flask-main",
+      "description": "MTSCOS AI Flask 主服务 (server_real_db.py:8888)",
+      "command": "python3 server_real_db.py",
+      "cwd": ".",
+      "port": 8888,
+      "health_check": {
+        "type": "tcp",
+        "host": "127.0.0.1",
+        "port": 8888,
+        "timeout_seconds": 3
+      },
+      "auto_restart": false,
+      "pid_file": "pids/flask-main.pid",
+      "log_file": "logs/flask-main.log"
+    },
+    "eigenflux-monitor": {
+      "name": "eigenflux-monitor",
+      "description": "EigenFlux 实时监控守护引擎（线程内运行，无需独立重启）",
+      "mode": "inproc",
+      "interval_seconds": 60,
+      "auto_restart": false
+    },
+    "scheduler": {
+      "name": "scheduler",
+      "description": "AutoPlans 任务调度器（线程内运行）",
+      "mode": "inproc",
+      "auto_restart": false
+    }
+  },
+  "alerts": {
+    "enabled": false,
+    "email": [],
+    "wecom": [],
+    "rate_limit_per_hour": 10
+  },
+  "logging": {
+    "level": "WARNING",
+    "max_file_mb": 50,
+    "rotate_days": 7
+  }
+}

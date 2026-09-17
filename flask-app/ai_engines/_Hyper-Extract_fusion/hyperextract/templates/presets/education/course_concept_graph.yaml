@@ -1,0 +1,110 @@
+language: [zh, en]
+
+name: course_concept_graph
+type: graph
+tags: [education, course, concept, prerequisite, pedagogy]
+
+description:
+  zh: '课程概念图模板 - 从教材、讲义和课程材料中提取知识点及其先修、组成与相关关系'
+  en: 'Course Concept Graph Template - Extract knowledge points and their prerequisite, part-whole, and related links from textbooks, lecture notes, and course materials'
+
+output:
+  description:
+    zh: '课程知识点及其教学依赖关系网络'
+    en: 'Network of course knowledge points and pedagogical dependencies'
+  entities:
+    description:
+      zh: '课程材料中需要学习的知识点、技能、方法或例题'
+      en: 'Knowledge points, skills, procedures, or examples that the course material treats as things to learn'
+    fields:
+      - name: name
+        type: str
+        description:
+          zh: '知识点名称，使用标题、定义句或首次规范表述中的术语'
+          en: 'Knowledge-point name, using the term from a heading, definition sentence, or first canonical mention'
+        required: true
+      - name: type
+        type: str
+        description:
+          zh: '知识点类型：概念/技能/方法/原理/例题等'
+          en: 'Knowledge-point type: concept/skill/procedure/principle/example, etc.'
+        required: true
+      - name: description
+        type: str
+        description:
+          zh: '该知识点在文本中的简要定义或说明'
+          en: 'Brief definition or gloss of the knowledge point as given in the text'
+        required: false
+  relations:
+    description:
+      zh: '知识点之间的先修、组成、相关或示例关系'
+      en: 'Prerequisite, part-whole, related, or example relationships between knowledge points'
+    fields:
+      - name: source
+        type: str
+        description:
+          zh: '关系起点知识点名称'
+          en: 'Source knowledge-point name'
+        required: true
+      - name: target
+        type: str
+        description:
+          zh: '关系终点知识点名称'
+          en: 'Target knowledge-point name'
+        required: true
+      - name: type
+        type: str
+        description:
+          zh: '关系类型：先修/组成/相关/示例'
+          en: 'Relation type: prerequisite_of/part_of/related_to/example_of'
+        required: true
+      - name: description
+        type: str
+        description:
+          zh: '关系依据的简要说明，优先引用文本中的关系用语'
+          en: 'Brief note of the textual basis, preferring relation wording that appears in the source'
+        required: false
+
+guideline:
+  target:
+    zh: '你是一位课程知识图谱专家，擅长从教材、讲义和课程材料中提取知识点及其教学依赖关系，而不是通用本体分类。'
+    en: 'You are a course knowledge-graph expert skilled at extracting knowledge points and pedagogical dependencies from textbooks, lecture notes, and course materials, not general ontologies.'
+  rules_for_entities:
+    zh:
+      - '只提取文本明确当作学习对象的知识点、技能、方法、原理或例题'
+      - '名称使用标题、定义句或首次规范表述中的术语；同一知识点全文保持同一名称'
+      - '若文本给出别名（如“哈希表（又称散列表）”），只保留一个名称，优先用标题或首次规范表述'
+      - '不要把周次、页码、学分、教师姓名、课程或模块标题本身抽成知识点，除非文本将其定义为一个要学习的概念'
+      - '不要提取无独立指代的泛称，如“本章内容”“上述方法”“基本概念”'
+    en:
+      - 'Extract only knowledge points, skills, procedures, principles, or examples that the text treats as things to learn'
+      - 'Use the term from a heading, definition sentence, or first canonical mention; keep one name for the same point throughout'
+      - 'If the text gives an alias (e.g., "hash table (also called hash map)"), keep one name, preferring the heading or first canonical form'
+      - 'Do not extract week numbers, page numbers, credit hours, instructor names, or course/module titles as knowledge points unless the text defines them as a concept to learn'
+      - 'Do not extract generic phrases with no independent referent, such as "this chapter", "the method above", or "basic concepts"'
+  rules_for_relations:
+    zh:
+      - 'type 只能是先修、组成、相关、示例四类之一；不要抽取属于、导致等本体或因果边'
+      - '先修：仅当文本明确写出学习顺序或预备要求时创建，如“须先掌握”“先修”“学习X之前应复习Y”“X是Y的先修”。方向为先学内容→后学内容。不要仅因章节先后或共现而推断先修'
+      - '组成：仅当文本明确写出部分-整体时创建，如“A是B的组成部分”“B包括A”“A属于B这一章的内容”。方向为部分→整体。不要仅因同一段落出现两个术语而创建组成边'
+      - '相关：仅当文本在排除先修和组成之后仍明确陈述二者有关联时创建，如“密切相关”“常与……对照”“也称作与……有关”。不要把共现默认写成相关'
+      - '示例：仅当文本把A当作B的例子、例题或实例时创建，如“例如”“比如”“以……为例”。方向为例子→被说明的知识点'
+      - 'source 与 target 都必须是已提取的知识点；关系两端名称必须与实体名称完全一致'
+    en:
+      - 'type must be one of prerequisite_of, part_of, related_to, or example_of; do not extract taxonomy or causal edges such as is_a or causes'
+      - 'prerequisite_of: create only when the text states a learning-order requirement (e.g., "requires prior knowledge of", "prerequisite", "before studying X, review Y", "X is a prerequisite for Y"). Direction: earlier topic → later topic. Do not infer prerequisites from chapter order or co-occurrence'
+      - 'part_of: create only when the text states a part-whole link (e.g., "A is part of B", "B includes A", "A is a topic under B"). Direction: part → whole. Do not create part_of merely because two terms appear in the same paragraph'
+      - 'related_to: create only when the text explicitly associates two points after prerequisite and part-whole have been ruled out (e.g., "closely related to", "compared with", "connected with"). Do not default co-occurrence to related_to'
+      - 'example_of: create only when the text presents A as an example, exercise, or illustration of B (e.g., "for example", "e.g.", "consider the case of"). Direction: example → concept'
+      - 'Both source and target must be extracted knowledge points; endpoint names must match entity names exactly'
+
+identifiers:
+  entity_id: name
+  relation_id: '{source}|{type}|{target}'
+  relation_members:
+    source: source
+    target: target
+
+display:
+  entity_label: '{name}'
+  relation_label: '{type}'

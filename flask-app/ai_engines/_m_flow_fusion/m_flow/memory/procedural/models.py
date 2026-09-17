@@ -1,0 +1,248 @@
+# m_flow/memory/procedural/models.py
+"""
+Procedural Memory: LLM Output Schema
+
+Pydantic models for write_procedural_memories task.
+
+IMPORTANT: These models are LLM intermediate output formats, NOT graph node types.
+- ContextPackDraft → used to structure LLM output, NOT stored as graph node
+- KeyPointsPackDraft → used to structure LLM output, NOT stored as graph node
+Graph nodes are: Procedure, ProcedureContextPoint, ProcedureStepPoint (see core/domain/models/)
+
+Core models:
+- ProceduralWriteDraft: LLM-generated Procedure draft
+- ContextPackDraft: Context fields (when/why/boundary) - LLM intermediate format only
+- KeyPointsPackDraft: Key points text - LLM intermediate format only
+
+Note: ProceduralCandidate is now defined in shared/data_models.py for unified use.
+"""
+
+from __future__ import annotations
+from typing import List, Optional
+from pydantic import BaseModel, Field
+
+
+# ============================================================
+# Context Pack Models
+# ============================================================
+
+
+class ContextPackDraft(BaseModel):
+    """
+    Draft for ContextPack (when/why/boundary/outcome/prereq/exception).
+
+    Contains structured context information about when and how to apply the procedure.
+    Note: ContextPack is a container only, does NOT participate in retrieval.
+    The content is included in Procedure's summary for retrieval.
+    """
+
+    # ContextPack doesn't participate in retrieval
+    when_text: Optional[str] = Field(
+        None,
+        description="Trigger conditions: when to use this procedure.",
+    )
+    why_text: Optional[str] = Field(
+        None,
+        description="Motivation/reasons: why this procedure exists.",
+    )
+    boundary_text: Optional[str] = Field(
+        None,
+        description="Boundaries/limitations: when NOT to use this procedure.",
+    )
+    outcome_text: Optional[str] = Field(
+        None,
+        description="Expected outcome: what happens after successful execution.",
+    )
+    prereq_text: Optional[str] = Field(
+        None,
+        description="Prerequisites: what must be true before execution.",
+    )
+    exception_text: Optional[str] = Field(
+        None,
+        description="Exception handling: what to do when things go wrong.",
+    )
+
+
+# ============================================================
+# Key Points Pack Models (formerly StepsPack)
+# ============================================================
+
+
+class KeyPointsPackDraft(BaseModel):
+    """
+    Draft for KeyPointsPack (bullet points).
+
+    Contains key points that can represent:
+    - Steps/actions for reusable_process type
+    - Key preferences/choices for user_preference type
+    - Identity/background points for persona type
+    - Pattern descriptions for user_habit type
+
+    Note: KeyPointsPack is a container only, does NOT participate in retrieval.
+    The content is included in Procedure's summary for retrieval.
+    """
+
+    # KeyPointsPack doesn't participate in retrieval
+    points_text: str = Field(
+        ...,
+        description="Key points in bullet/numbered format. "
+        "For processes: numbered steps (1. 2. 3. ...). "
+        "For preferences/persona/habits: bullet points describing key aspects.",
+    )
+
+
+# Deprecated: use KeyPointsPackDraft instead
+StepsPackDraft = KeyPointsPackDraft
+
+
+# ============================================================
+# Point Models
+# ============================================================
+
+
+class ContextPointDraft(BaseModel):
+    """
+    Fine-grained context point for sharp retrieval.
+
+    Represents a single trigger condition, boundary, or reason.
+    """
+
+    search_text: str = Field(
+        ...,
+        description="Short, specific retrieval handle (10-30 chars). Must contain key anchor: condition, term, or constraint.",
+    )
+    point_type: str = Field(
+        ...,
+        description="Point type: when/why/boundary/outcome/prereq/exception.",
+    )
+    description: Optional[str] = Field(
+        None,
+        description="Optional brief explanation.",
+    )
+
+
+class KeyPointDraft(BaseModel):
+    """
+    Fine-grained key point for sharp retrieval.
+
+    Represents a single step, preference item, habit pattern, or persona trait.
+    """
+
+    search_text: str = Field(
+        ...,
+        description="Short, specific retrieval handle (10-30 chars). Key anchor for this point.",
+    )
+    point_index: Optional[int] = Field(
+        None,
+        description="Point index/number if applicable.",
+    )
+    description: Optional[str] = Field(
+        None,
+        description="Optional brief explanation.",
+    )
+
+
+# Backward compatibility alias
+StepPointDraft = KeyPointDraft
+
+
+# ============================================================
+# Main Draft Model
+# ============================================================
+
+
+class ProceduralWriteDraft(BaseModel):
+    """
+    LLM-generated Procedure draft.
+
+    Contains the complete procedure structure ready for graph storage.
+    Note: summary is NOT generated by LLM, it's constructed by concatenating
+    search_text + context + steps after extraction.
+    """
+
+    title: str = Field(
+        ...,
+        description="Short human-readable title for the procedure.",
+    )
+    signature: str = Field(
+        ...,
+        description="Stable short handle for version tracking (like a tag).",
+    )
+    search_text: str = Field(
+        ...,
+        description="Short phrase for mid-granularity retrieval (15-50 chars). Like a topic label.",
+    )
+    context: ContextPackDraft = Field(
+        ...,
+        description="Context pack with when/why/boundary information.",
+    )
+    key_points: KeyPointsPackDraft = Field(
+        ...,
+        description="Key points: steps for processes, or bullet points for preferences/persona/habits.",
+    )
+
+
+# ============================================================
+# Point Extraction Models
+# ============================================================
+
+
+class ContextPointExtractionResult(BaseModel):
+    """Extraction result for context points."""
+
+    points: List[ContextPointDraft] = Field(
+        default_factory=list,
+        description="Context points extracted from the ContextPack.",
+    )
+
+
+class KeyPointExtractionResult(BaseModel):
+    """Extraction result for key points."""
+
+    points: List[KeyPointDraft] = Field(
+        default_factory=list,
+        description="Key points extracted from the KeyPointsPack.",
+    )
+
+
+# Backward compatibility alias
+StepPointExtractionResult = KeyPointExtractionResult
+
+
+# ============================================================
+# Version Management Models
+# ============================================================
+
+
+class ProcedureCandidate(BaseModel):
+    """A candidate procedure for merge/version decision."""
+
+    procedure_id: str = Field(..., description="The unique ID of the candidate procedure.")
+    procedure_name: str = Field(..., description="The name/title of the candidate procedure.")
+    procedure_summary: str = Field(..., description="The summary of the candidate procedure (may be truncated).")
+    version: int = Field(default=1, description="Current version number.")
+    match_signals: str = Field(
+        default="",
+        description="Brief description of why this candidate was retrieved.",
+    )
+
+
+class MergeDecision(BaseModel):
+    """
+    LLM decision for procedure merge/version.
+
+    Determines whether to merge, create new version, or create new procedure.
+    """
+
+    decision: str = Field(
+        ...,
+        description="'merge_update' (update existing), 'new_version' (create v2), or 'new_procedure' (create new).",
+    )
+    target_procedure_id: Optional[str] = Field(
+        None,
+        description="If merge_update or new_version, the procedure_id to update. Must match a candidate ID.",
+    )
+    reasoning: str = Field(
+        ...,
+        description="Brief explanation for the decision (1-3 sentences).",
+    )

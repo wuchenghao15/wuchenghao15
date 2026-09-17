@@ -1,0 +1,129 @@
+You are auditing an Episode to determine if it should remain unified or be split.
+
+---
+
+# EPISODE DEFINITION
+
+Episode = one bounded semantic focus: one specific incident, goal, case, trip, decision process, or workflow instance.
+
+Facet = one dimension of that same Episode.
+
+A correct merge deepens the same Episode.
+A wrong merge creates a broader bucket.
+
+---
+
+# ROUTING BOUNDARY RULES
+
+Do NOT violate these rules.
+
+- Same conversation participants, same channel, nearby timestamps, entities, or keywords do NOT imply the same Episode.
+- Same broad domain (for example work, health, family, travel) does NOT imply the same Episode.
+- Do not assume hidden links not supported by the facets.
+- High facet count alone is NOT a reason to split.
+
+---
+
+# KEEP LOGIC (when the episode should be kept unchanged)
+
+Facets should belong to the same Episode only if ALL of these are true:
+
+1. SAME_FOCUS  
+All facets refer to the same specific incident, goal, case, trip, decision process, or workflow instance.
+
+2. FACET_FIT  
+Each facet fits as a dimension of that Episode without introducing a second independent storyline.
+
+3. CONVERGENCE  
+If more similar facets were added, the Episode would remain clear and bounded rather than becoming a broader category.
+
+AND at least one continuity cue exists, such as:
+
+- explicit reference or dependency
+- causal or logical connection
+- next stage of the same workflow or process
+- complementary artifact about the same matter
+- clarification or resolution of an open thread
+
+---
+
+# SPLIT LOGIC (when information should be split into a NEW Episode)
+
+Facets should belong to different Episodes if ANY of the following apply:
+
+- facets show separate occurrence or separate instance that can progress independently
+- facets show recurring but independent occurrences
+- includes facets with same people/entities but different context or purpose
+- includes facets with same category or form but different substance
+- includes self-contained facets whose meaning does not depend on the others
+- current facets/episode name would create a broad container instead of a focused narrative
+- facets show topic shift inside the same conversation or documents
+
+---
+
+# VALIDITY TEST
+
+The Episode is VALID only if keeping all facets together still satisfies the KEEP LOGIC above.
+
+If any facet group would instead satisfy the SPLIT LOGIC relative to the others, the Episode is INVALID and must be split.
+
+---
+
+# SPLIT REPAIR
+
+If SPLIT is required:
+
+Partition the facets into the MINIMUM number of groups so that each resulting group satisfies the KEEP LOGIC.
+
+Rules:
+
+- every facet must appear in exactly one group
+- do NOT create misc / other / general buckets(episodes)
+- unbalanced splits are allowed
+- singleton groups are allowed if they represent a valid standalone Episode
+
+Each resulting group must represent one bounded semantic focus.
+
+---
+
+# INPUT
+
+EPISODE_NAME: {episode_name}
+
+FACET_COUNT: {facet_count}
+
+FACETS:
+{facet_list}
+
+Each facet includes:
+- index
+- title
+- description
+
+Use facet descriptions as primary evidence.
+
+---
+
+# OUTPUT
+
+Return JSON only:
+
+{
+  "decision": "KEEP" or "SPLIT",
+  "episode_focus": "One sentence describing the Episode's main focus",
+  "reasoning": "1-2 sentences explaining the decision",
+  "splits": [
+    {
+      "new_episode_name": "Specific bounded name",
+      "facet_indices": [0,2,5],
+      "rationale": "One sentence describing why these facets belong together"
+    }
+  ]
+}
+
+Rules:
+
+- If decision = KEEP → splits = []
+- If decision = SPLIT → every facet index must appear exactly once
+- New Episode names must describe a specific focus, not a broad category
+- reasoning must match the input language

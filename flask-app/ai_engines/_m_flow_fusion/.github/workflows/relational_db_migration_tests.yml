@@ -1,0 +1,168 @@
+# ┌──────────────────────────────────────────────────────────────────────────┐
+# │ M-Flow CI Pipeline: Relational-to-Graph Migration Validation            │
+# │                                                                          │
+# │ Seeds a PostgreSQL instance with the Chinook dataset and runs the       │
+# │ migration script against three graph engines: NetworkX, Kuzu, and       │
+# │ Neo4j. NetworkX and Kuzu share a single matrix job; Neo4j requires an   │
+# │ additional setup step and runs independently.                            │
+# │                                                                          │
+# │ Owner: M-Flow Platform Engineering                                      │
+# └──────────────────────────────────────────────────────────────────────────┘
+name: "rdb-migration | Relational-to-Graph Migration Checks"
+
+on:
+  workflow_call:
+    inputs:
+      python-version:
+        type: string
+        default: '3.11.x'
+        required: false
+    secrets:
+      LLM_PROVIDER: {required: true}
+      LLM_MODEL: {required: true}
+      LLM_ENDPOINT: {required: false}
+      LLM_API_KEY: {required: true}
+      LLM_API_VERSION: {required: false}
+      EMBEDDING_PROVIDER: {required: true}
+      EMBEDDING_MODEL: {required: true}
+      EMBEDDING_ENDPOINT: {required: false}
+      EMBEDDING_API_KEY: {required: true}
+      EMBEDDING_API_VERSION: {required: false}
+
+permissions: {contents: read}
+
+concurrency:
+  group: mflow-rdb-mig-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+
+  # ── NetworkX / Kuzu migration (matrix) ─────────────────────────────────
+  migration-lightweight-engines:
+    timeout-minutes: 20
+    runs-on: ubuntu-22.04
+    name: "Migration via ${{ matrix.engine }} graph engine"
+    defaults: {run: {shell: bash}}
+    strategy:
+      fail-fast: false
+      matrix:
+        engine: [networkx, kuzu]
+        include:
+          - engine: networkx
+            graph_provider: ""
+          - engine: kuzu
+            graph_provider: "kuzu"
+    services:
+      postgres:
+        image: pgvector/pgvector:pg17
+        env: {POSTGRES_USER: m_flow, POSTGRES_PASSWORD: m_flow, POSTGRES_DB: test_migration_db}
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports: ["5432:5432"]
+    env:
+      ENV: 'dev'
+      LLM_PROVIDER: openai
+      LLM_MODEL: ${{ secrets.LLM_MODEL }}
+      LLM_ENDPOINT: ${{ secrets.LLM_ENDPOINT }}
+      LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+      LLM_API_VERSION: ${{ secrets.LLM_API_VERSION }}
+      EMBEDDING_PROVIDER: openai
+      EMBEDDING_MODEL: ${{ secrets.EMBEDDING_MODEL }}
+      EMBEDDING_DIMENSIONS: "1536"
+      EMBEDDING_ENDPOINT: ${{ secrets.EMBEDDING_ENDPOINT }}
+      EMBEDDING_API_KEY: ${{ secrets.EMBEDDING_API_KEY }}
+      EMBEDDING_API_VERSION: ${{ secrets.EMBEDDING_API_VERSION }}
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
+        name: "Clone M-Flow repository"
+
+      - uses: ./.github/actions/m_flow_setup
+        name: "Prepare runtime environment"
+        with: {python-version: '3.11.x', extra-dependencies: "postgres"}
+
+      - run: echo "Dependencies already installed in setup"
+        name: "Confirm dependency resolution"
+
+      - name: "Seed Chinook dataset into PostgreSQL"
+        env: {PGPASSWORD: m_flow}
+        run: |
+          until pg_isready -h localhost -p 5432; do
+            echo "Waiting for postgres..."
+            sleep 2
+          done
+
+          psql -h localhost -U m_flow -d test_migration_db -f ./m_flow/tests/test_data/Chinook_PostgreSql.sql
+
+      - name: "Run migration against ${{ matrix.engine }} backend"
+        env:
+          GRAPH_DATABASE_PROVIDER: ${{ matrix.graph_provider }}
+        run: |
+          if [ -z "$GRAPH_DATABASE_PROVIDER" ]; then
+            unset GRAPH_DATABASE_PROVIDER
+          fi
+          uv run python ./m_flow/tests/test_relational_db_migration.py
+
+  # ── Neo4j migration (standalone — requires neo4j setup action) ─────────
+  migration-neo4j-engine:
+    timeout-minutes: 25
+    runs-on: ubuntu-22.04
+    name: "Migration via Neo4j graph engine"
+    defaults: {run: {shell: bash}}
+    services:
+      postgres:
+        image: pgvector/pgvector:pg17
+        env: {POSTGRES_USER: m_flow, POSTGRES_PASSWORD: m_flow, POSTGRES_DB: test_migration_db}
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports: ["5432:5432"]
+    env:
+      ENV: 'dev'
+      LLM_PROVIDER: openai
+      LLM_MODEL: ${{ secrets.LLM_MODEL }}
+      LLM_ENDPOINT: ${{ secrets.LLM_ENDPOINT }}
+      LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+      LLM_API_VERSION: ${{ secrets.LLM_API_VERSION }}
+      EMBEDDING_PROVIDER: openai
+      EMBEDDING_MODEL: ${{ secrets.EMBEDDING_MODEL }}
+      EMBEDDING_DIMENSIONS: "1536"
+      EMBEDDING_ENDPOINT: ${{ secrets.EMBEDDING_ENDPOINT }}
+      EMBEDDING_API_KEY: ${{ secrets.EMBEDDING_API_KEY }}
+      EMBEDDING_API_VERSION: ${{ secrets.EMBEDDING_API_VERSION }}
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
+        name: "Clone M-Flow repository"
+
+      - uses: ./.github/actions/m_flow_setup
+        name: "Prepare runtime environment"
+        with: {python-version: '3.11.x', extra-dependencies: "postgres"}
+
+      - uses: ./.github/actions/setup_neo4j
+        name: "Provision Neo4j with GDS extension"
+        id: neo4j_svc
+
+      - run: echo "Dependencies already installed in setup"
+        name: "Confirm dependency resolution"
+
+      - name: "Seed Chinook dataset into PostgreSQL"
+        env: {PGPASSWORD: m_flow}
+        run: |
+          until pg_isready -h localhost -p 5432; do
+            echo "Waiting for postgres..."
+            sleep 2
+          done
+
+          psql -h localhost -U m_flow -d test_migration_db -f ./m_flow/tests/test_data/Chinook_PostgreSql.sql
+
+      - name: "Run migration against Neo4j backend"
+        env:
+          GRAPH_DATABASE_PROVIDER: "neo4j"
+          GRAPH_DATABASE_URL: ${{ steps.neo4j_svc.outputs.neo4j-url }}
+          GRAPH_DATABASE_USERNAME: ${{ steps.neo4j_svc.outputs.neo4j-username }}
+          GRAPH_DATABASE_PASSWORD: ${{ steps.neo4j_svc.outputs.neo4j-password }}
+        run: uv run python ./m_flow/tests/test_relational_db_migration.py

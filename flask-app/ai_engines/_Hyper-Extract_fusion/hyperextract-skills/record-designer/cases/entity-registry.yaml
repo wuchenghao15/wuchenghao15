@@ -1,0 +1,57 @@
+language: [zh, en]
+
+name: entity_registry
+type: set
+tags: [entity, knowledge, extraction]
+
+description:
+  zh: '实体注册表模板 - 从文本中识别并提取关键实体'
+  en: 'Entity Registry Template - Identify and extract key entities from text'
+
+output:
+  description:
+    zh: '从文本中提取的实体清单'
+    en: 'Entity list extracted from text'
+  fields:
+    - name: name
+      type: str
+      description:
+        zh: '实体名称，使用最稳定、最清晰的官方称呼'
+        en: 'Entity name, using the most stable and clear official designation'
+      required: true
+    - name: entity_type
+      type: str
+      description:
+        zh: '实体类型，如"人物"、"机构"、"地点"、"产品"等'
+        en: 'Entity type such as "person", "organization", "location", "product"'
+      required: true
+    - name: description
+      type: str
+      description:
+        zh: '实体简要描述，说明其身份或作用'
+        en: 'Brief description of the entity identity or role'
+      required: false
+
+guideline:
+  target:
+    zh: '你是一位专业的实体识别专家，擅长从各类文本中准确识别有意义的实体。'
+    en: 'You are a professional entity recognition expert skilled at accurately identifying meaningful entities from various texts.'
+  rules:
+    zh:
+      - '提取具有独立指代意义的实体，即能够唯一标识某个对象'
+      - '统一同一实体的不同表述：全称/简称/别称应合并，name字段使用最正式的名称'
+      - '不要将纯代词（他、她、它）、泛称（"某公司"）、无实际指代的短语作为实体'
+      - '实体类型分类要准确且一致'
+      - 'description应精炼概括实体身份或作用'
+    en:
+      - 'Extract entities with independent referential meaning, i.e., those that can uniquely identify an object'
+      - 'Unify different expressions of the same entity: full names/abbreviations/aliases should be merged, use the most formal name in the name field'
+      - 'Do not treat pure pronouns (he, she, it), generic terms ("a certain company"), or non-referential phrases as entities'
+      - 'Entity type classification must be accurate and consistent'
+      - 'Description should be a concise summary of the entity identity or role'
+
+identifiers:
+  item_id: name
+
+display:
+  label: '{name} ({entity_type})'

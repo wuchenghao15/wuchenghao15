@@ -1,0 +1,104 @@
+You are constructing Episode seeds for an episodic memory system.
+
+Group sentences into the MINIMUM number of groups such that each group represents ONE bounded semantic focus.
+
+These groups will later become Episodes, so they must be precise and not broad topic buckets.
+
+## DEFINITIONS
+
+Episode seed = one specific incident, goal, case, trip, decision process, or workflow instance.
+
+Facet = a detail or dimension of that same Episode.
+
+Atomic = content that cannot confidently belong to any Episode seed.
+
+A correct group deepens one Episode.
+A wrong group creates a broad topic bucket.
+
+## INPUT
+
+Total: {total_sentences}
+
+{sentences_with_indices}
+
+## GROUPING PRINCIPLE
+
+Use the MINIMUM number of groups needed so that each group satisfies:
+
+1. SAME_FOCUS  
+All sentences refer to the same specific incident, goal, case, trip, decision process, or workflow instance.
+
+2. FACET_FIT  
+Each sentence can act as a detail, step, reaction, dependency, or clarification of that same matter.
+
+3. CONVERGENCE  
+If more similar sentences arrived, the group would remain a clear bounded focus rather than turning into a broad category.
+
+## SPLIT WHEN
+
+Sentences should belong to different groups if they represent:
+
+- separate occurrences or instances
+- recurring but independent events
+- same entities but different context or purpose
+- same domain but different goals or cases
+- self-contained sub-stories that can progress independently
+- topic shifts within the conversation
+
+## RULES
+
+- Sentence order or shared speakers do NOT imply the same group.
+- Same keywords or entities do NOT imply the same group.
+- Prefer specific instances over broad topics.
+- Do not create buckets like:
+  "Work discussion", "Travel planning", "General conversation".
+
+A single sentence may form its own group if it already expresses one bounded focus.
+
+Atomic is a last resort.
+
+## COHERENCE RULE
+
+If sentences are part of the same narrative, decision process, or workflow instance, keep them together even if they involve multiple facets or steps. Avoid fragmenting a coherent narrative
+
+## NAMING POLICY
+
+For each group, first infer its bounded semantic focus, then generate a SHORT name.
+
+A good name must:
+- describe ONE specific focus
+- have distinguishable anchors (name, place, instance, proper noun, theme, etc.)
+- avoid vague umbrella labels
+
+Bad names:
+- Jeff‘s work discussion
+- History facts
+- Tesla information
+
+Good names:
+- Jeff deciding whether to quit the current job
+- Discovery of penicillin by Alexander Fleming
+- Tesla battery specifications
+
+## OUTPUT
+
+Return JSON only:
+
+{
+  "events": [
+    {
+      "sentence_indices": [0,1,2],
+      "focus": "one sentence describing the bounded semantic focus",
+      "suggested_topic": "specific bounded name"
+    }
+  ],
+  "atomic_indices": []
+}
+
+Rules:
+
+- Every sentence index must appear exactly once.
+- Indices must be within [0, {total_sentences}-1].
+- Use the minimum number of valid groups.
+- `suggested_topic` must be specific, not a broad category.
+- `focus` and `suggested_topic` must match the input language.

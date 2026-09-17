@@ -1,0 +1,133 @@
+# ┌──────────────────────────────────────────────────────────────────────────┐
+# │ M-Flow CI Pipeline: LLM Provider Compatibility Matrix                   │
+# │                                                                          │
+# │ Validates the M-Flow abstraction layer against every supported LLM and  │
+# │ embedding provider. Standard providers (Gemini, Fastembed, OpenRouter)  │
+# │ are exercised through a consolidated matrix job. AWS Bedrock uses a     │
+# │ separate matrix to cover API-key, IAM credential, and named-profile    │
+# │ authentication strategies independently.                                │
+# │                                                                          │
+# │ Owner: M-Flow Platform Engineering                                      │
+# └──────────────────────────────────────────────────────────────────────────┘
+name: "llm-providers | Provider Compatibility Matrix"
+
+permissions: {contents: read}
+
+on:
+  workflow_call:
+
+env:
+  RUNTIME__LOG_LEVEL: ERROR
+  ENV: 'dev'
+
+jobs:
+
+  # ── Standard LLM/Embedding providers (single matrix) ──────────────────
+  standard-provider-suite:
+    timeout-minutes: 15
+    runs-on: ubuntu-22.04
+    name: "Verify ${{ matrix.tag }} provider integration"
+    defaults: {run: {shell: bash}}
+    strategy:
+      fail-fast: false
+      matrix:
+        tag: [fastembed]  # gemini (requires GEMINI_API_KEY) and openrouter (requires OPENROUTER_API_KEY) skipped
+        include:
+          - tag: fastembed
+            llm_provider: "openai"
+            embedding_provider: "fastembed"
+            embedding_model: "sentence-transformers/all-MiniLM-L6-v2"
+            embedding_dimensions: "384"
+            embedding_max_tokens: "256"
+          # openrouter skipped — requires OPENROUTER_API_KEY
+          # - tag: openrouter
+          #   llm_provider: "custom"
+          #   embedding_provider: "openai"
+          #   embedding_model: "openai/text-embedding-3-large"
+          #   embedding_dimensions: "3072"
+          #   embedding_max_tokens: "8191"
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
+        name: "Clone M-Flow source tree"
+
+      - uses: ./.github/actions/m_flow_setup
+        name: "Configure Python and install M-Flow"
+        with: {python-version: '3.11.x'}
+
+      - name: "Execute ${{ matrix.tag }} provider smoke test"
+        env:
+          LLM_PROVIDER: ${{ matrix.llm_provider }}
+          LLM_API_KEY: >-
+            ${{ matrix.tag == 'gemini' && secrets.GEMINI_API_KEY
+             || matrix.tag == 'openrouter' && secrets.OPENROUTER_API_KEY
+             || secrets.LLM_API_KEY }}
+          LLM_MODEL: >-
+            ${{ matrix.tag == 'gemini' && 'gemini/gemini-2.0-flash'
+             || matrix.tag == 'openrouter' && 'openrouter/x-ai/grok-code-fast-1'
+             || secrets.LLM_MODEL }}
+          LLM_ENDPOINT: >-
+            ${{ matrix.tag == 'fastembed' && secrets.LLM_ENDPOINT
+             || matrix.tag == 'openrouter' && 'https://openrouter.ai/api/v1'
+             || '' }}
+          LLM_API_VERSION: >-
+            ${{ matrix.tag == 'fastembed' && secrets.LLM_API_VERSION || '' }}
+          EMBEDDING_PROVIDER: ${{ matrix.embedding_provider }}
+          EMBEDDING_API_KEY: >-
+            ${{ matrix.tag == 'gemini' && secrets.GEMINI_API_KEY
+             || matrix.tag == 'openrouter' && secrets.OPENAI_API_KEY
+             || '' }}
+          EMBEDDING_MODEL: ${{ matrix.embedding_model }}
+          EMBEDDING_DIMENSIONS: ${{ matrix.embedding_dimensions }}
+          EMBEDDING_MAX_TOKENS: ${{ matrix.embedding_max_tokens }}
+        run: uv run python ./examples/python/simple_example.py
+
+  # ── AWS Bedrock authentication variants (consolidated matrix) ──────────
+  bedrock-auth-matrix:
+    if: false  # requires AWS Bedrock credentials
+    timeout-minutes: 20
+    runs-on: ubuntu-22.04
+    name: "Verify Bedrock (${{ matrix.auth_strategy }}) integration"
+    defaults: {run: {shell: bash}}
+    strategy:
+      fail-fast: false
+      matrix:
+        auth_strategy: [api-key, iam-credentials, named-profile]
+    env:
+      LLM_PROVIDER: "bedrock"
+      LLM_MODEL: "eu.anthropic.claude-sonnet-4-5-20250929-v1:0"
+      LLM_MAX_TOKENS: "16384"
+      AWS_REGION_NAME: "eu-west-1"
+      EMBEDDING_PROVIDER: "bedrock"
+      EMBEDDING_API_KEY: ${{ secrets.BEDROCK_API_KEY }}
+      EMBEDDING_MODEL: "amazon.titan-embed-text-v2:0"
+      EMBEDDING_DIMENSIONS: "1024"
+      EMBEDDING_MAX_TOKENS: "8191"
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
+        name: "Clone M-Flow source tree"
+
+      - uses: ./.github/actions/m_flow_setup
+        name: "Configure Python and install M-Flow with AWS extras"
+        with: {python-version: '3.11.x', extra-dependencies: "aws"}
+
+      - name: "Provision temporary AWS credentials file"
+        if: matrix.auth_strategy == 'named-profile'
+        run: |
+          mkdir -p ~/.aws
+          cat > ~/.aws/credentials << EOF
+          [bedrock-test]
+          aws_access_key_id = ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws_secret_access_key = ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          EOF
+
+      - name: "Execute Bedrock smoke test via ${{ matrix.auth_strategy }}"
+        env:
+          LLM_API_KEY: >-
+            ${{ matrix.auth_strategy == 'api-key' && secrets.BEDROCK_API_KEY || '' }}
+          AWS_ACCESS_KEY_ID: >-
+            ${{ matrix.auth_strategy == 'iam-credentials' && secrets.AWS_ACCESS_KEY_ID || '' }}
+          AWS_SECRET_ACCESS_KEY: >-
+            ${{ matrix.auth_strategy == 'iam-credentials' && secrets.AWS_SECRET_ACCESS_KEY || '' }}
+          AWS_PROFILE_NAME: >-
+            ${{ matrix.auth_strategy == 'named-profile' && 'bedrock-test' || '' }}
+        run: uv run python ./examples/python/simple_example.py

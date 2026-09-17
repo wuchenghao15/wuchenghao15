@@ -1,0 +1,133 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+# M-flow CodeRabbit configuration
+# Automated code review settings for the M-flow repository
+
+language: en
+early_access: false
+enable_free_tier: true
+
+# ─── Review Settings ────────────────────────────────────────────────────────
+reviews:
+  profile: chill
+  request_changes_workflow: false
+  abort_on_close: true
+
+  # Summary & display preferences
+  high_level_summary: true
+  high_level_summary_placeholder: '@coderabbitai summary'
+  auto_title_placeholder: '@coderabbitai'
+  review_status: true
+  poem: false
+  collapse_walkthrough: false
+  sequence_diagrams: false
+  changed_files_summary: true
+
+  # Automated review triggers
+  auto_review:
+    enabled: true
+    auto_incremental_review: true
+    drafts: false
+    ignore_title_keywords: []
+    labels: []
+    base_branches:
+      - dev
+      - main
+
+  # Global file exclusions (build artifacts, caches, vendored code)
+  path_filters:
+    - '!node_modules/**'
+    - '!dist/**'
+    - '!build/**'
+    - '!.git/**'
+    - '!venv/**'
+    - '!.venv/**'
+    - '!__pycache__/**'
+    - '!*.xc*/**'
+    - '!.next/**'
+
+  # ─── Per-path review instructions ──────────────────────────────────────
+  instructions: >-
+    General review guidelines for the M-flow project:
+
+    1. All Python code must follow PEP 8 (4-space indent, snake_case) and the
+       ruff configuration in pyproject.toml (line-length=100).
+
+    2. Public functions and classes require docstrings and type annotations.
+
+    3. Documentation and comments should be clear, correct, and free of typos.
+
+    4. Test code must be automated, deterministic, and cover critical paths.
+
+    5. Confirm copyright years are current when a file is changed.
+
+  path_instructions:
+    # ── Project overview ──
+    - path: README.md
+      instructions: >-
+        Treat README.md as the project's landing page.
+        Lint with markdownlint and languagetool; assume GitHub-Flavored Markdown.
+
+    # ── Python source code ──
+    - path: 'm_flow/**/*.py'
+      instructions: >-
+        Review Python source under the m_flow package:
+
+        1. Prioritize portability across Python 3.10–3.13.
+        2. Enforce PEP 8 style; ruff is the canonical linter.
+        3. Suggest docstrings for any undocumented public API.
+        4. Include links to official docs when referencing external tools.
+        5. Prefer structured logging via m_flow.shared.logging_utils.
+
+    # ── Test suite ──
+    - path: 'm_flow/tests/**'
+      instructions: >-
+        Review test code:
+
+        1. Files named test_*.py in tests/ are unit tests.
+        2. Non-unit tests (functional, regression) may be shell scripts
+           prefixed with check_ or test_ (no extension).
+        3. Verify assertions are meaningful, not just "assert True".
+        4. Flag any test that depends on external state without fixtures.
+
+    # ── CI / GitHub configuration ──
+    - path: '.github/**'
+      instructions: >-
+        Review GitHub Actions and templates:
+
+        1. actionlint may produce false positives on ${{ ... }} conditionals.
+        2. Do not suggest removing valid ${{ ... }} expressions.
+        3. Verify secrets are referenced, never hard-coded.
+
+    # ── Dependency declarations ──
+    - path: 'pyproject.toml'
+      instructions: >-
+        pyproject.toml is the single source of truth for Python dependencies.
+        Verify version pins are reasonable and extras are correctly grouped.
+
+  # ─── Tool configuration ────────────────────────────────────────────────
+  tools:
+    shellcheck:
+      enabled: true
+    markdownlint:
+      enabled: true
+    yamllint:
+      enabled: true
+    ruff:
+      enabled: true
+      configuration:
+        line_length: 100
+        extend_select:
+          - E    # pycodestyle errors
+          - F    # pyflakes
+          - W    # pycodestyle warnings
+          - N    # pep8-naming
+        ignore:
+          - W191  # indentation contains tabs
+          - W391  # blank line at end of file
+          - E117  # over-indented
+          - D208  # docstring over-indentation
+        dummy_variable_rgx: '^(_.*|junk|extra)$'
+
+# ─── Chat Settings ──────────────────────────────────────────────────────────
+chat:
+  auto_reply: true

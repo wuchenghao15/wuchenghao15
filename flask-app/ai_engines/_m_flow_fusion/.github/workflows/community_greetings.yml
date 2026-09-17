@@ -1,0 +1,45 @@
+# M-Flow — first-interaction automation for issues and PRs.
+# -----------------------------------------------------------------------------
+# Welcomes new contributors; copy is tailored to M-flow CONTRIBUTING.md and
+# the project README. Concurrency avoids duplicate comments on rapid events.
+# -----------------------------------------------------------------------------
+name: automation | Welcome First-time Contributors
+
+concurrency:
+  cancel-in-progress: true
+  group: mflow-greet-${{ github.event.issue.number || github.event.pull_request.number || github.run_id }}
+
+on:
+  issues: { types: [opened] }
+  pull_request_target: { types: [opened] }
+
+permissions: { issues: write, pull-requests: write }
+
+jobs:
+  mflow_first_touch_welcome:
+    name: Greet first-time contributor
+    runs-on: ubuntu-22.04
+    timeout-minutes: 5
+
+    steps:
+      - name: Post first-interaction message via GITHUB_TOKEN
+        uses: actions/first-interaction@fb2402657b4a28582200150d0a145671d0e50597  # v1
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          pr-message: >
+            Welcome to the M-flow project, @${{ github.actor }}! 🎉
+
+            Thank you for opening this pull request.
+            A core maintainer will review your changes shortly.
+            In the meantime, please make sure you've read our
+            [Contributing Guide](https://github.com/FlowElement-xinliuyuansu/m_flow/blob/main/CONTRIBUTING.md).
+          issue-message: >
+            Hi @${{ github.actor }}, thanks for taking the time to open an issue!
+
+            If this is a bug report, please make sure you have included:
+            1. Steps to reproduce the problem
+            2. Expected behaviour vs actual behaviour
+            3. A minimal code snippet or configuration that triggers the issue
+
+            Check out our README at https://github.com/FlowElement-xinliuyuansu/m_flow for additional guidance.
+            A maintainer will follow up as soon as possible.

@@ -1,0 +1,51 @@
+# M-flow CI — regenerate the contributors leaderboard every Monday
+# Commits an updated CONTRIBUTORS.md directly to the default branch.
+name: automation | Refresh Contributors Leaderboard
+
+on:
+  schedule:
+    - cron: "0 3 * * 1"   # Every Monday at 03:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  refresh-contributors:
+    name: Regenerate CONTRIBUTORS.md
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+    steps:
+      - name: Checkout full history
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
+        with:
+          fetch-depth: 0   # full history needed for git shortlog
+
+      - name: Build contributor file
+        run: |
+          {
+            echo "## Contributors"
+            echo ""
+            echo "Thank you to everyone who has contributed to M-flow!"
+            echo ""
+            echo '<a href="https://github.com/FlowElement-xinliuyuansu/m_flow/graphs/contributors">'
+            echo '  <img src="https://contrib.rocks/image?repo=FlowElement-xinliuyuansu/m_flow" />'
+            echo "</a>"
+            echo ""
+            echo "## Top Contributors"
+            echo ""
+            echo "| # | Author | Commits |"
+            echo "|---|--------|---------|"
+            git shortlog -sne --no-merges \
+              | sort -rn \
+              | head -10 \
+              | awk '{ printf "| %d | %s | %s |\n", NR, $2, $1 }'
+          } > CONTRIBUTORS.md
+
+      - name: Commit when content changed
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions@users.noreply.github.com"
+          git add CONTRIBUTORS.md
+          git diff --cached --quiet || git commit -m "docs: refresh contributors leaderboard"
+          git push
