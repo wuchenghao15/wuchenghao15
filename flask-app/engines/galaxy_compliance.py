@@ -425,12 +425,14 @@ def run_compliance_pipeline(content_id: str, content_type: str, text: str,
 # 快速预检 (300ms 内) — 在内容生成时就扫极限词/红线
 # ============================================================
 
-def quick_precheck(text: str) -> Tuple[bool, List[str]]:
+def quick_precheck(text: str, platform: str = None) -> Tuple[bool, List[str]]:
     """
     快速预检 (不查原创性/引用, 只扫即时阻断词):
     - C3 极限词 (BLOCK)
-    - C5 抖音红线 (BLOCK)
+    - C5 平台限流词 (按 platform 差异化)
     - C6 隐私 (BLOCK)
+
+    platform: 'douyin' | 'xiaohongshu' | 'bilibili' | None (通用)
     """
     blockers = []
 
@@ -440,10 +442,11 @@ def quick_precheck(text: str) -> Tuple[bool, List[str]]:
             blockers.append(f"[C3] 极限词: {w}")
             break
 
-    # C5
-    for w in DOUYIN_RED_LINES:
+    # C5 — 按平台差异化
+    red_lines = get_platform_red_lines(platform)
+    for w in red_lines:
         if w in text:
-            blockers.append(f"[C5] 抖音红线: {w}")
+            blockers.append(f"[C5:{platform or 'all'}] 限流词: {w}")
             break
 
     # C6

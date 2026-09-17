@@ -433,13 +433,13 @@ def upsert_account(nickname: str, role_type: str, douyin_uid: str = None,
 
 def list_accounts(enabled: bool = True) -> list:
     conn = _conn()
-    rows = conn.execute("""
-        SELECT * FROM mt_galaxy_accounts WHERE enabled=?
-        ORDER BY followers DESC
-    """, (1 if enabled else 0)).fetchall()
+    param = 1 if enabled else 0
+    rows = conn.execute(
+        "SELECT * FROM mt_galaxy_accounts WHERE enabled=? ORDER BY followers DESC",
+        (param,)
+    ).fetchall()
     conn.close()
     return [dict(r) for r in rows]
-
 
 def update_account_stats(account_id: str, followers: int = None,
                          total_views: int = None, total_likes: int = None,
@@ -685,11 +685,11 @@ def upsert_high_exposure(activity_id: str, platform: str, activity_name: str,
 
 def list_active_high_exposure(platform: str = None, min_score: float = 0) -> list:
     conn = _conn()
-    where, params = ["is_active=1", f"hot_score>=?"]
+    where = ["is_active=1", "hot_score>=?"]
     params = [min_score]
     if platform:
         where.append("platform=?"); params.append(platform)
-    sql = f"SELECT * FROM mt_galaxy_high_exposure WHERE {' AND '.join(where)}"
+    sql = "SELECT * FROM mt_galaxy_high_exposure WHERE " + " AND ".join(where)
     sql += " ORDER BY hot_score DESC LIMIT 50"
     rows = conn.execute(sql, params).fetchall()
     conn.close()
