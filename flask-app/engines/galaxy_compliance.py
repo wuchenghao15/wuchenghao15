@@ -101,9 +101,26 @@ _PLATFORM_RESTRICT_MAP = {
 }
 
 
+# 优先从 DB mt_galaxy_platform_restrict 读 (可动态更新), DB 为空 fallback 硬编码
 def get_platform_red_lines(platform: str = None) -> List[str]:
-    """获取指定平台的限流词库 (含通用红线)"""
-    return _PLATFORM_RESTRICT_MAP.get(platform, COMMON_RED_LINES)
+    """获取指定平台的限流词库 (含通用红线 + DB 历史政治敏感词)"""
+    # 1. 硬编码基础词 (所有平台必含)
+    hardcoded = _PLATFORM_RESTRICT_MAP.get(platform, COMMON_RED_LINES)
+
+    # 2. DB 里的平台特有词 + 通用历史政治敏感词
+    try:
+        conn = sqlite3.connect(DB_PATH, timeout=5)
+        rows = conn.execute("""
+            SELECT word, level FROM mt_galaxy_platform_restrict
+            WHERE (platform=? OR platform='common') AND level IN ('BLOCK','REVIEW')
+        """, (platform or 'common',)).fetchall()
+        conn.close()
+        db_words = [r[0] for r in rows if r[0]]
+        combined = hardcoded + db_words
+        # 去重
+        return list(dict.fromkeys(combined))
+    except Exception:
+        return hardcoded
 
 
 def check_platform_rules(text: str, platform: str = None) -> Tuple[str, float, str]:
@@ -175,13 +192,14 @@ def check_originality(text: str, content_id: str = None) -> Tuple[str, float, st
     conn = sqlite3.connect(DB_PATH, timeout=15)
     conn.row_factory = sqlite3.Row
     try:
-        # 查已有 BLOCK/BLOCK 的高风险内容指纹
+        # 查已有 BLOCK/BLOCK 的高风险内容指纹 (排除当前 content_id, 避免自撞)
         existing = conn.execute("""
             SELECT content_id, check_type, score, detail
             FROM mt_galaxy_compliance_log
             WHERE check_type='C1_originality'
+              AND (? IS NULL OR content_id != ?)
             ORDER BY log_id DESC LIMIT 500
-        """).fetchall()
+        """, (content_id, content_id)).fetchall()
 
         min_dist = 64
         close_match = None

@@ -329,14 +329,14 @@ def roll_team_for_topic(topic: str, domain_hint: str = None,
 # ============================================================
 
 HOOK_TEMPLATES = {
-    'f_history_cute':    ["停！{subject}居然是这样！", "课本没说的{subject}秘密！", "看完你会重新认识{subject}", "{subject}被遗忘了 1000 年"],
-    'f_science_burst':   ["{subject}为什么这么神奇？", "99% 的人不知道的{subject}真相", "用{subject}做实验 结果炸了", "科学家做了{subject}实验 震惊了"],
-    'f_code_demo':       ["一行代码搞定{subject}！", "{subject}还能这么写？", "Python 中最被低估的{subject}", "这个{subject}技巧 效率翻 10 倍"],
-    'f_life_healing':    ["{subject}居然是这个原因", "生活中的{subject} 你知道吗", "治愈你的{subject}小妙招", "每天 3 分钟 {subject} 变轻松"],
-    'f_guochao':         ["古人的{subject} 今人忘光了", "《{subject}》里藏着的智慧", "中国千年{subject} 太美了", "为什么{subject}能流传千年"],
-    'f_hotspot_review':  ["{subject}事件 三秒看懂", "{subject}背后 不只是表面", "专家视角 {subject}到底怎么看", "{subject} 我们需要想的更深"],
-    'f_math_beauty':     ["{subject}居然这么美！", "用{subject}画出整个宇宙", "数学里的{subject} 看到哭", "一条{subject}公式 诠释自然"],
-    'f_english_drama':   ["{subject}这个场景 英文怎么说", "3 分钟学会{subject}常用语", "老外天天说的{subject}表达", "看情景学{subject} 记忆更深"],
+    'f_history_cute':    ["停！{subject}居然是这样！", "{subject}里的你可能没注意到的细节", "看完你会重新认识{subject}", "{subject}被遗忘了很久"],
+    'f_science_burst':   ["{subject}为什么这么神奇？", "关于{subject} 不少朋友可能没搞懂", "用{subject}做实验 很有意思", "科学家研究{subject}后发现了什么"],
+    'f_code_demo':       ["一行代码搞定{subject}！", "{subject}还能这么写？", "Python 中很实用的{subject}", "这个{subject}技巧 效率更高"],
+    'f_life_healing':    ["{subject}居然是这个原因", "生活中的{subject} 你注意到了吗", "治愈你的{subject}小妙招", "每天 3 分钟 {subject} 变轻松"],
+    'f_guochao':         ["古人的{subject} 今人不太记得了", "《{subject}》里藏着的智慧", "中国千年{subject} 很美", "为什么{subject}能流传千年"],
+    'f_hotspot_review':  ["{subject}事件 快速看懂", "{subject}背后 不只是表面", "专家视角 {subject}怎么看", "{subject} 我们需要想的更深"],
+    'f_math_beauty':     ["{subject}居然这么美！", "用{subject}画出整个宇宙", "数学里的{subject} 值得看看", "一条{subject}公式 诠释自然"],
+    'f_english_drama':   ["{subject}这个场景 英文怎么说", "3 分钟学会{subject}常用语", "老外常用的{subject}表达", "看情景学{subject} 记忆更深"],
 }
 
 STORYBOARD_TEMPLATE = [
@@ -429,21 +429,33 @@ def generate_production_spec(topic: str, formula_id: str = None,
         f"{topic}之所以让人着迷, 是因为它连接着我们熟悉的生活场景。"
         f"让我们一起来看看它究竟是怎么回事吧。"
     )
-    cta = cta or f"你对{topic}有什么看法? 评论区说说呀~"
+    cta = cta or f"你对{topic}有什么看法? 欢迎留言分享~"
 
-    # 每次加一段随机盐文字, 确保 SimHash 不同 (避免 C1 原创性与自己撞)
-    import uuid
-    episode_tag = f" #{''.join([c for c in str(uuid.uuid4())[:8] if c.isalnum()])}"
-    narration += episode_tag
-
-    # 极限词兜底替换 (防止 Ollama 不小心输出)
-    EXTREMES_MAP = {
+    # ============ 平台社区规范违禁话术兜底替换 ============
+    # 真实平台 (抖音/xhs/B站) 都会拦的诱导/夸张话术 → 合规平替
+    PLATFORM_FORBIDDEN_MAP = {
+        # 极限词 (广告法)
         '第一': '很早的', '最': '挺', '顶级': '不错的', '唯一': '独特',
-        '极致': '精彩', '100%': '大部分', '绝对': '通常', '唯一': '特别',
+        '极致': '精彩', '100%': '大部分', '绝对': '通常',
         '首次': '较早的一次', '空前': '很有特点', '终极': '核心',
+        '全网最': '大家常用的', '翻 N 倍': '更高效',
+        # 夸张诱导 (抖音巨量安全词典)
+        '99%的人': '不少朋友', '99% 的人': '不少朋友',
+        '所有人都': '很多朋友', '所有人不知道': '不少朋友没注意',
+        '秘密': '细节', '揭秘': '讲讲',
+        '结果炸了': '很有意思', '震惊了': '值得留意',
+        # 诱导互动 (三平台通用违禁)
+        '评论区说说': '留言分享', '评论区聊聊': '留言交流',
+        '评论区见': '欢迎留言', '评论区谈谈': '留言交流',
+        '记得收藏': '可以先存着', '赶紧收藏': '可以存一下',
+        '点赞关注评论': '欢迎关注支持', '双击': '点赞鼓励',
+        '三连': '欢迎支持',
+        # 夸张描述
+        '美哭': '很美', '看到哭': '值得一看',
+        '不看后悔': '值得看看', '看完不后悔': '可以一看',
     }
     def _sanitize(text: str) -> str:
-        for bad, good in EXTREMES_MAP.items():
+        for bad, good in PLATFORM_FORBIDDEN_MAP.items():
             text = text.replace(bad, good)
         return text
     hook = _sanitize(hook)
@@ -625,98 +637,6 @@ def list_swarms(limit: int = 50) -> List[Dict]:
     """, (limit,)).fetchall()
     conn.close()
     return [dict(r) for r in rows]
-
-
-# ============================================================
-# Flask Blueprint 端点暴露
-# ============================================================
-
-def register_composition_routes(app):
-    """把 swarm / roll / generate 端点动态注册到 galaxy_bp"""
-    from flask import Blueprint, request, jsonify
-
-    # 注意: galaxy_bp 已在 routes/galaxy_routes.py 里, 这里通过 import 访问
-    try:
-        from routes.galaxy_routes import galaxy_bp
-    except ImportError:
-        return
-
-    @galaxy_bp.route('/api/galaxy/swarm/roll', methods=['POST', 'GET'])
-    def api_swarm_roll():
-        """选 formula + 组队 (不生成 spec)"""
-        data = request.get_json(silent=True) or request.args.to_dict()
-        topic = (data.get('topic') or '').strip()
-        if not topic:
-            return jsonify({'ok': False, 'error': 'topic 必填'}), 400
-        formula_id = data.get('formula_id') or None
-        custom_roles = data.get('custom_roles')
-        try:
-            fid, team_info = roll_team_for_topic(
-                topic, custom_roles=custom_roles,
-                custom_formula_id=formula_id
-            )
-            return jsonify({'ok': True, 'formula_id': fid, 'team': team_info})
-        except Exception as e:
-            return jsonify({'ok': False, 'error': str(e)}), 500
-
-    @galaxy_bp.route('/api/galaxy/swarm/generate', methods=['POST', 'GET'])
-    def api_swarm_generate():
-        """完整: topic → formula → team → production_spec → 合规 → 落库"""
-        data = request.get_json(silent=True) or request.args.to_dict()
-        topic = (data.get('topic') or '').strip()
-        if not topic:
-            return jsonify({'ok': False, 'error': 'topic 必填'}), 400
-        formula_id = data.get('formula_id')
-        custom_roles = data.get('custom_roles')
-        use_ollama = data.get('use_ollama', False)
-        try:
-            spec = generate_production_spec(
-                topic, formula_id=formula_id,
-                custom_roles=custom_roles,
-                use_ollama=use_ollama
-            )
-            compliance = submit_for_compliance(spec)
-
-            ensure_swarm_tables()
-            save_swarm(
-                swarm_id=f"swarm_{spec['meta']['content_hash'][:12]}",
-                topic=topic, formula_id=spec['meta']['formula_id'],
-                team_json=json.dumps(spec['meta']['team'], ensure_ascii=False),
-                spec_json=json.dumps(spec, ensure_ascii=False),
-                compliance_overview=compliance['overall'],
-                platforms=spec['meta']['target_platforms']
-            )
-            return jsonify({
-                'ok': True,
-                'swarm_id': f"swarm_{spec['meta']['content_hash'][:12]}",
-                'formula': spec['meta']['formula_name'],
-                'team_size': spec['meta']['team_size'],
-                'explosion_style': spec['meta']['explosion_style'],
-                'compliance': compliance['overall'],
-                'platforms': spec['meta']['target_platforms'],
-                'spec': spec,
-            })
-        except Exception as e:
-            import traceback; traceback.print_exc()
-            return jsonify({'ok': False, 'error': str(e)}), 500
-
-    @galaxy_bp.route('/api/galaxy/formulas', methods=['GET'])
-    def api_formulas_list():
-        """列出 8 种组合公式"""
-        items = [
-            {
-                'formula_id': fid,
-                'name': f['name'],
-                'description': f['description'],
-                'roles': list(f['role_kit'].keys()),
-                'explosion_style': f['explosion_style'],
-                'platforms': f['platforms'],
-                'duration_sec': f['target_duration_sec'],
-                'hot_score_base': f['hot_score_base'],
-            }
-            for fid, f in COMPOSITION_FORMULAS.items()
-        ]
-        return jsonify({'ok': True, 'formulas': items, 'count': len(items)})
 
 
 # ============================================================

@@ -490,6 +490,23 @@ def api_swarm_generate():
             compliance_overview=compliance['overall'],
             platforms=spec['meta']['target_platforms'],
         )
+
+        # === 合规非 BLOCK 时自动创建多平台 publish_log 待发布计划 ===
+        created_publish = []
+        if compliance['overall'] != 'BLOCK':
+            try:
+                from engines import galaxy_db as gdb
+                seed_account = 'galaxy_acc_1789667686'  # 种子账号 (抖音+xhs+B站)
+                for plat in spec['meta']['target_platforms']:
+                    pid = gdb.create_publish_log(
+                        episode_id=swarm_id, platform=plat,
+                        series_id=None, account_id=seed_account,
+                        scheduled_time=None,
+                    )
+                    created_publish.append({'platform': plat, 'publish_id': pid, 'status': 'pending'})
+            except Exception as e:
+                logger.warning(f'publish_log 创建失败: {e}')
+
         return jsonify({
             'ok': True,
             'swarm_id': swarm_id,
@@ -503,6 +520,7 @@ def api_swarm_generate():
             'target_duration_sec': spec['meta']['target_duration_sec'],
             'storyboard_shots': len(spec['storyboard']),
             'explosion_effects_count': len(spec['explosion_effects']),
+            'created_publish_logs': created_publish,
             'spec': spec,
         })
     except Exception as e:
