@@ -1,0 +1,742 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="andromeda">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="MTSCOS AI System · 仙女座星系主题">
+    <title>{{ (footer_info.brand_name if footer_info else None) or t('home.title_brand') }} · {{ t('home.title_subtitle') }} · 仙女座</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0'%25 stop-color='%239B59B6'/%3E%3Cstop offset='100%25' stop-color='%232E86DE'/%3E%3C/linearGradient%3E%3C/defs%3E%3Ccircle cx='50' cy='50' r='44' fill='url(%23g)'/%3E%3Ccircle cx='35' cy='35' r='3' fill='white' opacity='0.9'/%3E%3Ccircle cx='65' cy='30' r='2' fill='white' opacity='0.8'/%3E%3Ccircle cx='70' cy='65' r='2.5' fill='white' opacity='0.85'/%3E%3Ccircle cx='30' cy='65' r='1.5' fill='white' opacity='0.7'/%3E%3Ccircle cx='55' cy='70' r='2' fill='white' opacity='0.75'/%3E%3C/svg%3E">
+    <link rel="stylesheet" href="/assets/css/mtscos-design-system.css">
+    <link rel="stylesheet" href="/assets/font-awesome/css/all.min.css">
+    <script>
+        // 仙女座主题初始化（尽早执行避免 FOUC）
+        (function(){
+            try {
+                var saved = localStorage.getItem('mtscos-theme');
+                if (saved) {
+                    document.documentElement.setAttribute('data-theme', saved);
+                } else {
+                    document.documentElement.setAttribute('data-theme', 'andromeda');
+                }
+            } catch(e) {}
+        })();
+    </script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --biz-radius: 12px;
+            /* 🌌 仙女座星系阴影（深空蓝 + 星云紫光晕） */
+            --biz-shadow: 0 12px 40px -12px rgba(11, 31, 58, 0.22), 0 4px 14px rgba(155, 89, 182, 0.10);
+            --biz-shadow-soft: 0 6px 20px -10px rgba(11, 31, 58, 0.14), 0 2px 6px rgba(155, 89, 182, 0.06);
+            --biz-shadow-glow: 0 0 28px rgba(155, 89, 182, 0.30), 0 0 60px rgba(46, 134, 222, 0.18);
+            --biz-shadow-card-hover: 0 16px 48px -12px rgba(155, 89, 182, 0.20), 0 4px 16px rgba(46, 134, 222, 0.12);
+            --biz-line: rgba(155, 89, 182, 0.12);
+            /* 仙女座 25 恒星色 */
+            --andromeda-purple: #9B59B6;
+            --andromeda-blue:   #2E86DE;
+            --andromeda-pink:   #FF6B9D;
+            --andromeda-gold:   #FFD700;
+            --andromeda-deep:   #0B1F3A;
+            --andromeda-grad:   linear-gradient(135deg, #0B1F3A 0%, #2E86DE 40%, #9B59B6 75%, #FF6B9D 100%);
+            --andromeda-grad-soft: linear-gradient(135deg, rgba(46,134,222,0.08), rgba(155,89,182,0.10));
+            --andromeda-grad-purple: linear-gradient(135deg, #9B59B6, #7D3C98);
+            --andromeda-grad-blue:   linear-gradient(135deg, #2E86DE, #1B4F72);
+            --andromeda-grad-pink:   linear-gradient(135deg, #FF6B9D, #C0392B);
+            --andromeda-grad-gold:   linear-gradient(135deg, #FFD700, #F39C12);
+        }
+        html, body { height: 100%; }
+        body {
+            font-family: var(--mtscos-font-sans, -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif);
+            color: var(--mtscos-text-primary, #1f2d3d);
+            background: var(--mtscos-bg-page, #f6f8fa);
+            min-height: 100vh; display: flex; flex-direction: column;
+            line-height: 1.6; -webkit-font-smoothing: antialiased;
+        }
+        a { text-decoration: none; color: inherit; }
+        .num-mono { font-family: var(--mtscos-font-mono, "SFMono-Regular", Menlo, monospace); }
+
+        /* ============ 页眉 ============ */
+        .biz-header {
+            position: sticky; top: 0; z-index: 50;
+            background: var(--mtscos-bg-card, rgba(255,255,255,0.88));
+            backdrop-filter: saturate(180%) blur(12px);
+            border-bottom: 1px solid var(--biz-line);
+            padding: 0 28px; height: 68px;
+            display: flex; align-items: center; justify-content: space-between; gap: 16px;
+        }
+        .biz-brand { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
+        .biz-brand .logo {
+            width: 40px; height: 40px; border-radius: 10px;
+            background: linear-gradient(135deg, var(--mtscos-primary-base, #5B8FB9), var(--mtscos-secondary-base, #6FA88B));
+            display: flex; align-items: center; justify-content: center;
+            color: var(--mtscos-text-inverse, #fff); font-size: 19px; box-shadow: var(--biz-shadow-soft);
+        }
+        .biz-brand .name { font-size: 19px; font-weight: 800; letter-spacing: .5px; }
+        .biz-brand .name small { display: block; font-size: 11px; font-weight: 500; letter-spacing: 2px; color: var(--mtscos-text-secondary, #7a8aa0); text-transform: uppercase; }
+        .biz-header-right { display: flex; align-items: center; gap: 16px; }
+        .biz-clock { display: flex; align-items: center; gap: 9px; color: var(--mtscos-text-secondary, #7a8aa0); font-size: 14px; }
+        .biz-clock .time { font-size: 17px; font-weight: 700; color: var(--mtscos-primary-base, #5B8FB9); letter-spacing: 1px; }
+        .biz-clock .date { font-size: 12px; text-align: right; line-height: 1.3; }
+        .biz-badge {
+            display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 999px;
+            background: var(--mtscos-primary-soft, rgba(91,143,185,.12)); color: var(--mtscos-primary-base, #457295);
+            font-size: 12px; font-weight: 700; border: 1px solid var(--biz-line); white-space: nowrap;
+        }
+        /* {{ t('home.theme') }}切换 — 紧凑下拉式 */
+        .biz-theme { position: relative; display: flex; align-items: center; gap: 5px; }
+        .biz-theme-current { width: 22px; height: 22px; border-radius: 50%; cursor: pointer; border: 2px solid var(--mtscos-border-light, rgba(91,143,185,.2)); transition: transform .15s, box-shadow .15s; flex-shrink: 0; }
+        .biz-theme-current:hover { transform: scale(1.1); box-shadow: 0 2px 10px -2px rgba(0,0,0,.2); }
+        .biz-theme-current.active { border-color: var(--mtscos-primary-base, #5B8FB9); }
+        .biz-theme-label { font-size: 12px; color: var(--mtscos-text-secondary); cursor: pointer; white-space: nowrap; }
+        .biz-theme-panel {
+            position: absolute; top: calc(100% + 8px); right: 0; width: 230px;
+            background: var(--mtscos-bg-card, #fff); border: 1px solid var(--biz-line);
+            border-radius: 12px; box-shadow: var(--biz-shadow); padding: 8px;
+            display: none; grid-template-columns: repeat(4, 1fr); gap: 10px; z-index: 80;
+            animation: bizFadeIn .15s ease;
+        }
+        .biz-theme-panel.open { display: grid; }
+        .biz-theme-panel .tdot { width: 24px; height: 24px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; transition: transform .12s, border-color .12s; margin: 0 auto; display: block; }
+        .biz-theme-panel .tdot:hover { transform: scale(1.15); }
+        .biz-theme-panel .tdot.active { border-color: var(--mtscos-text-primary, #1f2d3d); }
+        .biz-theme-panel .tslot { text-align: center; }
+        .biz-theme-panel .tslot .tlabel { font-size: 10px; color: var(--mtscos-text-secondary); margin-top: 3px; line-height: 1.2; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        /* 用户区 */
+        .biz-user { position: relative; }
+        .biz-user-btn { display: flex; align-items: center; gap: 9px; background: transparent; border: 1px solid var(--biz-line); border-radius: 999px; padding: 4px 12px 4px 5px; cursor: pointer; color: var(--mtscos-text-primary); }
+        .biz-user-btn:hover { background: var(--mtscos-bg-page, #f0f3f6); }
+        .biz-avatar { width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, var(--mtscos-primary-base), var(--mtscos-primary-dark-2, #457295)); color: var(--mtscos-text-inverse, #fff); display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700; }
+        .biz-user-meta { text-align: left; line-height: 1.2; }
+        .biz-user-meta .un { font-size: 13px; font-weight: 700; }
+        .biz-user-meta .ur { font-size: 11px; color: var(--mtscos-text-secondary); }
+        .biz-login-link { display: inline-flex; align-items: center; gap: 7px; padding: 8px 18px; border-radius: 999px; background: linear-gradient(135deg, var(--mtscos-primary-base), var(--mtscos-secondary-base)); color: #fff; font-size: 14px; font-weight: 700; box-shadow: 0 8px 20px -8px rgba(91,143,185,.5); }
+        .biz-dropdown { position: absolute; top: calc(100% + 8px); right: 0; width: 218px; background: var(--mtscos-bg-card, #fff); border: 1px solid var(--biz-line); border-radius: 12px; box-shadow: var(--biz-shadow); overflow: hidden; opacity: 0; visibility: hidden; transform: translateY(-8px); transition: .2s; z-index: 60; }
+        .biz-dropdown.open { opacity: 1; visibility: visible; transform: translateY(0); }
+        .biz-dropdown .dh { padding: 13px 16px; border-bottom: 1px solid var(--biz-line); }
+        .biz-dropdown .dh .n { font-size: 14px; font-weight: 700; }
+        .biz-dropdown .dh .r { font-size: 12px; color: var(--mtscos-text-secondary); }
+        .biz-dropdown a { display: flex; align-items: center; gap: 10px; padding: 10px 16px; font-size: 13px; }
+        .biz-dropdown a:hover { background: var(--mtscos-bg-page); color: var(--mtscos-primary-base); }
+        .biz-dropdown a i { width: 16px; text-align: center; color: var(--mtscos-text-secondary); }
+        .biz-dropdown a.danger { color: var(--mtscos-danger-base, #d15b5b); }
+
+        /* ============ 主体 ============ */
+        .biz-main { flex: 1; padding: 52px 28px 30px; }
+        .biz-grid { width: 100%; max-width: 1140px; margin: 0 auto; display: grid; grid-template-columns: 1.12fr 0.88fr; gap: 52px; align-items: center; }
+        .biz-hero .eyebrow { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; letter-spacing: 2px; color: var(--mtscos-primary-base, #457295); text-transform: uppercase; margin-bottom: 16px; }
+        .biz-hero .eyebrow::before { content: ""; width: 26px; height: 2px; background: var(--mtscos-primary-base, #5B8FB9); border-radius: 2px; }
+        .biz-hero h1 { font-size: 40px; line-height: 1.22; font-weight: 800; margin-bottom: 16px; }
+        .biz-hero h1 .accent { background: linear-gradient(135deg, var(--mtscos-primary-base), var(--mtscos-secondary-base)); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+        .biz-hero p.lead { font-size: 16px; color: var(--mtscos-text-secondary, #4a5b6e); margin-bottom: 26px; max-width: 520px; }
+        .biz-features { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 26px; max-width: 540px; }
+        .biz-feature { display: flex; align-items: flex-start; gap: 11px; padding: 13px 15px; background: var(--mtscos-bg-card, rgba(255,255,255,.75)); border: 1px solid var(--biz-line); border-radius: 10px; box-shadow: var(--biz-shadow-soft); }
+        .biz-feature i { color: var(--mtscos-primary-base); font-size: 16px; margin-top: 3px; }
+        .biz-feature .ft-title { font-size: 14px; font-weight: 700; }
+        .biz-feature .ft-sub { font-size: 12px; color: var(--mtscos-text-secondary); }
+        .biz-stats { display: flex; gap: 30px; flex-wrap: wrap; }
+        .biz-stat .num { font-size: 25px; font-weight: 800; color: var(--mtscos-primary-base, #457295); }
+        .biz-stat .lbl { font-size: 12px; color: var(--mtscos-text-secondary); letter-spacing: 1px; }
+
+        /* ============ {{ t('home.login') }}卡片 ============ */
+        .biz-card { background: var(--mtscos-bg-card, #fff); border: 1px solid var(--biz-line); border-radius: var(--biz-radius); box-shadow: var(--biz-shadow); padding: 34px 32px; }
+        .biz-card h2 { font-size: 21px; font-weight: 800; margin-bottom: 6px; }
+        .biz-card .sub { font-size: 13px; color: var(--mtscos-text-secondary); margin-bottom: 22px; }
+        .biz-field { margin-bottom: 15px; }
+        .biz-field label { display: block; font-size: 13px; font-weight: 700; color: var(--mtscos-text-secondary, #4a5b6e); margin-bottom: 7px; }
+        .biz-field .iw { position: relative; }
+        .biz-field .iw i { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--mtscos-text-secondary, #9aa8b8); font-size: 14px; }
+        .biz-field input { width: 100%; padding: 12px 14px 12px 40px; font-size: 14px; color: var(--mtscos-text-primary); background: var(--mtscos-bg-page, #f6f8fa); border: 1px solid var(--mtscos-border-base, #d6dde6); border-radius: 9px; outline: none; transition: border-color .18s, box-shadow .18s; }
+        .biz-field input:focus { border-color: var(--mtscos-primary-base); background: var(--mtscos-bg-card, #fff); box-shadow: 0 0 0 3px var(--mtscos-primary-soft, rgba(91,143,185,.15)); }
+        .biz-row { display: flex; align-items: center; justify-content: space-between; margin: 2px 0 18px; font-size: 13px; }
+        .biz-row label { display: flex; align-items: center; gap: 7px; color: var(--mtscos-text-secondary); cursor: pointer; }
+        .biz-row a { color: var(--mtscos-primary-base); font-weight: 600; }
+        .biz-btn { width: 100%; padding: 13px; border: none; border-radius: 9px; font-size: 15px; font-weight: 800; letter-spacing: 2px; color: #fff; cursor: pointer; background: linear-gradient(135deg, var(--mtscos-primary-base), var(--mtscos-secondary-base)); box-shadow: 0 8px 20px -8px rgba(91,143,185,.55); transition: transform .15s, box-shadow .15s; }
+        .biz-btn:hover { transform: translateY(-1px); }
+        .biz-btn:disabled { opacity: .65; cursor: not-allowed; transform: none; }
+        .biz-msg { min-height: 20px; font-size: 13px; margin-top: 12px; text-align: center; }
+        .biz-msg.error { color: var(--mtscos-danger-base, #d15b5b); }
+        .biz-msg.info { color: var(--mtscos-primary-base); }
+        .biz-card-foot { margin-top: 16px; text-align: center; font-size: 13px; color: var(--mtscos-text-secondary); }
+        .biz-card-foot a { color: var(--mtscos-primary-base); font-weight: 700; }
+        .biz-welcome { text-align: center; padding: 8px 0; }
+        .biz-welcome .wa { width: 64px; height: 64px; border-radius: 50%; margin: 0 auto 14px; background: linear-gradient(135deg, var(--mtscos-primary-base), var(--mtscos-secondary-base)); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 26px; font-weight: 800; }
+        .biz-welcome .wn { font-size: 18px; font-weight: 800; }
+        .biz-welcome .wr { font-size: 13px; color: var(--mtscos-text-secondary); margin: 4px 0 18px; }
+
+        /* ============ AI 生态带 ============ */
+        .biz-eco { width: 100%; max-width: 1140px; margin: 8px auto 0; }
+        .biz-section-title { font-size: 18px; font-weight: 800; margin: 34px 0 16px; display: flex; align-items: center; gap: 10px; }
+        .biz-section-title i { color: var(--mtscos-primary-base); }
+        .biz-section-title .hint { font-size: 12px; font-weight: 500; color: var(--mtscos-text-secondary); }
+        .biz-eco-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; }
+        .biz-eco-cell { background: var(--mtscos-bg-card, #fff); border: 1px solid var(--biz-line); border-radius: 10px; padding: 16px 14px; text-align: center; box-shadow: var(--biz-shadow-soft); }
+        .biz-eco-cell i { font-size: 20px; color: var(--mtscos-primary-base); margin-bottom: 8px; }
+        .biz-eco-cell .v { font-size: 22px; font-weight: 800; color: var(--mtscos-text-primary); }
+        .biz-eco-cell .k { font-size: 12px; color: var(--mtscos-text-secondary); margin-top: 2px; }
+
+        /* ============ 模块快捷入口（仙女座恒星主题）============ */
+        .biz-mods { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+        .biz-mod {
+            position: relative; display: flex; align-items: center; gap: 14px;
+            padding: 16px 18px;
+            background: linear-gradient(135deg, #ffffff 0%, #f8f9fc 100%);
+            border: 1px solid var(--biz-line);
+            border-radius: 12px;
+            box-shadow: var(--biz-shadow-soft);
+            transition: transform .28s cubic-bezier(.16,1,.3,1), box-shadow .28s cubic-bezier(.16,1,.3,1), border-color .28s;
+            overflow: hidden; isolation: isolate;
+        }
+        .biz-mod::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+            background: linear-gradient(90deg, var(--andromeda-blue), var(--andromeda-purple), var(--andromeda-pink));
+            opacity: 0; transition: opacity .28s ease;
+        }
+        .biz-mod::after {
+            content: ''; position: absolute; top: -30px; right: -30px;
+            width: 90px; height: 90px; border-radius: 50%;
+            background: var(--andromeda-grad-soft);
+            opacity: 0; transform: scale(0.6);
+            transition: transform .35s cubic-bezier(.16,1,.3,1), opacity .28s ease;
+            z-index: -1;
+        }
+        .biz-mod:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--biz-shadow-card-hover);
+            border-color: rgba(155, 89, 182, 0.28);
+        }
+        .biz-mod:hover::before { opacity: 1; }
+        .biz-mod:hover::after { opacity: 1; transform: scale(1.5); }
+        .biz-mod .mi {
+            width: 46px; height: 46px; border-radius: 12px; flex-shrink: 0;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 18px; color: #fff;
+            background: var(--andromeda-grad-blue);
+            box-shadow: 0 4px 12px rgba(46, 134, 222, 0.28);
+            transition: transform .28s cubic-bezier(.16,1,.3,1), box-shadow .28s;
+        }
+        .biz-mod:hover .mi {
+            transform: scale(1.08) rotate(-4deg);
+            box-shadow: 0 6px 20px rgba(155, 89, 182, 0.35);
+        }
+        .biz-mod .mt { font-size: 14.5px; font-weight: 700; color: var(--mtscos-text-primary); letter-spacing: 0.3px; }
+        .biz-mod .ms { font-size: 12px; color: var(--mtscos-text-secondary); margin-top: 2px; }
+        .biz-mod.admin .mi {
+            background: var(--andromeda-grad-gold);
+            box-shadow: 0 4px 14px rgba(243, 156, 18, 0.32);
+        }
+        /* 按入口恒星域分配渐变色系 */
+        .biz-mod[data-star="alpheratz"] .mi { background: var(--andromeda-grad-purple); }   /* 学习 · α And */
+        .biz-mod[data-star="mirach"]     .mi { background: var(--andromeda-grad-blue); }     /* 考试 · β And */
+        .biz-mod[data-star="gamma"]      .mi { background: linear-gradient(135deg, #1ABC9C, #16A085); } /* 日语 · γ And */
+        .biz-mod[data-star="delta"]      .mi { background: var(--andromeda-grad-pink); }    /* 成人 · δ And */
+        .biz-mod[data-star="eta"]        .mi { background: linear-gradient(135deg, #8E44AD, #6C3483); } /* EigenFlux · η And */
+        .biz-mod[data-star="omega"]      .mi { background: linear-gradient(135deg, #D35400, #A04000); } /* 脑库 · ω And */
+        .biz-mod[data-star="sigma"]      .mi { background: linear-gradient(135deg, #34495E, #2C3E50); } /* {{ t('auto.index.x_ab42744c', default='神经阵列') }} · σ And */
+        .biz-mod[data-star="iota"]       .mi { background: linear-gradient(135deg, #7F8C8D, #566573); } /* {{ t('auto.index.x_0272b104', default='只读盘点') }} · ι And */
+        .biz-mod[data-star="psi"]        .mi { background: var(--andromeda-grad-gold); }     /* SA · ψ And */
+
+        /* ============ 页脚 ============ */
+        .biz-footer { border-top: 1px solid var(--biz-line); background: var(--mtscos-bg-card, rgba(255,255,255,.7)); padding: 22px 28px; margin-top: 40px; }
+        .biz-footer-inner { max-width: 1140px; margin: 0 auto; display: grid; grid-template-columns: 1.4fr 1fr 1fr; gap: 26px; font-size: 13px; color: var(--mtscos-text-secondary); }
+        .biz-footer-inner h4 { font-size: 14px; color: var(--mtscos-text-primary); margin-bottom: 8px; }
+        .biz-footer-inner p { margin-bottom: 5px; }
+        .biz-footer-inner a:hover { color: var(--mtscos-primary-base); }
+        .biz-footer-bar { max-width: 1140px; margin: 18px auto 0; padding-top: 14px; border-top: 1px solid var(--biz-line); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; font-size: 12.5px; color: var(--mtscos-text-secondary); }
+        .biz-footer-bar .fl { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; }
+        .biz-status-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--mtscos-success-base, #5C9A6F); box-shadow: 0 0 0 3px var(--mtscos-success-soft, rgba(92,154,111,.15)); }
+        .biz-footer-bar .fr { display: flex; gap: 14px; }
+        .biz-footer-bar .fr a:hover { color: var(--mtscos-primary-base); }
+
+        /* ============ 佛教事件 / 农历 ============ */
+        .biz-buddha { background: var(--mtscos-bg-card, #fff); border: 1px solid var(--biz-line); border-radius: 10px; padding: 18px 20px; box-shadow: var(--biz-shadow-soft); }
+        .biz-buddha-main { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 10px; }
+        .biz-lunar-str { font-size: 16px; font-weight: 700; color: var(--mtscos-text-primary); }
+        .biz-lunar-date { font-size: 13px; color: var(--mtscos-text-secondary); }
+        .biz-buddha-badge { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; background: var(--mtscos-accent-soft, rgba(201,169,97,.15)); color: var(--mtscos-accent-base, #C9A961); border: 1px solid var(--mtscos-accent-soft, rgba(201,169,97,.25)); }
+        .biz-buddha-events { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+        .biz-fest-tag { display: inline-flex; align-items: center; gap: 6px; padding: 6px 13px; border-radius: 8px; font-size: 13px; font-weight: 600; background: var(--mtscos-secondary-soft, rgba(111,168,139,.12)); color: var(--mtscos-secondary-base, #6FA88B); border: 1px solid var(--mtscos-secondary-soft, rgba(111,168,139,.2)); }
+        .biz-countdown { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; font-size: 13px; color: var(--mtscos-text-secondary); padding-top: 8px; border-top: 1px solid var(--biz-line); }
+        .biz-ganzhi { font-weight: 700; color: var(--mtscos-primary-base); }
+        .biz-fest-today { font-weight: 700; color: var(--mtscos-danger-base, #d15b5b); }
+
+        /* ============ SA 规则体系 ============ */
+        .biz-sa-rules { display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; }
+        .biz-sa-cell { background: var(--mtscos-bg-card, #fff); border: 1px solid var(--biz-line); border-radius: 10px; padding: 16px 14px; text-align: center; box-shadow: var(--biz-shadow-soft); }
+        .biz-sa-cell i { font-size: 20px; color: var(--mtscos-primary-base); margin-bottom: 8px; }
+        .biz-sa-cell .v { font-size: 22px; font-weight: 800; color: var(--mtscos-text-primary); }
+        .biz-sa-cell .k { font-size: 12px; color: var(--mtscos-text-secondary); margin-top: 2px; }
+        .biz-sa-scan-info { margin-top: 10px; font-size: 13px; color: var(--mtscos-text-secondary); display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+        .biz-sa-clean { font-weight: 700; color: var(--mtscos-success-base, #5C9A6F); }
+        .biz-sa-warn { font-weight: 700; color: var(--mtscos-danger-base, #d15b5b); }
+
+        @media (max-width: 980px) {
+            .biz-grid { grid-template-columns: 1fr; gap: 34px; }
+            .biz-eco-grid { grid-template-columns: repeat(3, 1fr); }
+            .biz-mods { grid-template-columns: repeat(2, 1fr); }
+            .biz-footer-inner { grid-template-columns: 1fr; }
+            .biz-sa-rules { grid-template-columns: repeat(3, 1fr); }
+            .biz-theme-label { display: none; }
+            .biz-theme-panel { width: 200px; grid-template-columns: repeat(3, 1fr); }
+        }
+        @media (max-width: 640px) {
+            .biz-header { padding: 0 14px; }
+            .biz-clock, .biz-badge, .biz-theme { display: none; }
+            .biz-main { padding: 30px 14px; }
+            .biz-hero h1 { font-size: 30px; }
+            .biz-features { grid-template-columns: 1fr; }
+            .biz-eco-grid { grid-template-columns: repeat(2, 1fr); }
+            .biz-mods { grid-template-columns: 1fr; }
+            .biz-sa-rules { grid-template-columns: repeat(2, 1fr); }
+        }
+    </style>
+
+<style data-inspection-auto-fix="inline-style-template">
+:root {
+    --style-fix-1fcb3c8-0: inherit;
+}
+/* -------- AI 自动修复：status → background 颜色（消除内联模板语法 IDE 红线） -------- */
+.eyebrow-dot { transition: background-color .2s ease; border-radius: 9999px; }
+</style>
+</head>
+<body>
+
+    <!-- ============ 页眉（品牌 / {{ t('home.theme') }} / 版本 / 时钟 / 用户权限）============ -->
+    <header class="biz-header">
+        <div class="biz-brand">
+            <div class="logo"><i class="fas fa-mountain-sun"></i></div>
+            <div class="name">{{ footer_info.brand_name if footer_info and footer_info.brand_name else 'MTSCOS AI' }}<small>{{ footer_info.brand_slogan if footer_info and footer_info.brand_slogan else 'AI Platform' }}</small></div>
+        </div>
+        <div class="biz-header-right">
+            <!-- {{ t('home.theme') }}配色管理：紧凑下拉式，{{ t('home.theme') }}列表从 mt_theme_schemes 读取 -->
+            <div class="biz-theme" title="{{ t('home.theme') }}配色切换">
+                <span class="biz-theme-current" id="themeCurrentDot" title="点击切换{{ t('home.theme') }}"></span>
+                <span class="biz-theme-label" id="themeCurrentLabel" title="点击切换{{ t('home.theme') }}">{{ t('home.theme') }}</span>
+                <div class="biz-theme-panel" id="themePanel">
+                    {% for scheme in theme_schemes %}
+                    <div class="tslot">
+                        <span class="tdot {% if loop.first %}active{% endif %}"
+                              data-theme-key="{{ scheme.preset_key }}"
+                              data-scheme-id="{{ scheme.scheme_id }}"
+                              data-name="{{ scheme.name }}"
+                              style="background: var(--style-fix-1fcb3c8-0, inherit)"
+                              title="{{ scheme.name }}{% if scheme.is_memorial %} · 公祭日锁定{% endif %}"></span>
+                        <div class="tlabel">{{ scheme.name }}</div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            <span class="biz-badge"><i class="fas fa-code-branch"></i> {{ version if version else system_version }}</span>
+            <div class="biz-clock">
+                <div class="date" id="bizDate">{{ t('auto.index.____x__x__x_eee1a13f', default='----年--月--日') }}</div>
+                <div class="time num-mono" id="bizTime">--:--:--</div>
+            </div>
+            <!-- 用户权限区 -->
+            {% if is_authenticated() and current_user and current_user.username %}
+            <div class="biz-user">
+                <button class="biz-user-btn" id="bizUserBtn" type="button">
+                    <span class="biz-avatar">{{ current_user.username[0]|upper }}</span>
+                    <span class="biz-user-meta">
+                        <span class="un">{{ current_user.username }}</span>
+                        <span class="ur">{{ get_role_name(current_user.role) if current_user.role else '用户' }}</span>
+                    </span>
+                    <i class="fas fa-chevron-down" style="font-size:10px;color:var(--mtscos-text-secondary)"></i>
+                </button>
+                <div class="biz-dropdown" id="bizUserDrop">
+                    <div class="dh">
+                        <div class="n">{{ current_user.username }}</div>
+                        <div class="r">{{ get_role_name(current_user.role) if current_user.role else ('已' ~ t('home.login')) }}</div>
+                    </div>
+                    <a href="/student_portal"><i class="fas fa-gauge-high"></i> {{ footer_info.brand_desc if footer_info and footer_info.brand_desc else 'MTSCOS AI 以本地推理为核心，融合 EigenFlux AI、专家顾问与 AI 员工集群，提供自动化巡检、智能运维、在线考试与多语种学习的一体化能力。' }}</p>
+                <div class="biz-features">
+                    <div class="biz-feature"><i class="fas fa-robot"></i><div><div class="ft-title">{{ t('home.feat_ai_auto') }}</div><div class="ft-sub">{{ t('home.feat_ai_auto_sub', default='守护进程 7×24 自巡检自修') }}</div></div></div>
+                    <div class="biz-feature"><i class="fas fa-shield-halved"></i><div><div class="ft-title">{{ t('home.feat_perm_audit') }}</div><div class="ft-sub">{{ t('home.feat_perm_audit_sub', default='装饰器鉴权 · 违规落库') }}</div></div></div>
+                    <div class="biz-feature"><i class="fas fa-graduation-cap"></i><div><div class="ft-title">{{ t('home.feat_exam_learn') }}</div><div class="ft-sub">{{ t('home.feat_exam_learn_sub', default='题库 / 组卷 / 日语独立模块') }}</div></div></div>
+                    <div class="biz-feature"><i class="fas fa-brain"></i><div><div class="ft-title">{{ t('home.feat_eigenflux') }}</div><div class="ft-sub">{{ t('home.feat_eigenflux_sub', default='专家会诊 · 技能共享') }}</div></div></div>
+                </div>
+                <div class="biz-stats">
+                    <div class="biz-stat"><div class="num num-mono" data-count="{{ homepage_stats.ai_employees_count if homepage_stats else 0 }}">0</div><div class="lbl">{{ t('home.stat.ai_employees', default='AI 员工') }}</div></div>
+                    <div class="biz-stat"><div class="num num-mono" data-count="{{ homepage_stats.users_count if homepage_stats else 0 }}">0</div><div class="lbl">{{ t('home.stat.registered', default='注册用户') }}</div></div>
+                    <div class="biz-stat"><div class="num num-mono" data-count="{{ homepage_stats.questions_count if homepage_stats else 0 }}">0</div><div class="lbl">{{ t('home.stat.questions', default='题库题目') }}</div></div>
+                    <div class="biz-stat"><div class="num num-mono" data-count="{{ homepage_stats.exams_count if homepage_stats else 0 }}">0</div><div class="lbl">{{ t('home.stat.exams', default='考试场次') }}</div></div>
+                </div>
+            </section>
+
+            <!-- 右侧{{ t('home.login') }} / 已{{ t('home.login') }}卡片 -->
+            <section id="login-card" class="biz-card">
+                {% if is_authenticated() and current_user and current_user.username %}
+                <div class="biz-welcome">
+                    <div class="wa">{{ current_user.username[0]|upper }}</div>
+                    <div class="wn">{{ t('home.user.welcome_back') }}{{ get_role_name(current_user.role) if current_user.role else t('home.user.role_user', default='用户') }}{% if is_super_admin %} · {{ t('home.user.super_admin', default='超级管理员') }}{% elif is_admin %} · {{ t('home.user.admin', default='管理员') }}{% endif %}</div>
+                    <a href="/student_portal" class="biz-btn" style="display:flex;align-items:center;justify-content:center;text-decoration:none"><i class="fas fa-gauge-high" style="margin-right:8px"></i> {{ t('home.workspace', default='工作台') }}</a>
+                    <div class="biz-card-foot" style="margin-top:14px"><a href="/auth/logout">{{ t('home.logout') }}</a></div>
+                </div>
+                {% else %}
+                <h2>{{ t('home.login_title') }}</h2>
+                <div class="sub">{{ t('home.login_sub') }}</div>
+                <form id="bizLoginForm" onsubmit="return false;">
+                    <input type="hidden" name="csrf_token" value="{{ page_csrf_token if page_csrf_token else (csrf_token if csrf_token else '') }}">
+                    <div class="biz-field">
+                        <label for="bizUsername">{{ t('home.username') }}</label>
+                        <div class="iw"><i class="fas fa-user"></i>
+                            <input type="text" id="bizUsername" name="username" autocomplete="username" placeholder="{{ t('home.ph_username') }}" required></div>
+                    </div>
+                    <div class="biz-field">
+                        <label for="bizPassword">{{ t('home.password') }}</label>
+                        <div class="iw"><i class="fas fa-lock"></i>
+                            <input type="password" id="bizPassword" name="password" autocomplete="current-password" placeholder="{{ t('home.ph_password') }}" required></div>
+                    </div>
+                    <div class="biz-row">
+                        <label><input type="checkbox" id="bizRemember"> {{ t('home.remember_me') }}</label>
+                        <a href="#login-card">{{ t('home.full_login') }}</a>
+                    </div>
+                    <button type="submit" class="biz-btn" id="bizLoginBtn">{{ t('home.btn_login') }}</button>
+                    <div class="biz-msg" id="bizLoginMsg"></div>
+                </form>
+                <div class="biz-card-foot">{{ t('home.no_account') }}<a href="#login-card">{{ t('home.go_register') }}</a></div>
+                {% endif %}
+            </section>
+        </div>
+
+        <!-- ============ AI 生态实时状态（AI员工/集群/专家/引擎）============ -->
+        <div class="biz-eco">
+            <div class="biz-section-title"><i class="fas fa-network-wired"></i> {{ t('home.ai_eco_title') }}
+                <span class="hint">（{{ t('home.ai_eco_hint') }}）</span></div>
+            <div class="biz-eco-grid">
+                <div class="biz-eco-cell"><i class="fas fa-users-gear"></i><div class="v num-mono" data-count="{{ homepage_stats.ai_employees_count if homepage_stats else 0 }}">0</div><div class="k">{{ t('home.eco.employees', default='AI 员工在岗') }}</div></div>
+                <div class="biz-eco-cell"><i class="fas fa-user-tie"></i><div class="v num-mono" data-count="{{ ai_eco.experts if ai_eco else 0 }}">0</div><div class="k">{{ t('home.eco.experts', default='EigenFlux 专家') }}</div></div>
+                <div class="biz-eco-cell"><i class="fas fa-microchip"></i><div class="v num-mono" data-count="{{ ai_eco.engines if ai_eco else 0 }}">0</div><div class="k">{{ t('home.eco.engines', default='本地 AI 引擎') }}</div></div>
+                <div class="biz-eco-cell"><i class="fas fa-server"></i><div class="v num-mono" data-count="{{ ai_eco.daemons if ai_eco else 0 }}">0</div><div class="k">{{ t('home.eco.daemons', default='自动化守护进程') }}</div></div>
+                <div class="biz-eco-cell"><i class="fas fa-cubes"></i><div class="v num-mono" data-count="{{ ai_eco.cluster_nodes if ai_eco else 0 }}">0</div><div class="k">{{ t('home.eco.cluster_nodes', default='集群挂载节点') }}</div></div>
+                <div class="biz-eco-cell"><i class="fas fa-database"></i><div class="v num-mono" data-count="{{ ai_eco.brain_feeds if ai_eco else 0 }}">0</div><div class="k">{{ t('home.eco.brain_feeds', default='脑库投喂记录') }}</div></div>
+            </div>
+
+            <!-- ============ 模块快捷入口（路由管理 / 按角色显隐）============ -->
+            <div class="biz-section-title"><i class="fas fa-table-cells-large"></i> {{ t('home.feature_entry') }} <span class="hint">（{{ t('home.feature_hint') }}）</span></div>
+            <div class="biz-mods">
+                <a class="biz-mod" data-star="alpheratz" href="/student_portal"><span class="mi"><i class="fas fa-gauge-high"></i></span><span><span class="mt">{{ t('home.mod.portal', default='学习门户') }}</span><br><span class="ms">{{ t('home.mod.portal_sub', default='学生仪表盘 / 学情') }}</span></span></a>
+                <a class="biz-mod" data-star="mirach"    href="/exam_center"><span class="mi"><i class="fas fa-file-pen"></i></span><span><span class="mt">{{ t('home.mod.exam', default='在线考试') }}</span><br><span class="ms">{{ t('home.mod.exam_sub', default='题库组卷 / 测评') }}</span></span></a>
+                <a class="biz-mod" data-star="gamma"     href="/japanese_page"><span class="mi"><i class="fas fa-language"></i></span><span><span class="mt">{{ t('home.mod.japanese', default='日语学习') }}</span><br><span class="ms">{{ t('home.mod.japanese_sub', default='JLPT 独立模块') }}</span></span></a>
+                <a class="biz-mod" data-star="delta"     href="/adult_education"><span class="mi"><i class="fas fa-user-graduate"></i></span><span><span class="mt">{{ t('auto.index.x_3e4bc439', default='成人教育') }}</span><br><span class="ms">{{ t('auto.index.x___delta___ea47dace', default='独立教育体系 · Delta δ') }}</span></span></a>
+                <a class="biz-mod" data-star="eta"       href="/eigenflux_center"><span class="mi"><i class="fas fa-handshake"></i></span><span><span class="mt">{{ t('auto.index.eigenflux_x_648dc2fc', default='EigenFlux 中枢') }}</span><br><span class="ms">{{ t('auto.index.x___x___eta__d26f4779', default='专家协作 / 交流 · Eta η') }}</span></span></a>
+                <a class="biz-mod" data-star="omega"     href="/brain_bank_page"><span class="mi"><i class="fas fa-brain"></i></span><span><span class="mt">{{ t('home.mod.brain_bank', default='AI 脑库') }}</span><br><span class="ms">{{ t('home.mod.brain_bank_sub', default='经验 / 知识投喂') }}</span></span></a>
+                <a class="biz-mod" data-star="sigma"     href="/neural_array_page"><span class="mi"><i class="fas fa-sitemap"></i></span><span><span class="mt">神经阵列</span><br><span class="ms">{{ t('auto.index.ai_x___sigma_991dcc01', default='AI 集群拓扑 · Sigma σ') }}</span></span></a>
+                <a class="biz-mod" data-star="iota"      href="/readonly_inventory"><span class="mi"><i class="fas fa-clipboard-list"></i></span><span><span class="mt">只读盘点</span><br><span class="ms">{{ t('auto.index.x___iota___52903b5c', default='系统功能盘点 · Iota ι') }}</span></span></a>
+                {% if is_admin or is_super_admin %}
+                <a class="biz-mod admin" data-star="psi" href="/admin_app/governance/"><span class="mi"><i class="fas fa-compass"></i></span><span><span class="mt">{{ t('home.ai_governance') }}</span><br><span class="ms">管理员 · 8 面板 · SA ψ</span></span></a>
+                <a class="biz-mod admin" data-star="psi" href="/api/security/dashboard"><span class="mi"><i class="fas fa-shield-halved"></i></span><span><span class="mt">{{ t('home.security_dashboard') }}</span><br><span class="ms">13 开关 / 审计 · SA ψ</span></span></a>
+                <a class="biz-mod admin" data-star="psi" href="/theme/schemes"><span class="mi"><i class="fas fa-palette"></i></span><span><span class="mt">{{ t('home.theme') }}调度中心</span><br><span class="ms">14 套{{ t('home.theme') }}管理 · SA ψ</span></span></a>
+                {% endif %}
+            </div>
+
+            <!-- ============ 佛教事件 / 农历日历 ============ -->
+            <div class="biz-section-title"><i class="fas fa-pray"></i> {{ t('home.buddha_title') }}
+                <span class="hint">{{ t('auto.index._context_pro_eab06f31', default='（context_processor 自动注入）') }}</span></div>
+            <div class="biz-buddha">
+                {% if lunar_display %}
+                <div class="biz-buddha-main">
+                    <span class="biz-lunar-str">{{ lunar_display }}</span>
+                    {% if lunar_date %}<span class="biz-lunar-date">{{ lunar_date }}</span>{% endif %}
+                    {% if is_special_day %}
+                    <span class="biz-buddha-badge"><i class="fas fa-star"></i> {{ t('home.today_lucky') }}</span>
+                    {% endif %}
+                </div>
+                {% endif %}
+                {% if buddha_festivals and buddha_festivals|length > 0 %}
+                <div class="biz-buddha-events">
+                    {% for fest in buddha_festivals %}
+                    <span class="biz-fest-tag"><i class="fas fa-lotus"></i> {{ fest }}</span>
+                    {% endfor %}
+                </div>
+                {% endif %}
+                {% if lunar_countdown and lunar_countdown.countdown_type %}
+                <div class="biz-countdown">
+                    {% if lunar_countdown.countdown_days == 0 %}
+                    <span><i class="fas fa-calendar-day"></i> {{ t_kw('lunar.today_event', '今日{event}', event=lunar_countdown.countdown_type) }}</span>
+                    {% else %}
+                    <span><i class="fas fa-hourglass-half"></i> {{ t_kw('lunar.countdown_fmt', '距{event}还有 {days} 天', event=lunar_countdown.countdown_type, days=lunar_countdown.countdown_days) }}</span>
+                    {% endif %}
+                    {% if lunar_countdown.year_ganzhi %}<span class="biz-ganzhi">{{ lunar_countdown.year_ganzhi }}{{ t('lunar.year_suffix', default='年') }} · {{ lunar_countdown.animal }}{{ t('lunar.animal_suffix') }}
+                <span class="hint">{{ t('auto.index.__14_iron_ru_e985c9fb', default='（§14 IRON_RULE 4 层拦截 · 9 篇规则自动学习）') }}</span></div>
+            <div class="biz-sa-rules">
+                <div class="biz-sa-cell">
+                    <i class="fas fa-book-open"></i>
+                    <div class="v num-mono" data-count="{{ sa_rules.learning_logs if sa_rules else 0 }}">0</div>
+                    <div class="k">{{ t('home.rule_learn') }}</div>
+                </div>
+                <div class="biz-sa-cell">
+                    <i class="fas fa-shield-halved"></i>
+                    <div class="v num-mono" data-count="{{ sa_rules.enforcement_logs if sa_rules else 0 }}">0</div>
+                    <div class="k">{{ t('home.rule_exec') }}</div>
+                </div>
+                <div class="biz-sa-cell">
+                    <i class="fas fa-triangle-exclamation"></i>
+                    <div class="v num-mono" data-count="{{ sa_rules.violations if sa_rules else 0 }}">0</div>
+                    <div class="k">{{ t('home.rule_violation') }}</div>
+                </div>
+                <div class="biz-sa-cell">
+                    <i class="fas fa-circle-check"></i>
+                    <div class="v num-mono" data-count="{{ sa_rules.integrity_passed if sa_rules else 0 }}">0</div>
+                    <div class="k">{{ t('home.rule_pass') }}</div>
+                </div>
+                <div class="biz-sa-cell">
+                    <i class="fas fa-circle-xmark"></i>
+                    <div class="v num-mono" data-count="{{ sa_rules.integrity_failed if sa_rules else 0 }}">0</div>
+                    <div class="k">{{ t('home.rule_fail') }}</div>
+                </div>
+                <div class="biz-sa-cell">
+                    <i class="fas fa-file-lines"></i>
+                    <div class="v num-mono" data-count="{{ sa_rules.active_rules if sa_rules else 12 }}">0</div>
+                    <div class="k">{{ t('home.rule_active') }}</div>
+                </div>
+            </div>
+            {% if sa_rules and sa_rules.last_scan %}
+            <div class="biz-sa-scan-info">
+                <i class="fas fa-clock-rotate-left"></i> 最后扫描：{{ sa_rules.last_scan }}
+                {% if sa_rules.weak_words == 0 %}<span class="biz-sa-clean"><i class="fas fa-check"></i> {{ t('auto.index.x_10350ffc', default='弱约束词已清零') }}</span>{% else %}<span class="biz-sa-warn"><i class="fas fa-exclamation"></i> 弱约束词 {{ sa_rules.weak_words }} 处</span>{% endif %}
+            </div>
+            {% endif %}
+        </div>
+    </main>
+
+    <!-- ============ 页脚（中间件后台数据 / 品牌 / 备案 / 版本 / VIKEY）============ -->
+    <footer class="biz-footer">
+        <div class="biz-footer-inner">
+            <div>
+                <h4>{{ footer_info.brand_name if footer_info and footer_info.brand_name else 'MTSCOS AI' }}</h4>
+                <p>{{ footer_info.brand_desc if footer_info and footer_info.brand_desc else '' }}</p>
+            </div>
+            <div>
+                <h4>版本 {{ version if version else system_version }}{% if latest_version and latest_version != version %}（最新 {{ latest_version }}）{% endif %}</p>
+                <p>布局模式：{{ layout_mode if layout_mode else 'STANDARD' }}</p>
+                <p>{% if vikey_present %}<i class="fas fa-key" style="color:var(--mtscos-success-base)"></i> VIKEY 加密狗在线{% else %}<i class="fas fa-key" style="color:var(--mtscos-text-secondary)"></i> VIKEY 未检测（SA {{ t('home.login') }}时强制）{% endif %}</p>
+            </div>
+        </div>
+        <div class="biz-footer-bar">
+            <div class="fl">
+                <span class="biz-status-dot"></span><span>{{ t('home.sys_normal') }}</span>
+                <span style="opacity:.4">|</span>
+                <span>{{ footer_info.company if footer_info and footer_info.company else 'MTS Architecture' }} &copy; 2024-{{ footer_info.copyright_year if footer_info and footer_info.copyright_year else '2026' }}</span>
+                {% if is_super_admin or is_admin %}<span style="opacity:.4">|</span><span style="color:var(--mtscos-accent-base,#C9A961)"><i class="fas fa-crown"></i> 管理员视图</span>{% endif %}
+            </div>
+            <div class="fr">
+                <a href="/"><i class="fas fa-house"></i> {{ t('home.home') }}</a>
+                <a href="#login-card"><i class="fas fa-right-to-bracket"></i> {{ t('home.login') }}</a>
+                <a href="/student_portal"><i class="fas fa-gauge-high"></i> {{ t('home.workspace') }}</a>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // ===== 实时时钟（日期 + 星期 + 时分秒）=====
+        function pad(n){ return String(n).padStart(2,'0'); }
+        var WEEK = ['{{ t('home.sun') }}','{{ t('home.mon') }}','{{ t('home.tue') }}','{{ t('home.wed') }}','{{ t('home.thu') }}','{{ t('home.fri') }}','{{ t('home.sat') }}'];
+        function bizTick(){
+            var d = new Date();
+            var de = document.getElementById('bizDate'), te = document.getElementById('bizTime');
+            if (de) de.textContent = d.getFullYear()+'年'+(d.getMonth()+1)+'月'+d.getDate()+'日 '+WEEK[d.getDay()];
+            if (te) te.textContent = pad(d.getHours())+':'+pad(d.getMinutes())+':'+pad(d.getSeconds());
+        }
+        bizTick(); setInterval(bizTick, 1000);
+
+        // ===== 数字滚动动画 =====
+        document.querySelectorAll('[data-count]').forEach(function(el){
+            var target = parseInt(el.getAttribute('data-count'), 10) || 0;
+            if (target <= 0) { el.textContent = '0'; return; }
+            var cur = 0, step = Math.max(1, Math.ceil(target/40));
+            var t = setInterval(function(){
+                cur += step;
+                if (cur >= target) { cur = target; clearInterval(t); }
+                el.textContent = cur.toLocaleString('zh-CN');
+            }, 24);
+        });
+
+        // ===== 用户下拉 =====
+        (function(){
+            var btn = document.getElementById('bizUserBtn'), dd = document.getElementById('bizUserDrop');
+            if (!btn || !dd) return;
+            btn.addEventListener('click', function(e){ e.stopPropagation(); dd.classList.toggle('open'); });
+            document.addEventListener('click', function(e){ if (!dd.contains(e.target)) dd.classList.remove('open'); });
+        })();
+
+        // ===== {{ t('home.login') }}提交（JSON POST /auth/login，与 /login 一致）=====
+        // ===== {{ t('home.login') }}提交（POST /auth/login，带 CSRF header）=====
+        (function(){
+            var form = document.getElementById('bizLoginForm');
+            if (!form) return;
+            var _csrf = '{{ page_csrf_token if page_csrf_token else (csrf_token if csrf_token else "") }}';
+            form.addEventListener('submit', async function(){
+                var username = document.getElementById('bizUsername').value.trim();
+                var password = document.getElementById('bizPassword').value;
+                var remember = document.getElementById('bizRemember').checked ? 1 : 0;
+                var btn = document.getElementById('bizLoginBtn'), msg = document.getElementById('bizLoginMsg');
+                msg.className = 'biz-msg'; msg.textContent = '';
+                if (!username || !password) { msg.textContent = '{{ t('home.js_enter_creds') }}'; msg.classList.add('error'); return; }
+                btn.disabled = true; btn.textContent = '{{ t('home.js_logging_in') }}';
+                try {
+                    var resp = await fetch('/auth/login', {
+                        method: 'POST', credentials: 'same-origin',
+                        headers: _csrf ? {'Content-Type': 'application/json', 'X-CSRF-Token': _csrf} : {'Content-Type': 'application/json'},
+                        body: JSON.stringify({ username: username, password: password, remember_me: remember, fingerprint_data: '' })
+                    });
+                    var ct = resp.headers.get('content-type') || '';
+                    if (!ct.includes('application/json')) throw new Error('{{ t('home.js_invalid_resp') }}');
+                    var data = await resp.json();
+                    if (data.success) { msg.textContent = '{{ t('home.js_login_ok') }}'; msg.classList.add('info'); window.location.href = data.redirect || '/index'; }
+                    else { msg.textContent = data.message || '{{ t('home.js_login_fail') }}'; msg.classList.add('error'); btn.disabled = false; btn.textContent = '{{ t('home.btn_login') }}'; }
+                } catch(err) {
+                    msg.textContent = '{{ t('home.js_net_err') }}' + err.message; msg.classList.add('error');
+                    btn.disabled = false; btn.textContent = '{{ t('home.btn_login') }}';
+                }
+            });
+        })();
+
+        // ===== {{ t('home.theme') }}配色管理：紧凑下拉面板 + 切换（/api/theme/set）=====
+        // {{ t('home.theme') }}列表从 mt_theme_schemes 表读取，色值从 theme_json 提取
+        (function(){
+            var panel = document.getElementById('themePanel');
+            var currentDot = document.getElementById('themeCurrentDot');
+            var currentLabel = document.getElementById('themeCurrentLabel');
+            var defaultKey = {{ (theme_key if theme_key else 'aurora')|tojson }};
+            var _csrf = '{{ page_csrf_token if page_csrf_token else (csrf_token if csrf_token else "") }}';
+
+            function csrfHeader(){
+                return _csrf ? {'X-CSRF-Token': _csrf, 'Content-Type': 'application/json'} : {'Content-Type': 'application/json'};
+            }
+
+            function setActive(key, name, color){
+                document.querySelectorAll('.biz-theme-panel .tdot').forEach(function(d){
+                    d.classList.toggle('active', d.getAttribute('data-theme-key') === key);
+                });
+                if (currentDot && color) {
+                    currentDot.style.background = color;
+                    currentDot.classList.toggle('active', true);
+                }
+                if (currentLabel && name) currentLabel.textContent = name;
+            }
+
+            // 初始化：从 DOM 中找到默认{{ t('home.theme') }}
+            var initDot = document.querySelector('.biz-theme-panel .tdot[data-theme-key="' + defaultKey + '"]')
+                         || document.querySelector('.biz-theme-panel .tdot.active');
+            if (initDot) {
+                setActive(initDot.getAttribute('data-theme-key'),
+                          initDot.getAttribute('data-name') || '',
+                          initDot.style.background);
+            }
+
+            // 下拉面板开/关
+            function togglePanel(open){
+                if (open === undefined) open = !panel.classList.contains('open');
+                panel.classList.toggle('open', open);
+            }
+            if (currentDot) currentDot.addEventListener('click', function(e){ e.stopPropagation(); togglePanel(); });
+            if (currentLabel) currentLabel.addEventListener('click', function(e){ e.stopPropagation(); togglePanel(); });
+            document.addEventListener('click', function(){ togglePanel(false); });
+            panel.addEventListener('click', function(e){ e.stopPropagation(); });
+
+            // 拉取服务端权威当前{{ t('home.theme') }}
+            fetch('/api/theme/get', { credentials: 'same-origin' })
+                .then(function(r){ return r.json(); })
+                .then(function(d){
+                    if (d && d.success && d.theme) {
+                        var dot = document.querySelector('.biz-theme-panel .tdot[data-theme-key="' + d.theme + '"]');
+                        if (dot) setActive(d.theme, dot.getAttribute('data-name'), dot.style.background);
+                    }
+                })
+                .catch(function(){});
+
+            // 点击色点切换
+            document.querySelectorAll('.biz-theme-panel .tdot').forEach(function(dot){
+                dot.addEventListener('click', async function(e){
+                    e.stopPropagation();
+                    var key = dot.getAttribute('data-theme-key');
+                    var sid = dot.getAttribute('data-scheme-id');
+                    var name = dot.getAttribute('data-name') || '';
+                    // 公祭日{{ t('home.theme') }}锁定
+                    if (dot.title && dot.title.indexOf('公祭日') >= 0) {
+                        alert('{{ t('home.js_memorial_lock') }}');
+                        return;
+                    }
+                    try {
+                        var r = await fetch('/api/theme/set', {
+                            method: 'POST', credentials: 'same-origin',
+                            headers: csrfHeader(),
+                            body: JSON.stringify({ theme: key, scheme_id: sid })
+                        });
+                        var d = await r.json();
+                        if (d && d.success) { setActive(key, name, dot.style.background); togglePanel(false); location.reload(); }
+                        else { alert((d && d.message) || '{{ t('home.js_theme_fail') }}'); }
+                    } catch(err) { alert('{{ t('home.js_theme_fail') }}：' + err.message); }
+                });
+            });
+        })();
+    </script>
+    <script src="{{ url_for('static', filename='js/arduino_global_hotplug.js') }}" defer></script>
+
+<!-- 🔧 §三 仙女座 v5.5: 认知画像动态渲染 -->
+<script>
+(function(){
+    const profile = {{ cognitive_profile | tojson }};
+    if (!profile || !profile.cognitive_level) {
+        console.log("[仙女座] cognitive_profile 未配置 → 用默认通用 UI");
+        return;
+    }
+    console.log("[仙女座] 认知画像:", profile);
+    // 按认知水平渲染不同主题
+    const level = profile.cognitive_level || "auto";
+    const levelStyles = {
+        "beginner": { accent: "#4ade80", label: "🌱 入门模式" },
+        "intermediate": { accent: "#60a5fa", label: "📚 进阶模式" },
+        "advanced": { accent: "#a78bfa", label: "🚀 高级模式" },
+        "expert": { accent: "#f472b6", label: "💎 专家模式" },
+    };
+    const style = levelStyles[level] || levelStyles["intermediate"];
+    // 注入主题色
+    document.documentElement.style.setProperty("--cognitive-accent", style.accent);
+    // 注入标签
+    const badge = document.createElement("div");
+    badge.style.cssText = "position:fixed;bottom:12px;left:12px;z-index:9999;padding:4px 10px;background:"+style.accent+";color:#fff;border-radius:14px;font-size:11px;font-family:system-ui;box-shadow:0 2px 8px rgba(0,0,0,.2)";
+    badge.textContent = style.label + " · " + (profile.learning_style || "auto");
+    document.body.appendChild(badge);
+})();
+</script>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/lang_fab.css') }}">
+<div class="lang-bar" id="langBar">
+{% for lang in available_langs %}
+{% set code, name = lang %}
+<button class="lang-bar__opt" data-lang="{{ code }}">
+  {% if code == 'zh_CN' %}简
+  {% elif code == 'zh_TW' %}繁
+  {% elif code == 'ja_JP' %}日
+  {% elif code == 'en_US' %}EN
+  {% else %}{{ name }}{% endif %}
+</button>
+{% endfor %}
+</div>
+<script>
+(function(){
+  var bar = document.getElementById('langBar');
+  if (!bar) return;
+
+  // 初始化当前语言高亮
+  fetch('/api/i18n/current', {credentials:'same-origin'})
+    .then(function(r){return r.json()})
+    .then(function(d){
+      var cur = d.lang || 'zh_CN';
+      bar.querySelectorAll('.lang-bar__opt').forEach(function(b){
+        b.classList.toggle('is-active', b.dataset.lang === cur);
+      });
+    })
+    .catch(function(){ /* 忽略, 默认不高亮 */ });
+
+  // 点击切换 → 自动刷新
+  bar.addEventListener('click', function(e){
+    var btn = e.target.closest('.lang-bar__opt');
+    if (!btn || btn.classList.contains('is-active')) return;
+    var target = btn.dataset.lang;
+    fetch('/api/i18n/set_lang?lang=' + target, {credentials:'same-origin'})
+      .then(function(){ location.reload(); });
+  });
+})();
+</script>
+</body>
+</html>

@@ -956,12 +956,8 @@ def english_page():
     )
 
 
-# ===== 成人教育入口 =====
-@bp.route('/adult_education', methods=['GET'])
-@system_container(require_auth='guest')
-def adult_education_page():
-    """成人教育入口 → 重定向到已有的分级测试页面"""
-    return redirect('/adult_placement_test')
+# ===== 成人教育独立页 (下面 1120 行已重写为真实数据页, 这里旧 redirect 已删) =====
+
 
 
 # ===== EigenFlux 中枢 =====
@@ -1105,3 +1101,76 @@ def neural_array_page():
         daemons=daemons, clusters=clusters, nodes=nodes, routes=routes,
         daemon_list=daemon_list, cluster_list=cluster_list,
         neural_routes=neural_routes)
+
+
+# ===== 主题调度 /theme/schemes (首页导航引用) =====
+@bp.route('/theme/schemes', methods=['GET'])
+@system_container(require_auth='guest')
+def theme_schemes_page():
+    """主题调度中心 — context_processor 已注入 theme_schemes list"""
+    from flask import session as _sess
+    return render_template('theme_schemes.html')
+
+
+# ===== 成人教育独立页 (替换原来的 redirect) =====
+@bp.route('/adult_education', methods=['GET'])
+@system_container(require_auth='guest')
+def adult_education_page():
+    """成人教育门户 — 692 题 / 138 职业考试 / 0 职业路径"""
+    import sqlite3 as _sq, os as _os
+    db = _os.path.join(_os.path.dirname(__file__), '..', 'database', 'app.db')
+    c = _sq.connect(db); c.row_factory = _sq.Row
+    
+    # 统计
+    try:
+        q_total = c.execute("SELECT COUNT(*) FROM adult_education_questions").fetchone()[0]
+        q_cats = c.execute("SELECT category, COUNT(*) cnt FROM adult_education_questions GROUP BY category ORDER BY cnt DESC LIMIT 8").fetchall()
+        p_total = c.execute("SELECT COUNT(*) FROM professional_exam_questions").fetchone()[0]
+        p_cats = c.execute("SELECT category, COUNT(*) cnt FROM professional_exam_questions GROUP BY category ORDER BY cnt DESC LIMIT 8").fetchall()
+    except Exception:
+        q_total, p_total = 0, 0
+        q_cats, p_cats = [], []
+    c.close()
+    
+    from flask import session as _sess
+    user_dict = {'username': _sess.get('username'), 'role': _sess.get('role') or 'guest'}
+    return render_template('adult_education.html',
+        version='v22.40.0',
+        user=user_dict,
+        q_total=q_total, q_cats=q_cats,
+        p_total=p_total, p_cats=p_cats)
+
+
+# ===== 系统设置 /settings (路由迁移期间丢了, 首页导航引用) =====
+@bp.route('/settings', methods=['GET'])
+@system_container(require_auth='guest')
+def settings_page():
+    """用户/系统设置页 — 任何人可访问, 页面内判断登录态"""
+    return render_template('settings.html')
+
+
+# ===== 仪表盘 /dashboard (路由迁移期间丢了, 导航引用) =====
+@bp.route('/dashboard', methods=['GET'])
+@system_container(require_auth='guest')
+def dashboard_page():
+    """系统仪表盘 — 重定向到学生门户"""
+    return redirect('/student_portal')
+
+
+# ===== auth 相关路由 (logout / forgot_password / register 被导航引用) =====
+@bp.route('/logout', methods=['GET'])
+def logout_page():
+    """登出 — redirect 到 /auth/logout (auth_bp 已注册)"""
+    return redirect('/auth/logout')
+
+
+@bp.route('/forgot_password', methods=['GET'])
+def forgot_password_page():
+    """忘记密码 — redirect 到 auth 路由"""
+    return redirect('/auth/forgot_password')
+
+
+@bp.route('/register', methods=['GET'])
+def register_page():
+    """注册 — redirect 到 auth 路由"""
+    return redirect('/auth/register')
