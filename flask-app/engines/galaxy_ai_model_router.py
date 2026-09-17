@@ -239,29 +239,220 @@ class CopywritingPlugin(BaseModelPlugin):
 
 
 class VideoGenPlugin(BaseModelPlugin):
-    """视频生成 AI — MVP placeholder, 后续接 Runway/Kling API"""
+    """视频生成 AI — 即梦 Jimeng CLI + 本地 galaxy_video_renderer 降级"""
     plugin_id = "video_gen"
     plugin_name = "视频AI"
-    provider = "api_planned"
+    provider = "jimeng_dreamina"
 
     def _init(self):
-        self._ready = False  # 需要 API key
+        """验证 dreamina CLI 可用 + 检查登录状态"""
+        import shutil
+        self._cli_path = shutil.which("dreamina")
+        if self._cli_path:
+            import subprocess
+            try:
+                r = subprocess.run(
+                    [self._cli_path, "user_credit"],
+                    capture_output=True, text=True, timeout=10,
+                )
+                self._ready = r.returncode == 0
+                self.config.model_name = "seedance2.0fast"
+            except Exception:
+                self._ready = False
+        else:
+            self._ready = False
 
-    def generate(self, prompt: str = "", duration_sec: int = 15,
-                 style: str = "cute_animation", **kwargs) -> ModelResult:
-        """生成视频 (placeholder → 复用现有 galaxy_video_renderer)"""
-        from engines.galaxy_video_renderer import run_pipeline
-        topic = kwargs.get("topic", prompt[:20])
-        try:
-            result = run_pipeline(topic=topic, formula_id=kwargs.get("formula_id"))
+    def generate(self, prompt: str = "", duration_sec: int = 5,
+                 ratio: str = "9:16", resolution: str = "720p",
+                 model_version: str = "seedance2.0fast",
+                 download_dir: str = "/tmp/galaxy_video_out",
+                 poll: int = 120,
+                 **kwargs) -> ModelResult:
+        """即梦文生视频 (seedance2.0fast 默认)
+
+        Args:
+            prompt: 视频生成 prompt (中文/英文均可)
+            duration_sec: 视频时长 (4-15s 依模型)
+            ratio: 画面比例 9:16(竖屏)/16:9/1:1
+            resolution: 480p/720p/1080p
+            model_version: seedance2.0fast/seedance2.5/...
+            download_dir: 结果下载目录
+            poll: 异步轮询秒数 (0=不等待)
+        """
+        import subprocess, shutil
+        t0 = time.time()
+
+        if not self._ready or not shutil.which("dreamina"):
             return self._make_result(
-                success=True, video_path=result.get("video_path"),
-                duration_sec=result.get("duration_sec", 0),
-                provider="galaxy_renderer_local", model_name="moviepy+edge-tts",
-                metadata={"fallback": True, "formula": result.get("formula_id")},
+                success=False,
+                error="即梦 CLI 未登录或未安装 (运行: curl -s https://jimeng.jianying.com/cli | bash && dreamina login)",
+                provider="jimeng_not_ready",
+                latency_ms=int((time.time()-t0)*1000),
+            )
+
+        # 提交 + 轮询 + 下载
+        cmd = [
+            "dreamina", "text2video",
+            "--prompt", prompt,
+            "--duration", str(duration_sec),
+            "--ratio", ratio,
+            "--video_resolution", resolution,
+            "--model_version", model_version,
+            "--poll", str(poll),
+        ]
+        if download_dir:
+            cmd.extend(["--download_dir", download_dir])
+
+        try:
+            os.makedirs(download_dir, exist_ok=True)
+            r = subprocess.run(cmd, capture_output=True, text=True, timeout=poll + 30)
+            stdout = r.stdout.strip()
+            stderr = r.stderr.strip()
+            combined = stdout + "\n" + stderr
+
+            # 解析结果 — 找 submit_id 和输出文件
+            import re
+            submit_id_match = re.search(r"submit_id[=:]\s*([a-zA-Z0-9\-]+)", combined)
+            submit_id = submit_id_match.group(1) if submit_id_match else None
+
+            video_path = None
+            # dreamina 直接输出文件路径
+            for line in combined.splitlines():
+                line = line.strip()
+                if line.startswith("/") and (line.endswith(".mp4") or ".mp4" in line):
+                    video_path = line
+                    break
+                # 或者 download_dir 里最新的 mp4
+                if "download" in line.lower() and ".mp4" in line:
+                    path_match = re.search(r"(/\S+\.mp4)", line)
+                    if path_match:
+                        video_path = path_match.group(1)
+                        break
+
+            if not video_path and os.path.isdir(download_dir):
+                mtime = 0
+                for f in os.listdir(download_dir):
+                    fp = os.path.join(download_dir, f)
+                    if f.endswith(".mp4") and os.path.getmtime(fp) > mtime:
+                        mtime = os.path.getmtime(fp)
+                        video_path = fp
+
+            if r.returncode == 0 and video_path and os.path.exists(video_path):
+                import subprocess as sp
+                try:
+                    probe = sp.run(
+                        ["ffprobe", "-v", "quiet", "-show_entries", "format=duration,size",
+                         "-of", "json", video_path],
+                        capture_output=True, text=True, timeout=10,
+                    )
+                    dur = float(sp.json.loads(probe.stdout).get("format", {}).get("duration", duration_sec))
+                    size_mb = float(sp.json.loads(probe.stdout).get("format", {}).get("size", 0)) / 1024 / 1024
+                except Exception:
+                    dur = duration_sec
+                    size_mb = 0.0
+
+                result = self._make_result(
+                    success=True, video_path=video_path,
+                    duration_sec=dur,
+                    provider="jimeng_dreamina",
+                    model_name=model_version,
+                    latency_ms=int((time.time()-t0)*1000),
+                    metadata={
+                        "prompt": prompt, "ratio": ratio,
+                        "resolution": resolution, "submit_id": submit_id,
+                        "size_mb": round(size_mb, 1),
+                    },
+                )
+            else:
+                result = self._make_result(
+                    success=False,
+                    error=stderr[:300] or f"returncode={r.returncode}",
+                    provider="jimeng_dreamina",
+                    latency_ms=int((time.time()-t0)*1000),
+                    metadata={"stdout": stdout[:500], "submit_id": submit_id},
+                )
+
+        except subprocess.TimeoutExpired:
+            result = self._make_result(
+                success=False, error=f"超时 ({poll}s), 但任务可能在处理中",
+                provider="jimeng_dreamina",
+                latency_ms=int((time.time()-t0)*1000),
             )
         except Exception as e:
-            return self._make_result(success=False, error=str(e)[:200])
+            result = self._make_result(
+                success=False, error=str(e)[:200],
+                provider="jimeng_dreamina",
+                latency_ms=int((time.time()-t0)*1000),
+            )
+
+        self._record_call(result)
+        return result
+
+    def generate_images(self, prompt: str = "", num_images: int = 4,
+                        ratio: str = "1:1", model_version: str = "4.7",
+                        resolution_type: str = "2k",
+                        download_dir: str = "/tmp/galaxy_art_out",
+                        poll: int = 60, **kwargs) -> ModelResult:
+        """即梦文生图 (原画AI 接这个)"""
+        import subprocess
+        t0 = time.time()
+
+        cmd = [
+            "dreamina", "text2image",
+            "--prompt", prompt,
+            "--generate_num", str(num_images),
+            "--ratio", ratio,
+            "--resolution_type", resolution_type,
+            "--model_version", model_version,
+            "--poll", str(poll),
+        ]
+        if download_dir:
+            cmd.extend(["--download_dir", download_dir])
+
+        try:
+            os.makedirs(download_dir, exist_ok=True)
+            r = subprocess.run(cmd, capture_output=True, text=True, timeout=poll + 30)
+
+            images = []
+            for line in (r.stdout + "\n" + r.stderr).splitlines():
+                line = line.strip()
+                if line.startswith("/") and (line.endswith(".png") or ".png" in line or ".jpg" in line):
+                    images.append(line)
+                elif ".png" in line or ".jpg" in line:
+                    import re
+                    match = re.search(r"(/\S+\.(?:png|jpg))", line)
+                    if match:
+                        images.append(match.group(1))
+
+            if not images and os.path.isdir(download_dir):
+                for f in sorted(os.listdir(download_dir)):
+                    if f.endswith((".png", ".jpg")):
+                        images.append(os.path.join(download_dir, f))
+
+            if r.returncode == 0 and images:
+                result = self._make_result(
+                    success=True, images=images,
+                    provider="jimeng_dreamina",
+                    model_name=f"jimeng_image_{model_version}",
+                    latency_ms=int((time.time()-t0)*1000),
+                    metadata={"prompt": prompt, "num": len(images), "ratio": ratio},
+                )
+            else:
+                result = self._make_result(
+                    success=False,
+                    error=(r.stderr or "")[:200] or "无输出图片",
+                    provider="jimeng_dreamina",
+                    latency_ms=int((time.time()-t0)*1000),
+                )
+        except Exception as e:
+            result = self._make_result(
+                success=False, error=str(e)[:200],
+                provider="jimeng_dreamina",
+                latency_ms=int((time.time()-t0)*1000),
+            )
+
+        self._record_call(result)
+        return result
 
 
 class AnimationPlugin(BaseModelPlugin):
@@ -295,18 +486,52 @@ class Model3DPlugin(BaseModelPlugin):
 
 
 class OriginalArtPlugin(BaseModelPlugin):
-    """原画 AI — MVP placeholder, 后续接 SDXL/Flux/MJ"""
+    """原画 AI — 即梦 Jimeng text2image (4.7/5.0Pro 模型)"""
     plugin_id = "original_art"
     plugin_name = "原画AI"
-    provider = "local_todo"
+    provider = "jimeng_dreamina"
 
-    def _init(self): self._ready = False  # 需装 diffusers
+    def _init(self):
+        # 复用 VideoGenPlugin 的即梦登录检查
+        import shutil, subprocess
+        self._cli_path = shutil.which("dreamina")
+        if self._cli_path:
+            try:
+                r = subprocess.run(
+                    [self._cli_path, "user_credit"],
+                    capture_output=True, text=True, timeout=10,
+                )
+                self._ready = r.returncode == 0
+                self.config.model_name = "jimeng_image_4.7"
+            except Exception:
+                self._ready = False
+        else:
+            self._ready = False
 
     def generate(self, concept: str = "", style: str = "digital_painting",
-                 num_images: int = 4, **kwargs) -> ModelResult:
-        return self._make_result(
-            success=False, error="原画AI 待接入 (SDXL local / Flux API)",
-            provider=self.provider,
+                 num_images: int = 4, ratio: str = "1:1",
+                 model_version: str = "4.7", **kwargs) -> ModelResult:
+        """即梦文生图 (原画/概念图)"""
+        # 样式增强 prompt
+        STYLE_ENHANCE = {
+            "digital_painting": "digital painting, 2d concept art, clean lines, anime style",
+            "chibi_cute": "chibi cute, super deformed, round face, pastel colors",
+            "oil_painting": "oil painting, classical art, textured brush strokes",
+            "ink_wash": "chinese ink wash painting, traditional style, minimalist",
+            "pixel_art": "pixel art, retro game style, 16-bit",
+            "3d_render": "3d render, octane render, realistic, subsurface scattering",
+            "anime": "anime style, cel shading, vibrant colors",
+        }
+        enhance = STYLE_ENHANCE.get(style, "concept art")
+        full_prompt = f"{concept}, {enhance}"
+
+        # 调用 VideoGenPlugin 的 generate_images
+        from engines.galaxy_ai_model_router import VideoGenPlugin
+        jp = VideoGenPlugin()
+        return jp.generate_images(
+            prompt=full_prompt, num_images=num_images,
+            ratio=ratio, model_version=model_version,
+            download_dir="/tmp/galaxy_art_out",
         )
 
 
