@@ -359,6 +359,199 @@ ACTIVITY_TAGS = {
     'bilibili':  ['#知识区创作者', '#bili_college', '#up主激励计划'],
 }
 
+# ============================================================
+# 知识密集型事实文案库 (替换 Ollama 幻觉)
+# 每个镜头含 content_type 字段, 对应 renderer 的丰富渲染
+# ============================================================
+
+# Topic 分类 → formula_id
+_TOPIC_CATEGORY_RULES = [
+    # 历史
+    (["秦","汉","唐","宋","明","清","朝","帝国","长城","故宫","丝绸之路","文艺复兴","战争","统一","历史","皇帝","王朝","战国"], "f_history_cute"),
+    # 科学/物理/化学
+    (["量子","纠缠","相对论","牛顿","爱因斯坦","物理","化学","元素周期","电子","引力","黑洞","宇宙","星系","光速","能量","原理"], "f_science_burst"),
+    # 编程
+    (["Python","装饰器","列表推导","lambda","函数","类","继承","闭包","异步","async","await","API","框架","代码","编程","算法","数据结构","递归","迭代器"], "f_code_demo"),
+    # 数学
+    (["斐波那契","黄金比例","欧拉","高斯","几何","代数","微积分","公式","数学","无限","概率","统计","分形","曼德博","数列","质数","质数分布"], "f_math_beauty"),
+    # 国潮
+    (["国潮","故宫","青花瓷","京剧","武术","书法","茶道","中医","四大发明","丝绸","汉服","年画","剪纸","三星堆","兵马俑","敦煌"], "f_guochao"),
+]
+
+def _classify_topic(topic: str) -> str:
+    """把 topic 自动分类到 formula"""
+    for keywords, fid in _TOPIC_CATEGORY_RULES:
+        for kw in keywords:
+            if kw in topic:
+                return fid
+    return "f_history_cute"
+
+# 知识密集型文案库: {formula_id: {topic_key: {shots: [...]}}}
+# 每个 shot: {content_type, hook/title, body/points, narration, visual_hint}
+# content_type: fact_card / timeline / code_block / formula / comparison / diagram / title / cta
+
+FACTCONTENT_LIB = {
+
+# ===== 历史类 (f_history_cute) =====
+"f_history_cute": {
+    # 秦统一六国
+    "秦统一六国": {
+        "topic_hook": "2200年前, 这个人改变了中国",
+        "narration": [
+            "公元前221年, 嬴政建立了中国第一个中央集权帝国 —— 秦朝",
+            "他花了10年时间, 从22岁亲政到39岁灭六国, 完成统一大业",
+            "车同轨 书同文 统一度量衡 —— 这三条让全中国第一次真正连成一个整体",
+            "修长城 筑驰道 建直道 —— 这些工程在当时是世界上最先进的基础设施",
+            "秦朝虽然只存在15年, 但它定下的郡县制和中央集权, 影响了之后两千年的中国",
+            "秦砖汉瓦至今仍在 统一的文字让我们读2000年前的书也能看懂",
+        ],
+        "storyboard": [
+            {"content_type": "title",       "title": "2200年前的奇迹",   "subtitle": "秦统一六国",           "data": "公元前221年"},
+            {"content_type": "timeline",    "title": "10年征战路",       "events": [("前230", "灭韩"), ("前228", "灭赵"), ("前225", "灭魏"), ("前223", "灭楚"), ("前222", "灭燕"), ("前221", "灭齐")], "marker": "前221 → 统一"},
+            {"content_type": "comparison",  "title": "统一前 vs 统一后",  "left": "7种文字\n7种度量衡\n7条轨距", "right": "书同文\n度同衡\n车同轨", "data": "全中国第一次真正连通"},
+            {"content_type": "fact_card",   "title": "三大基础设施",     "points": ["长城: 西起嘉峪关 东至山海关", "驰道: 咸阳为中心 4500公里", "直道: 2天抵内蒙 1800公里"], "data": "世界最先进网络"},
+            {"content_type": "fact_card",   "title": "遗产影响两千年",   "points": ["郡县制 → 至今仍在用", "中央集权 → 中华大一统", "统一文字 → 文明从未中断"], "data": "影响至今"},
+            {"content_type": "cta",        "title": "中国第一个帝国",   "subtitle": "秦朝虽然短, 但意义太重大", "hook": "你还想了解秦朝哪个细节?"},
+        ],
+    },
+    # 故宫
+    "故宫": {
+        "topic_hook": "世界上最大的皇宫, 600年了",
+        "narration": [
+            "故宫建于1420年明永乐年间, 是世界上现存规模最大的木质结构古建筑群",
+            "南北长961米 东西宽753米, 占地72万平方米, 有大小宫殿七十多座 房屋九千余间",
+            "紫禁城外朝三大殿 —— 太和殿 中和殿 保和殿, 是皇帝处理朝政 举行大典的地方",
+            "内廷后三宫 —— 乾清宫 交泰殿 坤宁宫, 是皇帝和皇后生活的地方",
+            "1925年故宫博物院成立, 收藏文物186万余件, 其中一级文物8291件",
+            "故宫每年接待观众超过1900万人次, 是世界上参观人数最多的博物馆",
+        ],
+        "storyboard": [
+            {"content_type": "title",       "title": "世界最大皇宫",     "subtitle": "故宫600年",           "data": "1420年建成"},
+            {"content_type": "diagram",     "title": "紫禁城布局",       "left_right": "外朝三大殿 → 内廷后三宫", "data": "72万㎡ 8704间房"},
+            {"content_type": "fact_card",   "title": "三大殿的功能",     "points": ["太和殿: 登基/大婚/命将出征", "中和殿: 御前奏对/庆典休息", "保和殿: 科举殿试/宴会"], "data": "皇权象征"},
+            {"content_type": "fact_card",   "title": "珍贵馆藏",         "points": ["186万件文物", "8291件一级品", "《清明上河图》《千里江山图》"], "data": "世界顶级"},
+            {"content_type": "comparison",  "title": "600年对比",        "left": "明清两代皇宫\n24位皇帝住过", "right": "如今开放面积80%\n每年1900万观众", "data": "从皇家禁地到全民文化遗产"},
+            {"content_type": "cta",        "title": "每天限8万人",       "subtitle": "网上提前7天抢票", "hook": "你去过故宫吗? 最喜欢哪个宫殿?"},
+        ],
+    },
+},
+
+# ===== 科学类 (f_science_burst) =====
+"f_science_burst": {
+    # 量子纠缠
+    "量子纠缠": {
+        "topic_hook": "爱因斯坦说它是'幽灵般的超距作用'",
+        "narration": [
+            "量子纠缠是指两个粒子在被关联之后, 无论相隔多远, 测量其中一个的状态, 另一个瞬间就会确定",
+            "这种超距作用超越了光速, 爱因斯坦称其为幽灵般的超距作用, 但实验证明它确实存在",
+            "1964年贝尔提出不等式, 2022年三个物理学家通过实验验证了量子纠缠, 获得诺贝尔物理学奖",
+            "量子纠缠是量子计算的基础 —— 经典计算机用bit 0或1, 量子计算机用量子比特可以同时是0和1",
+            "目前量子计算机已经在特定问题上超越超级计算机, 比如谷歌Sycamore在5分钟内完成超算1万年的任务",
+            "量子通信利用纠缠实现绝对安全的加密, 中国已建成覆盖4600公里的量子保密通信网络",
+        ],
+        "storyboard": [
+            {"content_type": "title",       "title": "幽灵般的联系",     "subtitle": "量子纠缠",           "data": "2022年诺奖"},
+            {"content_type": "diagram",     "title": "超距作用原理",     "left_right": "粒子A(自旋↑) ↔ 粒子B(自旋↓)", "data": "同时确定, 超越光速"},
+            {"content_type": "comparison",  "title": "经典 vs 量子",     "left": "经典bit: 0 或 1\n2^n 种组合", "right": "量子比特: 同时是0和1\n2^n 并行计算", "data": "指数级加速"},
+            {"content_type": "fact_card",   "title": "关键实验里程碑",   "points": ["1964 贝尔不等式理论", "1982 首次实验室验证", "2022 诺贝尔物理学奖"], "data": "理论→实验→获奖"},
+            {"content_type": "fact_card",   "title": "量子计算应用",     "points": ["谷歌Sycamore: 5分vs1万年", "密码破解: 威胁RSA2048", "药物研发: 模拟分子结构"], "data": "已实现量子优越性"},
+            {"content_type": "cta",        "title": "中国量子通信领先",   "subtitle": "4600公里京沪干线已建成", "hook": "你觉得量子计算会改变什么?"},
+        ],
+    },
+},
+
+# ===== 编程类 (f_code_demo) =====
+"f_code_demo": {
+    # Python 装饰器
+    "Python装饰器": {
+        "topic_hook": "一行@语法, 让函数瞬间拥有魔法",
+        "narration": [
+            "Python装饰器本质上是一个高阶函数, 它接收一个函数作为参数, 返回一个新的函数",
+            "最常见的应用场景: 记录执行时间 日志打桩 权限检查 缓存加速",
+            "装饰器的本质是函数闭包 —— 内层函数引用了外层函数的变量, 外层函数返回内层函数",
+            "@decorator 语法糖等价于 func = decorator(func)",
+            "加了 @functools.wraps 才能保留原函数的名字和文档字符串",
+            "多个装饰器叠加时, 应用顺序是从下到上",
+        ],
+        "storyboard": [
+            {"content_type": "title",       "title": "函数的魔法",       "subtitle": "Python装饰器",           "data": "一行@语法"},
+            {"content_type": "code_block",  "title": "最简装饰器",       "code": "def timer(func):\n    def wrap(*a, **kw):\n        t0=time.time()\n        r=func(*a, **kw)\n        print(f'{func.__name__} 耗时 {time.time()-t0:.3f}s')\n        return r\n    return wrap\n\n@timer\ndef slow():\n    time.sleep(1)", "lang": "python", "highlight": "timer/wrap/@timer"},
+            {"content_type": "diagram",     "title": "执行流程",         "left_right": "@timer → slow() = timer(slow) → wrap → 原函数", "data": "闭包 + 高阶函数"},
+            {"content_type": "fact_card",   "title": "四大应用场景",     "points": ["① 计时/性能监控", "② 日志/调试", "③ 权限/鉴权", "④ 缓存/加速"], "data": "每天都在用"},
+            {"content_type": "comparison",  "title": "有无wraps的区别",  "left": "无wraps: func.__name__='wrap'\n调试信息丢失", "right": "有wraps: func.__name__='slow'\n调试正常", "data": "生产环境必加"},
+            {"content_type": "cta",        "title": "试试给自己的函数加装饰器", "subtitle": "一分钟就能写出计时装饰器", "hook": "你用过最实用的装饰器是什么?"},
+        ],
+    },
+},
+
+# ===== 数学类 (f_math_beauty) =====
+"f_math_beauty": {
+    # 斐波那契
+    "斐波那契": {
+        "topic_hook": "从兔子繁殖到向日葵种子, 数列无处不在",
+        "narration": [
+            "斐波那契数列: 0 1 1 2 3 5 8 13 21 34, 每一项都是前两项之和",
+            "1202年比萨的列奥纳多在《计算之书》中通过兔子繁殖问题首次描述这个数列",
+            "相邻两项的比值越来越接近黄金比例约等于1.618, 这个比值在自然界中随处可见",
+            "向日葵种子的排列 松果的螺旋 贝壳的生长 飓风的轨迹 —— 都遵循斐波那契螺旋",
+            "人体也藏着黄金比例: 肚脐到脚底的距离除以身高 约等于0.618",
+            "金融市场的斐波那契回撤线 是技术分析里最常用的工具之一",
+        ],
+        "storyboard": [
+            {"content_type": "title",       "title": "自然的密码",       "subtitle": "斐波那契数列",           "data": "1202年发现"},
+            {"content_type": "formula",     "title": "递推公式",         "formula": "F(0)=0, F(1)=1\nF(n)=F(n-1)+F(n-2)", "data": "每一项=前两项之和"},
+            {"content_type": "comparison",  "title": "黄金比例",         "left": "F(n+1)/F(n) → 1.6180...", "right": "0.618 黄金分割\n自然界最优比例", "data": "宇宙通用"},
+            {"content_type": "fact_card",   "title": "自然界实例",       "points": ["向日葵: 144×89螺旋", "松果: 5×8螺旋", "贝壳: 对数螺旋生长"], "data": "数学即自然"},
+            {"content_type": "fact_card",   "title": "人类也遵循",       "points": ["身高比例: 0.618", "牙齿数量: 8×13", "音乐节拍: 3×5"], "data": "人体数学"},
+            {"content_type": "cta",        "title": "数一朵向日葵",       "subtitle": "种子排列就是斐波那契螺旋", "hook": "你发现过身边的斐波那契吗?"},
+        ],
+    },
+},
+
+# ===== 国潮类 (f_guochao) =====
+"f_guochao": {
+    # 直接复制故宫内容 (f_history_cute 里的)
+    "故宫": {
+        "topic_hook": "世界上最大的皇宫, 600年了",
+        "narration": [
+            "故宫建于1420年明永乐年间, 是世界上现存规模最大的木质结构古建筑群",
+            "南北长961米 东西宽753米, 占地72万平方米, 有大小宫殿七十多座 房屋九千余间",
+            "紫禁城外朝三大殿 —— 太和殿 中和殿 保和殿, 是皇帝处理朝政 举行大典的地方",
+            "内廷后三宫 —— 乾清宫 交泰殿 坤宁宫, 是皇帝和皇后生活的地方",
+            "1925年故宫博物院成立, 收藏文物186万余件, 其中一级文物8291件",
+            "故宫每年接待观众超过1900万人次, 是世界上参观人数最多的博物馆",
+        ],
+        "storyboard": [
+            {"content_type": "title",       "title": "世界最大皇宫",     "subtitle": "故宫600年",           "data": "1420年建成"},
+            {"content_type": "diagram",     "title": "紫禁城布局",       "left_right": "外朝三大殿 → 内廷后三宫", "data": "72万㎡ 8704间房"},
+            {"content_type": "fact_card",   "title": "三大殿的功能",     "points": ["太和殿: 登基/大婚/命将出征", "中和殿: 御前奏对/庆典休息", "保和殿: 科举殿试/宴会"], "data": "皇权象征"},
+            {"content_type": "fact_card",   "title": "珍贵馆藏",         "points": ["186万件文物", "8291件一级品", "《清明上河图》《千里江山图》"], "data": "世界顶级"},
+            {"content_type": "comparison",  "title": "600年对比",        "left": "明清两代皇宫\n24位皇帝住过", "right": "如今开放面积80%\n每年1900万观众", "data": "从皇家禁地到全民文化遗产"},
+            {"content_type": "cta",        "title": "每天限8万人",       "subtitle": "网上提前7天抢票", "hook": "你去过故宫吗? 最喜欢哪个宫殿?"},
+        ],
+    },
+},
+
+}  # end FACTCONTENT_LIB
+
+
+def _lookup_fact_script(topic: str, formula_id: str) -> Optional[Dict]:
+    """从 FACTCONTENT_LIB 按 topic 找知识密集型脚本, 找不到返回 None"""
+    # 直接命中
+    fid_content = FACTCONTENT_LIB.get(formula_id, {})
+    if topic in fid_content:
+        return fid_content[topic]
+    # 模糊匹配 (包含关键词)
+    for key, val in fid_content.items():
+        if key in topic or topic in key:
+            return val
+    # 跨 formula 搜
+    for fid, topics in FACTCONTENT_LIB.items():
+        for key, val in topics.items():
+            if key in topic or topic in key:
+                return val
+    return None
+
 
 # ============================================================
 # 本地 Ollama 调用 (失败返回空)
@@ -400,26 +593,30 @@ def generate_production_spec(topic: str, formula_id: str = None,
     formula = COMPOSITION_FORMULAS[fid]
     team = sample_team(fid, topic, custom_roles=custom_roles)
 
-    # 2. Ollama 生成脚本 (或模板 fallback)
-    hook = ''; narration = ''; cta = ''
-
-    if use_ollama:
-        prompt = (
-            f"你是一个短视频创作团队 (历史叙事者+可爱动画设计师+知识点讲解者+爆炸特效师)。"
-            f"围绕「{topic}」写一段口语化的短视频脚本, 风格: {formula['name']}。"
-            f"严格按 JSON 格式输出: "
-            f'{{"hook": "3-8字吸睛开场", "narration": "150-300字核心讲解 口语化 生活化类比", "cta": "一句话引导互动"}}'
-            f"注意: 禁止使用 '第一' '最' '顶级' '唯一' '极致' '100%' 等广告法极限词。"
-        )
-        resp = _ollama_chat(prompt)
-        if resp:
-            try:
-                obj = json.loads(resp[resp.find('{'):resp.rfind('}')+1])
-                hook = obj.get('hook', '')
-                narration = obj.get('narration', '')
-                cta = obj.get('cta', '')
-            except Exception:
-                pass
+    # 2. 知识密集型事实文案优先 → Ollama 做补充
+    fact_script = _lookup_fact_script(topic, fid)
+    if fact_script:
+        hook = fact_script.get("topic_hook", "")
+        narration = "。".join(fact_script.get("narration", []))
+        cta = fact_script.get("storyboard", [{}])[-1].get("hook", fact_script.get("storyboard", [{}])[-1].get("subtitle", ""))
+    else:
+        hook = ''; narration = ''; cta = ''
+        if use_ollama:
+            prompt = (
+                f"你是一个短视频创作团队。围绕「{topic}」写一段口语化的短视频脚本, "
+                f"风格: {formula['name']}。严格按 JSON 格式输出: "
+                f'{{"hook": "3-8字吸睛开场", "narration": "150-300字核心讲解", "cta": "一句话引导互动"}}'
+                f"注意: 禁止使用广告法极限词。"
+            )
+            resp = _ollama_chat(prompt)
+            if resp:
+                try:
+                    obj = json.loads(resp[resp.find('{'):resp.rfind('}')+1])
+                    hook = obj.get('hook', '')
+                    narration = obj.get('narration', '')
+                    cta = obj.get('cta', '')
+                except Exception:
+                    pass
 
     # fallback 模板
     hook_tpl = random.choice(HOOK_TEMPLATES.get(fid, HOOK_TEMPLATES['f_history_cute']))
@@ -462,33 +659,53 @@ def generate_production_spec(topic: str, formula_id: str = None,
     narration = _sanitize(narration)
     cta = _sanitize(cta)
 
-    # 3. 分镜 + 爆炸效果
+    # 3. 分镜 —— 优先用 fact_script 的 content_type 分镜 (知识密集型)
     duration = formula['target_duration_sec']
     storyboard = []
     explosions = []
-    for sb in STORYBOARD_TEMPLATE:
-        shot_dur = int(duration * sb['duration_pct'])
-        is_burst = sb['role'] == 'burst'
-        storyboard.append({
-            'shot': sb['shot'],
-            'role': sb['role'],
-            'duration_sec': shot_dur,
-            'description': f"镜头 {sb['shot']}: {sb['desc']} — {topic}",
-            'visual_prompt': (
-                f"{sb['visual']} close-up, {sb['desc']}, "
-                f"{formula['explosion_style']} explosion effect, "
-                f"cute cartoon style, 1080p, 30fps"
-            ),
-            'animation_style': sb['anim'],
-            'explosion_effect': is_burst,
-        })
-        if is_burst or sb['role'] == 'hook':
-            explosions.append({
-                'effect_type': formula['explosion_style'],
-                'trigger_shot': sb['shot'],
-                'intensity': random.choice(['low', 'medium', 'high']),
-                'description': f"在 {sb['desc']} 处触发 {formula['explosion_style']} 爆炸效果",
+
+    if fact_script and fact_script.get("storyboard"):
+        # 知识密集型 storyboard —— 每个镜头带 content_type
+        raw_sb = fact_script["storyboard"]
+        shot_dur = duration // len(raw_sb)
+        for i, sb in enumerate(raw_sb):
+            storyboard.append({
+                'shot': i + 1,
+                'content_type': sb.get("content_type", "fact_card"),
+                'title': sb.get("title", f"镜头 {i+1}"),
+                'data': sb.get("data", ""),
+                # 透传各种 content_type 需要的字段
+                **{k: v for k, v in sb.items() if k not in ("title", "data", "content_type", "shot")},
+                'duration_sec': shot_dur,
+                'explosion_effect': i == 0 or i == len(raw_sb) - 1,
             })
+            if i == 0 or i == len(raw_sb) - 1:
+                explosions.append({
+                    'effect_type': formula['explosion_style'],
+                    'trigger_shot': i + 1,
+                    'intensity': 'high',
+                    'description': f"在 {sb.get('title','')} 处触发爆炸效果",
+                })
+    else:
+        # fallback: 从 STORYBOARD_TEMPLATE 生成 6 镜头
+        for sb in STORYBOARD_TEMPLATE:
+            shot_dur = int(duration * sb['duration_pct'])
+            is_burst = sb['role'] == 'burst'
+            storyboard.append({
+                'shot': sb['shot'],
+                'content_type': 'fact_card',  # 默认 fact_card, renderer 会处理
+                'title': f"{sb['desc']} — {topic}",
+                'duration_sec': shot_dur,
+                'animation_style': sb['anim'],
+                'explosion_effect': is_burst,
+            })
+            if is_burst or sb['role'] == 'hook':
+                explosions.append({
+                    'effect_type': formula['explosion_style'],
+                    'trigger_shot': sb['shot'],
+                    'intensity': random.choice(['low', 'medium', 'high']),
+                    'description': f"在 {sb['desc']} 处触发 {formula['explosion_style']} 爆炸效果",
+                })
 
     # 4. 标签
     platform_tags = {}; activity_tags = {}
@@ -525,6 +742,8 @@ def generate_production_spec(topic: str, formula_id: str = None,
             'body': narration,
             'cta': cta,
             'full_text': f"{hook}\n\n{narration}\n\n{cta}",
+            # 知识密集型: 每镜头一条旁白 (和 storyboard 一一对齐)
+            'narration_list': fact_script.get("narration", []) if fact_script else [],
         },
         'storyboard': storyboard,
         'voiceover': {
