@@ -65,9 +65,7 @@ readonly_inventory_bp = Blueprint('readonly_inventory', __name__)
 # ---- home_bp 路由定义 (根路由不挂 url_prefix, 提供 / 和 /index) ----
 from flask import redirect as _redirect, session as _session, render_template as _render_template, request as _request
 
-@system_container(require_auth='login')
 @home_bp.route('/', methods=['GET'])
-@system_container(require_auth='login')
 def _root_redirect():
     """根路径 `/` → 唯一首页入口 `/index`。
 
