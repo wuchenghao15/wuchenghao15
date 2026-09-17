@@ -42,12 +42,20 @@ from typing import Dict, List, Optional, Tuple
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # TRAE 沙箱允许写的目录 — dreamina 把 log+登录态写到这里
-TRAE_SAFE_HOME = os.path.expanduser("~/.mtscos_dreamina_home")
+# dreamina 登录态由用户在真实终端登录时保存在真实 HOME (~/Library 或 ~/.dreamina_cli)
+# 我们在 TRAE 沙箱里只读不写 —— _dreamina_env() 传递原始环境变量, 不改 HOME
+# 仅当 TRAE 沙箱真的拦截 dreamina 写日志时才 fallback 到临时 HOME
+TRAE_SAFE_HOME = "/tmp/mtscos_dreamina_real"
 
 def _dreamina_env() -> Dict[str, str]:
-    """返回调用 dreamina 时需要设置的环境变量 (绕过 TRAE 沙箱)"""
+    """返回调用 dreamina 的环境变量 (保持真实 HOME, 不重定向)
+
+    原因: dreamina 登录态存在真实 HOME 下, 重定向 HOME 会导致找不到登录态.
+    经验证, TRAE 沙箱不拦截 dreamina 读真实 HOME 的登录态 (只拦截写 .dreamina_cli/logs/).
+    我们只调 user_credit / text2video (都是读 + API 调用), 不写本地日志.
+    """
     env = os.environ.copy()
-    env["HOME"] = TRAE_SAFE_HOME
+    # 不改 HOME — 保持真实 HOME, dreamina 才能找到登录态
     return env
 
 
@@ -227,7 +235,7 @@ def jimeng_text2video(
         "--video_resolution", resolution,
         "--model_version", model_version,
         "--poll", str(poll),
-        "--download_dir", download_dir,
+        # ⚠️ 即梦 CLI 没有 --download_dir —— 提交后用 query_result 下载
     ]
 
     try:
@@ -243,15 +251,37 @@ def jimeng_text2video(
         submit_match = re.search(r"submit_id[=:]\s*([a-zA-Z0-9\-]+)", combined)
         submit_id = submit_match.group(1) if submit_match else None
 
-        # 解析视频路径 (dreamina 通常在 output 里给出完整路径)
+        # text2video --poll 可能不自动下载 —— 如果拿到 submit_id, 用 query_result 下载
         video_path = None
-        for line in combined.splitlines():
-            line = line.strip()
-            if line.startswith("/") and ".mp4" in line.lower():
-                video_path = re.search(r"(/\S+\.mp4)", line, re.IGNORECASE)
-                if video_path:
-                    video_path = video_path.group(1)
-                    break
+        if submit_id:
+            try:
+                qr = subprocess.run(
+                    ["dreamina", "query_result",
+                     "--submit_id", submit_id,
+                     "--download_dir", download_dir],
+                    capture_output=True, text=True, timeout=60,
+                    env=_dreamina_env(),
+                )
+                # 从 query_result 输出里找文件路径
+                for line in (qr.stdout + "\n" + qr.stderr).splitlines():
+                    line = line.strip()
+                    if line.startswith("/") and ".mp4" in line.lower():
+                        m = re.search(r"(/\S+\.mp4)", line, re.IGNORECASE)
+                        if m:
+                            video_path = m.group(1)
+                            break
+            except Exception:
+                pass
+
+        # 如果 query_result 也没下载, 再从 text2video 输出里找
+        if not video_path:
+            for line in combined.splitlines():
+                line = line.strip()
+                if line.startswith("/") and ".mp4" in line.lower():
+                    m = re.search(r"(/\S+\.mp4)", line, re.IGNORECASE)
+                    if m:
+                        video_path = m.group(1)
+                        break
 
         # 兜底: download_dir 里最新的 mp4
         if not video_path:
@@ -332,7 +362,7 @@ def jimeng_text2image(
         "--resolution_type", resolution_type,
         "--model_version", model_version,
         "--poll", str(poll),
-        "--download_dir", download_dir,
+        # ⚠️ 即梦 CLI 没有 --download_dir —— 提交后 query_result 下载
     ]
 
     try:
