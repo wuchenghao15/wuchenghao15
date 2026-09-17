@@ -2,7 +2,7 @@
 仙女座星系子系统 — Flask 路由 (API + 页面)
 
 flow_id: galaxy_routes
-version: v23.1.0 (多平台 accounts/creds/publish_log/high_exposure)
+version: v23.2.0 (Agent Swarm + 8 种组合公式 + production_spec + 合规 + 多平台)
 注册: routes/__init__.py → _modules 列表 ('galaxy_routes', 'galaxy_bp')
 
 API:
@@ -20,11 +20,17 @@ API:
   GET    /api/galaxy/high_exposure       → 高曝光活动列表
   POST   /api/galaxy/high_exposure       → 发现/更新活动
   GET    /api/galaxy/platform_restrict   → 平台限流词库
-  GET    /api/galaxy/daemon/run          → 手动 daemon 一轮
+
+  === v23.2.0 NEW: Agent Swarm 自由组合创作 ===
+  GET    /api/galaxy/formulas            → 8 种组合公式清单
+  POST   /api/galaxy/swarm/roll          → 自动选公式 + 组队 (不生成 spec)
+  POST   /api/galaxy/swarm/generate      → 完整生成 production_spec + 合规 + 落库
+  GET    /api/galaxy/swarm/list          → 历史 swarm 记录
 
 页面:
   GET    /admin/galaxy              → 总览仪表盘
   GET    /admin/galaxy/series/<id>  → 系列详情
+  GET    /admin/galaxy/swarm        → Agent Swarm 自由组合创作页 (v23.2.0)
 """
 import json
 import logging
@@ -398,6 +404,125 @@ def api_daemon_run():
         return jsonify({'ok': True, 'data': result})
     except Exception as e:
         logger.exception('api_daemon_run 失败')
+        return jsonify({'ok': False, 'error': str(e)}), 500
+
+
+# =================================================================
+#  v23.2.0 NEW: Agent Swarm 自由组合创作引擎
+# =================================================================
+
+@galaxy_bp.route('/api/galaxy/formulas', methods=['GET'])
+def api_formulas_list():
+    """GET /api/galaxy/formulas — 8 种组合公式清单"""
+    try:
+        from engines.galaxy_composition_engine import COMPOSITION_FORMULAS
+        items = [
+            {
+                'formula_id': fid,
+                'name': f['name'],
+                'description': f['description'],
+                'roles': list(f['role_kit'].keys()),
+                'role_labels': f['role_kit'],
+                'explosion_style': f['explosion_style'],
+                'platforms': f['platforms'],
+                'duration_sec': f['target_duration_sec'],
+                'hot_score_base': f['hot_score_base'],
+            }
+            for fid, f in COMPOSITION_FORMULAS.items()
+        ]
+        return jsonify({'ok': True, 'formulas': items, 'count': len(items)})
+    except Exception as e:
+        logger.exception('api_formulas_list 失败')
+        return jsonify({'ok': False, 'error': str(e)}), 500
+
+
+@galaxy_bp.route('/api/galaxy/swarm/roll', methods=['POST', 'GET'])
+def api_swarm_roll():
+    """POST /api/galaxy/swarm/roll — topic 自动选公式 + 组队"""
+    data = request.get_json(silent=True) or request.args.to_dict()
+    topic = (data.get('topic') or '').strip()
+    if not topic:
+        return jsonify({'ok': False, 'error': 'topic 必填'}), 400
+    formula_id = data.get('formula_id') or None
+    custom_roles = data.get('custom_roles')
+    try:
+        from engines.galaxy_composition_engine import (
+            roll_team_for_topic,
+        )
+        fid, team_info = roll_team_for_topic(
+            topic, custom_roles=custom_roles,
+            custom_formula_id=formula_id,
+        )
+        return jsonify({'ok': True, 'formula_id': fid, 'team': team_info})
+    except Exception as e:
+        logger.exception('api_swarm_roll 失败')
+        return jsonify({'ok': False, 'error': str(e)}), 500
+
+
+@galaxy_bp.route('/api/galaxy/swarm/generate', methods=['POST', 'GET'])
+def api_swarm_generate():
+    """POST /api/galaxy/swarm/generate — topic → formula → team → production_spec → 合规 → 落库"""
+    data = request.get_json(silent=True) or request.args.to_dict()
+    topic = (data.get('topic') or '').strip()
+    if not topic:
+        return jsonify({'ok': False, 'error': 'topic 必填'}), 400
+    formula_id = data.get('formula_id')
+    custom_roles = data.get('custom_roles')
+    use_ollama = data.get('use_ollama', False)
+    try:
+        from engines.galaxy_composition_engine import (
+            generate_production_spec, submit_for_compliance,
+            ensure_swarm_tables, save_swarm,
+        )
+        ensure_swarm_tables()
+        spec = generate_production_spec(
+            topic, formula_id=formula_id,
+            custom_roles=custom_roles,
+            use_ollama=use_ollama,
+        )
+        compliance = submit_for_compliance(spec)
+        swarm_id = f"swarm_{spec['meta']['content_hash'][:12]}"
+        save_swarm(
+            swarm_id=swarm_id, topic=topic,
+            formula_id=spec['meta']['formula_id'],
+            team_json=json.dumps(spec['meta']['team'], ensure_ascii=False),
+            spec_json=json.dumps(spec, ensure_ascii=False),
+            compliance_overview=compliance['overall'],
+            platforms=spec['meta']['target_platforms'],
+        )
+        return jsonify({
+            'ok': True,
+            'swarm_id': swarm_id,
+            'formula_name': spec['meta']['formula_name'],
+            'formula_id': spec['meta']['formula_id'],
+            'team_size': len(spec['meta']['team_members_detail']),
+            'explosion_style': spec['meta']['explosion_style'],
+            'compliance': compliance['overall'],
+            'platform_results': compliance['platform_results'],
+            'platforms': spec['meta']['target_platforms'],
+            'target_duration_sec': spec['meta']['target_duration_sec'],
+            'storyboard_shots': len(spec['storyboard']),
+            'explosion_effects_count': len(spec['explosion_effects']),
+            'spec': spec,
+        })
+    except Exception as e:
+        logger.exception('api_swarm_generate 失败')
+        import traceback
+        traceback.print_exc()
+        return jsonify({'ok': False, 'error': str(e)}), 500
+
+
+@galaxy_bp.route('/api/galaxy/swarm/list', methods=['GET'])
+def api_swarm_list():
+    """GET /api/galaxy/swarm/list — 历史 swarm 记录"""
+    limit = int(request.args.get('limit') or 50)
+    try:
+        from engines.galaxy_composition_engine import ensure_swarm_tables, list_swarms
+        ensure_swarm_tables()
+        items = list_swarms(limit=limit)
+        return jsonify({'ok': True, 'data': items, 'count': len(items)})
+    except Exception as e:
+        logger.exception('api_swarm_list 失败')
         return jsonify({'ok': False, 'error': str(e)}), 500
 
 
