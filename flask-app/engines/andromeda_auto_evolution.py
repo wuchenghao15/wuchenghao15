@@ -322,7 +322,52 @@ def _get_conn() -> sqlite3.Connection:
     conn.execute('PRAGMA journal_mode=WAL')
     conn.execute('PRAGMA busy_timeout=30000')
     conn.row_factory = sqlite3.Row
+    # SQLite 不内置 REGEXP, 用 Python re 注册一个
+    import re as _re
+    conn.create_function('REGEXP', 2, lambda pattern, text:
+                         1 if text and _re.search(pattern, text) else 0)
     return conn
+
+
+def _load_rule_constraints(max_rules: int = 6, per_rule: int = 3) -> str:
+    """
+    从 mt_andromeda_rule_knowledge 提取强制约束词段落,
+    用于注入 auto_derive / auto_reinforce 的 system prompt,
+    让仙女座演化方向始终受规则约束驱动.
+
+    取强制关键词 (必须/禁止/严禁/不得/强制) 命中的分块,
+    每篇规则取 top per_rule 条, 共 max_rules 篇.
+    返回一段可以直接拼接进 prompt 的文本.
+    """
+    try:
+        conn = _get_conn()
+        rows = conn.execute(f"""
+            SELECT rule_id, content_chunk FROM mt_andromeda_rule_knowledge
+            WHERE content_chunk REGEXP '必须|禁止|严禁|不得|强制|严禁|不可|务必|严格'
+            ORDER BY LENGTH(content_chunk) DESC
+            LIMIT {max_rules * per_rule}
+        """).fetchall()
+        if not rows:
+            conn.close()
+            return ''
+        # 按 rule_id 聚合, 每篇规则取前 per_rule 条
+        grouped: Dict[str, list] = {}
+        for r in rows:
+            rid = r[0]
+            if rid not in grouped:
+                grouped[rid] = []
+            if len(grouped[rid]) < per_rule:
+                grouped[rid].append(r[1])
+        conn.close()
+        parts = []
+        for rid, chunks in grouped.items():
+            body = ' | '.join(c[:120] for c in chunks)
+            parts.append(f'[{rid}] {body}')
+        return '\n'.join(parts)
+    except Exception as e:
+        # 非阻断: 规则约束注入失败, 仙女座照常跑
+        logger.debug(f'[rule_constraints] 提取失败 (非阻断): {e}')
+        return ''
 
 
 def _cosine(a: List[float], b: List[float]) -> float:
@@ -776,6 +821,16 @@ def auto_derive(associations: List[Tuple[str, str, float]],
     if not associations:
         return 0
 
+    # ── 注入规则约束: mt_andromeda_rule_knowledge 里的强制约束词 ──
+    _rule_constraints = _load_rule_constraints()
+    if _rule_constraints:
+        logger.info(f'[Stage4-derive] 📜 加载规则约束词 ({len(_rule_constraints)} chars)')
+    derive_system = (
+        '你是仙女座 AI 知识衍生专家。只输出 JSON，不要其他文字。'
+        + ('\n\n【必须遵守的系统规则约束】\n' + _rule_constraints
+           if _rule_constraints else '')
+    )
+
     # 只取高相似度的关联 + top 限制 (避免 14b 推理 250 次太慢)
     threshold = cp.get('reinforce_threshold', 0.80)
     high_sim = [(s, t, sim) for s, t, sim in associations if sim >= threshold]
@@ -830,7 +885,7 @@ def auto_derive(associations: List[Tuple[str, str, float]],
 2. 必须整合 A 和 B 的信息，不能只是重复
 3. 控制在 200 字以内"""
 
-            response = _ollama_chat(prompt, system='你是仙女座 AI 知识衍生专家。只输出 JSON，不要其他文字。')
+            response = _ollama_chat(prompt, system=derive_system)
             if not response:
                 continue
 
@@ -1355,6 +1410,64 @@ def run_cycle() -> Dict[str, Any]:
         'cycle': cycle_num,
         'stages': {},
     }
+
+    # ── MT_RULE_VERSION §3.3 + §4: 规则引擎 ↔ 仙女座桥接 (启动前置检查) ──
+    try:
+        from ai_engines.rules_engine.rule_andromeda_bridge import (
+            andromeda_version_check,
+            trigger_evolution_rule_refresh,
+            rule_knowledge_health_check,
+        )
+        # ① 版本感知: 版本过旧 → 跳过演化
+        _v = andromeda_version_check()
+        stats['system_version'] = _v['version']
+        stats['version_ok'] = _v['ok']
+        if not _v['ok']:
+            logger.warning(f'[Cycle #{cycle_num}] ⚠️ 系统版本 {_v["version"]} < minimum — 跳过本轮演化')
+            return stats
+        logger.info(f'[Cycle #{cycle_num}] ✅ 版本感知 {_v["version"]} (ok={_v["ok"]})')
+
+        # ② 规则覆盖度检查: rule_knowledge 全了没?
+        _hc = rule_knowledge_health_check()
+        stats['rule_knowledge_covered'] = _hc['covered']
+        stats['rule_knowledge_missing'] = _hc['missing']
+        logger.info(f'[Cycle #{cycle_num}] 📚 rule_knowledge 覆盖 {_hc["covered"]}/12 篇'
+                     f' (missing={_hc["missing"]}, auto_ingested={_hc.get("auto_ingested",0)})')
+
+        # ③ 扫 evolution_log: 有没有 rule_ingest_trigger 事件?
+        try:
+            _conn = _get_conn()
+            _pending = _conn.execute(
+                "SELECT evolve_id, trigger_type, target_task, rationale, created_at "
+                "FROM mt_ai_self_evolution_log "
+                "WHERE trigger_type IN ('rule_ingest_trigger', 'version_bump') "
+                "AND (cycle_consumed IS NULL OR cycle_consumed != ?) "
+                "ORDER BY evolve_id DESC LIMIT 10",
+                (cycle_num,)
+            ).fetchall()
+            stats['pending_rule_events'] = len(_pending)
+            if _pending:
+                logger.info(f'[Cycle #{cycle_num}] 🔔 {len(_pending)} 条规则触发事件待处理')
+                for ev in _pending:
+                    # ev = (evolve_id, trigger_type, target_task, rationale, created_at)
+                    logger.info(f'    → [{ev[0]}] {ev[1]}: {ev[3][:60]} ({ev[4]})')
+                # 标记已消费 — ⚠️ 之前 bug: 误用 ev[0] 当 evolve_id 但 SELECT 没选它!
+                _ids = [int(r[0]) for r in _pending]  # 现在 r[0] 是 evolve_id ✅
+                if _ids:
+                    # 参数化 IN 子句 (安全)
+                    _placeholders = ','.join('?' * len(_ids))
+                    _conn.execute(
+                        f"UPDATE mt_ai_self_evolution_log SET cycle_consumed=? "
+                        f"WHERE evolve_id IN ({_placeholders})",
+                        [cycle_num] + _ids
+                    )
+                    _conn.commit()
+                    logger.info(f'[Cycle #{cycle_num}] ✅ 已标记 {len(_ids)} 条事件为 consumed (cycle={cycle_num})')
+        except Exception as _e2:
+            logger.error(f'[Cycle #{cycle_num}] evolution_log 消费异常: {_e2}')
+            stats['pending_rule_events'] = 0
+    except Exception as _be:
+        logger.warning(f'[Cycle #{cycle_num}] 桥接检查跳过 (非阻断): {_be}')
 
     # --- 🆕 Stage 0: EigenFlux 摄入 ---
     eigenflux_result = {'ingested': 0, 'skipped': 0, 'sources': []}
