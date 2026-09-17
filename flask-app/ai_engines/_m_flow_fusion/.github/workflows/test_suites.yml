@@ -1,0 +1,264 @@
+# M-flow CI — Master orchestrator.
+# Fans out to every reusable test workflow after gating on pre-checks.
+# Jobs are grouped into tiers: core → database → integration → heavy.
+name: ci | M-flow Full Test Matrix
+
+permissions:
+  contents: read
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+    branches: [main, dev]
+    types: [opened, synchronize, reopened, labeled]
+  workflow_dispatch:
+
+concurrency:
+  group: "${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}"
+  cancel-in-progress: true
+
+env:
+  RUNTIME__LOG_LEVEL: ERROR
+  ENV: dev
+
+# ═══════════════════════════════════════════════════════════════════════════
+# Tier 0 — Gate
+# ═══════════════════════════════════════════════════════════════════════════
+jobs:
+  gate:
+    name: "Pre-flight checks"
+    uses: ./.github/workflows/pre_test.yml
+
+  # ─── Tier 1 — Core ─────────────────────────────────────────────────────
+  core-tests:
+    name: "Core unit & integration tests"
+    if: ${{ github.event_name != 'pull_request' || !github.event.pull_request.head.repo.fork }}
+    needs: [gate]
+    uses: ./.github/workflows/basic_tests.yml
+    secrets: inherit
+
+  e2e:
+    name: "End-to-end tests"
+    if: ${{ github.event_name != 'pull_request' || !github.event.pull_request.head.repo.fork }}
+    needs: [gate]
+    uses: ./.github/workflows/e2e_tests.yml
+    secrets: inherit
+
+  cli:
+    name: "CLI regression tests"
+    if: ${{ github.event_name != 'pull_request' || !github.event.pull_request.head.repo.fork }}
+    uses: ./.github/workflows/cli_tests.yml
+    secrets: inherit
+
+  fork-lite:
+    name: "Fork PR lightweight checks"
+    if: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork }}
+    needs: [gate]
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
+        with: {fetch-depth: 0}
+      - uses: ./.github/actions/m_flow_setup
+        with:
+          python-version: "3.11.x"
+      - run: uv run ruff check .
+      - run: uv run ruff format --check .
+
+  # ─── Tier 2 — Database backends ────────────────────────────────────────
+  graph-db:
+    name: "Graph database tests"
+    needs: [core-tests, e2e]
+    uses: ./.github/workflows/graph_db_tests.yml
+    secrets: inherit
+
+  vector-db:
+    name: "Vector database matrix"
+    needs: [core-tests, e2e]
+    uses: ./.github/workflows/vector_db_tests.yml
+    secrets: inherit
+
+  relational-db-migrations:
+    name: "Relational DB migration tests"
+    needs: [core-tests, e2e, graph-db]
+    uses: ./.github/workflows/relational_db_migration_tests.yml
+    secrets: inherit
+
+  search-db:
+    name: "Search across database backends"
+    needs: [core-tests, e2e, graph-db]
+    uses: ./.github/workflows/search_db_tests.yml
+    secrets: inherit
+
+  temporal-graph:
+    name: "Temporal graph tests"
+    needs: [core-tests, e2e, graph-db]
+    uses: ./.github/workflows/temporal_graph_tests.yml
+    secrets: inherit
+
+  # ─── Tier 3 — Integration & platform ───────────────────────────────────
+  notebook:
+    name: "Jupyter notebook tests"
+    needs: [core-tests, e2e]
+    uses: ./.github/workflows/notebooks_tests.yml
+    secrets: inherit
+
+  os-ubuntu:
+    name: "Cross-Python on Ubuntu"
+    needs: [core-tests, e2e]
+    uses: ./.github/workflows/test_different_operating_systems.yml
+    with:
+      python-versions: '["3.10.x", "3.11.x", "3.12.x", "3.13.x"]'
+      os: '["ubuntu-22.04"]'
+    secrets: inherit
+
+  os-extended:
+    name: "macOS + Windows smoke"
+    needs: [core-tests, e2e]
+    uses: ./.github/workflows/test_different_operating_systems.yml
+    with:
+      python-versions: '["3.13.x"]'
+      os: '["macos-15", "windows-latest"]'
+    secrets: inherit
+
+  examples:
+    name: "Example script matrix"
+    needs: [core-tests, e2e]
+    uses: ./.github/workflows/examples_tests.yml
+    secrets: inherit
+
+  mcp:
+    name: "MCP service tests"
+    needs: [core-tests, e2e]
+    uses: ./.github/workflows/test_mcp.yml
+    secrets: inherit
+
+  s3-storage:
+    if: false  # requires AWS S3 bucket + credentials — re-enable when AWS_S3_DEV_USER_KEY_ID is configured
+    name: "S3 file-storage tests"
+    needs: [core-tests, e2e]
+    uses: ./.github/workflows/test_s3_file_storage.yml
+    secrets: inherit
+
+  llm-providers:
+    name: "LLM provider matrix"
+    needs: [core-tests, e2e]
+    uses: ./.github/workflows/test_llms.yml
+    secrets: inherit
+
+  # ─── Tier 4 — Container & distributed ──────────────────────────────────
+  compose-smoke:
+    name: "Docker Compose smoke test"
+    needs: [core-tests, e2e]
+    uses: ./.github/workflows/docker_compose.yml
+    secrets: inherit
+
+  docker-build:
+    name: "Backend Docker build test"
+    needs: [core-tests, e2e]
+    uses: ./.github/workflows/backend_docker_build_test.yml
+    secrets: inherit
+
+  distributed:
+    if: false  # requires Modal.com account + MODAL_TOKEN_ID/SECRET — re-enable when Modal is configured
+    name: "Distributed M-flow (Modal)"
+    needs: [core-tests, e2e, graph-db]
+    uses: ./.github/workflows/distributed_test.yml
+    secrets: inherit
+
+  db-examples:
+    name: "DB example integration"
+    needs: [vector-db, graph-db, relational-db-migrations, distributed]
+    uses: ./.github/workflows/db_examples_tests.yml
+    secrets: inherit
+
+  # ─── Tier 5 — Heavy / long-running ─────────────────────────────────────
+  ollama:
+    name: "Ollama local-LLM integration"
+    needs:
+      - core-tests
+      - e2e
+      - graph-db
+      - notebook
+      - os-ubuntu
+      - os-extended
+      - vector-db
+      - examples
+      - llm-providers
+      - mcp
+      - relational-db-migrations
+      - compose-smoke
+      - docker-build
+    uses: ./.github/workflows/test_ollama.yml
+    secrets: inherit
+
+  # ─── Status gate ────────────────────────────────────────────────────────
+  ci-status:
+    name: "CI status gate"
+    if: always()
+    needs:
+      - gate
+      - fork-lite
+      - core-tests
+      - e2e
+      - cli
+      - graph-db
+      - notebook
+      - os-ubuntu
+      - os-extended
+      - vector-db
+      - examples
+      - db-examples
+      - mcp
+      - llm-providers
+      - ollama
+      - relational-db-migrations
+      - compose-smoke
+      - docker-build
+    runs-on: ubuntu-22.04
+    timeout-minutes: 5
+    steps:
+      - name: Evaluate aggregated results (fork-aware)
+        run: |
+          if [[ "${{ github.event_name }}" == "pull_request" && "${{ github.event.pull_request.head.repo.fork }}" == "true" ]]; then
+            # Fork PR: only require lockfile gate + lightweight lint/format checks
+            results=(
+              "${{ needs.gate.result }}"
+              "${{ needs.fork-lite.result }}"
+            )
+          else
+            # Trusted contexts: keep full strict gate
+            results=(
+              "${{ needs.core-tests.result }}"
+              "${{ needs.e2e.result }}"
+              "${{ needs.cli.result }}"
+              "${{ needs.graph-db.result }}"
+              "${{ needs.notebook.result }}"
+              "${{ needs.os-ubuntu.result }}"
+              "${{ needs.os-extended.result }}"
+              "${{ needs.vector-db.result }}"
+              "${{ needs.examples.result }}"
+              "${{ needs.db-examples.result }}"
+              "${{ needs.relational-db-migrations.result }}"
+              "${{ needs.llm-providers.result }}"
+              "${{ needs.compose-smoke.result }}"
+              "${{ needs.docker-build.result }}"
+              "${{ needs.ollama.result }}"
+            )
+          fi
+
+          failed=0
+          for r in "${results[@]}"; do
+            if [[ "$r" != "success" && "$r" != "skipped" ]]; then
+              failed=1
+              break
+            fi
+          done
+
+          if [[ "$failed" -eq 0 ]]; then
+            echo "✅ All M-flow test suites passed."
+          else
+            echo "❌ One or more test suites failed — see individual job logs."
+            exit 1
+          fi

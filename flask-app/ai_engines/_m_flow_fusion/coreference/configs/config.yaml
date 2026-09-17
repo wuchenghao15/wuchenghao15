@@ -1,0 +1,65 @@
+# 模型配置
+model:
+  # 预训练模型 (选择一个)
+  # 大模型 (~400MB): hfl/chinese-roberta-wwm-ext
+  # 中模型 (~150MB): hfl/rbt6
+  # 小模型 (~50MB):  hfl/rbt3
+  # 极小模型 (~15MB): uer/chinese_roberta_L-2_H-128
+  pretrained_model: "hfl/rbt3"
+  
+  # 是否使用 BiLSTM 增强层
+  use_lstm: true
+  lstm_hidden: 128
+  lstm_layers: 1
+  
+  # 是否使用 CRF (启用以保证序列一致性)
+  use_crf: true
+  
+  # Dropout
+  dropout: 0.3
+  
+  # 标签
+  labels:
+    - "O"
+    - "B-PER"
+    - "I-PER"
+    - "B-LOC"
+    - "I-LOC"
+    - "B-OBJ"
+    - "I-OBJ"
+
+# 数据配置
+data:
+  train_file: "data/train_final.json"
+  dev_file: "data/dev_expanded.json"
+  test_file: "data/test.json"
+  max_length: 128
+
+# 训练配置
+training:
+  output_dir: "outputs"
+  epochs: 100
+  batch_size: 16
+  learning_rate: 2.0e-5   # 降低学习率以增强稳定性
+  weight_decay: 0.01
+  warmup_ratio: 0.1
+  max_grad_norm: 1.0
+  
+  # 早停
+  early_stopping_patience: 25
+  
+  # 保存策略
+  save_strategy: "epoch"
+  save_total_limit: 3
+  
+  # 评估
+  eval_steps: 100
+  logging_steps: 50
+
+# 推理配置
+inference:
+  use_onnx: true
+  onnx_path: "outputs/model.onnx"
+  batch_size: 1
+  num_threads: 2
+

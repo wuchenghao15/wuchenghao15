@@ -1,0 +1,86 @@
+# ┌──────────────────────────────────────────────────────────────────────────┐
+# │ M-Flow CI Pipeline: Graph Database Backend Integration                  │
+# │                                                                          │
+# │ Validates core graph queries and weighted-edge logic against both       │
+# │ Kuzu and Neo4j through a single matrix job. Neo4j-specific provisioning │
+# │ steps are conditionally gated via matrix expressions.                    │
+# │                                                                          │
+# │ Owner: M-Flow Platform Engineering                                      │
+# └──────────────────────────────────────────────────────────────────────────┘
+name: "graph-db | Backend Integration Suite"
+
+permissions: {contents: read}
+
+on:
+  workflow_call:
+    inputs:
+      databases:
+        type: string
+        default: "all"
+        required: false
+        description: "Graph backends to exercise (comma-separated or 'all')"
+
+jobs:
+
+  # ── Unified graph backend matrix ───────────────────────────────────────
+  graph-backend-suite:
+    timeout-minutes: 25
+    runs-on: ubuntu-22.04
+    name: "${{ matrix.backend }} — core + weighted-edge validation"
+    defaults: {run: {shell: bash}}
+    strategy:
+      fail-fast: false
+      matrix:
+        backend: [kuzu, neo4j]
+    env:
+      ENV: 'dev'
+      ENABLE_BACKEND_ACCESS_CONTROL: 'false'
+      GRAPH_DATABASE_PROVIDER: ${{ matrix.backend }}
+      LLM_MODEL: ${{ secrets.LLM_MODEL }}
+      LLM_ENDPOINT: ${{ secrets.LLM_ENDPOINT }}
+      LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+      LLM_API_VERSION: ${{ secrets.LLM_API_VERSION }}
+      EMBEDDING_MODEL: ${{ secrets.EMBEDDING_MODEL }}
+      EMBEDDING_DIMENSIONS: "1536"
+      EMBEDDING_ENDPOINT: ${{ secrets.EMBEDDING_ENDPOINT }}
+      EMBEDDING_API_KEY: ${{ secrets.EMBEDDING_API_KEY }}
+      EMBEDDING_API_VERSION: ${{ secrets.EMBEDDING_API_VERSION }}
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
+        name: "Clone M-Flow repository"
+        with: {fetch-depth: 0}
+
+      - uses: ./.github/actions/m_flow_setup
+        name: "Configure runtime and install dependencies"
+        with: {python-version: "${{ inputs.python-version }}"}
+
+      - uses: ./.github/actions/setup_neo4j
+        name: "Provision Neo4j with GDS extension"
+        id: neo4j_svc
+        if: matrix.backend == 'neo4j'
+
+      - run: echo "All dependencies resolved during setup"
+        name: "Confirm dependency tree"
+        if: matrix.backend == 'kuzu'
+
+      - name: "Run ${{ matrix.backend }} core test script"
+        env:
+          GRAPH_DATABASE_URL: >-
+            ${{ matrix.backend == 'neo4j' && steps.neo4j_svc.outputs.neo4j-url || '' }}
+          GRAPH_DATABASE_USERNAME: >-
+            ${{ matrix.backend == 'neo4j' && steps.neo4j_svc.outputs.neo4j-username || '' }}
+          GRAPH_DATABASE_PASSWORD: >-
+            ${{ matrix.backend == 'neo4j' && steps.neo4j_svc.outputs.neo4j-password || '' }}
+        run: >-
+          uv run python
+          ./m_flow/tests/${{ matrix.backend == 'kuzu' && 'test_kuzu.py' || 'test_neo4j.py' }}
+
+      - name: "Validate weighted-edge behaviour on ${{ matrix.backend }}"
+        env:
+          GRAPH_DATABASE_URL: >-
+            ${{ matrix.backend == 'neo4j' && secrets.NEO4J_API_URL || '' }}
+          GRAPH_DATABASE_PASSWORD: >-
+            ${{ matrix.backend == 'neo4j' && secrets.NEO4J_API_KEY || '' }}
+          GRAPH_DATABASE_USERNAME: >-
+            ${{ matrix.backend == 'neo4j' && 'neo4j' || '' }}
+        run: uv run pytest m_flow/tests/unit/interfaces/graph/test_weighted_edges.py -v

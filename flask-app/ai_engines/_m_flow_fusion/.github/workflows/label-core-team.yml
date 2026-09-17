@@ -1,0 +1,78 @@
+# ──────────────────────────────────────────────────────────────
+# M-flow — Auto-label PRs submitted by core team members
+#
+# Reads the handle list from .github/core-team.txt and, when
+# the PR author matches, attaches the "core-team" label so that
+# branch-protection rules and Mergify can prioritise reviews.
+#
+# Handles are compared case-insensitively; leading "@" and
+# whitespace are stripped. Lines starting with "#" are comments.
+# ──────────────────────────────────────────────────────────────
+name: triage | Core-Team PR Labeller
+
+on:
+  pull_request_target:
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - ready_for_review
+      - edited
+
+permissions:
+  contents: read
+  pull-requests: write      # needed to add labels
+
+jobs:
+  apply-label:
+    # Ignore draft PRs entirely
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-22.04
+
+    steps:
+      # Checkout the *base* branch so we read the canonical team list
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
+        with:
+          repository: ${{ github.repository }}
+          ref: ${{ github.event.pull_request.base.ref }}
+
+      - name: Check whether PR author is in core-team.txt
+        id: membership
+        run: |
+          TEAM_FILE=".github/core-team.txt"
+          PR_AUTHOR="${{ github.event.pull_request.user.login }}"
+          PR_AUTHOR_LC="$(printf '%s' "$PR_AUTHOR" | tr '[:upper:]' '[:lower:]' | sed 's/^@//')"
+
+          if [[ ! -f "$TEAM_FILE" ]]; then
+            echo "is_member=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::Team list not found — skipping."
+            exit 0
+          fi
+
+          # Build a lowercase, comment-free list and search with grep
+          MATCH=$(sed 's/#.*//; s/^[[:space:]@]*//; s/[[:space:]]*$//' "$TEAM_FILE" \
+                  | tr '[:upper:]' '[:lower:]' \
+                  | grep -Fxc "$PR_AUTHOR_LC" || true)
+
+          if [[ "$MATCH" -ge 1 ]]; then
+            echo "is_member=true"  >> "$GITHUB_OUTPUT"
+            echo "::notice::$PR_AUTHOR is a core-team member."
+          else
+            echo "is_member=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Attach core-team label to the PR
+        if: steps.membership.outputs.is_member == 'true'
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3  # v9.0.0
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const LABEL = "core-team";
+            const pr = context.payload.pull_request.number;
+            await github.rest.issues.addLabels({
+              ...context.repo,
+              issue_number: pr,
+              labels: [LABEL],
+            });
+            core.info(`Labelled PR #${pr} with "${LABEL}".`);
+

@@ -1,0 +1,86 @@
+# ──────────────────────────────────────────────────────────────
+# M-flow CI — Load / Stress Testing
+#
+# Simulates high-throughput ingestion against an S3-backed
+# storage layer to validate that M-flow handles concurrent
+# document processing without resource exhaustion.
+#
+# Can be triggered manually (workflow_dispatch) or called
+# as a reusable sub-workflow from the test orchestrator.
+# ──────────────────────────────────────────────────────────────
+name: integration-gate | Load Tests
+
+on:
+  workflow_dispatch:
+  workflow_call:
+    secrets:
+      LLM_MODEL:        { required: true }
+      LLM_ENDPOINT:     { required: false }
+      LLM_API_KEY:      { required: true }
+      LLM_API_VERSION:  { required: false }
+      EMBEDDING_MODEL:        { required: true }
+      EMBEDDING_ENDPOINT:     { required: false }
+      EMBEDDING_API_KEY:      { required: true }
+      EMBEDDING_API_VERSION:  { required: false }
+      OPENAI_API_KEY:         { required: true }
+      AWS_S3_DEV_USER_KEY_ID:      { required: false }
+      AWS_S3_DEV_USER_SECRET_KEY:  { required: false }
+
+permissions:
+  contents: read
+
+jobs:
+  load-test:
+    name: Execute load / stress test with S3 storage backend
+    runs-on: ubuntu-22.04
+    timeout-minutes: 60
+
+    env:
+      ENV: dev
+      ENABLE_BACKEND_ACCESS_CONTROL: "true"
+      # --- S3 storage ---
+      STORAGE_BACKEND: s3
+      AWS_REGION: eu-west-1
+      AWS_ENDPOINT_URL: https://s3-eu-west-1.amazonaws.com
+      AWS_ACCESS_KEY_ID:      ${{ secrets.AWS_S3_DEV_USER_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY:  ${{ secrets.AWS_S3_DEV_USER_SECRET_KEY }}
+      # --- LLM ---
+      LLM_MODEL:        ${{ secrets.LLM_MODEL }}
+      LLM_ENDPOINT:     ${{ secrets.LLM_ENDPOINT }}
+      LLM_API_KEY:      ${{ secrets.LLM_API_KEY }}
+      LLM_API_VERSION:  ${{ secrets.LLM_API_VERSION }}
+      # --- Embeddings ---
+      EMBEDDING_MODEL:        ${{ secrets.EMBEDDING_MODEL }}
+      EMBEDDING_DIMENSIONS: "1536"
+      EMBEDDING_ENDPOINT:     ${{ secrets.EMBEDDING_ENDPOINT }}
+      EMBEDDING_API_KEY:      ${{ secrets.EMBEDDING_API_KEY }}
+      EMBEDDING_API_VERSION:  ${{ secrets.EMBEDDING_API_VERSION }}
+
+    steps:
+      - name: Check S3 credentials availability
+        id: s3-creds
+        run: |
+          if [ -n "${AWS_ACCESS_KEY_ID}" ] && [ -n "${AWS_SECRET_ACCESS_KEY}" ]; then
+            echo "run_load_tests=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "run_load_tests=false" >> "$GITHUB_OUTPUT"
+            echo "Skipping load tests because AWS S3 dev credentials are not configured."
+          fi
+
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
+        if: ${{ steps.s3-creds.outputs.run_load_tests == 'true' }}
+
+      - name: Bootstrap M-flow environment (with AWS extras)
+        uses: ./.github/actions/m_flow_setup
+        if: ${{ steps.s3-creds.outputs.run_load_tests == 'true' }}
+        with:
+          python-version: "3.11.x"
+          extra-dependencies: "aws"
+
+      - name: Display OS file-descriptor limit
+        if: ${{ steps.s3-creds.outputs.run_load_tests == 'true' }}
+        run: ulimit -n
+
+      - name: Run load test suite
+        if: ${{ steps.s3-creds.outputs.run_load_tests == 'true' }}
+        run: uv run python ./m_flow/tests/test_load.py

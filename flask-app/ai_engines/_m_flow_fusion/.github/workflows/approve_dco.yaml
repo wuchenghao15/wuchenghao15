@@ -1,0 +1,63 @@
+# M-flow CI — Enforce Developer Certificate of Origin (DCO) on external PRs.
+# Organization members are exempt; external contributors must include the
+# DCO affirmation statement in the PR body.
+name: community | DCO Compliance Gate
+
+on:
+  pull_request:
+    types: [opened, edited, reopened, synchronize, ready_for_review]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  dco-gate:
+    name: Verify DCO statement
+    runs-on: ubuntu-22.04
+    timeout-minutes: 5
+
+    steps:
+      - name: Check DCO affirmation in PR body
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3  # v9.0.0
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const ORG = 'FlowElement-xinliuyuansu';
+            const author = context.payload.pull_request.user.login;
+            const body   = context.payload.pull_request.body ?? '';
+
+            const DCO_TEXT =
+              'I affirm that all code in every commit of this pull request ' +
+              'conforms to the terms of the M-flow Developer Certificate of Origin';
+
+            // ── Step 1: Check organisation membership ──────────────────────
+            let memberOfOrg = false;
+            try {
+              await github.rest.orgs.getMembershipForUser({
+                org: ORG,
+                username: author,
+              });
+              memberOfOrg = true;
+              core.info(`✔ ${author} belongs to ${ORG} — DCO check skipped.`);
+            } catch (err) {
+              if (err.status === 404) {
+                core.info(`${author} is not a member of ${ORG} — DCO required.`);
+              } else {
+                core.setFailed(`Organisation lookup failed: ${err.message}`);
+                return;
+              }
+            }
+
+            // ── Step 2: Enforce DCO for non-members ────────────────────────
+            if (!memberOfOrg && !body.includes(DCO_TEXT)) {
+              core.setFailed(
+                [
+                  'DCO check failed.',
+                  '',
+                  'Please add the following statement to your PR description:',
+                  '',
+                  `  ${DCO_TEXT}`,
+                ].join('\n'),
+              );
+            }

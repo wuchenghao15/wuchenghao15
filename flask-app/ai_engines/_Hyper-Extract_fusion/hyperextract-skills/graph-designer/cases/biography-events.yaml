@@ -1,0 +1,132 @@
+language: [zh, en]
+
+name: biography_events
+type: spatio_temporal_graph
+tags: [biography, history, timeline, events]
+
+description:
+  zh: '人物传记事件模板 - 从人物传记中提取关键事件的时间线和时空轨迹'
+  en: 'Biography Events Template - Extract key events timeline and spatio-temporal trajectory from biographies'
+
+output:
+  description:
+    zh: '人物的关键事件及其时空轨迹'
+    en: "Person's key events and spatio-temporal trajectory"
+  entities:
+    description:
+      zh: '人物及相关实体'
+      en: 'Person and related entities'
+    fields:
+      - name: name
+        type: str
+        description:
+          zh: '人物姓名'
+          en: 'Person name'
+        required: true
+      - name: role
+        type: str
+        description:
+          zh: '主要社会角色/职业身份'
+          en: 'Primary social role/occupation'
+        required: true
+      - name: description
+        type: str
+        description:
+          zh: '人物简介'
+          en: 'Brief biography'
+        required: false
+  relations:
+    description:
+      zh: '人物的关键事件及其时空信息'
+      en: "Person's key events with spatio-temporal information"
+    fields:
+      - name: source
+        type: str
+        description:
+          zh: '主角姓名'
+          en: 'Main character name'
+        required: true
+      - name: target
+        type: str
+        description:
+          zh: '相关人物/组织/地点'
+          en: 'Related person/organization/location'
+        required: true
+      - name: relation_type
+        type: str
+        description:
+          zh: '事件类型：meets(会面)/collaborates_with(合作)/conflicts_with(冲突)/visits(访问)/inherits(继承)/founded(创立)'
+          en: 'Event type: meets/collaborates_with/conflicts_with/visits/inherits/founded'
+        required: true
+      - name: event_date
+        type: str
+        description:
+          zh: '事件日期，格式如"1985年"或"1985-03-15"'
+          en: 'Event date in format like "1985" or "1985-03-15"'
+        required: true
+      - name: location
+        type: str
+        description:
+          zh: '事件发生地点'
+          en: 'Event location'
+        required: true
+      - name: topic
+        type: str
+        description:
+          zh: '事件主题/内容'
+          en: 'Event topic/content'
+        required: true
+      - name: outcome
+        type: str
+        description:
+          zh: '事件结果或影响'
+          en: 'Event result or impact'
+        required: false
+
+guideline:
+  target:
+    zh: '你是一位专业的传记分析师，擅长从人物传记中提取关键事件的时间和空间信息，构建人物的时空轨迹图谱。'
+    en: "You are a professional biography analyst skilled at extracting key events' temporal and spatial information from biographies, constructing the person's spatio-temporal trajectory."
+  rules_for_entities:
+    zh:
+      - '提取传主本人作为核心实体'
+      - '相关人物包括：家人、朋友、同事、对手、历史人物等'
+      - '组织作为实体时使用正式名称'
+      - '地点作为实体时使用当时的地名/行政归属'
+      - 'role应选择最能代表该人物历史地位的描述'
+    en:
+      - 'Extract the biographical subject as the core entity'
+      - 'Related persons include: family, friends, colleagues, rivals, historical figures'
+      - 'Use formal names for organizations as entities'
+      - 'Use contemporary place names/administrative divisions for locations as entities'
+      - 'Role should be the description that best represents the person's historical significance'
+  rules_for_relations:
+    zh:
+      - '提取具有重大意义的事件，如：人生转折点、重要成就、关键冲突等'
+      - '事件日期应精确到可获得的最小粒度：年月日优先，年次之'
+      - '对于模糊的时间描述（如"二十世纪中期"），使用推断后的具体年份并标注'
+      - '地点应精确到城市级别，除非原文仅提供国家'
+      - 'relation_type应根据事件本质选择，而非表面的文字描述'
+      - '同一人物对同一目标的多次关系，应按时间分别提取'
+      - 'outcome应概括事件的历史意义或对人物后续发展的影响'
+    en:
+      - 'Extract events of significant meaning such as: turning points, major achievements, key conflicts'
+      - 'Event dates should be as precise as available: year-month-day preferred, year minimum'
+      - 'For vague time descriptions (e.g., "mid-20th century"), use inferred specific year with annotation'
+      - 'Locations should be precise to city level unless source only provides country'
+      - 'relation_type should be selected based on event essence, not surface text description'
+      - 'Multiple relations between the same person and target should be extracted separately by time'
+      - 'Outcome should summarize the event's historical significance or impact on the person'
+
+identifiers:
+  entity_id: name
+  relation_id: '{source}|{relation_type}|{target}|{event_date}'
+  relation_members:
+    source: source
+    target: target
+  time_field: event_date
+  location_field: location
+
+display:
+  entity_label: '{name}'
+  relation_label: '{relation_type}@{location}({event_date})'

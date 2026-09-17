@@ -1,0 +1,67 @@
+# ──────────────────────────────────────────────────────────────
+# M-flow CI — MCP Server Integration Test
+#
+# Purpose: verify the Model-Context-Protocol server can start,
+# accept tool calls, and return valid results against the current
+# branch of the core library.
+#
+# Steps:
+#   1. Install Python and uv.
+#   2. Resolve MCP-specific dependencies (from m_flow-mcp/pyproject.toml).
+#   3. Replace the published PyPI wheel with the *local* checkout
+#      so the test always validates the latest code on this branch.
+#   4. Execute the MCP client integration test.
+# ──────────────────────────────────────────────────────────────
+name: integration-gate | MCP Server
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    working-directory: m_flow-mcp
+
+jobs:
+  mcp-integration:
+    name: Verify MCP server with local M-flow branch
+    runs-on: ubuntu-22.04
+    timeout-minutes: 15
+
+    env:
+      ENV: dev
+      LLM_MODEL:              ${{ secrets.LLM_MODEL }}
+      LLM_ENDPOINT:           ${{ secrets.LLM_ENDPOINT }}
+      LLM_API_KEY:            ${{ secrets.LLM_API_KEY }}
+      LLM_API_VERSION:        ${{ secrets.LLM_API_VERSION }}
+      EMBEDDING_MODEL:        ${{ secrets.EMBEDDING_MODEL }}
+      EMBEDDING_DIMENSIONS: "1536"
+      EMBEDDING_ENDPOINT:     ${{ secrets.EMBEDDING_ENDPOINT }}
+      EMBEDDING_API_KEY:      ${{ secrets.EMBEDDING_API_KEY }}
+      EMBEDDING_API_VERSION:  ${{ secrets.EMBEDDING_API_VERSION }}
+
+    steps:
+      - name: Checkout full repository
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
+
+      - name: Set up Python
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405  # v6.2.0
+        with:
+          python-version: "3.11"
+
+      - name: Install uv package manager
+        run: pip install --upgrade pip && pip install uv
+        working-directory: .
+
+      - name: Resolve MCP server dependencies
+        run: uv sync
+
+      - name: Swap PyPI release for local branch checkout
+        run: |
+          uv pip uninstall mflow-ai || true
+          uv pip install --force-reinstall --no-deps -e ../
+
+      - name: Run MCP client integration test
+        run: uv run --no-sync python ./src/test_client.py

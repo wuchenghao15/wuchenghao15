@@ -1,0 +1,116 @@
+# M-Flow — Ollama integration gate (phi4 + avr/sfr-embedding-mistral).
+# -----------------------------------------------------------------------------
+# Reusable workflow: local-LLM smoke on BuildJet (≥32 GB RAM). Repository:
+# FlowElement-xinliuyuansu/m_flow — header and job layout are project-specific; keep in sync
+# with the project README LLM configuration examples only by semantics, not text.
+# -----------------------------------------------------------------------------
+name: test | Ollama Local-LLM Integration
+
+concurrency:
+  cancel-in-progress: false
+  group: mflow-reusable-ollama-${{ github.run_id }}
+
+on:
+  workflow_call:
+
+permissions: { contents: read }
+
+jobs:
+  mflow_ollama_phi4_gate:
+    name: Ollama local-LLM smoke test
+    runs-on: buildjet-8vcpu-ubuntu-2204   # ≥32 GB RAM required for phi4
+    timeout-minutes: 30
+
+    env:
+      CHAT_MODEL: phi4
+      EMBED_MODEL: "avr/sfr-embedding-mistral:latest"
+      OLLAMA_HOST: "http://localhost:11434"
+
+    steps:
+      - name: Clone repository tree
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
+
+      - name: Install toolchain via M-flow composite action
+        uses: ./.github/actions/m_flow_setup
+        with:
+          python-version: '3.11.x'
+
+      - name: Declare PyTorch in uv workspace
+        run: uv add torch
+
+      # ---------- Ollama lifecycle ----------
+      - name: Spawn Ollama daemon container
+        run: |
+          docker run -d --name ollama -p 11434:11434 ollama/ollama
+          echo "Container started — waiting for daemon bootstrap..."
+          sleep 5
+          docker exec -d ollama bash -c "ollama serve --openai"
+
+      - name: Poll until Ollama OpenAI-compatible API is up
+        run: |
+          echo "Polling ${OLLAMA_HOST}/v1/models …"
+          for attempt in $(seq 1 30); do
+            if curl -sf "${OLLAMA_HOST}/v1/models" >/dev/null 2>&1; then
+              echo "Ollama API ready after attempt ${attempt}"
+              exit 0
+            fi
+            echo "  attempt ${attempt}/30 — retrying in 2 s"
+            sleep 2
+          done
+          echo "::error::Ollama failed to become ready within 60 s"
+          docker logs ollama
+          exit 1
+
+      - name: Fetch chat and embedding weights into Ollama
+        run: |
+          echo "Pulling ${CHAT_MODEL}…"
+          curl -fSX POST "${OLLAMA_HOST}/api/pull" -d "{\"name\":\"${CHAT_MODEL}\"}"
+          echo "Pulling ${EMBED_MODEL}…"
+          curl -fSX POST "${OLLAMA_HOST}/api/pull" -d "{\"name\":\"${EMBED_MODEL}\"}"
+
+      # ---------- Sanity checks ----------
+      - name: Exercise v1 chat completions route
+        run: |
+          curl -fSX POST "${OLLAMA_HOST}/v1/chat/completions" \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"model\": \"${CHAT_MODEL}\",
+              \"stream\": false,
+              \"messages\": [
+                {\"role\": \"system\", \"content\": \"You are a helpful assistant.\"},
+                {\"role\": \"user\",   \"content\": \"Whatever I say, answer with Yes.\"}
+              ]
+            }"
+
+      - name: Exercise native embed route
+        run: |
+          curl -fSX POST "http://127.0.0.1:11434/api/embed" \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"model\": \"${EMBED_MODEL}\",
+              \"input\": \"This is a test sentence to generate an embedding.\"
+            }"
+
+      - name: Emit Ollama diagnostics on exit
+        if: always()
+        run: |
+          echo "### Container status"
+          docker ps -a --filter "name=ollama"
+          echo "### Recent logs"
+          docker logs ollama --tail 80
+
+      # ---------- M-flow integration ----------
+      - name: Run simple_example.py against Ollama backends
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          PYTHONFAULTHANDLER: 1
+          LLM_PROVIDER: "ollama"
+          LLM_API_KEY: "ollama"
+          LLM_ENDPOINT: "http://localhost:11434/v1/"
+          LLM_MODEL: "phi4"
+          EMBEDDING_PROVIDER: "ollama"
+          EMBEDDING_MODEL: "avr/sfr-embedding-mistral:latest"
+          EMBEDDING_ENDPOINT: "http://localhost:11434/api/embed"
+          EMBEDDING_DIMENSIONS: "4096"
+          HUGGINGFACE_TOKENIZER: "Salesforce/SFR-Embedding-Mistral"
+        run: uv run python ./examples/python/simple_example.py

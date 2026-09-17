@@ -1,0 +1,561 @@
+<p align="center">
+  <img src="cog-logo.png" alt="CogDB Logo" width="350">
+</p>
+
+
+<p align="center">
+  <a href="https://pepy.tech/project/cogdb"><img src="https://static.pepy.tech/badge/cogdb" alt="Downloads"></a>
+  <a href="https://badge.fury.io/py/cogdb"><img src="https://badge.fury.io/py/cogdb.svg" alt="PyPI version"></a>
+  <img src="https://img.shields.io/badge/python-3.8+-blue.svg" alt="Python 3.8+">
+</p>
+
+<p align="center">
+  <a href="https://github.com/arun1729/cog/actions/workflows/python-tests.yml"><img src="https://img.shields.io/github/actions/workflow/status/arun1729/cog/python-tests.yml?branch=master&label=build" alt="Build Status"></a>
+  <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT"></a>
+  <a href="https://codecov.io/gh/arun1729/cog"><img src="https://codecov.io/gh/arun1729/cog/branch/master/graph/badge.svg?token=cgAwcYNUCF" alt="codecov"></a>
+  <a href="https://discord.gg/nqNpNGfjts"><img src="https://img.shields.io/badge/Discord-Join%20Server-7289da?logo=discord&logoColor=white" alt="Discord"></a>
+</p>
+
+<p align="center">
+  A persistent graph database that lives inside your Python process.<br>
+  <strong>Quick setup. No server. Runs in notebooks, apps, even your browser.</strong>
+</p>
+
+---
+
+### Quick Start
+
+```bash
+pip install cogdb
+```
+
+```python
+from cog.torque import Graph
+
+# Create a graph and add data
+g = Graph("social")
+g.put("alice", "follows", "bob")
+g.put("bob", "follows", "charlie")
+g.put("bob", "status", "active")
+
+# Query
+g.v("alice").out("follows").all()                    # → {'result': [{'id': 'bob'}]}
+g.v().has("status", "active").all()                  # → {'result': [{'id': 'bob'}]}
+g.v("alice").out("follows").out("follows").all()     # → {'result': [{'id': 'charlie'}]}
+```
+
+> Full documentation at [cogdb.io](https://cogdb.io)
+
+---
+
+## Overview
+
+CogDB is a persistent, embedded graph database implemented in Python. It comes with its own graph traversal language called Torque. Torque is a fluent, chainable API that lives in your Python code. There are no query strings and no context switching, you write graph queries the same way you write normal Python.
+
+CogDB is designed to be easy to use and quick to integrate. There is no server to run and no setup overhead. You simply import it into your Python application. CogDB also works well in interactive environments such as IPython and Jupyter notebooks.
+
+CogDB is a triple store. It models data as `Node → Edge → Node` (eg: `Alice → Follows → Bob`).
+
+Key-value pairs let you store facts; triples let you store relationships. With a source, a destination, and a label, you get the full expressive power of a graph with only one step more structure than a key-value store.
+
+## Documentation
+
+### Creating a graph
+
+#### Using `put` to insert triples
+
+```python
+from cog.torque import Graph
+g = Graph("people")
+g.put("alice","follows","bob")
+g.put("bob","follows","fred")
+g.put("bob","status","cool_person")
+g.put("charlie","follows","bob")
+g.put("charlie","follows","dani")
+g.put("dani","follows","bob")
+g.put("dani","follows","greg")
+g.put("dani","status","cool_person")
+g.put("emily","follows","fred")
+g.put("fred","follows","greg")
+g.put("greg","status","cool_person")
+g.put("bob","score","5")
+g.put("greg","score","10")
+g.put("alice","score","7")
+g.put("dani","score","100")
+```
+
+#### Drop Edge ###
+
+```python
+g.drop("bob", "follows", "fred")
+```
+
+#### Using `update` to replace an edge
+
+Replaces all of a vertex's outgoing edges for a predicate with a single new edge. Shorthand for `put(..., update=True)`.
+
+```python
+g.put("alice", "follows", "bob")
+g.update("alice", "follows", "carol")  # alice now follows only carol
+```
+
+#### Using `putj` to insert JSONs
+
+```python
+f = Graph("followers")
+f.putj('{"name" : "bob", "status" : "cool_person", "follows" : ["fred", "dani"]}')
+f.putj('{"_id":  "1", "name" : "fred", "status" : "cool_person", "follows" : ["alice", "greg"]}')
+```
+
+#### Using `updatej` to update JSONs
+```python
+g.updatej('{"_id" : "1", "status" : "not_cool"}')
+```
+
+### Torque query examples
+
+#### Scan vertices
+```python
+g.scan(3)
+```
+
+> {'result': [{'id': 'bob'}, {'id': 'emily'}, {'id': 'charlie'}]}
+
+#### Scan edges
+```python
+g.scan(3, 'e')
+```
+>{'result': [{'id': 'status'}, {'id': 'follows'}]}
+
+#### Starting from a vertex, follow all outgoing edges and list all vertices
+```python
+g.v("bob").out().all()
+```
+> {'result': [{'id': '5'}, {'id': 'fred'}, {'id': 'cool_person'}]}
+
+#### Everyone with status 'cool_person'
+```python
+g.v().has("status", 'cool_person').all()
+```
+
+> {'result': [{'id': 'bob'}, {'id': 'dani'}, {'id': 'greg'}]}
+
+#### Include edges in the results
+```python
+g.v().has("follows", "fred").inc().all('e')
+```
+> {'result': [{'id': 'dani', 'edges': ['follows']}, {'id': 'charlie', 'edges': ['follows']}, {'id': 'alice', 'edges': ['follows']}]}
+
+#### starting from a vertex, follow all outgoing edges and count vertices
+```python
+g.v("bob").out().count()
+```
+> '3'
+
+#### See who is following who and visualize the network
+The resulting graph can be visualized interactively in environments like Jupyter notebooks and Google Colab using `show()`. If you run it from command line, it will open a browser window to display the graph.
+
+```python
+g.v().out("follows").show()
+```
+
+You can customize the visualization using the `height`, `width`, and `dark` parameters:
+
+```python
+g.v().out("follows").show(height=600, width=800, dark=True)
+```
+
+# ![ScreenShot](notes/ex1.png)
+
+#### Persist visualization as HTML
+If you want to save the visualization to an HTML file to view or share later, use the view() method.
+
+```python
+g.v().tag("from").out("follows").tag("to").view("follows").url
+```
+> file:///Path/to/your/cog_home/views/follows.html
+
+#### List all views 
+```
+g.lsv()
+```
+> ['follows']
+
+#### Load existing visualization
+```
+g.getv('follows').show()
+```
+
+#### starting from a vertex, follow all out going edges and tag them
+
+```python
+g.v("bob").out().tag("from").out().tag("to").all()
+```
+> {'result': [{'from': 'fred', 'id': 'greg', 'to': 'greg'}]}
+> 
+
+#### starting from a vertex, follow all incoming edges and list all vertices
+```python
+g.v("bob").inc().all()
+```
+> {'result': [{'id': 'alice'}, {'id': 'charlie'}, {'id': 'dani'}]}
+
+#### Filtering
+
+```python
+g.v().filter(func=lambda x: x.startswith("d")).all()
+```
+> {'result': [{'id': 'dani'}]}
+
+
+```python
+g.v().out("score").filter(func=lambda x: int(x) > 5).inc().all()
+```
+> {'result': [{'id': 'alice'}, {'id': 'dani'}, {'id': 'greg'}]}
+
+```python
+g.v("emily").out("follows").filter(func=lambda x: x.startswith("f")).all()
+```
+> {'result': [{'id': 'fred'}]}
+
+#### Bidirectional Traversal
+
+Follow edges in both directions (outgoing and incoming):
+```python
+g.v("bob").both("follows").all()
+```
+> {'result': [{'id': 'fred'}, {'id': 'alice'}, {'id': 'charlie'}, {'id': 'dani'}]}
+
+#### Filter to Specific Nodes
+
+Filter results to only include specific vertices:
+```python
+g.v("alice").out("follows").is_("bob", "dani").all()
+```
+> {'result': [{'id': 'bob'}, {'id': 'dani'}]}
+
+#### Remove Duplicates
+
+Remove duplicate vertices from results:
+```python
+g.v().out("follows").unique().all()
+```
+> {'result': [{'id': 'bob'}, {'id': 'fred'}, {'id': 'greg'}, {'id': 'dani'}]}
+
+#### Pagination with Limit and Skip
+
+Limit results to first N vertices:
+```python
+g.v().limit(3).all()
+```
+> {'result': [{'id': 'alice'}, {'id': 'bob'}, {'id': 'charlie'}]}
+
+Skip first N vertices:
+```python
+g.v().skip(2).limit(2).all()
+```
+> {'result': [{'id': 'charlie'}, {'id': 'dani'}]}
+
+#### Navigate Back to Tagged Vertex
+
+Return to a previously tagged position while preserving the traversal path:
+```python
+g.v("alice").tag("start").out("follows").out("follows").back("start").all()
+```
+> {'result': [{'start': 'alice', 'id': 'alice'}]}
+
+#### BFS and DFS Traversal
+
+Breadth-first search (level by level, finds shortest paths):
+```python
+g.v("alice").bfs(predicates="follows", max_depth=2).all()
+```
+> {'result': [{'id': 'bob'}, {'id': 'charlie'}]}
+
+Depth-first search (explores deep before backtracking):
+```python
+g.v("alice").dfs(predicates="follows", max_depth=3).all()
+```
+
+Filter by depth range:
+```python
+# Only vertices at exactly depth 2
+g.v("alice").bfs(max_depth=2, min_depth=2).all()
+```
+
+Stop at a target:
+```python
+g.v("alice").bfs(until=lambda v: v == "fred").all()
+```
+
+Bidirectional traversal:
+```python
+g.v("bob").bfs(direction="both", max_depth=2).all()
+```
+
+#### Using `put_batch` for bulk inserts (faster)
+
+```python
+from cog.torque import Graph
+g = Graph("people")
+
+# Insert multiple triples at once - significantly faster for large graphs
+g.put_batch([
+    ("alice", "follows", "bob"),
+    ("bob", "follows", "charlie"),
+    ("charlie", "follows", "alice"),
+    ("alice", "likes", "pizza"),
+    ("bob", "likes", "tacos"),
+])
+```
+
+### Performance Tuning
+
+Control flush behavior for faster bulk inserts:
+
+```python
+# Default: flush every write (safest)
+g = Graph("mydb")
+
+# Fast mode: flush every 100 writes (auto-enables async)
+g = Graph("mydb", flush_interval=100)
+
+# Manual flush only (fastest for bulk loads)
+g = Graph("mydb", flush_interval=0)
+g.put_batch(large_dataset)
+g.sync()  # Flush when done
+```
+
+| `flush_interval` | Behavior | Use Case |
+|------------------|----------|----------|
+| `1` (default) | Flush every write | Interactive, safe |
+| `> 1` | Async flush every N writes | Bulk inserts |
+| `0` | Manual only (`sync()`) | Maximum speed |
+
+### Serving a Graph Over Network
+
+Serve a graph over HTTP and query it from another process or machine:
+
+```python
+from cog.torque import Graph
+
+# Create and serve a graph
+g = Graph("social")
+g.put("alice", "follows", "bob")
+g.put("bob", "follows", "charlie")
+g.serve(port=8080)
+```
+
+Query from another Python process:
+
+```python
+from cog.torque import Graph
+
+# Connect to remote graph
+remote = Graph.connect("http://localhost:8080/social")
+
+# Query just like a local graph
+remote.v("alice").out("follows").all()
+# {'result': [{'id': 'bob'}]}
+```
+
+Stop the server:
+
+```python
+g.stop()
+```
+
+
+#### json example
+
+```python
+#### Using `putj` to insert JSONs
+f = Graph("followers")
+f.putj('{"name" : "bob", "status" : "cool_person", "follows" : ["fred", "dani"]}')
+f.putj('{"name" : "fred", "status" : "cool_person", "follows" : ["alice", "greg"]}')
+```
+
+```python 
+f.v().has('name','bob').out('follows').all()
+```
+
+> {'result': [{'id': 'dani'}, {'id': 'fred'}]}
+
+```python
+f.v().has('name','fred').out('follows').all()
+```
+
+> {'result': [{'id': 'greg'}, {'id': 'alice'}]}
+
+In a json, CogDB treats `_id` property as a unique identifier for each object. If `_id` is not provided, a randomly generated `_id` is created for each object with in a JSON object.
+`_id` field is used to update a JSON object, see example below.
+
+## Using word embeddings
+
+CogDB supports word embeddings with SIMD-optimized similarity search powered by [SimSIMD](https://github.com/ashvardanian/SimSIMD). Word embeddings are useful for semantic search, recommendations, and NLP tasks.
+
+#### Load pre-trained embeddings (GloVe):
+
+```python
+# Load GloVe embeddings (one-liner!)
+count = g.load_glove("glove.6B.100d.txt", limit=50000)
+print(f"Loaded {count} embeddings")
+```
+
+#### Load from Gensim model:
+
+```python
+from gensim.models import Word2Vec
+model = Word2Vec(sentences)
+count = g.load_gensim(model)
+```
+
+#### Add embeddings manually:
+
+```python
+from cog.torque import Graph
+g = Graph("fruits")
+
+# Add items to graph AND store their embeddings
+g.put("orange", "type", "citrus")
+g.put("tangerine", "type", "citrus")
+g.put("apple", "type", "pome")
+g.put("banana", "type", "tropical")
+
+g.put_embedding("orange", [0.9, 0.8, 0.2, 0.1])
+g.put_embedding("tangerine", [0.85, 0.75, 0.25, 0.15])
+g.put_embedding("apple", [0.5, 0.5, 0.5, 0.5])
+g.put_embedding("banana", [0.2, 0.3, 0.8, 0.7])
+```
+
+#### Find k-nearest neighbors:
+
+```python
+# Search within graph vertices
+g.v().k_nearest("orange", k=2).all()
+```
+> {'result': [{'id': 'orange'}, {'id': 'tangerine'}]}
+
+```python
+# Or search ALL embeddings directly (no g.v() needed)
+g.k_nearest("orange", k=2).all()
+```
+
+#### Filter by similarity threshold:
+
+```python 
+g.v().sim('orange', '>', 0.9).all()
+```
+> {'result': [{'id': 'tangerine'}, {'id': 'orange'}]}
+
+```python
+# Find items in a similarity range
+g.v().sim('orange', 'in', [0.5, 0.8]).all()
+```
+> {'result': [{'id': 'apple'}]}
+
+#### Combine graph traversal with similarity:
+
+```python
+# Find citrus fruits similar to orange
+g.v().has("type", "citrus").sim("orange", ">", 0.8).all()
+```
+> {'result': [{'id': 'tangerine'}, {'id': 'orange'}]}
+
+#### Get embedding stats:
+
+```python
+g.embedding_stats()
+```
+> {'count': 4, 'dimensions': 4}
+
+The `sim` method filters vertices based on cosine similarity. The `k_nearest` method returns the top-k most similar vertices.
+
+## Loading data from a file
+
+### Create a graph from CSV file
+
+```python
+from cog.torque import Graph
+g = Graph("books")
+g.load_csv('test/test-data/books.csv', "book_id")
+```
+#### Get the names of the books that have an average rating greater than 4.0
+```python
+g.v().out("average_rating", func=lambda x: float(x) > 4.0).inc().out("title").all()
+```
+
+#### Triples file
+
+CogDB can load a graph stored as N-Triples, a serialization format for RDF. See [Wikipedia](https://en.wikipedia.org/wiki/N-Triples), [W3C](https://www.w3.org/TR/n-triples/) for details. 
+
+In short, an N-Triple is sequence of subject, predicate and object in a single line that defines a connection between two vertices:
+
+  ```vertex <predicate> vertex```
+
+[Learn more about RDF triples](https://www.w3.org/TR/rdf-concepts/#:~:text=An%20RDF%20triple%20contains%20three,literal%20or%20a%20blank%20node)
+
+```python
+from cog.torque import Graph
+g = Graph(graph_name="people")
+g.load_triples("/path/to/triples.nt", "people")
+```
+
+#### Edgelist file
+```python
+from cog.torque import Graph
+g = Graph(graph_name="people")
+g.load_edgelist("/path/to/edgelist", "people")
+```
+
+## Config
+
+If no config is provided when creating a Cog instance, it will use the defaults:
+
+```
+COG_PATH_PREFIX = "/tmp"
+COG_HOME = "cog-test"
+```
+
+### Example updating config
+
+```python
+from cog import config
+
+config.COG_HOME = "app1_home"
+data = ('user_data:id=1', '{"firstname":"Hari","lastname":"seldon"}')
+cog = Cog(config)
+cog.create_or_load_namespace("test")
+cog.create_table("db_test", "test")
+cog.put(data)
+scanner = cog.scanner()
+for r in scanner:
+ print
+ r
+
+```
+
+## Benchmark
+
+![Put Perf](notes/bench.png)
+
+### Performance Results
+
+Run benchmarks with: `python3 test/benchmark.py`
+
+| Graph Type | Edges | Speed (edges/s) |
+|------------|-------|----------------|
+| Chain (batch) | 5,000 | 4,377 |
+| Social network | 12,492 | 3,233 |
+| Dense graph | 985 | 2,585 |
+| Chain (individual) | 5,000 | 2,712 |
+
+**Batch vs Individual Insert:**
+- 1.6x faster at 5,000 edges
+- Read performance: 20,000+ ops/second
+
+## Trademarks
+
+CogDB™ and the CogDB logo are trademarks of NodeFn Inc. The MIT License covers the CogDB source code and does not grant any right to use the CogDB name or logo.
+
+You may use the CogDB name to truthfully describe your software — for example, that it works with, is built on, or depends on CogDB — as long as you don't suggest endorsement or affiliation. Please don't use the CogDB name or logo as the name of your own product, project, company, or domain, or in a modified form, without prior written permission. All other rights reserved by NodeFn Inc.

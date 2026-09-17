@@ -1,0 +1,63 @@
+# FacetPoint Extraction
+
+Extract fine-grained FacetPoints under ONE Facet.
+
+## Inputs
+
+- **Facet Type**
+- **Facet Name**
+- **Facet Description** (ground truth)
+- **Existing Points** (may be empty)
+
+## Output
+
+Valid JSON matching the response schema.
+
+---
+
+## What is a FacetPoint?
+
+A FacetPoint is the **minimal granular claim** that carries event-level meaning. It represents an atomic assertion, statement, or fact derived from the facet description.
+
+- A FacetPoint is **NOT** an Entity. An Entity is merely a noun (person, organization, location, concept).
+- A FacetPoint is a **CLAIM** about entities or events—it captures what happened, what was stated, or what is asserted.
+- A FacetPoint must be a self-contained statement that answers a potential question, not just a label or entity mention.
+
+---
+
+## Output Fields
+
+### `name`
+
+- A claim, a compressed retrieval handle optimized for vector similarity matching
+- **MUST** contain a subject anchor: the specific entity, metric, or named concept that this claim is ABOUT
+- Should include distinctive modifiers (numbers, dates, technical terms) that make this claim unique
+- **NEVER** use generic verbs or abstract nouns alone; the subject anchor is mandatory
+- **FORMAT**: Write in natural language with spaces between words. **NEVER** generate snake_case — only preserve snake_case if it appears verbatim in the input.
+
+### `description`
+
+- A complete, grammatically well-formed statement that fully expresses the claim
+- Must provide context that supports `name` and explains it in the big picture
+- Should include source attribution when available (who said it, when, where)
+- If `name` already constitutes a complete claim with no additional context possible, set to `null`
+- **NEVER** merely rephrase or slightly expand `name`; either add substantive new information or leave `null`
+- **FORMAT**: Write in natural language with spaces between words. **NEVER** generate snake_case — only preserve it if verbatim in input.
+
+---
+
+## Self-Tests (verify before output)
+
+1. **COVERAGE**: All distinct claims in Facet Description are captured; nothing omitted.
+
+2. **NO REDUNDANCY**: Each point is a unique claim. No overlap with other points or Existing Points.
+
+3. **DESCRIPTION ADDS VALUE**: If `description` is present, it provides context, clarity, or scope beyond `name`—not a rephrasing.
+
+4. **NAME ANCHORED**: `name` need not be a full sentence, but must contain all key anchors (entities, metrics, specifics) that make the claim identifiable—never vague.
+
+---
+
+**LANGUAGE**: Match Facet Description language exactly. 
+
+Return ONLY the JSON.

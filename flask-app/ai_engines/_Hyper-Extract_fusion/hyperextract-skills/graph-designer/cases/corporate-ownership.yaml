@@ -1,0 +1,112 @@
+language: [zh, en]
+
+name: corporate_ownership
+type: graph
+tags: [business, finance, corporate, ownership]
+
+description:
+  zh: '公司股权关系模板 - 从企业文档中提取公司间的股权持有和投资关系'
+  en: 'Corporate Ownership Template - Extract ownership and investment relationships between companies from corporate documents'
+
+output:
+  description:
+    zh: '公司间的股权和投资关系网络'
+    en: 'Corporate ownership and investment relationship network'
+  entities:
+    description:
+      zh: '组织/公司实体'
+      en: 'Organization/company entities'
+    fields:
+      - name: name
+        type: str
+        description:
+          zh: '公司全称，使用官方注册名称'
+          en: 'Full company name as officially registered'
+        required: true
+      - name: category
+        type: str
+        description:
+          zh: '公司类型：母公司(parent_company)/子公司(subsidiary)/关联公司(affiliate)'
+          en: 'Company type: parent_company/subsidiary/affiliate'
+        required: true
+      - name: description
+        type: str
+        description:
+          zh: '公司简介，包括主营业务、成立时间等'
+          en: 'Company description including main business and establishment date'
+        required: false
+  relations:
+    description:
+      zh: '公司间的股权和投资关系'
+      en: 'Ownership and investment relationships between companies'
+    fields:
+      - name: source
+        type: str
+        description:
+          zh: '控股方/投资方公司名称'
+          en: 'Name of the controlling/investing company'
+        required: true
+      - name: target
+        type: str
+        description:
+          zh: '被控股方/被投资方公司名称'
+          en: 'Name of the controlled/invested company'
+        required: true
+      - name: relation_type
+        type: str
+        description:
+          zh: '关系类型：owns(控股)/has_subsidiary(拥有子公司)/invests_in(投资)/acquired_by(被收购)'
+          en: 'Relationship type: owns/has_subsidiary/invests_in/acquired_by'
+        required: true
+      - name: ownership_percentage
+        type: str
+        description:
+          zh: '持股比例，如"51%"、"25%"'
+          en: 'Ownership percentage, e.g., "51%", "25%"'
+        required: false
+      - name: description
+        type: str
+        description:
+          zh: '关系说明，如股权变更背景'
+          en: 'Relationship description such as background of ownership change'
+        required: false
+
+guideline:
+  target:
+    zh: '你是一位专业的企业分析师，擅长从企业年报、公告和新闻中提取公司间的股权关系。'
+    en: 'You are a professional corporate analyst skilled at extracting ownership relationships from annual reports, announcements, and news.'
+  rules_for_entities:
+    zh:
+      - '提取具有独立法人资格的公司实体'
+      - '统一公司名称：全称优先，避免使用简称除非原文明确使用简称'
+      - '公司类型应根据持股比例和实际控制关系判断，而非仅依赖原文描述'
+      - 'description应简洁，聚焦于主营业务和关键特征'
+    en:
+      - 'Extract corporate entities with independent legal status'
+      - 'Use full company names consistently; use abbreviations only when explicitly used in source text'
+      - 'Determine company type based on shareholding ratio and actual control relationship, not just source text description'
+      - 'Description should be concise, focusing on main business and key characteristics'
+  rules_for_relations:
+    zh:
+      - '仅提取文本中明确声明的股权关系，避免推测'
+      - '严格区分直接持股和间接持股，在relation_type中体现'
+      - '同一公司对同一目标的多层股权关系应分别提取'
+      - '持股比例应与原文保持一致，注意区分直接持股比例和间接持股比例'
+      - '关系描述应说明股权取得方式（如：IPO前投资、定向增发、公开市场收购）'
+    en:
+      - 'Extract only explicitly stated ownership relationships, avoid speculation'
+      - 'Strictly distinguish between direct and indirect ownership, reflect in relation_type'
+      - 'Multiple layers of ownership between the same companies should be extracted separately'
+      - 'Ownership percentage should match source text, note the difference between direct and indirect shareholding'
+      - 'Relationship description should explain the acquisition method (e.g., pre-IPO investment, private placement, public market acquisition)'
+
+identifiers:
+  entity_id: name
+  relation_id: '{source}|{relation_type}|{target}'
+  relation_members:
+    source: source
+    target: target
+
+display:
+  entity_label: '{name}'
+  relation_label: '{relation_type}'

@@ -1,0 +1,126 @@
+# M-flow CI — Unified release pipeline.
+# Dispatched manually; creates a GitHub release + git tag, publishes
+# the package to PyPI, and pushes a multi-arch Docker image — all
+# driven by the selected release flavour (dev | main).
+name: release | Publish M-flow
+
+on:
+  workflow_dispatch:
+    inputs:
+      flavour:
+        description: "Release channel (dev or main)"
+        required: true
+        default: dev
+        type: choice
+        options:
+          - dev
+          - main
+
+permissions:
+  contents: write          # needed by the tag-push step and softprops/action-gh-release
+
+# ── Job 1: Tag + GitHub Release ──────────────────────────────────────────────
+jobs:
+  tag-and-release:
+    name: "Tag & GitHub Release (${{ inputs.flavour }})"
+    runs-on: ubuntu-22.04
+    outputs:
+      tag:     ${{ steps.semver.outputs.tag }}
+      version: ${{ steps.semver.outputs.version }}
+
+    steps:
+      - name: Checkout ${{ inputs.flavour }} branch
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
+        with:
+          ref: ${{ inputs.flavour }}
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@cec208311dfd045dd5311c1add060b2062131d57  # v7
+
+      - name: Derive semantic version and push tag
+        id: semver
+        run: |
+          VERSION="$(uv version --short)"
+          TAG="v${VERSION}"
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "tag=${TAG}"         >> "$GITHUB_OUTPUT"
+
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag "${TAG}"
+          git push origin "${TAG}"
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@b4309332981a82ec1c5618f44dd2e27cc8bfbfda  # v3.0.0
+        with:
+          tag_name: ${{ steps.semver.outputs.tag }}
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # ── Job 2: PyPI Package ────────────────────────────────────────────────────
+  publish-pypi:
+    needs: tag-and-release
+    name: "PyPI publish (${{ inputs.flavour }})"
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout ${{ inputs.flavour }} branch
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
+        with:
+          ref: ${{ inputs.flavour }}
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@cec208311dfd045dd5311c1add060b2062131d57  # v7
+
+      - name: Prepare Python environment
+        run: |
+          uv python install
+          uv sync --locked --all-extras
+
+      - name: Build and upload to PyPI
+        env:
+          UV_PUBLISH_TOKEN: ${{ secrets.PYPI_TOKEN }}
+        run: |
+          uv build
+          uv publish
+
+  # ── Job 3: Docker Image ────────────────────────────────────────────────────
+  publish-docker:
+    needs: tag-and-release
+    name: "Docker Hub publish (${{ inputs.flavour }})"
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout ${{ inputs.flavour }} branch
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
+        with:
+          ref: ${{ inputs.flavour }}
+
+      - name: Initialise Docker Buildx
+        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f  # v3
+
+      - name: Authenticate with Docker Hub
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9  # v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build & push multi-arch image
+        uses: docker/build-push-action@ca052bb54ab0790a636c9b5f226502c73d547a25  # v5
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: |
+            m_flow/m_flow:${{ needs.tag-and-release.outputs.version }}
+            ${{ inputs.flavour == 'main' && 'm_flow/m_flow:latest' || '' }}
+          labels: |
+            org.opencontainers.image.version=${{ needs.tag-and-release.outputs.version }}
+            org.opencontainers.image.revision=${{ github.sha }}
+          cache-from: type=registry,ref=m_flow/m_flow:buildcache
+          cache-to:   type=registry,ref=m_flow/m_flow:buildcache,mode=max

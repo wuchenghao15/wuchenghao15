@@ -1,0 +1,437 @@
+name: Security Scan
+
+on:
+  schedule:
+    - cron: '30 1 * * 1,4'  # Mon/Thu 7 AM IST
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths-ignore:
+      - 'docs/**'
+      - 'mkdocs.yml'
+      - 'requirements-docs.txt'
+      - '**/*.md'
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  # Detect whether this PR touches any source files (non-docs/non-markdown).
+  # The result drives the `security-scan` job's `if:` condition so that:
+  #   - docs-only PRs: `security-scan` is skipped (satisfies the required check).
+  #   - code PRs:      the full scan runs exactly as before.
+  # Schedule and workflow_dispatch runs always skip this job and run the scan
+  # unconditionally (the security-scan job's if: accounts for that below).
+  # Push events (to main) keep their own paths-ignore above.
+  changes:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    outputs:
+      src: ${{ steps.filter.outputs.src }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
+      - name: Check for source changes
+        id: filter
+        run: |
+          # List files changed in this PR relative to the true merge base.
+          # Using three-dot merge-base diff so changes on the base branch that
+          # are not part of this PR do not appear in the file list.
+          # If every changed file matches the docs/markdown paths-ignore list
+          # (at any directory depth), this is a docs-only PR and src=false;
+          # otherwise src=true.
+          BASE="${{ github.event.pull_request.base.sha }}"
+          HEAD="${{ github.event.pull_request.head.sha }}"
+          MERGE_BASE=$(git merge-base "$BASE" "$HEAD")
+          CHANGED=$(git diff --name-only "$MERGE_BASE" "$HEAD")
+          echo "Changed files:"
+          echo "$CHANGED"
+          NON_DOCS=$(echo "$CHANGED" | grep -Ev '^(docs/|mkdocs\.yml$|requirements-docs\.txt$|.*\.md$)' || true)
+          if [ -n "$NON_DOCS" ]; then
+            echo "src=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "src=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  security-scan:
+    # For pull_request events:
+    #   - skip only when changes ran successfully and explicitly set src=false
+    #     (i.e. a confirmed docs-only PR).
+    #   - run when changes succeeded with src=true (source changes present).
+    #   - run when changes failed or was cancelled (fail-closed: missing output
+    #     must not silently skip the security scan).
+    # For schedule/workflow_dispatch/push: changes is skipped; always() ensures
+    # the scan still runs unconditionally for those triggers.
+    needs: [changes]
+    if: >-
+      always() && (
+        github.event_name != 'pull_request' ||
+        needs.changes.result != 'success' ||
+        needs.changes.outputs.src == 'true'
+      )
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+      actions: read
+      # Needed for the "Comment PR with Security Results" step below. Safe on
+      # pull_request (not pull_request_target): GitHub always forces a
+      # read-only token for PRs from forks regardless of this permission.
+      pull-requests: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
+        with:
+          python-version: '3.11'
+        
+      - name: Install dependencies
+        run: |
+          pip install -r .github/requirements/bootstrap.txt --require-hashes
+          # Install the pinned dependency set FIRST so pip-audit scans
+          # Semantica's exact CI/release dependency tree (requirements-ci.txt
+          # is generated from pyproject.toml extras, so this covers the
+          # project's real deps).
+          pip install -r requirements-ci.txt --require-hashes
+          # Tooling AFTER the pinned set: installing it first would let the
+          # pinned requirements overwrite the tooling's own transitive deps.
+          pip install -r .github/requirements/pip-audit.txt --require-hashes
+          pip install -r .github/requirements/security-scan-tools.txt --require-hashes
+
+      - name: Run pip-audit (Package Vulnerabilities)
+        continue-on-error: true
+        run: |
+          # Keep publishing reports and the PR comment even when the audit
+          # gate fails. The final gate below preserves the failure status.
+          echo 'AUDIT_SCAN_STATUS=failed' >> "$GITHUB_ENV"
+
+          # Same dependency tree Safety used to scan, and the same tool and
+          # invocation already proven reliable in security.yml.
+          pip-audit -r requirements-ci.txt --format=json --output=pip-audit-report.json || true
+
+          # Guard 1: fail loudly if pip-audit exited before writing a report
+          # at all (network error, tool crash). Without this check a missing
+          # or empty file causes jq to fall back to "0", making a broken
+          # scanner indistinguishable from a clean scan.
+          if [ ! -s pip-audit-report.json ]; then
+            echo "::error::pip-audit produced no report (pip-audit-report.json is missing or empty). Treating as failure — check for network errors or pip-audit crashes in the logs above."
+            exit 1
+          fi
+
+          # Guard 2: fail closed when the report doesn't have the shape the
+          # checks below assume: a non-empty dependencies array, each entry
+          # either carrying an array-valued vulns field or being a dependency
+          # pip-audit couldn't resolve/audit, which it reports as
+          # {"name": ..., "skip_reason": ...} with no vulns field at all
+          # (see pip_audit._format.json.JsonFormat._format_dep). That's a
+          # normal, documented report shape, not a malformed one — treating
+          # it as invalid would fail the whole job over a single unauditable
+          # package, the same kind of scan-unrelated CI break this migration
+          # away from Safety was meant to fix.
+          if ! jq -e '
+            (.dependencies | type == "array" and length > 0)
+            and all(.dependencies[]; type == "object" and ((.vulns | type == "array") or (.skip_reason | type == "string")))
+          ' pip-audit-report.json >/dev/null 2>&1; then
+            echo "::error::pip-audit report has an invalid dependency structure. Expected a non-empty dependencies array where every entry has either a vulns array or a skip_reason. Treating as failure."
+            exit 1
+          fi
+
+          echo "Checking for package vulnerabilities..."
+
+          # Guard 2 above already confirmed pip-audit-report.json is valid
+          # JSON with a well-shaped dependencies array, so this count is
+          # always a plain non-negative integer.
+          SKIPPED=$(jq '[.dependencies[] | select(has("skip_reason"))] | length' pip-audit-report.json)
+          if [ "$SKIPPED" -gt 0 ]; then
+            echo "⚠️ pip-audit could not audit $SKIPPED dependencies (see pip-audit-report.json for skip_reason):"
+            jq -r '.dependencies[] | select(has("skip_reason")) | "  - \(.name): \(.skip_reason)"' pip-audit-report.json
+          fi
+
+          # Vulnerability IDs reviewed and accepted as non-actionable for this
+          # project:
+          # - GHSA-4j2p-28q2-5m79 (aka CVE-2026-69112): accelerate<=1.14.0
+          #   (transitive via docling-slim). Path traversal in sharded checkpoint
+          #   index loading (load_checkpoint_in_model). 1.14.0 is the latest
+          #   available PyPI release; no upstream patch exists yet. Semantica does
+          #   not load arbitrary user checkpoints. Re-evaluate once accelerate
+          #   releases a fixed version.
+          #   NOTE: pip-audit's OSV-backed report may surface either identifier as
+          #   the primary `id` (with the other listed under `aliases`) depending on
+          #   which alias the backing database picks as canonical, so both need to
+          #   be listed here and the matching below checks aliases too - see
+          #   https://github.com/semantica-agi/semantica/actions/runs/34296586683
+          #   where this ignore list had only the GHSA id but the report's `id`
+          #   was the CVE, so the gate still failed.
+          IGNORED_VULN_IDS="GHSA-4j2p-28q2-5m79,CVE-2026-69112"
+
+          # Exported so the "Comment PR with Security Results" step below can
+          # apply the same exclusion list to the raw report - it reads
+          # pip-audit-report.json independently in JS, so without this the PR
+          # comment would show an accepted finding as live even though this
+          # gate correctly treats it as non-actionable.
+          echo "IGNORED_VULN_IDS=$IGNORED_VULN_IDS" >> "$GITHUB_ENV"
+
+          # No []? / || echo "0" fallback: if jq fails (malformed JSON) VULNS
+          # will be empty or "null" so Guard 3 below catches it rather than
+          # silently treating the broken report as zero.
+          # `.vulns // []` guards against skipped dependencies, which carry
+          # no vulns field at all (see the skip_reason handling above) -
+          # without the fallback, iterating `null[]` raises inside jq and
+          # this whole computation silently evaluates to empty.
+          #
+          # Matching checks `.id` AND `.aliases` (pip-audit includes aliases by
+          # default for JSON output): the OSV-backed report can surface either
+          # the GHSA or the CVE identifier as the canonical `id` for the same
+          # advisory, with the other one demoted to an alias, so matching on
+          # `.id` alone is not reliable.
+          VULNS=$(jq --arg ignored "$IGNORED_VULN_IDS" '
+            ($ignored | split(",") | map(select(length > 0))) as $ignore_list
+            | [.dependencies[] | (.vulns // [])[]
+               | select(([.id] + (.aliases // [])) as $ids | ($ids - $ignore_list | length) == ($ids | length))]
+            | length
+          ' pip-audit-report.json 2>/dev/null)
+
+          # Guard 3: ensure VULNS is a non-negative integer before the -gt
+          # comparison. "null" (missing/null key) or "" (jq parse failure) would
+          # cause bash's -gt to throw an arithmetic error and fall through to the
+          # success branch — the same silent-pass bug as a missing file.
+          if ! [[ "$VULNS" =~ ^[0-9]+$ ]]; then
+            echo "::error::pip-audit report exists but dependency vulnerabilities are missing or non-numeric (got: '${VULNS}'). The report may be malformed or contain an error-only JSON response. Treating as failure."
+            exit 1
+          fi
+
+          if [ "$VULNS" -gt 0 ]; then
+            echo "❌ Security vulnerabilities found: $VULNS"
+            echo "CI will fail to prevent merging of vulnerable dependencies"
+            echo ""
+            echo "Vulnerability details:"
+            jq --arg ignored "$IGNORED_VULN_IDS" -r '
+              ($ignored | split(",") | map(select(length > 0))) as $ignore_list
+              | .dependencies[] as $dependency
+              | ($dependency.vulns // [])[]
+              | select(([.id] + (.aliases // [])) as $ids | ($ids - $ignore_list | length) == ($ids | length))
+              | "- \($dependency.name)==\($dependency.version): \(.id)"
+            ' pip-audit-report.json || true
+            exit 1
+          else
+            echo "✅ No actionable security vulnerabilities found${IGNORED_VULN_IDS:+ (ignored: $IGNORED_VULN_IDS)}"
+            echo 'AUDIT_SCAN_STATUS=passed' >> "$GITHUB_ENV"
+          fi
+
+      - name: Run Bandit (Code Security Linter)
+        run: |
+          bandit -r semantica/ -f json -o bandit-report.json || true
+          echo "Checking for HIGH severity security issues..."
+          
+          # Count HIGH severity issues
+          HIGH_ISSUES=$(bandit -r semantica/ -f json -ll 2>/dev/null | jq -r '.results[]? | select(.issue_severity == "HIGH") | .test_name' 2>/dev/null | wc -l || echo "0")
+          
+          if [ "$HIGH_ISSUES" -gt 0 ]; then
+            echo "❌ HIGH severity security issues found: $HIGH_ISSUES"
+            echo "CI will fail to prevent merging of high-risk code"
+            echo ""
+            echo "High severity issues:"
+            bandit -r semantica/ -ll | grep "Severity: High" -A 5 -B 1 || true
+            exit 1
+          else
+            echo "✅ No HIGH severity security issues found"
+          fi
+        
+      - name: Run Semgrep (Static Analysis)
+        run: |
+          echo "Running Semgrep static analysis..."
+          semgrep --config=auto --json --output=semgrep-report.json semantica/ || true
+          
+          # Run security-focused rules
+          echo "Checking for security patterns..."
+          SECURITY_ISSUES=$(semgrep --config=p/security --json semantica/ 2>/dev/null | jq '.results | length' 2>/dev/null || echo "0")
+          
+          if [ "$SECURITY_ISSUES" -gt 0 ]; then
+            echo "⚠️ Security patterns found: $SECURITY_ISSUES"
+            echo "Review these findings for potential improvements"
+            semgrep --config=p/security semantica/ || true
+          else
+            echo "✅ No security patterns found"
+          fi
+        
+      - name: Upload Security Reports
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: security-reports
+          retention-days: 14
+          path: |
+            pip-audit-report.json
+            bandit-report.json
+            semgrep-report.json
+        
+      - name: Comment PR with Security Results
+        if: always() && github.event_name == 'pull_request'
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9
+        with:
+          script: |
+            const fs = require('fs');
+
+            // Renders one tool's findings as a section. `items` is already
+            // the list of pre-formatted "- `thing` in `where`" strings; this
+            // just handles the found/not-found/report-missing framing and
+            // collapses long lists into a <details> block so the comment
+            // doesn't turn into a wall of text.
+            function renderSection(title, reportPath, parse) {
+              let data;
+              try {
+                data = JSON.parse(fs.readFileSync(reportPath, 'utf8'));
+              } catch (e) {
+                return [
+                  `### ${title}`,
+                  `⚠️ No report found at \`${reportPath}\` — the scan may have failed before producing output. Check the job logs.`,
+                ].join('\n');
+              }
+
+              const items = parse(data);
+              if (items === null) {
+                return [
+                  '### ' + title,
+                  '⚠️ Invalid report structure in ' + reportPath + ' — check the job logs.',
+                ].join('\n');
+              }
+              if (items.length === 0) {
+                return [`### ${title}`, `✅ No findings.`].join('\n');
+              }
+
+              const lines = [`### ${title}`, `Found **${items.length}**.`, ''];
+              const shown = items.slice(0, 15);
+              if (items.length > 15) {
+                lines.push('<details>', '<summary>Show all findings</summary>', '');
+                lines.push(...items);
+                lines.push('', '</details>');
+              } else {
+                lines.push(...shown);
+              }
+              return lines.join('\n');
+            }
+
+            // Mirrors the shell step's own IGNORED_VULN_IDS (passed through
+            // $GITHUB_ENV) so an accepted, non-actionable CVE that the CI
+            // gate already excluded doesn't reappear here as a live finding -
+            // this reads the same raw, unfiltered pip-audit-report.json.
+            const ignoredVulnIds = (process.env.IGNORED_VULN_IDS || '')
+              .split(',')
+              .map((id) => id.trim())
+              .filter(Boolean);
+
+            // A dependency pip-audit couldn't resolve/audit is reported as
+            // {"name": ..., "skip_reason": ...} with no vulns field at all
+            // (see pip_audit._format.json.JsonFormat._format_dep) - that's a
+            // normal report shape, not a malformed one, so it must not be
+            // treated as an invalid dependency below.
+            const isSkipped = (dependency) => typeof dependency.skip_reason === 'string';
+
+            let skippedDeps = [];
+            try {
+              const auditData = JSON.parse(fs.readFileSync('pip-audit-report.json', 'utf8'));
+              skippedDeps = (auditData.dependencies || []).filter(
+                (dependency) => dependency && typeof dependency === 'object' && isSkipped(dependency)
+              );
+            } catch (e) {
+              // Unreadable/unparseable report - renderSection's own
+              // report-missing branch below surfaces this.
+            }
+
+            const pipAuditSection = renderSection(
+              'pip-audit — dependency vulnerabilities',
+              'pip-audit-report.json',
+              (data) => {
+                if (
+                  !Array.isArray(data.dependencies) ||
+                  data.dependencies.length === 0 ||
+                  data.dependencies.some(
+                    (dependency) =>
+                      !dependency ||
+                      typeof dependency !== 'object' ||
+                      (!Array.isArray(dependency.vulns) && !isSkipped(dependency))
+                  )
+                ) {
+                  return null;
+                }
+
+                // A vuln's canonical `id` and its `aliases` (e.g. GHSA vs. CVE
+                // for the same advisory) are checked together - mirrors the
+                // shell gate above, which needs the same fallback because
+                // pip-audit's OSV-backed report doesn't consistently pick the
+                // same identifier as canonical across advisories.
+                return data.dependencies.flatMap((dependency) =>
+                  (dependency.vulns || [])
+                    .filter((vulnerability) =>
+                      ![vulnerability.id, ...(vulnerability.aliases || [])].some((id) => ignoredVulnIds.includes(id))
+                    )
+                    .map(
+                      (vulnerability) => `- \`${dependency.name}==${dependency.version}\`: ${vulnerability.id}` +
+                        (vulnerability.fix_versions?.length ? ` (fixed by ${vulnerability.fix_versions.join(', ')})` : '')
+                    )
+                );
+              }
+            ) + (ignoredVulnIds.length
+              ? `\n\n_Excluded as accepted, non-actionable findings: ${ignoredVulnIds.join(', ')} — see the workflow file's inline comments for why._`
+              : '') + (skippedDeps.length
+              ? `\n\n_Could not be audited: ${skippedDeps.map((d) => `\`${d.name}\` (${d.skip_reason})`).join(', ')}_`
+              : '');
+
+            const banditSection = renderSection(
+              'Bandit — HIGH-severity code issues',
+              'bandit-report.json',
+              (data) => (data.results || [])
+                .filter((issue) => issue.issue_severity === 'HIGH')
+                .map((issue) => `- \`${issue.test_name}\` in \`${issue.filename}:${issue.line_number}\``)
+            );
+
+            const semgrepSection = renderSection(
+              'Semgrep — static analysis patterns',
+              'semgrep-report.json',
+              (data) => (data.results || []).map(
+                (issue) => `- \`${issue.check_id}\` in \`${issue.path}:${issue.start?.line ?? '?'}\``
+              )
+            );
+
+            const comment = [
+              '# 🔒 Security Scan Results',
+              '',
+              pipAuditSection,
+              '',
+              banditSection,
+              '',
+              semgrepSection,
+              '',
+              '---',
+              '',
+              '*This security scan runs automatically on source-code PRs and bi-weekly (skipped for doc/markdown-only changes).*',
+              '',
+              '📊 **Security Policy**: CI fails on pip-audit vulnerabilities and Bandit HIGH-severity findings. Semgrep findings above are informational and do not block merge.',
+            ].join('\n');
+
+            try {
+              await github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: comment,
+              });
+              console.log('✅ Security comment posted successfully');
+            } catch (error) {
+              console.log('⚠️ Could not post security comment:', error.message);
+              console.log('📋 Security scan results saved to artifacts');
+            }
+
+      - name: Enforce Audit Gate
+        if: always()
+        run: |
+          if [ "${AUDIT_SCAN_STATUS:-failed}" != "passed" ]; then
+            echo "::error::pip-audit scan failed. See the pip-audit output and uploaded reports above."
+            exit 1
+          fi

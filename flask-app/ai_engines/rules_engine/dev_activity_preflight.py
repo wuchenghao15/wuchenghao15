@@ -90,7 +90,7 @@ _CACHE_LOCK = threading.Lock()
 
 def _get_conn() -> sqlite3.Connection:
     """获取数据库连接"""
-    conn = sqlite3.connect(_APP_DB, timeout=5)
+    conn = sqlite3.connect(_APP_DB, timeout=30)
     conn.row_factory = sqlite3.Row
     return conn
 

@@ -141,16 +141,27 @@ PERM_SUPER_ADMIN = "super_admin"
 PERM_LEVELS = (PERM_GUEST, PERM_LOGIN, PERM_ADMIN, PERM_SUPER_ADMIN)
 
 # 11级角色(用户权限.md §1) → 4级权限要求映射
+# 含中文别名兼容登录时写入 session.get('role') 的各种值
 ROLE_TO_PERM = {
+    # 标准英文键
     "guest":               PERM_GUEST,
     "student":             PERM_LOGIN,
     "student_vip":         PERM_LOGIN,
     "teacher":             PERM_LOGIN,
+    "user":                PERM_LOGIN,  # v22.39.0: user 普通注册用户也必须 login 级
+    "parent":              PERM_LOGIN,
     "admin":               PERM_ADMIN,
     "system_admin":        PERM_ADMIN,
     "hardware_admin":      PERM_ADMIN,
     "hardware_vikey_admin":PERM_ADMIN,
     "super_admin":         PERM_SUPER_ADMIN,
+    # 中文别名 (登录时 session['role'] 写入的中文值, 之前 ROLE_TO_PERM 漏了导致 403)
+    "成人学生":              PERM_LOGIN,
+    "家长":                PERM_LOGIN,
+    "学生":                PERM_LOGIN,
+    "VIP学生":              PERM_LOGIN,
+    "教师":                PERM_LOGIN,
+    "普通用户":              PERM_LOGIN,
 }
 
 # 状态白名单(用户权限.md C2 - 6字段3状态)

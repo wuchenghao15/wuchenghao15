@@ -2354,7 +2354,7 @@ _CSRF_EXEMPT_PATHS = [
     # 登录/注册/找回密码 (guest 状态, 没 session csrf_token)
     '/login',
     '/auth/login',
-    '/auth/register',
+    '/auth/register', '/logout', '/forgot_password', '/register',
     '/register',
     '/auth/session_health',
     '/forgot-password',
@@ -2707,6 +2707,60 @@ def ensure_app_ready():
         _api_reg = register_all_api_blueprints(app)
     except Exception as _api_e:
         print(f'[API-Registrar] 注册失败: {_api_e}')
+
+    # 3. 兜底 catch-all: 补 admin_subpage_routes 注册失败留下的 404 洞
+    # admin_subpage_routes Blueprint 因 endpoint 冲突整体挂载失败 → 所有 /admin_app/<name> 404
+    # 这里直接 app.add_url_rule 兜底, Flask 按注册顺序匹配, 具体路由(在 bp 成功的)先匹配, 兜底最后
+    @app.route('/admin_app/', methods=['GET'], endpoint='_mt_admin_app_root_fallback')
+    def _mt_admin_app_root():
+        from flask import redirect as _r
+        return _r('/admin_app/governance/dashboard')
+
+    @app.route('/admin_app/<path:name>', methods=['GET'], endpoint='_mt_admin_app_catchall_fallback')
+    def _mt_admin_app_catchall(name):
+        """admin_app 兜底 catch-all: 没被任何 bp 接住的 /admin_app/xxx 走这里"""
+        import os as _os
+        from flask import render_template as _rt, session as _sess, redirect as _r
+        # VIKEY 强制校验 (SA 必须有加密狗)
+        uname = (_sess.get('username') or '').lower()
+        is_sa = uname == 'wuchenghao15' or (_sess.get('role') in ('super_admin','admin','sadmin'))
+        if not is_sa:
+            return _r('/admin_app/login')
+        # 优先找独立模板 admin_app/{name}.html
+        tmpl = f'admin_app/{name}.html'
+        full = _os.path.join(_os.path.dirname(__file__), 'templates', tmpl)
+        if _os.path.exists(full):
+            try: return _rt(tmpl)
+            except Exception: pass
+        # 统一 fallback 模板
+        return _rt('admin_fallback.html', name=name)
+
+    # 4. 零散 redirect: 补模板/导航引用但没路由的旧路径
+    _REDIRECT_MAP = {
+        '/exam_system': '/exam_center',
+        '/exam_system/exams': '/exam_center',
+        '/exam_system/tests': '/exam_center',
+        '/exam_system/past_exams': '/exam_center',
+        '/exam_system/daily_practice': '/exam_center',
+        '/ai_chat': '/japanese_page',
+        '/ai-chat': '/japanese_page',
+        '/forgot-password': '/forgot_password',
+        '/mobile/home': '/student_portal',
+        '/mobile/exam': '/exam_center',
+        '/mobile/login': '/login',
+        '/mobile/profile': '/student_portal',
+        '/smart_dashboard': '/admin_app/governance/dashboard',
+        '/adult_placement_test': '/adult_education',
+        '/status': '/system/status',
+        '/wrong_book': '/exam_center',  # 错题本, exam_bp 注册失败时兜底
+    }
+    def _make_redirect(_target):
+        from flask import redirect as _r
+        def _view(): return _r(_target)
+        return _view
+    for _from, _to in _REDIRECT_MAP.items():
+        app.add_url_rule(_from, endpoint=f'_mt_rd_{_from.replace("/","_").lstrip("_")}',
+                         view_func=_make_redirect(_to))
 
     return app
 
@@ -3646,7 +3700,7 @@ def _mt_sys_container_session_loader():
 # 白名单：首页(/、/index)、auth、静态、健康检查、本站Referer；已登录用户全放行。
 _MT_HOTLINK_WHITELIST_PATHS = {
     '/', '/index', '/favicon.ico', '/robots.txt',
-    '/login', '/auth/login', '/auth/register', '/auth/logout', '/auth/forgot_password',
+    '/login', '/auth/login', '/auth/register', '/logout', '/forgot_password', '/register', '/auth/logout', '/auth/forgot_password',
     '/auth/session_health', '/auth/check_username',
 }
 _MT_HOTLINK_WHITELIST_PREFIXES = (
@@ -4630,16 +4684,107 @@ def _mt_sys_container_ctx_injector():
 
         try:
             from core.services.lunar_calendar_service import lunar_calendar_service  # type: ignore[import]
+            # ══ PATCH: 按 session i18n_lang 动态翻译 ══
+            _mt_lang = session.get('i18n_lang', 'zh_CN')
+            _mt_lang_map = {'zh_CN': 'zh', 'zh_TW': 'zh_tw', 'ja_JP': 'ja', 'en_US': 'en'}
+            _mt_service_lang = _mt_lang_map.get(_mt_lang, 'zh')
+
             lunar_display = lunar_calendar_service.get_display_text(lang='zh')
             lunar_display_en = lunar_calendar_service.get_display_text(lang='en')
             lunar_date = lunar_calendar_service.get_lunar_date_string()
             is_special_day = lunar_calendar_service.is_first_or_fifteenth()
             lunar_countdown = lunar_calendar_service.get_countdown()
-            buddha_festivals = lunar_calendar_service.get_buddha_info()
-            buddha_festivals_en = lunar_calendar_service._get_lunar_festivals_en(
-                lunar_countdown.get('lunar_month', 0),
-                lunar_countdown.get('lunar_day', 0)
-            )
+
+            # ══ BUILD: buddha_festivals = 今天 + 未来 30 天佛/道/农历/公历节日 ══
+            import datetime as _dt_mt
+            buddha_festivals = []
+            _seen_fests = set()
+            _tday = _dt_mt.date.today()
+
+            # 合并两个事件源: (1) 旧字典 BUDDHIST_FESTIVALS_LUNAR/SOLAR (45+17条)
+            #               (2) 扩充事件库 LUNAR_BUDDHIST_EVENTS (76+ 佛道儒各宗派)
+            try:
+                from core.services.auto_plans.plan_lunar_buddhist import LUNAR_BUDDHIST_EVENTS
+                _expanded = True
+            except Exception:
+                _expanded = False
+
+            for _offset in range(31):  # 0~30 天
+                _target = _tday + _dt_mt.timedelta(days=_offset)
+                _ly, _lm, _ld, _isleap = lunar_calendar_service._solar_to_lunar(_target)
+                # 源 1: 旧字典 (lunar + solar)
+                _lunars = lunar_calendar_service._get_lunar_festivals(_lm, _ld)
+                _solars = lunar_calendar_service._get_solar_festivals(_target.month, _target.day)
+                for _fn in (_lunars + _solars):
+                    if _fn not in _seen_fests:
+                        _seen_fests.add(_fn)
+                        _lbl = f"今日 {_fn}" if _offset == 0 else f"{_offset}天后 {_fn}"
+                        buddha_festivals.append(_lbl)
+                # 源 2: 扩充事件库 (按 month/day 匹配)
+                if _expanded:
+                    for _ev in LUNAR_BUDDHIST_EVENTS:
+                        _em, _ed = _ev.get('month', 0), _ev.get('day', 0)
+                        # day=-1 表示估算日(月中), 简化: 只要 month 匹配且 day>0 才精确匹配
+                        if _em == _lm and _ed > 0 and _ed == _ld:
+                            _fn = _ev.get('event', '')
+                            if _fn and _fn not in _seen_fests:
+                                _seen_fests.add(_fn)
+                                _lbl = f"今日 {_fn}" if _offset == 0 else f"{_offset}天后 {_fn}"
+                                buddha_festivals.append(_lbl)
+            buddha_festivals_en = []  # 翻译由下面统一处理
+
+            # ── 动态翻译 lunar_countdown 中文字段 ──
+            if _mt_service_lang != 'zh' and lunar_countdown:
+                try:
+                    def _t(zh_text, domain='lunar'):
+                        """从 mt_i18n_keys 翻译 zh_text → 目标语言"""
+                        col = {'zh_tw':'zh_tw','ja':'ja_jp','en':'en_us'}.get(_mt_service_lang, 'zh_cn')
+                        if col == 'zh_cn': return zh_text
+                        import sqlite3 as _sq
+                        _db = _sq.connect(os.path.join(os.path.dirname(__file__), 'database', 'app.db'))
+                        # 按原文查 key (mt_i18n_keys.zh_cn = 原文)
+                        row = _db.execute(f"SELECT {col} FROM mt_i18n_keys WHERE zh_cn=? AND {col}!='' ORDER BY length({col}) DESC LIMIT 1", (zh_text,)).fetchone()
+                        _db.close()
+                        if row and row[0]: return row[0]
+                        return zh_text
+
+                    # 翻译 countdown 各字段
+                    if lunar_countdown.get('festival_today'):
+                        lunar_countdown['festival_today'] = _t(lunar_countdown['festival_today'])
+                    if lunar_countdown.get('countdown_type'):
+                        lunar_countdown['countdown_type'] = _t(lunar_countdown['countdown_type'])
+                    # year_ganzhi 如 "丙午" 不需要翻 (通用)
+                    # animal 如 "马" 需要翻
+                    if lunar_countdown.get('animal'):
+                        lunar_countdown['animal'] = _t(lunar_countdown['animal'], 'zodiac')
+
+                    # 翻译 buddha_festivals 字符串列表 "今日 春节" / "8天后 中秋节"
+                    if buddha_festivals:
+                        import re as _re_mt
+                        for _i, _lbl in enumerate(buddha_festivals):
+                            m = _re_mt.match(r'^(今日|(\d+)天后)\s+(.+)$', _lbl)
+                            if m:
+                                _prefix = m.group(1)  # "今日" or "N天后"
+                                _fname = m.group(3)   # 节日名
+                                _fname_t = _t(_fname, 'events')
+                                _prefix_t = _t(_prefix, 'festival_prefix')
+                                buddha_festivals[_i] = f"{_prefix_t} {_fname_t}"
+                except Exception:
+                    pass  # 翻译失败不阻断页面
+
+            # ── zh_TW 额外用 OpenCC 繁化 ──
+            if _mt_lang == 'zh_TW' and (lunar_countdown or buddha_festivals):
+                try:
+                    import opencc as _oc
+                    _twc = _oc.OpenCC('s2t')
+                    if lunar_countdown:
+                        for f in ('festival_today','countdown_type','animal'):
+                            if lunar_countdown.get(f):
+                                lunar_countdown[f] = _twc.convert(lunar_countdown[f])
+                    if buddha_festivals:
+                        buddha_festivals = [_twc.convert(x) for x in buddha_festivals]
+                except Exception:
+                    pass
         except Exception:
             lunar_display = ""
             lunar_display_en = ""
@@ -12317,7 +12462,7 @@ _API_PUBLIC_WHITELIST = {
     '/api/theme/get', '/api/theme/recommend', '/api/theme/sunrise_sunset',
     '/api/theme/presets', '/api/user/theme_preferences',
     '/api/homepage/stats', '/api/dev_flow/',
-    '/auth/login', '/auth/logout', '/auth/register', '/auth/csrf_token',
+    '/auth/login', '/auth/logout', '/auth/register', '/logout', '/forgot_password', '/register', '/auth/csrf_token',
     '/auth/check', '/auth/validate', '/auth/session',
     '/auth/session_health',  # 前端 hotplug.js 检查登录态
     # 指纹认证API（登录前需调用终端指纹硬件）

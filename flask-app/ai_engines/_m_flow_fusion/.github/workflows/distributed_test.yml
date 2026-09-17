@@ -1,0 +1,90 @@
+# ──────────────────────────────────────────────────────────────
+# M-flow CI — Distributed Execution Test (via Modal)
+#
+# Validates the serverless distributed pipeline by deploying a
+# Modal function that exercises the full M-flow ingestion stack
+# backed by Azure-hosted Postgres (relational + pgvector) and
+# Neo4j (graph store).
+#
+# This workflow is designed to be called from the test
+# orchestrator (test_suites.yml / e2e_tests.yml).
+# ──────────────────────────────────────────────────────────────
+name: integration-gate | Distributed (Modal)
+
+on:
+  workflow_call:
+    inputs:
+      python-version:
+        description: CPython version string
+        required: false
+        type: string
+        default: "3.11.x"
+    secrets:
+      LLM_MODEL:              { required: true }
+      LLM_ENDPOINT:           { required: false }
+      LLM_API_KEY:            { required: true }
+      LLM_API_VERSION:        { required: false }
+      EMBEDDING_MODEL:        { required: true }
+      EMBEDDING_ENDPOINT:     { required: false }
+      EMBEDDING_API_KEY:      { required: true }
+      EMBEDDING_API_VERSION:  { required: false }
+      OPENAI_API_KEY:         { required: true }
+
+permissions:
+  contents: read
+
+jobs:
+  modal-distributed:
+    name: Run distributed pipeline on Modal
+    runs-on: ubuntu-22.04
+    timeout-minutes: 30
+
+    env:
+      ENV: dev
+      ENABLE_BACKEND_ACCESS_CONTROL: "false"
+      MFLOW_DISTRIBUTED: "true"
+
+      # ── LLM / Embedding ──
+      LLM_MODEL:        ${{ secrets.LLM_MODEL }}
+      LLM_ENDPOINT:     ${{ secrets.LLM_ENDPOINT }}
+      LLM_API_KEY:      ${{ secrets.LLM_API_KEY }}
+      LLM_API_VERSION:  ${{ secrets.LLM_API_VERSION }}
+      EMBEDDING_MODEL:        ${{ secrets.EMBEDDING_MODEL }}
+      EMBEDDING_DIMENSIONS: "1536"
+      EMBEDDING_ENDPOINT:     ${{ secrets.EMBEDDING_ENDPOINT }}
+      EMBEDDING_API_KEY:      ${{ secrets.EMBEDDING_API_KEY }}
+      EMBEDDING_API_VERSION:  ${{ secrets.EMBEDDING_API_VERSION }}
+
+      # ── Modal credentials ──
+      MODAL_TOKEN_ID:     ${{ secrets.MODAL_TOKEN_ID }}
+      MODAL_TOKEN_SECRET: ${{ secrets.MODAL_TOKEN_SECRET }}
+      MODAL_SECRET_NAME:  ${{ secrets.MODAL_SECRET_NAME }}
+
+      # ── Azure Neo4j (graph store) ──
+      GRAPH_DATABASE_PROVIDER:  neo4j
+      GRAPH_DATABASE_URL:       ${{ secrets.AZURE_NEO4j_URL }}
+      GRAPH_DATABASE_USERNAME:  ${{ secrets.AZURE_NEO4J_USERNAME }}
+      GRAPH_DATABASE_PASSWORD:  ${{ secrets.AZURE_NEO4J_PW }}
+
+      # ── Azure Postgres + pgvector ──
+      DB_PROVIDER:    postgres
+      DB_NAME:        ${{ secrets.AZURE_POSTGRES_DB_NAME }}
+      DB_HOST:        ${{ secrets.AZURE_POSTGRES_HOST }}
+      DB_PORT:        ${{ secrets.AZURE_POSTGRES_PORT }}
+      DB_USERNAME:    ${{ secrets.AZURE_POSTGRES_USERNAME }}
+      DB_PASSWORD:    ${{ secrets.AZURE_POSTGRES_PW }}
+      VECTOR_DB_PROVIDER: pgvector
+
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
+        with:
+          fetch-depth: 0
+
+      - name: Bootstrap M-flow environment (distributed + postgres extras)
+        uses: ./.github/actions/m_flow_setup
+        with:
+          python-version: ${{ inputs.python-version }}
+          extra-dependencies: "distributed postgres"
+
+      - name: Launch distributed pipeline via Modal
+        run: uv run modal run ./distributed/entrypoint.py

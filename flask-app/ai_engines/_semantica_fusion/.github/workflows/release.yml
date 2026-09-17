@@ -1,0 +1,96 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: read
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    environment: pypi
+    concurrency:
+      group: release-${{ github.ref }}
+      cancel-in-progress: false
+    permissions:
+      contents: write      # for the GitHub Release
+      id-token: write      # for PyPI Trusted Publishing (OIDC), attestation signing, and Sigstore
+      attestations: write  # for SLSA build provenance
+    # If you add another job to this workflow, give it its own explicit
+    # `permissions:` block rather than relying on the workflow-level default
+    # above (contents: read) - do not widen the workflow-level default.
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
+        with:
+          python-version: '3.11'
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: explorer/package-lock.json
+      - name: Build Explorer frontend
+        working-directory: explorer
+        run: |
+          npm ci
+          npm run build
+      # Install the pinned dependency set (with hashes) so the sdist/wheel
+      # build runs against the same versions CI tests against.
+      - name: Install pinned build dependencies
+        run: pip install -r requirements-ci.txt --require-hashes
+      # build is a dev-time dependency; wheel is build-time only (neither is
+      # in requirements-ci.txt) — install the same pinned versions
+      # [build-system] declares so --no-isolation works below.
+      - run: pip install -r .github/requirements/build-tools.txt --require-hashes
+      - name: Build package (no isolation — pinned deps)
+        run: python -m build --no-isolation
+      - name: Verify Explorer frontend is packaged
+        run: |
+          python - <<'PY'
+          import zipfile
+          from pathlib import Path
+
+          wheels = list(Path("dist").glob("*.whl"))
+          assert wheels, "No wheel was built"
+
+          with zipfile.ZipFile(wheels[0]) as wheel:
+              names = set(wheel.namelist())
+
+          assert "semantica/static/index.html" in names, "Explorer index.html missing from wheel"
+          assert any(name.startswith("semantica/static/assets/") for name in names), "Explorer assets missing from wheel"
+
+          print("Explorer frontend is packaged")
+          PY
+      - name: Verify PyPI long-description will render
+        run: |
+          pip install -r .github/requirements/twine.txt --require-hashes
+          twine check dist/*
+      # pypi-publish uploads everything under packages-dir (default: dist/) with
+      # no glob/include filter, so it must run before anything else writes a
+      # non-distribution file into dist/ - the Sigstore step below does exactly
+      # that (dist/*.sigstore.json), and pypi-publish fails on it with
+      # "InvalidDistribution: Unknown distribution format" if it runs after.
+      - uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # release/v1
+      - name: Attest build provenance
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4
+        with:
+          subject-path: 'dist/*'
+      # attest-build-provenance publishes to the GH attestations API only, which
+      # OpenSSF Scorecard's Signed-Releases check does not inspect - it looks for
+      # signature files attached as release assets. Sign here too so
+      # `dist/*.sigstore.json` bundles ship alongside the wheel/sdist on the
+      # GitHub Release itself. This must run after pypi-publish (see above).
+      - name: Sign artifacts with Sigstore
+        uses: sigstore/gh-action-sigstore-python@790bc6befb9d733738f18d8f895854b453640ec9 # v3.5.0
+        with:
+          inputs: |
+            dist/*.whl
+            dist/*.tar.gz
+      - uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3.0.3
+        with:
+          files: |
+            dist/*.whl
+            dist/*.tar.gz
+            dist/*.sigstore.json

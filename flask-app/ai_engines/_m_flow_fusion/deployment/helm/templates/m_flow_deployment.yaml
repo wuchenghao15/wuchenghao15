@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-m_flow
+  labels:
+    app: {{ .Release.Name }}-m_flow
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}-m_flow
+  template:
+    metadata:
+      labels:
+        app: {{ .Release.Name }}-m_flow
+    spec:
+      containers:
+        - name: m_flow
+          image: {{ .Values.backend.image }}
+          ports:
+            - containerPort: {{ .Values.backend.port }}
+          env:
+            - name: HOST
+              value: {{ .Values.backend.env.HOST }}
+            - name: ENVIRONMENT
+              value: {{ .Values.backend.env.ENVIRONMENT }}
+            - name: PYTHONPATH
+              value: {{ .Values.backend.env.PYTHONPATH }}
+          resources:
+            limits:
+              cpu: {{ .Values.backend.resources.cpu }}
+              memory: {{ .Values.backend.resources.memory }}

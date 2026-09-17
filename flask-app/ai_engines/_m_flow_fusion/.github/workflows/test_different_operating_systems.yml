@@ -1,0 +1,238 @@
+# M-Flow CI: cross-platform compatibility matrix.
+# Ensures unit tests, integration tests, builds, and deletion logic work on Linux, macOS, and Windows.
+name: "xplat | Multi-OS Compatibility Matrix"
+
+permissions: {contents: read}
+
+on:
+  workflow_call:
+    inputs:
+      python-versions:
+        required: false
+        type: string
+        default: '["3.10.x", "3.12.x", "3.13.x"]'
+      os: 
+        required: false
+        type: string
+        default: '["ubuntu-22.04", "macos-15", "windows-latest"]'
+    secrets:
+      LLM_PROVIDER: {required: true}
+      LLM_MODEL: {required: true}
+      LLM_ENDPOINT: {required: false}
+      LLM_API_KEY: {required: true}
+      LLM_API_VERSION: {required: false}
+      EMBEDDING_PROVIDER: {required: true}
+      EMBEDDING_MODEL: {required: true}
+      EMBEDDING_ENDPOINT: {required: false}
+      EMBEDDING_API_KEY: {required: true}
+      EMBEDDING_API_VERSION: {required: false}
+
+env: {RUNTIME__LOG_LEVEL: ERROR, ENV: 'dev'}
+
+jobs:
+
+  xplat-unit-tests:
+    runs-on: ${{ matrix.os }}
+    name: "py${{ matrix.python-version }}/${{ matrix.os }} — unit tests"
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ${{ fromJSON(inputs.python-versions) }}
+        os: ${{ fromJSON(inputs.os) }}
+    steps:
+      - name: Fetch repository
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
+        with: {fetch-depth: 0}
+
+      - name: Bootstrap M-Flow environment
+        uses: ./.github/actions/m_flow_setup
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Execute unit test suite
+        shell: bash
+        run: uv run pytest m_flow/tests/unit/
+        env:
+          PYTHONUTF8: 1
+          LLM_PROVIDER: openai
+          LLM_MODEL: ${{ secrets.LLM_MODEL }}
+          LLM_ENDPOINT: ${{ secrets.LLM_ENDPOINT }}
+          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+          LLM_API_VERSION: ${{ secrets.LLM_API_VERSION }}
+          EMBEDDING_PROVIDER: openai
+          EMBEDDING_MODEL: ${{ secrets.EMBEDDING_MODEL }}
+          EMBEDDING_DIMENSIONS: "1536"
+          EMBEDDING_ENDPOINT: ${{ secrets.EMBEDDING_ENDPOINT }}
+          EMBEDDING_API_KEY: ${{ secrets.EMBEDDING_API_KEY }}
+          EMBEDDING_API_VERSION: ${{ secrets.EMBEDDING_API_VERSION }}
+
+  xplat-integration-tests:
+    runs-on: ${{ matrix.os }}
+    name: "py${{ matrix.python-version }}/${{ matrix.os }} — integration tests"
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ${{ fromJSON(inputs.python-versions) }}
+        os: ${{ fromJSON(inputs.os) }}
+    steps:
+      - name: Fetch repository
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
+        with: {fetch-depth: 0}
+
+      - name: Bootstrap M-Flow environment
+        uses: ./.github/actions/m_flow_setup
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Execute integration test suite
+        shell: bash
+        run: uv run pytest m_flow/tests/integration/
+        env:
+          PYTHONUTF8: 1
+          LLM_PROVIDER: openai
+          LLM_MODEL: ${{ secrets.LLM_MODEL }}
+          LLM_ENDPOINT: ${{ secrets.LLM_ENDPOINT }}
+          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+          LLM_API_VERSION: ${{ secrets.LLM_API_VERSION }}
+          EMBEDDING_PROVIDER: openai
+          EMBEDDING_MODEL: ${{ secrets.EMBEDDING_MODEL }}
+          EMBEDDING_DIMENSIONS: "1536"
+          EMBEDDING_ENDPOINT: ${{ secrets.EMBEDDING_ENDPOINT }}
+          EMBEDDING_API_KEY: ${{ secrets.EMBEDDING_API_KEY }}
+          EMBEDDING_API_VERSION: ${{ secrets.EMBEDDING_API_VERSION }}
+
+  xplat-library-pipeline:
+    runs-on: ${{ matrix.os }}
+    name: "py${{ matrix.python-version }}/${{ matrix.os }} — library pipeline"
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ${{ fromJSON(inputs.python-versions) }}
+        os: ${{ fromJSON(inputs.os) }}
+    steps:
+      - name: Fetch repository
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
+        with: {fetch-depth: 0}
+
+      - name: Bootstrap M-Flow environment
+        uses: ./.github/actions/m_flow_setup
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Exercise default pipeline end-to-end
+        shell: bash
+        env:
+          PYTHONUTF8: 1
+          LLM_PROVIDER: openai
+          LLM_MODEL: ${{ secrets.LLM_MODEL }}
+          LLM_ENDPOINT: ${{ secrets.LLM_ENDPOINT }}
+          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+          LLM_API_VERSION: ${{ secrets.LLM_API_VERSION }}
+          EMBEDDING_PROVIDER: openai
+          EMBEDDING_MODEL: ${{ secrets.EMBEDDING_MODEL }}
+          EMBEDDING_DIMENSIONS: "1536"
+          EMBEDDING_ENDPOINT: ${{ secrets.EMBEDDING_ENDPOINT }}
+          EMBEDDING_API_KEY: ${{ secrets.EMBEDDING_API_KEY }}
+          EMBEDDING_API_VERSION: ${{ secrets.EMBEDDING_API_VERSION }}
+        run: uv run python ./m_flow/tests/test_library.py
+
+  xplat-build-artifact:
+    runs-on: ${{ matrix.os }}
+    name: "py${{ matrix.python-version }}/${{ matrix.os }} — wheel build"
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ${{ fromJSON(inputs.python-versions) }}
+        os: ${{ fromJSON(inputs.os) }}
+    steps:
+      - name: Fetch repository
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
+        with: {fetch-depth: 0}
+
+      - name: Bootstrap M-Flow environment
+        uses: ./.github/actions/m_flow_setup
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Build distribution with uv
+        shell: bash
+        run: uv build
+
+      - name: Smoke-install built wheel
+        if: ${{ !contains(matrix.os, 'windows-latest') }}
+        run: |
+          cd dist
+          pip install *.whl
+
+  xplat-soft-deletion:
+    runs-on: ${{ matrix.os }}
+    name: "py${{ matrix.python-version }}/${{ matrix.os }} — soft delete"
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ${{ fromJSON(inputs.python-versions) }}
+        os: ${{ fromJSON(inputs.os) }}
+    steps:
+      - name: Fetch repository
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
+        with: {fetch-depth: 0}
+
+      - name: Bootstrap M-Flow environment
+        uses: ./.github/actions/m_flow_setup
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Sanitise PATH on Windows
+        if: ${{ matrix.os }} == 'windows-latest'
+        shell: bash
+        run: |
+          PATH=$(printf '%s' "$PATH" | tr ':' $'\n' | grep -vi '/git/usr/bin' | paste -sd: -)
+          export PATH
+
+      - name: Validate soft-deletion logic
+        env:
+          ENV: 'dev'
+          LLM_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          EMBEDDING_MODEL: ${{ secrets.EMBEDDING_MODEL }}
+          EMBEDDING_DIMENSIONS: "1536"
+          EMBEDDING_ENDPOINT: ${{ secrets.EMBEDDING_ENDPOINT }}
+          EMBEDDING_API_KEY: ${{ secrets.EMBEDDING_API_KEY }}
+          EMBEDDING_API_VERSION: ${{ secrets.EMBEDDING_API_VERSION }}
+        run: uv run python ./m_flow/tests/test_delete_soft.py
+
+  xplat-hard-deletion:
+    runs-on: ${{ matrix.os }}
+    name: "py${{ matrix.python-version }}/${{ matrix.os }} — hard delete"
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ${{ fromJSON(inputs.python-versions) }}
+        os: ${{ fromJSON(inputs.os) }}
+    steps:
+      - name: Fetch repository
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
+        with: {fetch-depth: 0}
+
+      - name: Bootstrap M-Flow environment
+        uses: ./.github/actions/m_flow_setup
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Validate hard-deletion logic
+        env:
+          ENV: 'dev'
+          LLM_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          EMBEDDING_MODEL: ${{ secrets.EMBEDDING_MODEL }}
+          EMBEDDING_DIMENSIONS: "1536"
+          EMBEDDING_ENDPOINT: ${{ secrets.EMBEDDING_ENDPOINT }}
+          EMBEDDING_API_KEY: ${{ secrets.EMBEDDING_API_KEY }}
+          EMBEDDING_API_VERSION: ${{ secrets.EMBEDDING_API_VERSION }}
+        run: uv run python ./m_flow/tests/test_delete_hard.py

@@ -1,0 +1,29 @@
+# M-flow Mergify Configuration
+# Automates branch management and backport workflows
+# Docs: https://docs.mergify.com/configuration/
+---
+
+pull_request_rules:
+
+  # ── Backport merged PRs from dev → main ────────────────────────────────
+  - name: Backport to main when the backport_main label is applied
+    conditions:
+      - base=dev
+      - label=backport_main
+    actions:
+      backport:
+        branches:
+          - main
+        title: "backport(main): {{ title }} (#{{ number }})"
+        body: |
+          Automated backport of #{{ number }} from `dev` to `main`.
+          Original author: @{{ author }}
+
+  # ── Auto-label dependabot PRs ──────────────────────────────────────────
+  - name: Label dependency update PRs
+    conditions:
+      - author~=^dependabot
+    actions:
+      label:
+        add:
+          - dependencies

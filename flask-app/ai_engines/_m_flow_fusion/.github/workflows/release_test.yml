@@ -1,0 +1,25 @@
+# M-Flow — release gate: delegates to load/stress reusable workflow.
+# -----------------------------------------------------------------------------
+# Pre-merge and manual dispatch entry points share the same load test suite.
+# -----------------------------------------------------------------------------
+name: "release-gate | Pre-Release Validation"
+
+concurrency:
+  cancel-in-progress: false
+  group: mflow-release-gate-${{ github.ref }}-${{ github.event.pull_request.number || github.run_id }}
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize]
+
+permissions: { contents: read }
+
+jobs:
+
+  mflow_pre_release_load_suite:
+    name: "Execute load & stress test suite"
+    if: ${{ github.event_name != 'pull_request' || !github.event.pull_request.head.repo.fork }}
+    uses: ./.github/workflows/load_tests.yml
+    secrets: inherit

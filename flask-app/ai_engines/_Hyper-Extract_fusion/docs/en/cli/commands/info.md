@@ -1,0 +1,206 @@
+# he info
+
+Display information and statistics about a knowledge abstract.
+
+---
+
+## Synopsis
+
+```bash
+he info KA_PATH
+```
+
+## Arguments
+
+| Argument | Description |
+|----------|-------------|
+| `KA_PATH` | Path to knowledge abstract directory |
+
+---
+
+## Description
+
+Shows metadata and statistics for a knowledge abstract:
+
+- **Path** — Location of the knowledge abstract
+- **Template** — Template used for extraction
+- **Language** — Language code (en/zh)
+- **Timestamps** — Creation and last update times
+- **Statistics** — Node count, edge count
+- **Index status** — Whether search index is built
+- **Source ledger** — Contributing documents, shown with `--sources`
+
+---
+
+## Examples
+
+### Basic Usage
+
+```bash
+he info ./output/
+```
+
+**Output:**
+```
+Knowledge Abstract Info
+
+Path          ./output/
+Template      general/biography_graph
+Language      en
+Created       2024-01-15 10:30:00
+Updated       2024-01-15 10:35:22
+Nodes         25
+Edges         32
+Index         Built
+```
+
+### After Extraction
+
+```bash
+he parse tesla.md -t general/biography_graph -o ./ka/ -l en
+he info ./ka/
+```
+
+### After Feed
+
+```bash
+he feed ./ka/ more_content.md
+he info ./ka/
+# Note the updated node/edge counts and timestamp
+```
+
+---
+
+## Output Fields
+
+| Field | Description |
+|-------|-------------|
+| `Path` | Absolute path to knowledge abstract |
+| `Template` | Template identifier (e.g., `general/biography_graph`) |
+| `Language` | Processing language (`en` or `zh`) |
+| `Created` | Initial extraction timestamp |
+| `Updated` | Last modification timestamp |
+| `Nodes` | Number of entities/items |
+| `Edges` | Number of relationships |
+| `Index` | Search index status (`Built` or `Not Built`) |
+
+---
+
+## Source Ledger
+
+Pass `--sources` to also show which documents contributed to the knowledge abstract:
+
+```bash
+he info ./ka/ --sources
+```
+
+**Output:**
+```
+Knowledge Abstract Info
+
+Path          ./ka/
+Template      general/biography_graph
+Language      en
+Created       2024-01-15 10:30:00
+Updated       2024-01-15 10:35:22
+Nodes         25
+Edges         32
+Index         Built
+
+                        Source Ledger
+┏━━━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ Source ID  ┃ Raw Items ┃ Content Hash                       ┃
+┡━━━━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+│ doc-1      │        12 │ 9f86d081884c7d659a2febb0c0413a6e…  │
+└────────────┴───────────┴────────────────────────────────────┘
+```
+
+The ledger is read from `sources_nodes.json` / `sources_edges.json` in the KA directory and is written when documents are ingested with `--source` (see [`he feed`](feed.md)). If no ledger exists, the command prints a `No source ledger found` hint instead of the table.
+
+---
+
+## Use Cases
+
+### Verify Extraction
+
+Check that extraction worked:
+
+```bash
+he info ./ka/
+# Should show Nodes > 0, Edges > 0
+```
+
+## Check Index Status
+
+Before using search or chat:
+
+```bash
+he info ./ka/
+# If Index shows "Not Built", run:
+he build-index ./ka/
+```
+
+## Monitor Growth
+
+Track knowledge abstract growth over time:
+
+```bash
+he info ./ka/
+# Feed more documents
+he feed ./ka/ update.md
+he info ./ka/
+# Compare node/edge counts
+```
+
+## Scripting
+
+Use in automation scripts:
+
+```bash
+#!/bin/bash
+
+if he info ./ka/ 2>/dev/null; then
+    echo "Knowledge base exists"
+    he feed ./ka/ new_doc.md
+else
+    echo "Creating new knowledge abstract"
+    he parse new_doc.md -t general/biography_graph -o ./ka/ -l en
+fi
+```
+
+---
+
+## Troubleshooting
+
+### "Knowledge base directory not found"
+
+The directory doesn't exist or doesn't contain a knowledge abstract:
+
+```bash
+# Check directory exists
+ls ./ka/
+
+# Should contain:
+# - data.json
+# - metadata.json
+```
+
+## Missing metadata
+
+If metadata is corrupted, template/language show as "unknown":
+
+```bash
+he info ./ka/
+# Template: [yellow]unknown[/yellow]
+# Language: [yellow]unknown[/yellow]
+```
+
+The knowledge abstract is still usable but some features may be limited.
+
+---
+
+## See Also
+
+- [`he parse`](parse.md) — Create knowledge abstract
+- [`he feed`](feed.md) — Add to knowledge abstract
+- [`he build-index`](build-index.md) — Build search index

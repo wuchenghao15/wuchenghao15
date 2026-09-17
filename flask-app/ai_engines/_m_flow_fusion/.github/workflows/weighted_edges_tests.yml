@@ -1,0 +1,187 @@
+# ┌──────────────────────────────────────────────────────────────────────────┐
+# │ M-Flow CI Pipeline: Weighted-Edge Feature Regression Suite              │
+# │                                                                          │
+# │ Comprehensive validation of weighted-edge functionality, structured as: │
+# │   1. quality-gate — static analysis on affected source files            │
+# │   2. unit-regression — core unit tests across Python versions           │
+# │   3. cross-backend-validation — weighted-edge assertions on Kuzu/Neo4j  │
+# │   4. example-artifact-check — demo script output verification           │
+# │                                                                          │
+# │ Owner: M-Flow Platform Engineering                                      │
+# └──────────────────────────────────────────────────────────────────────────┘
+name: "weighted-edges | Feature Regression Suite"
+
+on:
+  push:
+    branches: [dev, weighted_edges]
+    paths:
+      - 'm_flow/knowledge/graph_ops/**'
+      - 'm_flow/core/models/**'
+      - 'm_flow/tests/unit/interfaces/graph/test_weighted_edges.py'
+      - 'examples/python/weighted_edges_example.py'
+      - '.github/workflows/weighted_edges_tests.yml'
+  pull_request:
+    branches: [main, dev]
+    paths:
+      - 'm_flow/knowledge/graph_ops/**'
+      - 'm_flow/core/models/**'
+      - 'm_flow/tests/unit/interfaces/graph/test_weighted_edges.py'
+      - 'examples/python/weighted_edges_example.py'
+      - '.github/workflows/weighted_edges_tests.yml'
+
+permissions: {contents: read}
+
+env: {RUNTIME__LOG_LEVEL: ERROR, ENV: 'dev'}
+
+concurrency:
+  group: mflow-wedge-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+
+  # ── Stage 1: static analysis gate ──────────────────────────────────────
+  quality-gate:
+    timeout-minutes: 10
+    runs-on: ubuntu-22.04
+    name: "Static analysis — weighted-edge sources"
+    defaults: {run: {shell: bash}}
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
+        name: "Clone M-Flow repository"
+        with: {fetch-depth: 0}
+
+      - uses: ./.github/actions/m_flow_setup
+        name: "Configure runtime environment"
+        with: {python-version: '3.11'}
+
+      - name: "Ruff lint pass"
+        uses: astral-sh/ruff-action@f2e32211077f40bfeab40e16285216924ebea4cb  # v2
+        with:
+          args: "check m_flow/knowledge/graph_ops/** m_flow/tests/unit/interfaces/graph/test_weighted_edges.py examples/python/weighted_edges_example.py"
+
+      - name: "Ruff format pass"
+        uses: astral-sh/ruff-action@f2e32211077f40bfeab40e16285216924ebea4cb  # v2
+        with:
+          args: "format --check m_flow/knowledge/graph_ops/** m_flow/tests/unit/interfaces/graph/test_weighted_edges.py examples/python/weighted_edges_example.py"
+
+  # ── Stage 2: unit regression across Python versions ────────────────────
+  unit-regression:
+    needs: [quality-gate]
+    timeout-minutes: 15
+    runs-on: ubuntu-22.04
+    name: "Unit tests — weighted-edge logic (py${{ matrix.py }})"
+    defaults: {run: {shell: bash}}
+    strategy:
+      fail-fast: false
+      matrix:
+        py: ['3.11', '3.12']
+    env:
+      LLM_PROVIDER: openai
+      LLM_MODEL: gpt-5-mini
+      LLM_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
+        name: "Clone M-Flow repository"
+        with: {fetch-depth: 0}
+
+      - uses: ./.github/actions/m_flow_setup
+        name: "Configure runtime environment"
+        with: {python-version: "${{ matrix.py }}"}
+
+      - name: "Execute weighted-edge unit assertions"
+        run: uv run pytest m_flow/tests/unit/interfaces/graph/test_weighted_edges.py -v --tb=short
+
+      - name: "Regression check — standard graph model"
+        run: uv run pytest m_flow/tests/unit/interfaces/graph/get_graph_from_model_unit_test.py -v --tb=short
+
+  # ── Stage 3: cross-backend weighted-edge validation ────────────────────
+  cross-backend-validation:
+    needs: [quality-gate]
+    timeout-minutes: 25
+    runs-on: ubuntu-22.04
+    name: "Weighted edges on ${{ matrix.database }}"
+    defaults: {run: {shell: bash}}
+    strategy:
+      fail-fast: false
+      matrix:
+        database: [kuzu, neo4j]
+    env:
+      LLM_PROVIDER: openai
+      LLM_MODEL: gpt-5-mini
+      LLM_ENDPOINT: https://api.openai.com/v1
+      LLM_API_KEY: ${{ secrets.OPENAI_API_KEY  }}
+      LLM_API_VERSION: "2024-02-01"
+      EMBEDDING_MODEL: ${{ secrets.EMBEDDING_MODEL }}
+      EMBEDDING_DIMENSIONS: "1536"
+      EMBEDDING_ENDPOINT: ${{ secrets.EMBEDDING_ENDPOINT }}
+      EMBEDDING_API_KEY: ${{ secrets.EMBEDDING_API_KEY }}
+      EMBEDDING_API_VERSION: ${{ secrets.EMBEDDING_API_VERSION }}
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
+        name: "Clone M-Flow repository"
+        with: {fetch-depth: 0}
+
+      - uses: ./.github/actions/m_flow_setup
+        name: "Configure runtime environment"
+        with: {python-version: '3.11'}
+
+      - uses: ./.github/actions/setup_neo4j
+        name: "Provision Neo4j with GDS extension"
+        id: neo4j_svc
+        if: matrix.database == 'neo4j'
+
+      - run: echo "Dependencies already installed in setup"
+        name: "Confirm dependency resolution"
+        if: matrix.database == 'kuzu'
+
+      - name: "Run weighted-edge assertions on ${{ matrix.database }}"
+        env:
+          ENABLE_BACKEND_ACCESS_CONTROL: 'false'
+          GRAPH_DATABASE_PROVIDER: ${{ matrix.database }}
+          GRAPH_DATABASE_URL: >-
+            ${{ matrix.database == 'neo4j' && steps.neo4j_svc.outputs.neo4j-url || '' }}
+          GRAPH_DATABASE_USERNAME: >-
+            ${{ matrix.database == 'neo4j' && steps.neo4j_svc.outputs.neo4j-username || '' }}
+          GRAPH_DATABASE_PASSWORD: >-
+            ${{ matrix.database == 'neo4j' && steps.neo4j_svc.outputs.neo4j-password || '' }}
+        run: uv run pytest m_flow/tests/unit/interfaces/graph/test_weighted_edges.py -v --tb=short
+
+  # ── Stage 4: example script + artifact check ───────────────────────────
+  example-artifact-check:
+    needs: [unit-regression]
+    timeout-minutes: 15
+    runs-on: ubuntu-22.04
+    name: "Demo script execution + artifact verification"
+    defaults: {run: {shell: bash}}
+    env:
+      LLM_PROVIDER: openai
+      LLM_MODEL: gpt-5-mini
+      LLM_ENDPOINT: https://api.openai.com/v1
+      LLM_API_KEY: ${{ secrets.OPENAI_API_KEY  }}
+      LLM_API_VERSION: "2024-02-01"
+      EMBEDDING_MODEL: ${{ secrets.EMBEDDING_MODEL }}
+      EMBEDDING_DIMENSIONS: "1536"
+      EMBEDDING_ENDPOINT: ${{ secrets.EMBEDDING_ENDPOINT }}
+      EMBEDDING_API_KEY: ${{ secrets.EMBEDDING_API_KEY }}
+      EMBEDDING_API_VERSION: ${{ secrets.EMBEDDING_API_VERSION }}
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
+        name: "Clone M-Flow repository"
+        with: {fetch-depth: 0}
+
+      - uses: ./.github/actions/m_flow_setup
+        name: "Configure runtime environment"
+        with: {python-version: '3.11'}
+
+      - name: "Execute weighted-edges example script"
+        run: uv run python examples/python/weighted_edges_example.py
+
+      - name: "Assert visualisation artifact exists"
+        run: |
+          if [ -f "examples/python/weighted_graph_visualization.html" ]; then
+            echo "✅ Visualization file created successfully"
+            ls -la examples/python/weighted_graph_visualization.html
+          else
+            echo "❌ Visualization file not found"
+            exit 1
+          fi

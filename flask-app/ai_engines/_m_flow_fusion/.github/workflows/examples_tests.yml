@@ -1,0 +1,203 @@
+# M-Flow CI: validates Python example scripts — multimedia, eval, ontology, pipelines, etc.
+# Each example is isolated in its own job to surface failures precisely.
+name: "examples | Demo Script Validation Suite"
+
+permissions: {contents: read}
+
+on:
+  workflow_call:
+
+jobs:
+
+  multimedia-demo:
+    if: false  # OpenAIAdapter.create_transcript doesn't exist — re-enable when fixed
+    runs-on: ubuntu-22.04
+    name: "Multimedia ingestion demo"
+    steps:
+      - name: Pull source tree
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
+
+      - name: Bootstrap M-Flow environment
+        uses: ./.github/actions/m_flow_setup
+        with:
+          python-version: '3.11.x'
+
+      - name: Validate multimedia example script
+        env:
+          ENV: 'dev'
+          LLM_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: uv run python ./examples/python/multimedia_example.py
+
+  descriptive-graph-metrics:
+    if: false  # needs Neo4j service + has KeyError — re-enable when fixed
+    runs-on: ubuntu-22.04
+    name: "Neo4j descriptive metrics demo"
+    steps:
+      - name: Pull source tree
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
+
+      - name: Bootstrap M-Flow environment
+        uses: ./.github/actions/m_flow_setup
+        with:
+          python-version: '3.11.x'
+
+      - name: Provision Neo4j + GDS plugin
+        uses: ./.github/actions/setup_neo4j
+        id: neo4j
+
+      - name: Validate descriptive graph metrics script
+        env:
+          ENV: 'dev'
+          ENABLE_BACKEND_ACCESS_CONTROL: 'false'
+          LLM_MODEL: ${{ secrets.LLM_MODEL }}
+          LLM_ENDPOINT: ${{ secrets.LLM_ENDPOINT }}
+          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+          LLM_API_VERSION: ${{ secrets.LLM_API_VERSION }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          EMBEDDING_MODEL: ${{ secrets.EMBEDDING_MODEL }}
+          EMBEDDING_DIMENSIONS: "1536"
+          EMBEDDING_ENDPOINT: ${{ secrets.EMBEDDING_ENDPOINT }}
+          EMBEDDING_API_KEY: ${{ secrets.EMBEDDING_API_KEY }}
+          EMBEDDING_API_VERSION: ${{ secrets.EMBEDDING_API_VERSION }}
+          GRAPH_DATABASE_PROVIDER: "neo4j"
+          GRAPH_DATABASE_URL: ${{ steps.neo4j.outputs.neo4j-url }}
+          GRAPH_DATABASE_USERNAME: ${{ steps.neo4j.outputs.neo4j-username }}
+          GRAPH_DATABASE_PASSWORD: ${{ steps.neo4j.outputs.neo4j-password }}
+        run: uv run python ./m_flow/tests/tasks/descriptive_metrics/neo4j_metrics_test.py
+
+  dynamic-steps-demo:
+    runs-on: ubuntu-22.04
+    name: "Dynamic pipeline steps demo"
+    steps:
+      - name: Pull source tree
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
+
+      - name: Bootstrap M-Flow environment
+        uses: ./.github/actions/m_flow_setup
+        with:
+          python-version: '3.11.x'
+
+      - name: Validate dynamic steps example
+        env:
+          ENV: 'dev'
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          LLM_MODEL: ${{ secrets.LLM_MODEL }}
+          LLM_ENDPOINT: ${{ secrets.LLM_ENDPOINT }}
+          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+          LLM_API_VERSION: ${{ secrets.LLM_API_VERSION }}
+          EMBEDDING_MODEL: ${{ secrets.EMBEDDING_MODEL }}
+          EMBEDDING_DIMENSIONS: "1536"
+          EMBEDDING_ENDPOINT: ${{ secrets.EMBEDDING_ENDPOINT }}
+          EMBEDDING_API_KEY: ${{ secrets.EMBEDDING_API_KEY }}
+          EMBEDDING_API_VERSION: ${{ secrets.EMBEDDING_API_VERSION }}
+        run: uv run python ./examples/python/dynamic_steps_example.py
+
+  agentic-reasoning-demo:
+    runs-on: ubuntu-22.04
+    name: "Agentic reasoning procurement demo"
+    steps:
+      - name: Pull source tree
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
+
+      - name: Bootstrap M-Flow environment
+        uses: ./.github/actions/m_flow_setup
+        with:
+          python-version: '3.11.x'
+
+      - name: Validate agentic reasoning example
+        env:
+          ENV: 'dev'
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          LLM_MODEL: ${{ secrets.LLM_MODEL }}
+          LLM_ENDPOINT: ${{ secrets.LLM_ENDPOINT }}
+          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+          LLM_API_VERSION: ${{ secrets.LLM_API_VERSION }}
+          EMBEDDING_MODEL: ${{ secrets.EMBEDDING_MODEL }}
+          EMBEDDING_DIMENSIONS: "1536"
+          EMBEDDING_ENDPOINT: ${{ secrets.EMBEDDING_ENDPOINT }}
+          EMBEDDING_API_KEY: ${{ secrets.EMBEDDING_API_KEY }}
+          EMBEDDING_API_VERSION: ${{ secrets.EMBEDDING_API_VERSION }}
+        run: uv run python ./examples/python/agentic_reasoning_procurement_example.py
+
+  custom-pipeline-demo:
+    runs-on: ubuntu-22.04
+    name: "Custom pipeline wiring demo"
+    steps:
+      - name: Pull source tree
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
+
+      - name: Bootstrap M-Flow environment
+        uses: ./.github/actions/m_flow_setup
+        with:
+          python-version: '3.11.x'
+
+      - name: Validate custom pipeline example
+        env:
+          ENV: 'dev'
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          LLM_MODEL: ${{ secrets.LLM_MODEL }}
+          LLM_ENDPOINT: ${{ secrets.LLM_ENDPOINT }}
+          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+          LLM_API_VERSION: ${{ secrets.LLM_API_VERSION }}
+          EMBEDDING_MODEL: ${{ secrets.EMBEDDING_MODEL }}
+          EMBEDDING_DIMENSIONS: "1536"
+          EMBEDDING_ENDPOINT: ${{ secrets.EMBEDDING_ENDPOINT }}
+          EMBEDDING_API_KEY: ${{ secrets.EMBEDDING_API_KEY }}
+          EMBEDDING_API_VERSION: ${{ secrets.EMBEDDING_API_VERSION }}
+        run: uv run python ./examples/python/run_custom_pipeline_example.py
+
+  permissions-demo:
+    runs-on: ubuntu-22.04
+    name: "Access-control permissions demo"
+    steps:
+      - name: Pull source tree
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
+
+      - name: Bootstrap M-Flow environment
+        uses: ./.github/actions/m_flow_setup
+        with:
+          python-version: '3.11.x'
+
+      - name: Validate permissions example script
+        env:
+          ENV: 'dev'
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          LLM_MODEL: ${{ secrets.LLM_MODEL }}
+          LLM_ENDPOINT: ${{ secrets.LLM_ENDPOINT }}
+          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+          LLM_API_VERSION: ${{ secrets.LLM_API_VERSION }}
+          EMBEDDING_MODEL: ${{ secrets.EMBEDDING_MODEL }}
+          EMBEDDING_DIMENSIONS: "1536"
+          EMBEDDING_ENDPOINT: ${{ secrets.EMBEDDING_ENDPOINT }}
+          EMBEDDING_API_KEY: ${{ secrets.EMBEDDING_API_KEY }}
+          EMBEDDING_API_VERSION: ${{ secrets.EMBEDDING_API_VERSION }}
+        run: uv run python ./examples/python/permissions_example.py
+
+  docling-ingestion-demo:
+    runs-on: macos-15
+    name: "Docling document ingestion demo"
+    steps:
+      - name: Pull source tree
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
+
+      - name: Bootstrap M-Flow environment
+        uses: ./.github/actions/m_flow_setup
+        with:
+          python-version: '3.11.x'
+          extra-dependencies: 'docling'
+
+      - name: Validate Docling add workflow
+        env:
+          ENV: 'dev'
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          LLM_MODEL: ${{ secrets.LLM_MODEL }}
+          LLM_ENDPOINT: ${{ secrets.LLM_ENDPOINT }}
+          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+          LLM_API_VERSION: ${{ secrets.LLM_API_VERSION }}
+          EMBEDDING_MODEL: ${{ secrets.EMBEDDING_MODEL }}
+          EMBEDDING_DIMENSIONS: "1536"
+          EMBEDDING_ENDPOINT: ${{ secrets.EMBEDDING_ENDPOINT }}
+          EMBEDDING_API_KEY: ${{ secrets.EMBEDDING_API_KEY }}
+          EMBEDDING_API_VERSION: ${{ secrets.EMBEDDING_API_VERSION }}
+        run: uv run python ./m_flow/tests/test_add_docling_document.py

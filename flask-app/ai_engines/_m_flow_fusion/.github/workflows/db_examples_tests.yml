@@ -1,0 +1,161 @@
+# ┌──────────────────────────────────────────────────────────────────────────┐
+# │ M-Flow CI Pipeline: Database Example Validation                         │
+# │                                                                          │
+# │ Drives the Neo4j, Kuzu, and PGVector example scripts through a full     │
+# │ pipeline run to catch provider-specific regressions before release.     │
+# │ Each backend is gated by the `databases` input for selective execution. │
+# │                                                                          │
+# │ Owner: M-Flow Platform Engineering                                      │
+# └──────────────────────────────────────────────────────────────────────────┘
+name: "db-examples | Backend Demo Validation"
+
+on:
+  workflow_call:
+    inputs:
+      databases:
+        type: string
+        default: "all"
+        required: false
+        description: >-
+          Comma-separated backend list or 'all' to execute every demo.
+          Accepted tokens: neo4j, kuzu, postgres
+      python-version:
+        type: string
+        default: "3.11.x"
+        required: false
+    secrets:
+      LLM_MODEL: {required: true}
+      LLM_ENDPOINT: {required: false}
+      LLM_API_KEY: {required: true}
+      LLM_API_VERSION: {required: false}
+      EMBEDDING_MODEL: {required: true}
+      EMBEDDING_ENDPOINT: {required: false}
+      EMBEDDING_API_KEY: {required: true}
+      EMBEDDING_API_VERSION: {required: false}
+      POSTGRES_PASSWORD: {required: false}
+      NEO4J_API_URL: {required: false}
+      NEO4J_API_KEY: {required: false}
+
+permissions: {contents: read}
+
+concurrency:
+  group: mflow-dbex-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+
+  # ── Neo4j example pipeline ─────────────────────────────────────────────
+  validate-demo-neo4j:
+    if: ${{ inputs.databases == 'all' || contains(inputs.databases, 'neo4j') }}
+    timeout-minutes: 20
+    runs-on: ubuntu-22.04
+    name: "neo4j-example-pipeline"
+    defaults: {run: {shell: bash}}
+    env:
+      ENV: 'dev'
+      ENABLE_BACKEND_ACCESS_CONTROL: 'false'
+      GRAPH_DATABASE_PROVIDER: "neo4j"
+      LLM_MODEL: ${{ secrets.LLM_MODEL }}
+      LLM_ENDPOINT: ${{ secrets.LLM_ENDPOINT }}
+      LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+      LLM_API_VERSION: ${{ secrets.LLM_API_VERSION }}
+      EMBEDDING_MODEL: ${{ secrets.EMBEDDING_MODEL }}
+      EMBEDDING_DIMENSIONS: "1536"
+      EMBEDDING_ENDPOINT: ${{ secrets.EMBEDDING_ENDPOINT }}
+      EMBEDDING_API_KEY: ${{ secrets.EMBEDDING_API_KEY }}
+      EMBEDDING_API_VERSION: ${{ secrets.EMBEDDING_API_VERSION }}
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
+        name: "Clone M-Flow repository"
+
+      - uses: ./.github/actions/m_flow_setup
+        name: "Prepare runtime environment"
+        with: {python-version: "${{ inputs.python-version }}"}
+
+      - uses: ./.github/actions/setup_neo4j
+        name: "Spin up Neo4j with GDS extension"
+        id: neo4j_svc
+
+      - name: "Drive Neo4j demo through pipeline"
+        env:
+          GRAPH_DATABASE_URL: ${{ steps.neo4j_svc.outputs.neo4j-url }}
+          GRAPH_DATABASE_USERNAME: ${{ steps.neo4j_svc.outputs.neo4j-username }}
+          GRAPH_DATABASE_PASSWORD: ${{ steps.neo4j_svc.outputs.neo4j-password }}
+        run: |
+          uv run python examples/database_examples/neo4j_example.py
+
+  # ── Kuzu example pipeline ──────────────────────────────────────────────
+  validate-demo-kuzu:
+    if: ${{ inputs.databases == 'all' || contains(inputs.databases, 'kuzu') }}
+    timeout-minutes: 15
+    runs-on: ubuntu-22.04
+    name: "kuzu-example-pipeline"
+    defaults: {run: {shell: bash}}
+    env:
+      ENV: 'dev'
+      GRAPH_DATABASE_PROVIDER: "kuzu"
+      LLM_MODEL: ${{ secrets.LLM_MODEL }}
+      LLM_ENDPOINT: ${{ secrets.LLM_ENDPOINT }}
+      LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+      LLM_API_VERSION: ${{ secrets.LLM_API_VERSION }}
+      EMBEDDING_MODEL: ${{ secrets.EMBEDDING_MODEL }}
+      EMBEDDING_DIMENSIONS: "1536"
+      EMBEDDING_ENDPOINT: ${{ secrets.EMBEDDING_ENDPOINT }}
+      EMBEDDING_API_KEY: ${{ secrets.EMBEDDING_API_KEY }}
+      EMBEDDING_API_VERSION: ${{ secrets.EMBEDDING_API_VERSION }}
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
+        name: "Clone M-Flow repository"
+
+      - uses: ./.github/actions/m_flow_setup
+        name: "Prepare runtime environment"
+        with: {python-version: "${{ inputs.python-version }}"}
+
+      - run: echo "Dependencies already installed in setup"
+        name: "Verify dependency resolution"
+
+      - name: "Drive Kuzu demo through pipeline"
+        run: |
+          uv run python examples/database_examples/kuzu_example.py
+
+  # ── PGVector example pipeline ──────────────────────────────────────────
+  validate-demo-pgvector:
+    if: ${{ inputs.databases == 'all' || contains(inputs.databases, 'postgres') }}
+    timeout-minutes: 20
+    runs-on: ubuntu-22.04
+    name: "pgvector-example-pipeline"
+    defaults: {run: {shell: bash}}
+    env:
+      ENV: 'dev'
+      ENABLE_BACKEND_ACCESS_CONTROL: 'false'
+      LLM_MODEL: ${{ secrets.LLM_MODEL }}
+      LLM_ENDPOINT: ${{ secrets.LLM_ENDPOINT }}
+      LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+      LLM_API_VERSION: ${{ secrets.LLM_API_VERSION }}
+      EMBEDDING_MODEL: ${{ secrets.EMBEDDING_MODEL }}
+      EMBEDDING_DIMENSIONS: "1536"
+      EMBEDDING_ENDPOINT: ${{ secrets.EMBEDDING_ENDPOINT }}
+      EMBEDDING_API_KEY: ${{ secrets.EMBEDDING_API_KEY }}
+      EMBEDDING_API_VERSION: ${{ secrets.EMBEDDING_API_VERSION }}
+    services:
+      postgres:
+        image: pgvector/pgvector:pg17
+        env: {POSTGRES_USER: m_flow, POSTGRES_PASSWORD: "m_flow", POSTGRES_DB: m_flow_db}
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports: ["5432:5432"]
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
+        name: "Clone M-Flow repository"
+        with: {fetch-depth: 0}
+
+      - uses: ./.github/actions/m_flow_setup
+        name: "Prepare runtime environment"
+        with: {python-version: "${{ inputs.python-version }}", extra-dependencies: "postgres"}
+
+      - name: "Drive PGVector demo through pipeline"
+        run: |
+          uv run python examples/database_examples/pgvector_example.py

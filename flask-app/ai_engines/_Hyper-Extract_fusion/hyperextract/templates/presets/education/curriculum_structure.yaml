@@ -1,0 +1,120 @@
+language: [zh, en]
+
+name: curriculum_structure
+type: hypergraph
+tags: [education, curriculum, syllabus, assessment, module]
+
+description:
+  zh: '课程结构超图模板 - 从教学大纲、培养方案和课程简介中提取课程、模块、知识点与考核的多元结构'
+  en: 'Curriculum Structure Template - Extract course–module–concept–assessment structure from syllabi, program plans, and course outlines'
+
+output:
+  description:
+    zh: '以教学单元为超边的课程结构，连接所属课程、所授知识点、考核方式与学习成果'
+    en: 'Curriculum structure as teaching-unit hyperedges linking parent courses, taught concepts, assessments, and learning outcomes'
+  entities:
+    description:
+      zh: '大纲中的课程结构要素：课程、模块、知识点、考核、学习成果'
+      en: 'Curriculum elements in the syllabus: courses, modules, concepts, assessments, and learning outcomes'
+    fields:
+      - name: name
+        type: str
+        description:
+          zh: '要素名称，使用大纲中最稳定的称呼，如课程名、模块名、考核名'
+          en: 'Element name, using the most stable designation in the syllabus, such as course, module, or assessment title'
+        required: true
+      - name: type
+        type: str
+        description:
+          zh: '要素类型：课程/模块/知识点/考核/成果等'
+          en: 'Element type: course/module/concept/assessment/outcome, etc.'
+        required: true
+      - name: description
+        type: str
+        description:
+          zh: '对该要素的补充说明，如学分、周次或考核形式，仅在文本写明时填写'
+          en: 'Supplementary gloss such as credits, week number, or assessment format, only when the text states it'
+        required: false
+  relations:
+    description:
+      zh: '一个教学单元超边，将所属课程、所授知识点、考核和学习成果按角色分组'
+      en: 'One teaching-unit hyperedge grouping parent courses, taught concepts, assessments, and learning outcomes by role'
+    fields:
+      - name: unit_name
+        type: str
+        description:
+          zh: '教学单元名称，通常为模块、周次或课程级单元的标题'
+          en: 'Teaching-unit name, usually a module, week, or course-level unit title'
+        required: true
+      - name: courses
+        type: list
+        description:
+          zh: '该单元所属的一门或多门课程名称'
+          en: 'One or more parent course names this unit belongs to'
+        required: true
+      - name: concepts
+        type: list
+        description:
+          zh: '该单元明确覆盖或讲授的知识点名称列表'
+          en: 'Knowledge-point names this unit is explicitly said to cover or teach'
+        required: false
+      - name: assessments
+        type: list
+        description:
+          zh: '该单元明确对应的考核名称列表，如测验、作业、实验、考试'
+          en: 'Assessment names explicitly assigned to this unit, such as quiz, homework, lab, or exam'
+        required: false
+      - name: outcomes
+        type: list
+        description:
+          zh: '该单元或课程明确写出的学习成果名称列表'
+          en: 'Learning-outcome names explicitly stated for this unit or course'
+        required: false
+
+guideline:
+  target:
+    zh: '你是一位教学设计专家，负责从教学大纲、培养方案和课程简介中准确提取课程结构，而不是从教材正文抽取概念依赖。'
+    en: 'You are an instructional-design expert responsible for extracting curriculum structure from syllabi, program plans, and course outlines, not concept dependencies from textbook prose.'
+  rules_for_entities:
+    zh:
+      - '提取课程名称作为课程实体；提取模块、单元、周次标题作为模块实体'
+      - '提取大纲写明要讲授或覆盖的知识点作为知识点实体'
+      - '提取测验、作业、实验、项目、期中期末考试等作为考核实体'
+      - '仅当文本写出学习成果、课程目标或“学生应能够……”时，提取成果实体'
+      - '不要把学分、学时、上课时间、教师、办公室地点抽成独立实体；这些信息如需保留，写入对应实体的 description'
+      - '同一要素全文使用同一名称；模块名在不同课程中重复时，将 unit_name 写成“课程名 / 模块名”'
+    en:
+      - 'Extract course titles as course entities; extract module, unit, or week headings as module entities'
+      - 'Extract topics the syllabus says will be taught or covered as concept entities'
+      - 'Extract quizzes, homework, labs, projects, and midterm/final exams as assessment entities'
+      - 'Extract outcome entities only when the text states learning outcomes, course objectives, or "students will be able to"'
+      - 'Do not extract credits, contact hours, meeting times, instructors, or office locations as standalone entities; put such facts in description when needed'
+      - 'Use one name for the same element throughout; if a module title repeats across courses, write unit_name as "Course / Module"'
+  rules_for_relations:
+    zh:
+      - '大纲点名的每一个模块、单元或周次创建一条超边；unit_name 使用该模块标题，并同步提取为模块实体'
+      - 'courses 必须填入所属课程名称；这些名称也必须作为课程实体存在'
+      - 'concepts 只填该单元被明确覆盖的知识点；不要把其他模块的内容复制进来'
+      - 'assessments 只填文本指定属于该单元的考核。若某考核“覆盖全部模块”或未指定模块，不要把它复制到每个模块，而应另建一条课程级超边：unit_name 使用课程名，courses 为该课程，assessments 放入该考核'
+      - 'outcomes 只填文本明确写出的学习成果。课程级成果放入课程级超边；模块级成果放入对应模块超边。不要根据布鲁姆分类自行编造成果'
+      - '若大纲没有模块划分、只有课程级主题与考核列表，则只创建一条课程级超边，unit_name 与课程名相同'
+      - '允许列表为空：没有考核的模块应将 assessments 留空，而不是删除字段或臆造测验'
+      - '同一 unit_name 不要生成重复超边；相同结构合并为一条'
+    en:
+      - 'Create one hyperedge per module, unit, or week the syllabus names; set unit_name to that heading and also extract it as a module entity'
+      - 'courses must contain the parent course name(s); those names must also exist as course entities'
+      - 'concepts may list only topics this unit is explicitly said to cover; do not copy topics from other modules'
+      - 'assessments may list only assessments the text assigns to this unit. If an assessment "covers all modules" or has no module assignment, do not copy it onto every module; create a course-level hyperedge whose unit_name is the course name, courses is that course, and assessments holds that item'
+      - 'outcomes may list only learning outcomes the text states. Put course-level outcomes on the course-level hyperedge and module-level outcomes on the matching module hyperedge. Do not invent Bloom-taxonomy outcomes'
+      - 'If the syllabus has no modules, only course-level topics and assessments, create a single course-level hyperedge whose unit_name equals the course name'
+      - 'Empty lists are allowed: a module with no stated assessment should leave assessments empty rather than dropping the field or inventing a quiz'
+      - 'Do not emit duplicate hyperedges for the same unit_name; merge identical structures into one record'
+
+identifiers:
+  entity_id: name
+  relation_id: '{unit_name}'
+  relation_members: [courses, concepts, assessments, outcomes]
+
+display:
+  entity_label: '{name}'
+  relation_label: '{unit_name}'

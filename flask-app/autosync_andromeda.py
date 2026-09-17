@@ -754,6 +754,19 @@ def main_loop():
     log_and_print("info", f"  同步表: {[t[0] for t in SYNC_TABLES]}")
     log_and_print("info", f"  冷却: {SYNC_COOLDOWN}s, 发现间隔: {DISCOVER_INTERVAL}s")
 
+    # ── MT_RULE_VERSION §3.3: 版本差拦截 (跨 major 禁止同步) ──
+    try:
+        from ai_engines.rules_engine.rule_andromeda_bridge import check_version_diff
+        _vd = check_version_diff()
+        if not _vd["allow_sync"]:
+            log_and_print("warn", f"⚠️ 版本差拦截: {_vd['block_reason']}")
+            log_and_print("warn", "   将降级为心跳检测模式 (跳过 rsync)")
+        elif _vd.get("minor_diff"):
+            log_and_print("warn", f"⚠️ minor 版本差 ({_vd['local_version']} vs {_vd['remote_version']})")
+            log_and_print("info", "   降级同步 (跳过规则文件, 只同步 AI 数据)")
+    except Exception as _ve:
+        log_and_print("warn", f"版本检查跳过 (非阻断): {_ve}")
+
     last_sync = 0
     known_host = None
     remote_db_path = None

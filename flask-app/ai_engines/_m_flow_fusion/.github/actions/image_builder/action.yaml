@@ -1,0 +1,44 @@
+# Composite action — build & optionally push a Docker image to AWS ECR.
+name: "M-flow Docker image builder"
+description: "Build an M-flow Docker image, tag it with git SHA + timestamp, and optionally publish to ECR."
+
+inputs:
+  stage:
+    description: "Deployment stage (dev | staging | prd)"
+    required: true
+  aws_account_id:
+    description: "AWS account ID that owns the ECR registry"
+    required: true
+  ecr_image_repo_name:
+    description: "ECR repository name (e.g. m_flow-backend)"
+    required: true
+  dockerfile_location:
+    description: "Path to the directory containing the Dockerfile"
+    required: true
+  should_publish:
+    description: "Push the image to ECR when 'true'"
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Build and tag Docker image
+      shell: bash
+      run: |
+        set -euo pipefail
+        SHA_SHORT="$(git rev-parse --short HEAD)"
+        TIMESTAMP="$(date +%Y%m%d%H%M%S)"
+        VERSION="${{ inputs.stage }}-${TIMESTAMP}-${SHA_SHORT}"
+        APP_DIR="${PWD}/${{ inputs.dockerfile_location }}"
+
+        echo "::group::Building M-flow image  (tag=${VERSION})"
+        image_name="${{ inputs.ecr_image_repo_name }}" \
+          version="${VERSION}" \
+          account="${{ inputs.aws_account_id }}" \
+          app_dir="${APP_DIR}" \
+          publish="${{ inputs.should_publish }}" \
+          ./bin/dockerize
+        echo "::endgroup::"
+
+        echo "Docker image version: ${VERSION}"
+        echo "${VERSION}" > /tmp/.DOCKER_IMAGE_VERSION

@@ -1,0 +1,29 @@
+# M-Flow — pre-flight checks.
+# Validates the uv lockfile is consistent before heavier test suites run.
+name: "pre-flight | Lockfile & Dependency Checks"
+
+on:
+  workflow_call:
+
+permissions: {contents: read}
+
+jobs:
+
+  uv-lock-integrity:
+    runs-on: ubuntu-latest
+    name: "Assert uv.lock is up-to-date"
+    steps:
+      - name: Fetch repository
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
+        with: {fetch-depth: 0}
+
+      - name: Provision uv toolchain
+        uses: astral-sh/setup-uv@cec208311dfd045dd5311c1add060b2062131d57  # v8.0.0
+        with: {enable-cache: true}
+
+      - name: Verify lockfile consistency
+        run: |
+          uv lock --check || {
+            echo "::error::uv.lock is out of date. Run 'uv lock' locally and push."
+            exit 1
+          }
