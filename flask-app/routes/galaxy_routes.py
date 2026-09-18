@@ -39,6 +39,7 @@ import sqlite3
 from datetime import datetime
 
 from flask import Blueprint, render_template, request, jsonify, abort
+from app.middlewares.system_container import system_container
 
 logger = logging.getLogger('galaxy_routes')
 
@@ -72,6 +73,7 @@ def _nav_items(endpoint: str = ''):
 # =================================================================
 
 @galaxy_bp.route('/api/galaxy/stats', methods=['GET'])
+@system_container()
 def api_stats():
     """GET /api/galaxy/stats — daemon 运营汇总"""
     try:
@@ -86,6 +88,7 @@ def api_stats():
 
 
 @galaxy_bp.route('/api/galaxy/series/create', methods=['POST'])
+@system_container()
 def api_series_create():
     """POST /api/galaxy/series/create — 生成课程系列"""
     data = request.get_json(silent=True) or request.form.to_dict()
@@ -113,6 +116,7 @@ def api_series_create():
 
 
 @galaxy_bp.route('/api/galaxy/series', methods=['GET'])
+@system_container()
 def api_series_list():
     """GET /api/galaxy/series — 系列列表"""
     role_type = request.args.get('role_type')
@@ -127,6 +131,7 @@ def api_series_list():
 
 
 @galaxy_bp.route('/api/galaxy/series/<series_id>', methods=['GET'])
+@system_container()
 def api_series_detail(series_id):
     """GET /api/galaxy/series/<series_id> — 系列详情 + 集列表"""
     try:
@@ -175,6 +180,7 @@ def api_series_detail(series_id):
 
 
 @galaxy_bp.route('/api/galaxy/compliance/check', methods=['POST'])
+@system_container()
 def api_compliance_check():
     """POST /api/galaxy/compliance/check — C1~C7 全量合规审查 (支持 platform)"""
     data = request.get_json(silent=True) or request.form.to_dict()
@@ -200,6 +206,7 @@ def api_compliance_check():
 
 
 @galaxy_bp.route('/api/galaxy/compliance/precheck', methods=['POST'])
+@system_container()
 def api_compliance_precheck():
     """POST /api/galaxy/compliance/precheck — 快速预检 (支持 platform)"""
     data = request.get_json(silent=True) or request.form.to_dict()
@@ -222,6 +229,7 @@ def api_compliance_precheck():
 # =================================================================
 
 @galaxy_bp.route('/api/galaxy/accounts', methods=['GET'])
+@system_container()
 def api_accounts_list():
     """GET /api/galaxy/accounts — 账号基础信息"""
     try:
@@ -234,6 +242,7 @@ def api_accounts_list():
 
 
 @galaxy_bp.route('/api/galaxy/accounts/creds', methods=['GET'])
+@system_container()
 def api_creds_list():
     """GET /api/galaxy/accounts/creds — 平台凭证列表"""
     account_id = request.args.get('account_id')
@@ -254,6 +263,7 @@ def api_creds_list():
 
 
 @galaxy_bp.route('/api/galaxy/accounts/creds', methods=['POST'])
+@system_container()
 def api_creds_update():
     """POST /api/galaxy/accounts/creds — 更新平台凭证 (扫码后补 cookie)"""
     data = request.get_json(silent=True) or request.form.to_dict()
@@ -287,6 +297,7 @@ def api_creds_update():
 # =================================================================
 
 @galaxy_bp.route('/api/galaxy/publish_log', methods=['GET'])
+@system_container()
 def api_publish_log_list():
     """GET /api/galaxy/publish_log — 发布日志"""
     episode_id = request.args.get('episode_id')
@@ -303,6 +314,7 @@ def api_publish_log_list():
 
 
 @galaxy_bp.route('/api/galaxy/publish_log', methods=['POST'])
+@system_container()
 def api_publish_log_create():
     """POST /api/galaxy/publish_log — 创建发布计划 (一个 episode 可多平台)"""
     data = request.get_json(silent=True) or request.form.to_dict()
@@ -344,6 +356,7 @@ def api_publish_log_create():
 # =================================================================
 
 @galaxy_bp.route('/api/galaxy/high_exposure', methods=['GET'])
+@system_container()
 def api_high_exposure_list():
     """GET /api/galaxy/high_exposure — 高曝光活动列表"""
     platform = request.args.get('platform')
@@ -357,6 +370,7 @@ def api_high_exposure_list():
 
 
 @galaxy_bp.route('/api/galaxy/high_exposure', methods=['POST'])
+@system_container()
 def api_high_exposure_upsert():
     """POST /api/galaxy/high_exposure — 发现/更新活动"""
     data = request.get_json(silent=True) or request.form.to_dict()
@@ -383,6 +397,7 @@ def api_high_exposure_upsert():
 
 
 @galaxy_bp.route('/api/galaxy/platform_restrict', methods=['GET'])
+@system_container()
 def api_platform_restrict():
     """GET /api/galaxy/platform_restrict — 平台限流词库"""
     platform = request.args.get('platform')
@@ -396,6 +411,7 @@ def api_platform_restrict():
 
 
 @galaxy_bp.route('/api/galaxy/daemon/run', methods=['POST', 'GET'])
+@system_container()
 def api_daemon_run():
     """POST /api/galaxy/daemon/run — 手动触发 daemon 一轮"""
     try:
@@ -412,6 +428,7 @@ def api_daemon_run():
 # =================================================================
 
 @galaxy_bp.route('/api/galaxy/formulas', methods=['GET'])
+@system_container()
 def api_formulas_list():
     """GET /api/galaxy/formulas — 8 种组合公式清单"""
     try:
@@ -437,6 +454,7 @@ def api_formulas_list():
 
 
 @galaxy_bp.route('/api/galaxy/swarm/roll', methods=['POST', 'GET'])
+@system_container()
 def api_swarm_roll():
     """POST /api/galaxy/swarm/roll — topic 自动选公式 + 组队"""
     data = request.get_json(silent=True) or request.args.to_dict()
@@ -460,6 +478,7 @@ def api_swarm_roll():
 
 
 @galaxy_bp.route('/api/galaxy/swarm/generate', methods=['POST', 'GET'])
+@system_container()
 def api_swarm_generate():
     """POST /api/galaxy/swarm/generate — topic → formula → team → production_spec → 合规 → 落库"""
     data = request.get_json(silent=True) or request.args.to_dict()
@@ -531,6 +550,7 @@ def api_swarm_generate():
 
 
 @galaxy_bp.route('/api/galaxy/swarm/list', methods=['GET'])
+@system_container()
 def api_swarm_list():
     """GET /api/galaxy/swarm/list — 历史 swarm 记录"""
     limit = int(request.args.get('limit') or 50)
@@ -549,6 +569,7 @@ def api_swarm_list():
 # =================================================================
 
 @galaxy_bp.route('/admin/galaxy', methods=['GET'])
+@system_container()
 def dashboard():
     """🌌 星系总览仪表盘"""
     try:
@@ -580,6 +601,7 @@ def dashboard():
 
 
 @galaxy_bp.route('/admin/galaxy/series/<series_id>', methods=['GET'])
+@system_container()
 def series_detail(series_id):
     """📚 系列详情页"""
     try:
