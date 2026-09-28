@@ -1,0 +1,230 @@
+{% extends "base.html" %}
+
+{% block title %}{{ t('auto.register.x_e804a9a2', default='用户注册') }}{% endblock %}
+
+{% block head %}
+<style>
+    .register-container {
+        max-width: 520px; margin: 40px auto;
+        background: var(--mtscos-bg-card, #fff);
+        border: 1px solid var(--mtscos-border-light, rgba(91,143,185,.16));
+        border-radius: 16px; padding: 36px;
+        box-shadow: 0 20px 60px -12px rgba(31,45,61,.18);
+    }
+    .register-container h1 { text-align: center; color: var(--mtscos-text-primary, #333); margin-bottom: 6px; font-size: 26px; }
+    .register-sub { text-align: center; color: var(--mtscos-text-secondary, #7a8aa0); font-size: 13px; margin-bottom: 24px; }
+    .form-group { margin-bottom: 18px; }
+    .form-group label { display: block; color: var(--mtscos-text-secondary, #555); margin-bottom: 7px; font-weight: 600; font-size: 14px; }
+    .form-group input {
+        width: 100%; padding: 12px 16px;
+        border: 2px solid var(--mtscos-border-base, #e0e0e0);
+        border-radius: 8px; font-size: 14px;
+        color: var(--mtscos-text-primary);
+        background: var(--mtscos-bg-page, #f6f8fa);
+        transition: border-color .3s;
+    }
+    .form-group input:focus { outline: none; border-color: var(--mtscos-primary-base, #5B8FB9); background: #fff; }
+    .btn-register {
+        width: 100%; padding: 14px;
+        background: linear-gradient(135deg, var(--mtscos-primary-base, #5B8FB9), var(--mtscos-secondary-base, #6FA88B));
+        color: #fff; border: none; border-radius: 8px;
+        font-size: 16px; font-weight: 600; cursor: pointer; transition: all .3s;
+    }
+    .btn-register:hover { transform: translateY(-2px); box-shadow: 0 8px 20px -4px rgba(91,143,185,.4); }
+    .btn-register:disabled { opacity: .6; cursor: not-allowed; transform: none; }
+    .login-link { text-align: center; margin-top: 18px; color: var(--mtscos-text-secondary); font-size: 14px; }
+    .login-link a { color: var(--mtscos-primary-base); text-decoration: none; font-weight: 600; }
+    .alert { padding: 12px 16px; border-radius: 8px; margin-bottom: 18px; font-size: 14px; display: none; }
+    .alert-error { background: var(--mtscos-danger-soft, rgba(209,91,91,.1)); color: var(--mtscos-danger-base, #c33); border: 1px solid var(--mtscos-danger-soft, rgba(209,91,91,.2)); }
+    .alert-success { background: var(--mtscos-success-soft, rgba(92,154,111,.1)); color: var(--mtscos-success-base, #363); border: 1px solid var(--mtscos-success-soft, rgba(92,154,111,.2)); }
+
+    /* ============ 协议 / 规则告知 / {{ t('auto.register.x_a457e978') }}说明') }}') }} ============ */
+    .agreement-section {
+        margin: 20px 0; padding: 16px;
+        background: var(--mtscos-bg-page, #f6f8fa);
+        border: 1px solid var(--mtscos-border-light, rgba(91,143,185,.12));
+        border-radius: 10px;
+    }
+    .agreement-tabs { display: flex; gap: 4px; margin-bottom: 12px; flex-wrap: wrap; }
+    .agreement-tab {
+        padding: 7px 14px; border-radius: 8px; font-size: 13px; font-weight: 600;
+        cursor: pointer; border: 1px solid transparent; transition: all .15s;
+        background: transparent; color: var(--mtscos-text-secondary);
+    }
+    .agreement-tab.active { background: var(--mtscos-primary-soft, rgba(91,143,185,.12)); color: var(--mtscos-primary-base, #457295); border-color: var(--mtscos-border-light, rgba(91,143,185,.2)); }
+    .agreement-tab:hover:not(.active) { background: var(--mtscos-bg-card, #fff); }
+    .agreement-panel { display: none; max-height: 180px; overflow-y: auto; font-size: 13px; line-height: 1.7; color: var(--mtscos-text-secondary, #555); padding-right: 8px; }
+    .agreement-panel.active { display: block; }
+    .agreement-panel h4 { font-size: 14px; font-weight: 700; color: var(--mtscos-text-primary); margin: 0 0 8px; }
+    .agreement-panel p { margin-bottom: 6px; }
+    .agreement-panel ul { margin: 4px 0 8px 18px; }
+    .agreement-panel ul li { margin-bottom: 3px; }
+
+    .agree-check { display: flex; align-items: flex-start; gap: 10px; margin: 16px 0; font-size: 13px; color: var(--mtscos-text-secondary); cursor: pointer; }
+    .agree-check input { width: 18px; height: 18px; margin-top: 1px; cursor: pointer; accent-color: var(--mtscos-primary-base, #5B8FB9); }
+    .agree-check a { color: var(--mtscos-primary-base); font-weight: 600; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="register-container">
+    <h1>用户注册</h1>
+    <div class="register-sub">{{ t('auto.register.x_mtscos_ai__d213979c', default='创建您的 MTSCOS AI 平台账号') }}</div>
+
+    <div class="alert alert-error" id="errorAlert"></div>
+    <div class="alert alert-success" id="successAlert"></div>
+
+    <form id="registerForm" onsubmit="return handleRegister(event)">
+        <div class="form-group">
+            <label for="username">{{ t('auto.register.x_819767ad', default='用户名') }}</label>
+            <input type="text" id="username" name="username" required placeholder="{{ t('auto.register.x_08b1fa13', default='请输入用户名') }}" minlength="3" maxlength="20">
+        </div>
+        <div class="form-group">
+            <label for="password">{{ t('auto.register.x_a8105204', default='密码') }}</label>
+            <input type="password" id="password" name="password" required placeholder="{{ t('auto.register.x_e39ffe99', default='请输入密码') }}" minlength="6">
+        </div>
+        <div class="form-group">
+            <label for="confirmPassword">{{ t('auto.register.x_3fbdde13', default='确认密码') }}</label>
+            <input type="password" id="confirmPassword" name="confirmPassword" required placeholder="{{ t('auto.register.x_a24ab09b', default='请再次输入密码') }}">
+        </div>
+
+        <!-- ============ 协议 / 规则告知 / {{ t('auto.register.x_07311cb0') }}') }}') }} / 数据使用说明 ============ -->
+        <div class="agreement-section">
+            <div class="agreement-tabs">
+                <span class="agreement-tab active" data-panel="p0">{{ t('auto.register.x_c96e43e9') }}') }}</span>
+                <span class="agreement-tab" data-panel="p1">{{ t('auto.register.x_86891a9c') }}') }}') }}</span>
+                <span class="agreement-tab" data-panel="p2">注册通告</span>
+                <span class="agreement-tab" data-panel="p3">数据使用说明</span>
+            </div>
+
+            <div class="agreement-panel active" id="p0">
+                <h4>{{ t('auto.register.mtscos_ai_x_b3df3077', default='MTSCOS AI 用户服务协议') }}</h4>
+                <p>{{ t('auto.register.x_mtscos_ai__17544186', default='欢迎您使用 MTSCOS AI 智能学习与自动化托管平台。注册即表示您同意以下条款：') }}</p>
+                <ul>
+                    <li>{{ t('auto.register.x_ai_x_x_x_x_9634da28', default='本平台提供 AI 自动化托管、在线考试、多语种学习等服务，用户须合法使用。') }}</li>
+                    <li>{{ t('auto.register.x_x_x__c495a18c', default='用户账号仅限本人使用，禁止转让、出借或共享给第三方。') }}</li>
+                    <li>{{ t('auto.register.x_x_x__a09b15cc', default='用户发布的内容须遵守法律法规，禁止发布违法、侵权或不当内容。') }}</li>
+                    <li>{{ t('auto.register.x_x_x__a000d138', default='平台有权对违规行为进行处置，包括但不限于限制功能、封禁账号。') }}</li>
+                    <li>{{ t('auto.register.x_sa_x_x__14_9e235c34', default='超级管理员（SA）拥有最高权限，受 §14 IRON_RULE 和 VIKEY 双因子强认证保护。') }}</li>
+                </ul>
+            </div>
+
+            <div class="agreement-panel" id="p1">
+                <h4>系统规则告知</h4>
+                <p>{{ t('auto.register.x__14_iron_r_55ba7474', default='本平台遵循 §14 IRON_RULE 强制开发 12 步骤流程，所有开发活动不可绕开。') }}</p>
+                <ul>
+                    <li><b>{{ t('auto.register.x_23bbdd59', default='权限管理') }}</b>{{ t('auto.register._11_x_x__sys_397f1fc4', default='：11 级角色体系，所有路由经 @system_container 装饰器鉴权。') }}</li>
+                    <li><b>{{ t('auto.register.x_1d3ba50c') }}') }}</b>{{ t('auto.register._x_x_x_sqlit_2eee4cf4', default='：数据库为唯一数据源，禁止假数据；所有自动化进程数据落库 SQLite。') }}</li>
+                    <li><b>{{ t('auto.register.x_63cfe941', default='本地推理') }}</b>{{ t('auto.register._x_ai_x_x_to_b0415dc7', default='：优先本地 AI 推理（零 token 消耗），API 调用为辅助手段。') }}</li>
+                    <li><b>{{ t('auto.register.x_a07b823a', default='规则执行') }}</b>{{ t('auto.register._9_x_x_4_x_g_df702bbd', default='：9 篇规则自动学习+严格执行，4 层拦截（Git Hook + Flask + CI + pre-push）。') }}</li>
+                    <li><b>{{ t('auto.register.x_d68b09ca', default='巡检驱动') }}</b>{{ t('auto.register._ai_x___x_x__9a06e02e', default='：AI 巡检闭环 + 自动修复，异常事件自动投喂 EigenFlux 与 AI 脑库。') }}</li>
+                    <li><b>{{ t('auto.register.x_6b7625dd', default='公祭日锁定') }}</b>{{ t('auto.register._x_x__7ec4e91f', default='：公祭日期间主题自动切换为灰度模式，不可手动更改。') }}</li>
+                </ul>
+            </div>
+
+            <div class="agreement-panel" id="p2">
+                <h4>注册通告</h4>
+                <p>{{ t('auto.register.x__1be161da', default='请您仔细阅读以下注册须知：') }}</p>
+                <ul>
+                    <li>{{ t('auto.register.x_3_20_x_x_x_35dbb94b', default='用户名长度 3-20 字符，仅支持字母、数字、下划线。') }}</li>
+                    <li>{{ t('auto.register.x_6_x_x_x_x__1eab6260', default='密码长度不少于 6 位，建议使用大小写字母+数字+符号组合。') }}</li>
+                    <li>{{ t('auto.register.x_x_a81998d6', default='注册成功后，默认角色为') }} <b>guest</b>{{ t('auto.register._x__x__93004664', default='（访客），可浏览公开页面。') }}</li>
+                    <li>{{ t('auto.register.x_login_admi_18387ec5', default='如需提升权限（login/admin/super_admin），须联系超级管理员审批。') }}</li>
+                    <li>{{ t('auto.register.x_x_x_x_x___a51986b4', default='首次登录后请前往「个人设置」完善个人信息（组别/权限申请等）。') }}</li>
+                    <li>{{ t('auto.register.x_webauthn_x_67fd37b4', default='本平台支持 WebAuthn 指纹登录，建议在「完整登录」页绑定设备。') }}</li>
+                </ul>
+            </div>
+
+            <div class="agreement-panel" id="p3">
+                <h4>{{ t('auto.register.x_3a1c6c41', default='用户数据使用说明') }}</h4>
+                <p>{{ t('auto.register.x_x__df86a34a', default='关于您的个人数据，我们承诺：') }}</p>
+                <ul>
+                    <li><b>{{ t('auto.register.x_08058dcc', default='数据采集') }}</b>{{ t('auto.register._x_x_x__x__0617f94f', default='：仅采集注册所需的用户名、密码（加密存储），不采集身份证明信息。') }}</li>
+                    <li><b>{{ t('auto.register.x_1209e34a', default='数据存储') }}</b>{{ t('auto.register._x_sqlite_x__51abe1a2', default='：所有数据存储于本地 SQLite 数据库，不传输至第三方服务器。') }}</li>
+                    <li><b>数据使用</b>{{ t('auto.register._x_x_x__6b4a02b8', default='：用于身份验证、权限管理、学习记录与考试数据关联。') }}</li>
+                    <li><b>{{ t('auto.register.ai_x_32dc54d7', default='AI 数据') }}</b>{{ t('auto.register._ai_x_eigenf_214647d6', default='：AI 员工/EigenFlux 专家交互数据自动落库，用于系统优化与知识积累。') }}</li>
+                    <li><b>数据安全</b>{{ t('auto.register._vikey_x_sa__d980c61a', default='：VIKEY 加密狗保护 SA 账号；用户密码使用哈希加密存储。') }}</li>
+                    <li><b>{{ t('auto.register.x_463e770e', default='数据删除') }}</b>{{ t('auto.register._x_x__f0a0bf07', default='：您有权要求删除账号及相关数据，请联系管理员处理。') }}</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- 同意勾选（必须勾选才能注册）-->
+        <label class="agree-check">
+            <input type="checkbox" id="agreeCheck" required>
+            <span>{{ t('auto.register.x_ee1dfef6', default='我已阅读并同意') }} <a href="javascript:void(0)" onclick="document.querySelector('.agreement-tab[data-panel=p0]').click();document.querySelector('.agreement-section').scrollIntoView({behavior:'smooth'})">用户协议</a>、
+            <a href="javascript:void(0)" onclick="document.querySelector('.agreement-tab[data-panel=p1]').click()">系统规则告知</a>、
+            <a href="javascript:void(0)" onclick="document.querySelector('.agreement-tab[data-panel=p2]').click()">注册通告</a> 及
+            <a href="javascript:void(0)" onclick="document.querySelector('.agreement-tab[data-panel=p3]').click()">数据使用说明</a></span>
+        </label>
+
+        <button type="submit" class="btn-register" id="regBtn">{{ t('auto.register.x_x_495d84e6', default='注 册') }}</button>
+    </form>
+
+    <div class="login-link">
+        已有账号？<a href="/auth/login">{{ t('auto.register.x_ed2ff81f', default='立即登录') }}</a>
+    </div>
+</div>
+
+<script>
+// Tab 切换
+document.querySelectorAll('.agreement-tab').forEach(function(tab) {
+    tab.addEventListener('click', function() {
+        document.querySelectorAll('.agreement-tab').forEach(function(t) { t.classList.remove('active'); });
+        document.querySelectorAll('.agreement-panel').forEach(function(p) { p.classList.remove('active'); });
+        tab.classList.add('active');
+        document.getElementById(tab.getAttribute('data-panel')).classList.add('active');
+    });
+});
+
+function handleRegister(event) {
+    event.preventDefault();
+    var username = document.getElementById('username').value;
+    var password = document.getElementById('password').value;
+    var confirmPassword = document.getElementById('confirmPassword').value;
+    var agree = document.getElementById('agreeCheck').checked;
+    var errorAlert = document.getElementById('errorAlert');
+    var successAlert = document.getElementById('successAlert');
+    var regBtn = document.getElementById('regBtn');
+
+    errorAlert.style.display = 'none';
+    successAlert.style.display = 'none';
+
+    if (!agree) {
+        errorAlert.textContent = '请先阅读并勾选同意用户协议、规则告知、注册通告及数据使用说明';
+        errorAlert.style.display = 'block';
+        return false;
+    }
+    if (password !== confirmPassword) {
+        errorAlert.textContent = '两次输入的密码不一致';
+        errorAlert.style.display = 'block';
+        return false;
+    }
+
+    regBtn.disabled = true; regBtn.textContent = '注册中...';
+    var _csrf = '{{ csrf_token if csrf_token else "" }}';
+    fetch('/auth/register', {
+        method: 'POST', headers: _csrf ? { 'Content-Type': 'application/json', 'X-CSRF-Token': _csrf } : { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: username, password: password, agreed: true })
+    })
+    .then(function(res) { return res.json(); })
+    .then(function(data) {
+        if (data.success) {
+            successAlert.textContent = '注册成功！即将跳转到登录页...';
+            successAlert.style.display = 'block';
+            setTimeout(function() { window.location.href = '/auth/login'; }, 2000);
+        } else {
+            errorAlert.textContent = data.message || '注册失败';
+            errorAlert.style.display = 'block';
+            regBtn.disabled = false; regBtn.textContent = '注 册';
+        }
+    })
+    .catch(function(err) {
+        errorAlert.textContent = '网络错误，请稍后重试';
+        errorAlert.style.display = 'block';
+        regBtn.disabled = false; regBtn.textContent = '注 册';
+    });
+    return false;
+}
+</script>
+{% endblock %}

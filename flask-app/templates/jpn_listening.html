@@ -1,0 +1,60 @@
+{% extends "base_unified.html" %}
+{% block title %}聴解 · Listening · JLPT {{ level }}{% endblock %}
+{% block page_title %}Chōkai · Listening {{ level }}{% endblock %}
+{% block extra_head %}
+<style>
+:root { --jp-vermilion:#C8102E; --jp-indigo:#2F4F6F; --jp-sumi:#2C2C2C; }
+.jp-toolbar { display:flex; gap:8px; margin-bottom:16px; align-items:center; flex-wrap:wrap; }
+.jp-filter-btn { padding:5px 14px; border-radius:20px; border:1px solid var(--mtscos-border-light);
+    background:var(--mtscos-bg-card); font-size:12px; cursor:pointer; color:var(--mtscos-text-secondary); font-weight:500; text-decoration:none; }
+.jp-filter-btn.active { background:var(--jp-indigo); color:#fff; border-color:var(--jp-indigo); }
+.jp-progress-chip { margin-left:auto; font-size:12px; color:var(--mtscos-text-tertiary);
+    padding:5px 14px; background:var(--jp-indigo-soft,rgba(47,79,111,.1)); border-radius:20px; color:var(--jp-indigo); font-weight:600; }
+.jp-lp-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(300px,1fr)); gap:12px; }
+.jp-lp-card {
+    background:var(--mtscos-bg-card); border:1px solid var(--mtscos-border-light); border-radius:var(--mtscos-radius-lg);
+    padding:18px; transition:all .15s; cursor:pointer; position:relative;
+}
+.jp-lp-card:hover { transform:translateY(-2px); box-shadow:0 4px 14px rgba(0,0,0,.08); border-color:var(--jp-indigo); }
+.jp-lp-icon { font-size:28px; margin-bottom:6px; }
+.jp-lp-title { font-family:"Yu Mincho",serif; font-size:16px; font-weight:700; color:var(--jp-indigo); margin-bottom:4px; }
+.jp-lp-type { display:inline-block; font-size:10px; padding:2px 8px; border-radius:10px;
+    background:var(--jp-vermilion-soft,rgba(200,16,46,.1)); color:var(--jp-vermilion); font-weight:600; }
+.jp-lp-meta { font-size:11px; color:var(--mtscos-text-tertiary); margin-top:6px; }
+.jp-lp-excerpt { font-size:12px; color:var(--jp-sumi); margin-top:8px; line-height:1.5;
+    font-family:"Yu Mincho",serif; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+.jp-lp-qs { font-size:11px; color:var(--jp-indigo); margin-top:6px; font-weight:600; }
+.jp-empty { text-align:center; padding:60px; color:var(--mtscos-text-tertiary); }
+</style>
+{% endblock %}
+{% block content %}
+<div style="margin-bottom:16px;font-size:13px;color:var(--mtscos-text-tertiary)">
+    <a href="/japanese_page" style="color:var(--jp-indigo);text-decoration:none">{{ t('auto.jpn_listening.__x_____a85766c6', default='← 日本語ポータル') }}</a>
+    <span style="margin:0 6px">›</span> 聴解トレーニング
+</div>
+<div class="jp-toolbar">
+    {% for lv in levels %}
+    <a href="/japanese/listening?level={{ lv }}" class="jp-filter-btn {% if level==lv %}active{% endif %}">{{ lv }}</a>
+    {% endfor %}
+    <span class="jp-progress-chip">{{ done }} / {{ total }} 完了</span>
+</div>
+
+{% if items %}
+<div class="jp-lp-grid">
+    {% for it in items %}
+    <a href="/japanese/listening/{{ it.listening_id }}" class="jp-lp-card" style="text-decoration:none;color:inherit">
+        <div class="jp-lp-icon">🎧</div>
+        <div class="jp-lp-title">{{ it.title }}</div>
+        <div class="jp-lp-type">
+            {% if it.listening_type == 'conversation' %}会話{% elif it.listening_type == 'news' %}ニュース{% elif it.listening_type == 'announcement' %}アナウンス{% elif it.listening_type == 'business' %}ビジネス{% elif it.listening_type == 'academic' %}学術{% elif it.listening_type == 'culture' %}文化{% elif it.listening_type == 'documentary' %}ドキュメンタリー{% elif it.listening_type == 'politics' %}政治{% else %}{{ it.listening_type }}{% endif %}
+        </div>
+        <div class="jp-lp-excerpt">{{ it.transcript_jp }}</div>
+        <div class="jp-lp-qs">📝 {{ it.questions|length }} 問 · {{ it.duration_sec }}秒</div>
+        <div class="jp-lp-meta">{{ it.transcript_cn }}</div>
+    </a>
+    {% endfor %}
+</div>
+{% else %}
+<div class="jp-empty">{{ t('auto.jpn_listening.x____________f6312ed1', default='該当するコンテンツがありません') }}</div>
+{% endif %}
+{% endblock %}

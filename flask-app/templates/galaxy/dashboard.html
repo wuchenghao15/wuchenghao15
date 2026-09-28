@@ -1,0 +1,185 @@
+{# 仙女座星系 — 总览仪表盘 #}
+{% extends "governance/base.html" %}
+{% block title %}🌌 仙女座星系 · 管理面板{% endblock %}
+{% block body %}
+
+{# 导航栏 (覆盖默认 nav) #}
+<script>/* galaxy dashboard */</script>
+<style>
+.galaxy-hero{display:flex;align-items:center;gap:12px;margin-bottom:18px;flex-wrap:wrap}
+.galaxy-hero h1{font-size:22px;margin:0;color:#fff}
+.galaxy-hero .sub{color:var(--muted);font-size:13px}
+.role-chip{display:inline-flex;align-items:center;gap:4px;padding:2px 10px;border-radius:999px;font-size:12px;background:#1e293b;color:#cbd5e1;margin-right:6px}
+.role-chip.teacher{background:#0c4a6e;color:#bae6fd}
+.role-chip.professor{background:#064e3b;color:#bbf7d0}
+.role-chip.scholar{background:#581c87;color:#e9d5ff}
+.quick-create{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:16px;margin-bottom:16px}
+.quick-create h3{margin:0 0 12px;color:#fff;font-size:15px}
+.quick-create form{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px}
+.quick-create input,.quick-create select{background:#0b1328;border:1px solid var(--bd);border-radius:6px;color:#fff;padding:6px 10px;font-size:13px}
+.quick-create input:focus,.quick-create select:focus{outline:none;border-color:var(--pri)}
+.quick-create .qc-submit{grid-column:1/-1;display:flex;justify-content:flex-end}
+.log-item{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;color:#cbd5e1;padding:6px 8px;border-bottom:1px solid var(--bd)}
+.log-item .ok{color:#bbf7d0} .log-item .bad{color:#fecaca} .log-item .review{color:#fde68a}
+.mini-bar{height:8px;border-radius:4px;background:#1e293b;overflow:hidden;display:flex;gap:1px}
+.mini-bar span{height:100%}
+</style>
+
+<div class="galaxy-hero">
+  <h1>🌌 仙女座星系 <span class="badge info">v23.0.0</span></h1>
+  <span class="sub">数字教师 · 数字教授 · 数字学者 — 阶梯式抖音短视频内容变现系统</span>
+  <span style="margin-left:auto">
+    <button class="btn" onclick="runDaemon()">▶ 手动触发 Daemon</button>
+  </span>
+</div>
+
+{# 核心指标卡 #}
+<div class="grid" style="margin-bottom:16px">
+  <div class="card">
+    <div class="label">课程系列</div>
+    <div class="value">{{ stats.total_series or 0 }}</div>
+    <div class="foot">total_episodes={{ stats.total_episodes or 0 }}</div>
+  </div>
+  <div class="card">
+    <div class="label">合规通过</div>
+    <div class="value" style="color:#bbf7d0">{{ stats.compliance_pass or 0 }}</div>
+    <div class="foot">compliance_block={{ stats.compliance_block or 0 }}</div>
+  </div>
+  <div class="card">
+    <div class="label">发布队列</div>
+    <div class="value" style="color:#bae6fd">{{ stats.pending_publish or 0 }}</div>
+    <div class="foot">已发布={{ stats.published or 0 }}</div>
+  </div>
+  <div class="card">
+    <div class="label">累计播放/点赞</div>
+    <div class="value">
+      <span style="color:#bae6fd">{{ (stats.total_views or 0) | int }}</span>
+      <span style="color:#cbd5e1;font-size:14px"> / </span>
+      <span style="color:#bbf7d0">{{ (stats.total_likes or 0) | int }}</span>
+    </div>
+    <div class="foot">反馈待处理={{ stats.feedback_pending or 0 }}</div>
+  </div>
+</div>
+
+{# 快速创建表单 #}
+<div class="quick-create">
+  <h3>✨ 快速创建课程系列</h3>
+  <form onsubmit="return createSeries(event)">
+    <input name="title" placeholder="课程标题 (如《Python 列表推导式》)" required>
+    <input name="topic" placeholder="主题 (可选, 默认用标题)">
+    <select name="role_type" required>
+      <option value="andromeda_teacher">🎓 数字教师 (初级)</option>
+      <option value="andromeda_professor" selected>👨‍🏫 数字教授 (中级)</option>
+      <option value="andromeda_scholar">🔬 数字学者 (高级)</option>
+    </select>
+    <input name="episode_count" type="number" value="3" min="1" max="10">
+    <input name="subject" placeholder="学科 (如编程/数学/英语)">
+    <div class="qc-submit">
+      <button type="submit" class="btn">🚀 生成 + 合规审查</button>
+    </div>
+  </form>
+  <div id="qc-result" style="margin-top:10px"></div>
+</div>
+
+{# 两个面板: 系列列表 + 合规日志 #}
+<div style="display:grid;grid-template-columns:2fr 1fr;gap:16px">
+
+  {# 课程系列列表 #}
+  <div>
+    <h2 class="h2">📚 课程系列</h2>
+    {% if series_list %}
+      <table>
+        <tr><th>标题</th><th>角色</th><th>等级</th><th>集数</th><th>合规</th><th>状态</th><th>操作</th></tr>
+        {% for s in series_list %}
+          <tr>
+            <td>
+              <a href="{{ url_for('galaxy_routes.series_detail', series_id=s.series_id) }}">{{ s.title }}</a>
+            </td>
+            <td>
+              {% if s.role_type == 'andromeda_teacher' %}
+                <span class="role-chip teacher">数字教师</span>
+              {% elif s.role_type == 'andromeda_professor' %}
+                <span class="role-chip professor">数字教授</span>
+              {% else %}
+                <span class="role-chip scholar">数字学者</span>
+              {% endif %}
+            </td>
+            <td>{{ {'elementary':'初级','intermediate':'中级','advanced':'高级'}.get(s.level, s.level) }}</td>
+            <td>{{ s.total_episodes or 0 }}</td>
+            <td>
+              {% if s.status == 'blocked' %}
+                <span class="badge bad">BLOCK</span>
+              {% elif s.status == 'compliance_pass' %}
+                <span class="badge ok">PASS</span>
+              {% else %}
+                <span class="badge warn">{{ s.status }}</span>
+              {% endif %}
+            </td>
+            <td>{{ s.status }}</td>
+            <td>
+              <a href="{{ url_for('galaxy_routes.series_detail', series_id=s.series_id) }}">详情→</a>
+            </td>
+          </tr>
+        {% endfor %}
+      </table>
+    {% else %}
+      <div class="card" style="text-align:center;color:var(--muted)">
+        还没有课程系列 — 在上面表单创建第一个吧 🚀
+      </div>
+    {% endif %}
+  </div>
+
+  {# 合规日志 #}
+  <div>
+    <h2 class="h2">🛡️ 合规日志 (C1~C7)</h2>
+    <div class="card" style="padding:0;overflow:hidden">
+      {% for log in recent_logs %}
+        <div class="log-item">
+          <span class="{{ 'ok' if log.result=='PASS' else ('bad' if log.result=='BLOCK' else 'review') }}">
+            [{{ log.result }}]
+          </span>
+          <span style="color:#94a3b8">{{ log.check_type }}</span>
+          <span style="color:#cbd5e1;margin-left:6px">{{ log.score }}</span>
+          <span style="color:#64748b;margin-left:6px">· {{ log.checked_at[:16] }}</span>
+        </div>
+      {% else %}
+        <div style="padding:12px;color:var(--muted);text-align:center">暂无合规日志</div>
+      {% endfor %}
+    </div>
+  </div>
+
+</div>
+
+{# JS #}
+<script>
+async function createSeries(e){
+  e.preventDefault();
+  const fd = new FormData(e.target);
+  const btn = e.target.querySelector('.qc-submit .btn');
+  const orig = btn.textContent; btn.textContent = '生成中...'; btn.disabled = true;
+  const res = await fetch('/api/galaxy/series/create', {method:'POST', body:fd});
+  const j = await res.json();
+  btn.textContent = orig; btn.disabled = false;
+  const out = document.getElementById('qc-result');
+  if(j.ok){
+    const d = j.data;
+    const s = d.summary;
+    out.innerHTML = `<div class="badge ok">✅ 创建成功</div>
+      series_id=<code style="color:#bae6fd">${d.series_id}</code> |
+      pass=${s.pass} review=${s.review} block=${s.block}
+      <a href="/admin/galaxy/series/${d.series_id}">→ 查看详情</a>`;
+    setTimeout(()=>location.reload(), 2000);
+  } else {
+    out.innerHTML = `<span class="badge bad">❌ ${j.error}</span>`;
+  }
+  return false;
+}
+async function runDaemon(){
+  const btn = event.target; const orig = btn.textContent; btn.textContent = '运行中...';
+  const res = await fetch('/api/galaxy/daemon/run', {method:'POST'});
+  const j = await res.json();
+  btn.textContent = orig;
+  alert(j.ok ? `✅ Daemon 完成\n${JSON.stringify(j.data.summary||j.data, null, 2)}` : `❌ ${j.error}`);
+}
+</script>
+{% endblock %}

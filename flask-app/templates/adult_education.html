@@ -1,0 +1,96 @@
+{% extends 'base_layout.html' %}
+{% block title %}{{ t('adult.title', default='成人教育门户') }} — {{ t('app.name', default='MTSCOS AI') }}{% endblock %}
+
+{% block sidebar %}
+{% include '_partials/andromeda_sidebar.html' %}
+{% endblock %}
+
+{% block content %}
+<style>
+  .ae-wrap{max-width:1100px;margin:0 auto;padding:28px 20px 80px}
+  .ae-hero{background:linear-gradient(135deg,#0f766e 0%,#0891b2 100%);color:#fff;border-radius:16px;padding:28px 32px;box-shadow:0 8px 24px rgba(8,145,178,.3)}
+  .ae-hero h2{font-size:22px;margin:0 0 6px}
+  .ae-hero p{opacity:.9;margin:0;font-size:14px}
+  .ae-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-top:22px}
+  .ae-stat{background:#fff;border-radius:12px;padding:18px 20px;box-shadow:0 2px 10px rgba(0,0,0,.05);text-align:center}
+  .ae-stat .num{font-size:28px;font-weight:700;color:#0f766e}
+  .ae-stat .lbl{font-size:12px;color:#6b7280;margin-top:4px}
+  .ae-section{margin-top:26px;background:#fff;border-radius:14px;padding:22px 24px;box-shadow:0 2px 10px rgba(0,0,0,.05)}
+  .ae-section h3{font-size:16px;color:#0f766e;margin:0 0 14px;padding-bottom:10px;border-bottom:1px solid #eef2f7;display:flex;align-items:center;gap:8px}
+  .ae-cat-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px}
+  .ae-cat{background:#f0fdfa;border:1px solid #99f6e4;border-radius:10px;padding:12px 14px;transition:.18s}
+  .ae-cat:hover{background:#ccfbf1;transform:translateY(-2px)}
+  .ae-cat .name{font-weight:500;color:#0f766e;font-size:14px}
+  .ae-cat .cnt{font-size:11px;color:#64748b;margin-top:2px}
+  .ae-quick{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px}
+  .ae-btn{display:inline-flex;align-items:center;gap:6px;background:#0f766e;color:#fff;padding:10px 18px;border-radius:8px;text-decoration:none;font-size:14px;transition:.18s}
+  .ae-btn:hover{background:#0d5d56;color:#fff;text-decoration:none;transform:translateY(-1px)}
+  .ae-btn.g{background:#6366f1}.ae-btn.g:hover{background:#4f46e5}
+  .ae-btn.a{background:#059669}.ae-btn.a:hover{background:#047857}
+  .ae-guide{background:#fff7ed;border-left:4px solid #f97316;border-radius:8px;padding:14px 18px;margin-top:14px;font-size:13px;color:#9a3412}
+  .ae-guide b{color:#7c2d12}
+</style>
+
+<div class="ae-wrap">
+  <div class="ae-hero">
+    <h2><i class="fas fa-user-graduate" style="margin-right:8px"></i>{{ t('adult.title', default='成人教育门户') }}</h2>
+    <p>{{ t('adult.subtitle', default='独立教育体系 · Delta δ — 职业考试、兴趣进阶、企业内训一站式') }}</p>
+  </div>
+
+  <div class="ae-stats">
+    <div class="ae-stat"><div class="num">{{ q_total }}</div><div class="lbl">{{ t('adult.q_total', default='题库总量') }}</div></div>
+    <div class="ae-stat"><div class="num">{{ p_total }}</div><div class="lbl">{{ t('adult.p_total', default='职业考试题库') }}</div></div>
+    <div class="ae-stat"><div class="num">{{ q_cats|length }}</div><div class="lbl">{{ t('adult.cats', default='分类领域') }}</div></div>
+    <div class="ae-stat"><div class="num">{{ version }}</div><div class="lbl">{{ t('adult.ver', default='模块版本') }}</div></div>
+  </div>
+
+  {% if user and user.username %}
+  <div class="ae-guide">
+    <i class="fas fa-circle-user" style="margin-right:6px"></i>
+    {{ t('adult.welcome', default='欢迎回来') }}, <b>{{ user.username }}</b> ({{ user.role }})
+  </div>
+  {% endif %}
+
+  <div class="ae-section">
+    <h3><i class="fas fa-book-open"></i> {{ t('adult.qbank', default='教育题库分类') }}</h3>
+    {% if q_cats %}
+    <div class="ae-cat-list">
+      {% for cat in q_cats %}
+      <div class="ae-cat">
+        <div class="name">{{ cat.category }}</div>
+        <div class="cnt">{{ cat.cnt }} {{ t('adult.questions', default='题') }}</div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <p style="color:#94a3b8;font-size:13px">{{ t('adult.no_data', default='题库分类数据加载中...') }}</p>
+    {% endif %}
+  </div>
+
+  <div class="ae-section">
+    <h3><i class="fas fa-briefcase"></i> {{ t('adult.pro_exam', default='职业考试分类') }}</h3>
+    {% if p_cats %}
+    <div class="ae-cat-list">
+      {% for cat in p_cats %}
+      <div class="ae-cat" style="background:#eef2ff;border-color:#a5b4fc">
+        <div class="name" style="color:#4338ca">{{ cat.category }}</div>
+        <div class="cnt">{{ cat.cnt }} {{ t('adult.questions', default='题') }}</div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <p style="color:#94a3b8;font-size:13px">{{ t('adult.no_data', default='职业考试数据加载中...') }}</p>
+    {% endif %}
+  </div>
+
+  <div class="ae-section">
+    <h3><i class="fas fa-rocket"></i> {{ t('adult.quick', default='快速入口') }}</h3>
+    <div class="ae-quick">
+      <a href="/adult_placement_test" class="ae-btn"><i class="fas fa-clipboard-check"></i> {{ t('adult.placement', default='分级测试') }}</a>
+      <a href="/exam_center" class="ae-btn g"><i class="fas fa-file-pen"></i> {{ t('adult.exam', default='进入考试中心') }}</a>
+      <a href="/student_portal" class="ae-btn a"><i class="fas fa-chart-line"></i> {{ t('adult.portal', default='学习门户') }}</a>
+      <a href="/settings" class="ae-btn"><i class="fas fa-gear"></i> {{ t('adult.settings', default='个人设置') }}</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

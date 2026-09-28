@@ -196,8 +196,7 @@ def extract_func_code(filepath: Path, func_name: str, class_name: str = None) ->
                 end = j
                 break
     
-    func_code = "
-".join(lines[start:end])
+    func_code = "\n".join(lines[start:end])
     return func_code, start + 1, end, start_indent
 
 def patch_func_code(filepath: Path, func_name: str, new_func_code: str, class_name: str = None) -> bool:
@@ -210,9 +209,7 @@ def patch_func_code(filepath: Path, func_name: str, new_func_code: str, class_na
     
     lines = filepath.read_text(errors="replace").splitlines()
     new_lines = lines[:start_line - 1] + new_func_code.rstrip().splitlines() + lines[end_line:]
-    filepath.write_text("
-".join(new_lines) + "
-")
+    filepath.write_text("\n".join(new_lines) + "\n")
     return True
 
 def dev_activity_preflight(flow_id: str, required_step: str = None) -> bool:
@@ -889,8 +886,7 @@ Loop→顾问映射={list(loop_advisor_map.values())}
 """
         fix, dt = ollama_chat(MODEL_CODER, sys_p, prompt, timeout=45)
         if fix:
-            for line in fix.strip().split("
-"):
+            for line in fix.strip().split("\n"):
                 if line.strip().startswith("-"):
                     suggestions.append(line.strip()[1:150])
             log(f"🏛️  coder:14b 生成 {len(suggestions)} 条重构建议 (dt={dt:.1f}s)", "self_arch")
@@ -950,8 +946,7 @@ def loop_evolve():
     ok = 0
     for rid, name, orig in routes:
         hits = rag_search((orig or "")[:200], top_k=2)
-        rag_ctx = "
-".join([f"  [{s:.2f}][{src}] {t[:120]}" for s,src,t in hits]) or "(无匹配)"
+        rag_ctx = "\n".join([f"  [{s:.2f}][{src}] {t[:120]}" for s,src,t in hits]) or "(无匹配)"
         
         sys_prompt = f"""你是仙女座 prompt 优化师. 把 route 的 system prompt 优化得更紧凑精准.
 保持原意, 删冗余, 注入项目规则意识, 控制在原长 80% 以内, 只输出优化后的 prompt.
@@ -959,11 +954,7 @@ def loop_evolve():
 项目规则参考:
 {rag_ctx}"""
         
-        result, dt = ollama_chat(MODEL_Q5, sys_prompt, f"Route: {name}
-
-原 prompt ({len(orig or '')}字):
-
-{(orig or '')[:2000]}")
+        result, dt = ollama_chat(MODEL_Q5, sys_prompt, f"Route: {name}\n\n原 prompt ({len(orig or '')}字):\n\n{(orig or '')[:2000]}")
         if result and len(result) > 15:
             db.execute("UPDATE mt_ai_neural_routes SET evolved_prompt=?, evolved_at=datetime('now'), evolved_by='andromeda_q5_rag' WHERE route_id=?",
                        (result, rid))
@@ -1082,9 +1073,7 @@ def loop_patrol():
         for py_file in (BASE / "routes").glob("*.py"):
             content = py_file.read_text()
             import re
-            routes = re.findall(r'@(?:app|bp|.*blueprint)\.route\(.*?\)\s*
-\s*(?:@.*?\s*
-)*\s*def\s+(\w+)', content)
+            routes = re.findall(r'@(?:app|bp|.*blueprint)\.route\(.*?\)\s*\n\s*(?:@.*?\s*\n)*\s*def\s+(\w+)', content)
             for func_name in routes:
                 if "system_container" not in content:
                     sys_p = "你是代码巡检员. 检查 Flask Blueprint 路由是否有 @system_container 权限装饰器."
@@ -1174,7 +1163,7 @@ def loop_patrol():
 
         # 扫描硬编码颜色值 (#hex/rgb)
         import re
-        hex_color = re.compile(r'#[0-9a-fA-F]{3,8}')
+        hex_color = re.compile(r'#[0-9a-fA-F]{3,8}\b')
         for d in ["routes", "engines", "ai_engines"]:
             for py in (BASE / d).rglob("*.py"):
                 try:
@@ -1215,7 +1204,7 @@ def loop_patrol():
                 except: pass
 
         # 扫描硬编码端口 (11435, 5000, 8080, 5432, 3306)
-        port_pat = re.compile(r':(11434|11435|5000|5001|8080|5432|3306|6379|27017)')
+        port_pat = re.compile(r':(11434|11435|5000|5001|8080|5432|3306|6379|27017)\b')
         for d in ["engines", "ai_engines"]:
             for py in (BASE / d).rglob("*.py"):
                 try:
@@ -1229,7 +1218,7 @@ def loop_patrol():
                 except: pass
 
         # 扫描 roles=='super_admin' / role=='admin' 直接字符串判断 (绕过 PermissionManager)
-        perm_bypass_pat = re.compile(r'(roles?|user_roles?|user\[.role.\])\s*==\s*[\"\'`](super_admin|admin)')
+        perm_bypass_pat = re.compile(r'(roles?|user_roles?|user\[.role.\])\s*==\s*[\"\'\x60](super_admin|admin)')
         for d in ["routes"]:
             for py in (BASE / d).glob("*.py"):
                 try:
@@ -1320,9 +1309,7 @@ def loop_rule():
                        suggestion, 1, "APPROVED", "auto_strengthener"))
             # 自动写回文件 (tag #auto-strengthened)
             if content != original:
-                header = f"
-<!-- auto-strengthened by andromeda_core at {time.strftime('%Y-%m-%d %H:%M:%S')} -->
-"
+                header = f"\n<!-- auto-strengthened by andromeda_core at {time.strftime('%Y-%m-%d %H:%M:%S')} -->\n"
                 # 只在第一次加 header
                 if "<!-- auto-strengthened" not in original:
                     content = header + content
@@ -1398,11 +1385,7 @@ def loop_awaken():
             log(f"  🧊 冰山系统缺口: {failed}", "awaken")
             # 让 coder:14b 生成修复 patch
             sys_p = "你是仙女座冰山系统架构师. 根据嗅探发现的链路缺口修复代码. 输出完整修复后的函数代码."
-            usr = f"文件: iceberg_slang_substitution.py
-缺口: {failed}
-
-原始代码片段:
-{code[:3000]}"
+            usr = f"文件: iceberg_slang_substitution.py\n缺口: {failed}\n\n原始代码片段:\n{code[:3000]}"
             patch, dt = ollama_code(sys_p, usr, timeout=90)
             coder_calls += 1
             if patch:
@@ -1444,9 +1427,7 @@ def loop_awaken():
     
     # ── 6.5 给 coder:14b 一个"自我认知"prompt ──
     sys_p = "你是仙女座自演化引擎的自我觉醒模块. 快速回答三个问题: 1) 你当前最明显的3个架构缺口是什么? 2) 最值得立即做的一个小功能是什么? 3) 如何让自己更自主?"
-    usr = f"项目: MTSCOS AI Flask 应用
-已扫描: iceberg, auth_routes, {len(daemons)} daemons
-发现 gap: {gaps_f}"
+    usr = f"项目: MTSCOS AI Flask 应用\n已扫描: iceberg, auth_routes, {len(daemons)} daemons\n发现 gap: {gaps_f}"
     answer, dt = ollama_code(sys_p, usr, timeout=45)
     coder_calls += 1
     if answer:
@@ -1454,8 +1435,7 @@ def loop_awaken():
                   ("arch_gap","self_awareness",answer[:500],usr[:500],"", "pending"))
         db.commit()
         log(f"  🧠 自我觉醒问答 ({dt:.1f}s)", "awaken")
-        for line in answer.strip().split("
-")[:6]:
+        for line in answer.strip().split("\n")[:6]:
             log(f"    {line.strip()[:80]}", "awaken")
     
     db.close()
@@ -1486,11 +1466,7 @@ def loop_feature_build():
         
         # coder:14b 生成完整修复代码
         sys_p = f"你是仙女座自主开发引擎. 修复以下 {stype} 类型的缺口. 输出完整可运行的 Python 代码."
-        usr = f"目标: {target}
-缺口: {gap}
-已有 patch: {patch[:500]}
-
-请生成完整修复方案 (不超过 80 行)."
+        usr = f"目标: {target}\n缺口: {gap}\n已有 patch: {patch[:500]}\n\n请生成完整修复方案 (不超过 80 行)."
         fix, dt = ollama_code(sys_p, usr, timeout=90)
         
         if fix and len(fix) > 30:
@@ -1509,17 +1485,14 @@ def loop_feature_build():
     
     # 额外: coder:14b 主动建议一个小功能
     sys_p = "你是仙女座产品经理. 根据 MTSCOS Flask 项目现有功能, 建议一个 30-50 行就能写完的小功能 (不是修复 bug, 是新功能)."
-    usr = "现有: auth 注册/登录, 冰山平替, EigenFlux 圆桌, 18 daemons, 双向 sync
-请建议一个实用的小功能, 输出: 1) 功能名 2) 一句说明 3) 完整 Python 代码"
+    usr = "现有: auth 注册/登录, 冰山平替, EigenFlux 圆桌, 18 daemons, 双向 sync\n请建议一个实用的小功能, 输出: 1) 功能名 2) 一句说明 3) 完整 Python 代码"
     idea, dt = ollama_code(sys_p, usr, timeout=60)
     if idea:
         # 解析功能名和代码 (启发式)
-        lines = idea.strip().split("
-")
+        lines = idea.strip().split("\n")
         fname = (lines[0] if lines else "autofeature")[:40]
         # 尝试提取代码块
-        code_match = re.search(r"```(?:python)?
-(.*?)```", idea, re.DOTALL)
+        code_match = re.search(r"```(?:python)?\n(.*?)```", idea, re.DOTALL)
         code = code_match.group(1) if code_match else idea
         
         v = verify_code(code, fname)
@@ -1559,37 +1532,25 @@ def loop_iceberg_opt():
         # ── 8.2 函数级摘要 (让 coder:14b 看到全貌, 而非只读前 4000 字) ──
         func_summary_lines = []
         # 简化正则: 抓 def/class + 名称 + 括号参数首行 + docstring 首行
-        for m in _re.finditer(r'^(def|class)\s+(\w+)\s*(\([^)]*\))?[^
-]*
-(?:\s+[ru]?"""([^"
-]{0,80})""")?', code, _re.MULTILINE):
+        for m in _re.finditer(r'^(def|class)\s+(\w+)\s*(\([^)]*\))?[^\n]*\n(?:\s+[ru]?"""([^"\n]{0,80})""")?', code, _re.MULTILINE):
             kw, name, params, doc = m.group(1), m.group(2), m.group(3) or "", m.group(4) or ""
             sig = f"{kw} {name}{params}".strip()[:100]
             line = f"  {sig}" + (f"  # {doc.strip()}" if doc.strip() else "")
             func_summary_lines.append(line)
         # 补充: 类方法 (缩进的 def)
-        for m in _re.finditer(r'^\s+(def)\s+(\w+)\s*(\([^)]*\))?[^
-]*
-(?:\s+[ru]?"""([^"
-]{0,80})""")?', code, _re.MULTILINE):
+        for m in _re.finditer(r'^\s+(def)\s+(\w+)\s*(\([^)]*\))?[^\n]*\n(?:\s+[ru]?"""([^"\n]{0,80})""")?', code, _re.MULTILINE):
             kw, name, params, doc = m.group(1), m.group(2), m.group(3) or "", m.group(4) or ""
             sig = f"  {kw} {name}{params}".strip()[:100]
             line = f"    {sig}" + (f"  # {doc.strip()}" if doc.strip() else "")
             if line not in func_summary_lines:
                 func_summary_lines.append(line)
 
-        summary_text = "
-".join(func_summary_lines[:120])  # 最多 120 个函数签名
+        summary_text = "\n".join(func_summary_lines[:120])  # 最多 120 个函数签名
         log(f"  🧊 {fname}: {code_len}字 / {len(func_summary_lines)} 函数签名", "iceberg")
         
         # ── 8.3 coder:14b 生成优化建议 ──
         sys_p = "你是仙女座冰山系统架构优化师. 分析函数级摘要, 给出具体优化建议. 每条要写清楚: category, target(函数名), suggestion(一句话), code_impact(影响描述). 必须输出纯 JSON 数组, 不要 markdown 围栏."
-        usr = f"文件: {fname} ({code_len}字)
-
-函数级摘要 ({len(func_summary_lines)}个):
-{summary_text}
-
-请输出 3-5 条 JSON 优化建议."
+        usr = f"文件: {fname} ({code_len}字)\n\n函数级摘要 ({len(func_summary_lines)}个):\n{summary_text}\n\n请输出 3-5 条 JSON 优化建议."
         opt_raw, dt = ollama_code(sys_p, usr, timeout=120)
         
         if not opt_raw or len(opt_raw) < 20:
@@ -1600,9 +1561,7 @@ def loop_iceberg_opt():
         opt_count = 0
         opt_text = opt_raw.strip()
         # 剥 ```json ... ``` 或 ``` ... ``` 围栏
-        fence_match = _re.search(r'```(?:json|python)?\s*
-(.*?)
-?```', opt_text, _re.DOTALL)
+        fence_match = _re.search(r'```(?:json|python)?\s*\n(.*?)\n?```', opt_text, _re.DOTALL)
         if fence_match:
             opt_text = fence_match.group(1).strip()
         
@@ -1683,8 +1642,7 @@ def loop_error_capture():
             except: continue
             # 找最近 5 条错误
             err_lines = []
-            for line in content.split("
-"):
+            for line in content.split("\n"):
                 if any(kw in line for kw in ["Traceback","ERROR","Exception","TypeError","ImportError","OperationalError"]):
                     err_lines.append(line[:200])
             for el in err_lines[-5:]:
@@ -1772,23 +1730,13 @@ def loop_auto_fix():
         
         # ── Step 7: 只给 coder:14b 这一个函数 (而非整个文件前 4000 字!) ──
         sys_p = f"你是仙女座冰山系统函数级修复师. 根据{cat}建议, 只修改下面这一个函数. 输出完整修改后的函数 (保留原缩进), 不要 markdown, 不要其他函数."
-        usr = f"文件: {fname}
-函数: {func}{f' (类: {cls})' if cls else ''}
-类型: {cat}
-建议: {sug or ''}
-
-当前函数 ({len(func_code)}字):
-```python
-{func_code}
-```"
+        usr = f"文件: {fname}\n函数: {func}{f' (类: {cls})' if cls else ''}\n类型: {cat}\n建议: {sug or ''}\n\n当前函数 ({len(func_code)}字):\n```python\n{func_code}\n```"
         fix, dt = ollama_code(sys_p, usr, timeout=90)
         
         if fix and len(fix) > 20:
             import re as _re
             # 剥 markdown 围栏
-            m = _re.search(r'```(?:python)?\s*
-(.*?)
-?```', fix, _re.DOTALL)
+            m = _re.search(r'```(?:python)?\s*\n(.*?)\n?```', fix, _re.DOTALL)
             new_func = (m.group(1) if m else fix).strip()
             fixed += 1
             
@@ -1862,9 +1810,7 @@ def loop_auto_fix():
         # ── §14 Step 7: 下场实施 ──
         if stype == "daemon_dead":
             sys_p = "你是仙女座 daemon 修复师. 写一个 bash 命令重启指定 daemon. 只输出命令."
-            usr = f"daemon: {target}
-当前状态: dead/stopped
-目标: 让它重新 running"
+            usr = f"daemon: {target}\n当前状态: dead/stopped\n目标: 让它重新 running"
             fix, dt = ollama_code(sys_p, usr, timeout=45)
             if fix and len(fix) > 10:
                 db.execute("UPDATE mt_awakening_log SET generated_patch=?, verify_result='SKIP', status='auto_applied', fixed_by=? WHERE id=?",
@@ -1883,16 +1829,11 @@ def loop_auto_fix():
             if filepath.exists():
                 orig = filepath.read_text(errors="replace")
                 sys_p = "你是仙女座语法修复师. 看到 Python 文件有语法错误, 输出修复后的完整文件 (不要 markdown, 只要 Python 代码)."
-                usr = f"文件: {target}
-错误: {gap}
-
-原代码:
-{orig[:4000]}"
+                usr = f"文件: {target}\n错误: {gap}\n\n原代码:\n{orig[:4000]}"
                 fix, dt = ollama_code(sys_p, usr, timeout=90)
                 
                 if fix and len(fix) > 30:
-                    m = re.search(r"```(?:python)?
-(.*?)```", fix, re.DOTALL)
+                    m = re.search(r"```(?:python)?\n(.*?)```", fix, re.DOTALL)
                     code = m.group(1) if m else fix
                     v = verify_code(code, target)
                     fixed += 1
@@ -2171,18 +2112,15 @@ def run_status():
         import urllib.request
         r = urllib.request.urlopen(f"{OLLAMA}/api/tags", timeout=3)
         models = json.loads(r.read()).get("models", [])
-        print(f"
-🧠 Ollama: {len(models)} 模型在线")
+        print(f"\n🧠 Ollama: {len(models)} 模型在线")
         for m in models:
             print(f"  ✅ {m['name']} ({m['size']//1024//1024}MB)")
-    except: print("
-🔴 Ollama 离线")
+    except: print("\n🔴 Ollama 离线")
     
     # 🆕 仙女座自主觉醒状态
     try:
         awakens = db.execute("SELECT status, COUNT(*) FROM mt_awakening_log GROUP BY status").fetchall()
-        print(f"
-🧠 觉醒日志: {dict(awakens)}")
+        print(f"\n🧠 觉醒日志: {dict(awakens)}")
         builds = db.execute("SELECT status, COUNT(*) FROM mt_feature_build_queue GROUP BY status").fetchall()
         print(f"🛠️  自主构建队列: {dict(builds)}")
         # 最近一次 coder:14b 生成

@@ -1,0 +1,153 @@
+{% extends "base_unified.html" %}
+{% block title %}五十音図 · Gojūon · 日本語{% endblock %}
+{% block page_title %}Gojūon · 五十音図{% endblock %}
+
+{% block extra_head %}
+<style>
+:root { --jp-vermilion:#C8102E; --jp-indigo:#2F4F6F; --jp-sumi:#2C2C2C; }
+.jp-gojuon-grid {
+    display:grid; grid-template-columns:repeat(5,1fr);
+    gap:6px; max-width:480px; margin:20px auto;
+}
+.jp-gojuon-card {
+    aspect-ratio:1/1; background:var(--mtscos-bg-card);
+    border:1px solid var(--mtscos-border-light); border-radius:8px;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    cursor:pointer; position:relative; overflow:hidden;
+    transition:transform .15s, box-shadow .15s, border-color .15s;
+}
+.jp-gojuon-card:hover { transform:scale(1.05); border-color:var(--jp-vermilion); box-shadow:0 4px 14px rgba(200,16,46,.15); }
+.jp-gojuon-card.flipped .jp-front { display:none; }
+.jp-gojuon-card.flipped .jp-back { display:flex; }
+.jp-gojuon-card .jp-front {
+    width:100%; height:100%; display:flex; align-items:center; justify-content:center;
+    font-family:"Yu Mincho","Noto Serif JP",serif; font-size:28px; font-weight:700; color:var(--jp-sumi);
+}
+.jp-gojuon-card .jp-back {
+    display:none; width:100%; height:100%; flex-direction:column; align-items:center; justify-content:center;
+    background:linear-gradient(135deg, var(--jp-indigo), var(--jp-vermilion)); color:#fff;
+    font-size:18px; font-weight:600; font-family:"Georgia",serif;
+}
+.jp-gojuon-card.jp-empty { visibility:hidden; }
+.jp-tool-bar { text-align:center; margin-bottom:12px; }
+.jp-tool-bar button {
+    padding:6px 16px; margin:0 4px; border-radius:20px; border:1px solid var(--jp-indigo);
+    background:#fff; color:var(--jp-indigo); font-size:12px; cursor:pointer; transition:all .15s;
+}
+.jp-tool-bar button:hover { background:var(--jp-indigo); color:#fff; }
+.jp-tool-bar button.primary { background:var(--jp-vermilion); color:#fff; border-color:var(--jp-vermilion); }
+.jp-quiz-area {
+    max-width:480px; margin:24px auto; text-align:left;
+    background:var(--mtscos-bg-card); border:1px solid var(--mtscos-border-light);
+    border-radius:var(--mtscos-radius-lg); padding:20px;
+}
+.jp-quiz-question { font-family:"Yu Mincho",serif; font-size:36px; font-weight:700; text-align:center; margin-bottom:12px; color:var(--jp-sumi); }
+.jp-quiz-input { width:100%; padding:10px; font-size:16px; border:1px solid var(--mtscos-border-light); border-radius:6px; text-align:center; font-family:"Georgia",serif; }
+.jp-quiz-result { text-align:center; margin-top:8px; font-size:13px; }
+.jp-quiz-result.correct { color:#2a9d3f; }
+.jp-quiz-result.wrong { color:var(--jp-vermilion); }
+.jp-quiz-score { text-align:center; margin-top:12px; font-size:14px; font-weight:700; color:var(--jp-indigo); }
+.jp-quiz-score .jp-save { color:#2a9d3f; font-size:12px; font-weight:600; margin-left:8px; }
+.jp-quiz-score .jp-save.err { color:var(--jp-vermilion); }
+.jp-gojuon-card.mastered { border-color:#2a9d3f; background:rgba(42,157,63,.06); }
+.jp-gojuon-card.mastered::after { content:'✓'; position:absolute; top:2px; right:4px; font-size:10px; color:#2a9d3f; font-weight:700; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div style="margin-bottom:16px;font-size:13px;color:var(--mtscos-text-tertiary)">
+    <a href="/japanese_page" style="color:var(--jp-indigo);text-decoration:none">{{ t('auto.jpn_kana.__x_____a85766c6', default='← 日本語ポータル') }}</a>
+    <span style="margin:0 6px">›</span> 五十音図
+</div>
+
+<div class="jp-tool-bar">
+    <button onclick="document.querySelectorAll('.jp-gojuon-card').forEach(c=>{{ t('auto.jpn_kana.c_classlist__640b4681', default='c.classList.remove('flipped'))">全体を表に戻す') }}</button>
+    <button onclick="document.querySelectorAll('.jp-gojuon-card').forEach(c=>{{ t('auto.jpn_kana._if__c_class_807b5f0e'))c.classList.add(\'flipped\')})">全体を裏返す') }}</button>
+    <button class="primary" onclick="startQuiz()">{{ t('auto.jpn_kana.___x_78cc7730', default='クイズ開始') }}</button>
+</div>
+
+<div class="jp-gojuon-grid" id="gojuon-grid">
+    {% for k in gojuon %}
+    {% if k[0] %}
+    <div class="jp-gojuon-card" onclick="this.classList.toggle('flipped')" data-kana="{{ k[0] }}" data-romaji="{{ k[1] }}">
+        <div class="jp-front">{{ k[0] }}</div>
+        <div class="jp-back">{{ k[1] }}</div>
+    </div>
+    {% else %}
+    <div class="jp-gojuon-card jp-empty"></div>
+    {% endif %}
+    {% endfor %}
+</div>
+
+<div class="jp-quiz-area" id="quiz-area" style="display:none">
+    <div style="font-size:11px;color:var(--mtscos-text-tertiary);margin-bottom:8px">{{ t('auto.jpn_kana._________x_x_96e78719', default='クイズ · ローマ字を入力') }}</div>
+    <div class="jp-quiz-question" id="quiz-q">あ</div>
+    <input type="text" id="quiz-a" class="jp-quiz-input" placeholder="romaji..." onkeydown="if(event.key==='Enter')submitQuiz()">
+    <div style="text-align:center;margin-top:8px">
+        <button onclick="submitQuiz()" class="primary" style="padding:6px 20px;border-radius:20px;border:none;background:var(--jp-vermilion);color:#fff;cursor:pointer">{{ t('auto.jpn_kana.x___8ee0457e', default='答える') }}</button>
+        <button onclick="nextQuiz()" style="padding:6px 20px;border-radius:20px;border:1px solid var(--mtscos-border-light);background:#fff;cursor:pointer">スキップ</button>
+    </div>
+    <div class="jp-quiz-result" id="quiz-result"></div>
+    <div class="jp-quiz-score" id="quiz-score"></div>
+</div>
+
+<script>
+let quiz = { idx: 0, correct: 0, wrong: 0, chars: [], answers: [] };
+
+// 后端返回的已掌握假名 → 渲染已掌握状态
+const masteredKana = new Set({{ mastered_kana|tojson if mastered_kana else '[]' }});
+document.querySelectorAll('#gojuon-grid .jp-gojuon-card[data-kana]').forEach(c => {
+    if (masteredKana.has(c.dataset.kana)) c.classList.add('mastered');
+});
+
+function startQuiz() {
+    const grid = document.querySelectorAll('#gojuon-grid .jp-gojuon-card:not(.jp-empty)');
+    quiz.chars = Array.from(grid).map(c => ({k: c.dataset.kana, r: c.dataset.romanji}));
+    quiz.chars.sort(() => Math.random() - 0.5);
+    quiz.idx = 0; quiz.correct = 0; quiz.wrong = 0; quiz.answers = [];
+    document.getElementById('quiz-area').style.display = 'block';
+    nextQuiz();
+}
+
+function nextQuiz() {
+    if (quiz.idx >= quiz.chars.length) {
+        document.getElementById('quiz-q').innerText = `終了！ ${quiz.correct}/${quiz.chars.length}`;
+        const sc = document.getElementById('quiz-score');
+        sc.innerHTML = `正答率 ${(quiz.correct/quiz.chars.length*100).toFixed(1)}% <span class="jp-save" id="jp-save-status"></span>`;
+        document.getElementById('quiz-a').style.display = 'none';
+        // 落库
+        fetch('/api/japanese/kana/quiz', {
+            method:'POST', credentials:'include',
+            headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({ quiz_type: 'kana_to_romanji', answers: quiz.answers })
+        }).then(r=>r.json()).then(d=>{
+            const s = document.getElementById('jp-save-status');
+            if (d && d.success) s.innerText = `✓ 保存済 (正答${d.data.correct}/${d.data.total})`;
+            else { s.innerText = '保存失敗'; s.className = 'jp-save err'; }
+        }).catch(()=>{ const s=document.getElementById('jp-save-status'); s.innerText='保存エラー'; s.className='jp-save err'; });
+        return;
+    }
+    const q = quiz.chars[quiz.idx];
+    document.getElementById('quiz-q').innerText = q.k;
+    document.getElementById('quiz-a').value = '';
+    document.getElementById('quiz-a').focus();
+    document.getElementById('quiz-result').innerText = '';
+}
+
+function submitQuiz() {
+    const q = quiz.chars[quiz.idx];
+    const a = document.getElementById('quiz-a').value.trim().toLowerCase();
+    const ok = a === q.r;
+    const result = document.getElementById('quiz-result');
+    result.innerText = ok ? `正解！ ${q.k} = ${q.r}` : `不正解: ${q.k} は ${q.r} です`;
+    result.className = 'jp-quiz-result ' + (ok ? 'correct' : 'wrong');
+    if (ok) quiz.correct++; else quiz.wrong++;
+    quiz.answers.push({
+        kana_char: q.k, kana_type: 'hiragana', romanji: q.r,
+        user_answer: a, correct_answer: q.r, is_correct: ok
+    });
+    quiz.idx++;
+    setTimeout(nextQuiz, 700);
+}
+</script>
+{% endblock %}

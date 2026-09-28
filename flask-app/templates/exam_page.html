@@ -1,0 +1,1036 @@
+{% extends "base.html" %}
+
+{% block title %}{{ t('auto.exam_page.x_7746fb87', default='考试') }}答题 - MTSCOS{% endblock %}
+
+{% block head %}
+<style>
+    .exam-layout {
+        min-height: 100vh;
+        background: var(--bg-secondary, #f8fafc);
+        display: flex;
+        flex-direction: column;
+    }
+
+    /* === 顶部考试头 === */
+    .exam-header {
+        position: sticky;
+        top: 0;
+        z-index: 50;
+        background: var(--bg-primary, #ffffff);
+        border-bottom: 1px solid var(--border-color, #e2e8f0);
+        box-shadow: var(--shadow-sm, 0 1px 2px rgba(0,0,0,0.05));
+    }
+
+    .exam-header-inner {
+        max-width: 1280px;
+        margin: 0 auto;
+        padding: 14px 20px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        flex-wrap: wrap;
+    }
+
+    .exam-title-block {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        min-width: 0;
+    }
+
+    .exam-title-block .exam-badge {
+        flex-shrink: 0;
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--primary-color, #6366f1);
+        background: rgba(99, 102, 241, 0.10);
+        padding: 4px 10px;
+        border-radius: var(--radius-md, 8px);
+        letter-spacing: 0.5px;
+    }
+
+    .exam-title-block h1 {
+        font-size: 16px;
+        font-weight: 700;
+        color: var(--text-primary, #1e293b);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        margin: 0;
+    }
+
+    .exam-meta {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+
+    .meta-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 13px;
+        color: var(--text-secondary, #64748b);
+        padding: 6px 12px;
+        background: var(--bg-secondary, #f8fafc);
+        border: 1px solid var(--border-color, #e2e8f0);
+        border-radius: var(--radius-md, 8px);
+    }
+
+    .meta-chip .chip-label {
+        color: var(--text-secondary, #94a3b8);
+    }
+
+    .meta-chip .chip-value {
+        font-weight: 700;
+        color: var(--text-primary, #1e293b);
+    }
+
+    .countdown-chip {
+        font-variant-numeric: tabular-nums;
+    }
+
+    .countdown-chip.warning {
+        color: var(--warning-color, #f59e0b);
+        border-color: rgba(245, 158, 11, 0.4);
+        background: rgba(245, 158, 11, 0.08);
+    }
+
+    .countdown-chip.danger {
+        color: var(--danger-color, #ef4444);
+        border-color: rgba(239, 68, 68, 0.4);
+        background: rgba(239, 68, 68, 0.08);
+        animation: pulse 1s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.65; }
+    }
+
+    /* === 主体区域 === */
+    .exam-body {
+        flex: 1;
+        max-width: 1280px;
+        width: 100%;
+        margin: 0 auto;
+        padding: 20px;
+        display: grid;
+        grid-template-columns: 1fr 240px;
+        gap: 20px;
+        align-items: start;
+    }
+
+    /* === 题目卡片 === */
+    .question-card {
+        background: var(--bg-primary, #ffffff);
+        border: 1px solid var(--border-color, #e2e8f0);
+        border-radius: var(--radius-lg, 12px);
+        box-shadow: var(--shadow-sm, 0 1px 2px rgba(0,0,0,0.05));
+        padding: 24px;
+        min-height: 320px;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .question-top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 18px;
+        padding-bottom: 16px;
+        border-bottom: 1px dashed var(--border-color, #e2e8f0);
+    }
+
+    .question-no {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .question-no .q-index {
+        width: 32px;
+        height: 32px;
+        border-radius: var(--radius-md, 8px);
+        background: linear-gradient(135deg, var(--primary-color, #6366f1), var(--primary-dark, #4f46e5));
+        color: #fff;
+        font-weight: 700;
+        font-size: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .question-no .q-total {
+        font-size: 13px;
+        color: var(--text-secondary, #64748b);
+    }
+
+    .question-type-tag {
+        font-size: 12px;
+        font-weight: 600;
+        padding: 4px 10px;
+        border-radius: var(--radius-sm, 4px);
+        letter-spacing: 0.5px;
+    }
+
+    .tag-single { color: var(--primary-color, #6366f1); background: rgba(99, 102, 241, 0.10); }
+    .tag-multiple { color: var(--warning-color, #f59e0b); background: rgba(245, 158, 11, 0.10); }
+    .tag-judge { color: var(--success-color, #22c55e); background: rgba(34, 197, 94, 0.10); }
+
+    .question-content {
+        font-size: 16px;
+        line-height: 1.8;
+        color: var(--text-primary, #1e293b);
+        font-weight: 500;
+        margin-bottom: 22px;
+    }
+
+    .options-list {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        flex: 1;
+    }
+
+    .option-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        padding: 12px 16px;
+        border: 1.5px solid var(--border-color, #e2e8f0);
+        border-radius: var(--radius-md, 8px);
+        cursor: pointer;
+        transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+        background: var(--bg-primary, #ffffff);
+    }
+
+    .option-item:hover {
+        border-color: var(--primary-color, #6366f1);
+        background: rgba(99, 102, 241, 0.04);
+    }
+
+    .option-item.selected {
+        border-color: var(--primary-color, #6366f1);
+        background: rgba(99, 102, 241, 0.08);
+        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.08);
+    }
+
+    .option-marker {
+        flex-shrink: 0;
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        border: 1.5px solid var(--border-color, #cbd5e1);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+        font-weight: 700;
+        color: var(--text-secondary, #64748b);
+        background: var(--bg-primary, #ffffff);
+        transition: all 0.15s;
+        margin-top: 1px;
+    }
+
+    .option-item.selected .option-marker {
+        border-color: var(--primary-color, #6366f1);
+        background: var(--primary-color, #6366f1);
+        color: #fff;
+    }
+
+    .option-text {
+        font-size: 14px;
+        line-height: 1.6;
+        color: var(--text-primary, #1e293b);
+    }
+
+    .option-item input {
+        position: absolute;
+        opacity: 0;
+        pointer-events: none;
+    }
+
+    /* === 底部操作 === */
+    .question-actions {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-top: 24px;
+        padding-top: 20px;
+        border-top: 1px solid var(--border-color, #e2e8f0);
+    }
+
+    .exam-btn {
+        padding: 9px 20px;
+        font-size: 14px;
+        font-weight: 600;
+        font-family: var(--font-family);
+        border-radius: var(--radius-md, 8px);
+        cursor: pointer;
+        transition: all 0.15s;
+        border: 1.5px solid transparent;
+    }
+
+    .exam-btn:disabled {
+        opacity: 0.45;
+        cursor: not-allowed;
+    }
+
+    .btn-outline {
+        background: var(--bg-primary, #ffffff);
+        border-color: var(--border-color, #cbd5e1);
+        color: var(--text-primary, #1e293b);
+    }
+
+    .btn-outline:not(:disabled):hover {
+        border-color: var(--primary-color, #6366f1);
+        color: var(--primary-color, #6366f1);
+    }
+
+    .btn-primary {
+        background: var(--primary-color, #6366f1);
+        color: #fff;
+    }
+
+    .btn-primary:not(:disabled):hover {
+        background: var(--primary-dark, #4f46e5);
+    }
+
+    .btn-danger {
+        background: var(--danger-color, #ef4444);
+        color: #fff;
+    }
+
+    .btn-danger:not(:disabled):hover {
+        background: #dc2626;
+    }
+
+    .actions-left, .actions-right {
+        display: flex;
+        gap: 10px;
+    }
+
+    /* === {{ t('auto.exam_page.x_b99c8c45', default='答题卡') }} === */
+    .answer-card {
+        position: sticky;
+        top: 84px;
+        background: var(--bg-primary, #ffffff);
+        border: 1px solid var(--border-color, #e2e8f0);
+        border-radius: var(--radius-lg, 12px);
+        box-shadow: var(--shadow-sm, 0 1px 2px rgba(0,0,0,0.05));
+        padding: 18px;
+    }
+
+    .answer-card h3 {
+        font-size: 14px;
+        font-weight: 700;
+        color: var(--text-primary, #1e293b);
+        margin-bottom: 14px;
+    }
+
+    .answer-grid {
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        gap: 8px;
+        margin-bottom: 16px;
+    }
+
+    .answer-cell {
+        aspect-ratio: 1;
+        border-radius: var(--radius-md, 8px);
+        border: 1.5px solid var(--border-color, #e2e8f0);
+        background: var(--bg-secondary, #f8fafc);
+        color: var(--text-secondary, #64748b);
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.15s;
+    }
+
+    .answer-cell:hover {
+        border-color: var(--primary-color, #6366f1);
+        transform: translateY(-1px);
+    }
+
+    .answer-cell.answered {
+        background: var(--success-color, #22c55e);
+        border-color: var(--success-color, #22c55e);
+        color: #fff;
+    }
+
+    .answer-cell.current {
+        background: var(--primary-color, #6366f1);
+        border-color: var(--primary-color, #6366f1);
+        color: #fff;
+        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+    }
+
+    .answer-legend {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        font-size: 12px;
+        color: var(--text-secondary, #64748b);
+        padding-top: 14px;
+        border-top: 1px solid var(--border-color, #e2e8f0);
+    }
+
+    .legend-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .legend-dot {
+        width: 14px;
+        height: 14px;
+        border-radius: 4px;
+        flex-shrink: 0;
+    }
+
+    .legend-dot.gray { background: var(--border-color, #e2e8f0); }
+    .legend-dot.green { background: var(--success-color, #22c55e); }
+    .legend-dot.blue { background: var(--primary-color, #6366f1); }
+
+    /* === 结果弹层 === */
+    .result-overlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        z-index: 1000;
+        background: rgba(15, 23, 42, 0.55);
+        backdrop-filter: blur(4px);
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+    }
+
+    .result-overlay.show {
+        display: flex;
+    }
+
+    .result-card {
+        width: 100%;
+        max-width: 460px;
+        background: var(--bg-primary, #ffffff);
+        border-radius: var(--radius-lg, 12px);
+        box-shadow: var(--shadow-lg, 0 8px 32px rgba(0,0,0,0.12));
+        padding: 32px 28px;
+        text-align: center;
+    }
+
+    .result-score {
+        font-size: 48px;
+        font-weight: 800;
+        line-height: 1;
+        margin-bottom: 8px;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .result-score.pass { color: var(--success-color, #22c55e); }
+    .result-score.fail { color: var(--danger-color, #ef4444); }
+
+    .result-title {
+        font-size: 18px;
+        font-weight: 700;
+        color: var(--text-primary, #1e293b);
+        margin-bottom: 20px;
+    }
+
+    .result-stats {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+        margin-bottom: 24px;
+    }
+
+    .result-stat {
+        background: var(--bg-secondary, #f8fafc);
+        border: 1px solid var(--border-color, #e2e8f0);
+        border-radius: var(--radius-md, 8px);
+        padding: 14px 10px;
+    }
+
+    .result-stat .stat-num {
+        font-size: 22px;
+        font-weight: 700;
+        color: var(--text-primary, #1e293b);
+        font-variant-numeric: tabular-nums;
+    }
+
+    .result-stat .stat-label {
+        font-size: 12px;
+        color: var(--text-secondary, #64748b);
+        margin-top: 2px;
+    }
+
+    .result-actions {
+        display: flex;
+        gap: 10px;
+        justify-content: center;
+    }
+
+    /* === 空状态 === */
+    .exam-empty {
+        text-align: center;
+        padding: 80px 20px;
+        color: var(--text-secondary, #64748b);
+    }
+
+    .exam-empty .empty-icon {
+        font-size: 48px;
+        color: var(--border-color, #cbd5e1);
+        margin-bottom: 16px;
+    }
+
+    /* === 提示条 === */
+    .exam-toast {
+        position: fixed;
+        top: 76px;
+        left: 50%;
+        transform: translateX(-50%) translateY(-20px);
+        background: var(--text-primary, #1e293b);
+        color: #fff;
+        padding: 10px 20px;
+        border-radius: var(--radius-md, 8px);
+        font-size: 13px;
+        z-index: 200;
+        opacity: 0;
+        transition: all 0.25s;
+        pointer-events: none;
+        box-shadow: var(--shadow-md, 0 4px 20px rgba(0,0,0,0.1));
+    }
+
+    .exam-toast.show {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+    }
+
+    /* === 响应式 === */
+    @media (max-width: 960px) {
+        .exam-body {
+            grid-template-columns: 1fr;
+        }
+
+        .answer-card {
+            position: static;
+            order: -1;
+        }
+
+        .answer-grid {
+            grid-template-columns: repeat(8, 1fr);
+        }
+    }
+
+    @media (max-width: 600px) {
+        .exam-header-inner {
+            padding: 12px 14px;
+        }
+
+        .exam-title-block h1 {
+            font-size: 14px;
+        }
+
+        .exam-body {
+            padding: 14px;
+        }
+
+        .question-card {
+            padding: 18px 16px;
+        }
+
+        .question-content {
+            font-size: 15px;
+        }
+
+        .question-actions {
+            flex-direction: column-reverse;
+            align-items: stretch;
+        }
+
+        .actions-left, .actions-right {
+            justify-content: space-between;
+        }
+
+        .exam-btn {
+            flex: 1;
+        }
+
+        .answer-grid {
+            grid-template-columns: repeat(6, 1fr);
+        }
+
+        .meta-chip {
+            font-size: 12px;
+            padding: 5px 10px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="exam-layout">
+    <!-- 考试头部 -->
+    <header class="exam-header">
+        <div class="exam-header-inner">
+            <div class="exam-title-block">
+                <span class="exam-badge">考试</span>
+                <h1>{{ exam_title | default('在线考试') }}</h1>
+            </div>
+            <div class="exam-meta">
+                <span class="meta-chip">
+                    <span class="chip-label">{{ t('auto.exam_page.x_c7bff79d', default='进度') }}</span>
+                    <span class="chip-value"><span id="answeredCount">0</span>/<span id="totalCount">0</span></span>
+                </span>
+                <span class="meta-chip countdown-chip" id="countdownChip">
+                    <span class="chip-label">{{ t('auto.exam_page.x_43b510ed', default='剩余') }}</span>
+                    <span class="chip-value" id="countdown">--:--</span>
+                </span>
+            </div>
+        </div>
+    </header>
+
+    <!-- 主体 -->
+    <div class="exam-body">
+        <!-- 题目区 -->
+        <main class="question-card" id="questionCard">
+            <div class="question-top">
+                <div class="question-no">
+                    <span class="q-index" id="qIndex">1</span>
+                    <span class="q-total">第 <span id="curNo">1</span> {{ t('auto.exam_page.x___x_b4276c0b', default='题 / 共') }} <span id="totalNo">0</span> 题</span>
+                </div>
+                <span class="question-type-tag" id="qTypeTag">{{ t('auto.exam_page.x_ea624f52', default='单选题') }}</span>
+            </div>
+
+            <div class="question-content" id="qContent">{{ t('auto.exam_page.x____05e6253b', default='题目加载中...') }}</div>
+
+            <div class="options-list" id="optionsList"></div>
+
+            <div class="question-actions">
+                <div class="actions-left">
+                    <button type="button" class="exam-btn btn-outline" id="prevBtn">{{ t('auto.exam_page.x_f8c11a29', default='上一题') }}</button>
+                </div>
+                <div class="actions-right">
+                    <button type="button" class="exam-btn btn-danger" id="submitBtn">{{ t('auto.exam_page.x_e6388366', default='提交考试') }}</button>
+                    <button type="button" class="exam-btn btn-primary" id="nextBtn">{{ t('auto.exam_page.x_b4b9f433', default='下一题') }}</button>
+                </div>
+            </div>
+        </main>
+
+        <!-- 答题卡 -->
+        <aside class="answer-card">
+            <h3>答题卡</h3>
+            <div class="answer-grid" id="answerGrid"></div>
+            <div class="answer-legend">
+                <div class="legend-row"><span class="legend-dot gray"></span> {{ t('auto.exam_page.x_a3762212', default='未作答') }}</div>
+                <div class="legend-row"><span class="legend-dot green"></span> {{ t('auto.exam_page.x_4f3943d9', default='已作答') }}</div>
+                <div class="legend-row"><span class="legend-dot blue"></span> {{ t('auto.exam_page.x_3cd1009d', default='当前题') }}</div>
+            </div>
+        </aside>
+    </div>
+</div>
+
+<!-- 提示条 -->
+<div class="exam-toast" id="examToast"></div>
+
+<!-- 结果弹层 -->
+<div class="result-overlay" id="resultOverlay">
+    <div class="result-card">
+        <div class="result-score" id="resultScore">--</div>
+        <div class="result-title" id="resultTitle">{{ t('auto.exam_page.x_89fe7740', default='考试已提交') }}</div>
+        <div class="result-stats">
+            <div class="result-stat">
+                <div class="stat-num" id="statCorrect">0</div>
+                <div class="stat-label">{{ t('auto.exam_page.x_d26f2472', default='答对题数') }}</div>
+            </div>
+            <div class="result-stat">
+                <div class="stat-num" id="statTotal">0</div>
+                <div class="stat-label">{{ t('auto.exam_page.x_ba61dcde', default='总题数') }}</div>
+            </div>
+        </div>
+        <div class="result-actions">
+            <button type="button" class="exam-btn btn-outline" id="closeResultBtn">{{ t('auto.exam_page.x_b15d9127', default='关闭') }}</button>
+        </div>
+    </div>
+</div>
+
+<!-- 题目数据 -->
+<script type="application/json" id="examData">
+{{ questions | default([]) | tojson | safe }}
+</script>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+    var examId = {{ exam_id | default(null) | tojson }};
+    var durationMin = {{ duration | default(0) }};
+    var questions = [];
+
+    try {
+        questions = JSON.parse(document.getElementById('examData').textContent) || [];
+    } catch (e) {
+        questions = [];
+    }
+
+    var total = questions.length;
+    var current = 0;
+    var answers = {};
+    var submitted = false;
+    var endTime = 0;
+    var timerId = null;
+
+    var els = {
+        qIndex: document.getElementById('qIndex'),
+        curNo: document.getElementById('curNo'),
+        totalNo: document.getElementById('totalNo'),
+        qTypeTag: document.getElementById('qTypeTag'),
+        qContent: document.getElementById('qContent'),
+        optionsList: document.getElementById('optionsList'),
+        answerGrid: document.getElementById('answerGrid'),
+        answeredCount: document.getElementById('answeredCount'),
+        totalCount: document.getElementById('totalCount'),
+        countdown: document.getElementById('countdown'),
+        countdownChip: document.getElementById('countdownChip'),
+        prevBtn: document.getElementById('prevBtn'),
+        nextBtn: document.getElementById('nextBtn'),
+        submitBtn: document.getElementById('submitBtn'),
+        toast: document.getElementById('examToast'),
+        resultOverlay: document.getElementById('resultOverlay'),
+        resultScore: document.getElementById('resultScore'),
+        resultTitle: document.getElementById('resultTitle'),
+        statCorrect: document.getElementById('statCorrect'),
+        statTotal: document.getElementById('statTotal'),
+        closeResultBtn: document.getElementById('closeResultBtn'),
+        questionCard: document.getElementById('questionCard')
+    };
+
+    var TYPE_LABELS = { single: '单选题', multiple: '多选题', judge: '判断题' };
+    var TYPE_CLASSES = { single: 'tag-single', multiple: 'tag-multiple', judge: 'tag-judge' };
+
+    function showToast(msg, duration) {
+        els.toast.textContent = msg;
+        els.toast.classList.add('show');
+        clearTimeout(showToast._t);
+        showToast._t = setTimeout(function () {
+            els.toast.classList.remove('show');
+        }, duration || 2000);
+    }
+
+    function isAnswered(idx) {
+        var q = questions[idx];
+        if (!q) return false;
+        var a = answers[q.id];
+        if (a === undefined || a === null) return false;
+        if (Array.isArray(a)) return a.length > 0;
+        return String(a).length > 0;
+    }
+
+    function answeredCount() {
+        var n = 0;
+        for (var i = 0; i < total; i++) {
+            if (isAnswered(i)) n++;
+        }
+        return n;
+    }
+
+    function escapeHtml(str) {
+        if (str === undefined || str === null) return '';
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
+    }
+
+    function renderQuestion() {
+        if (total === 0) {
+            els.questionCard.innerHTML =
+                '<div class="exam-empty">' +
+                '<div class="empty-icon">[ ]</div>' +
+                '<div>{{ t('auto.exam_page.x_03e002a4') }}') }}</div>' +
+                '</div>';
+            return;
+        }
+
+        var q = questions[current];
+        var qid = q.id;
+        var type = q.type || 'single';
+
+        els.qIndex.textContent = current + 1;
+        els.curNo.textContent = current + 1;
+        els.totalNo.textContent = total;
+        els.qTypeTag.textContent = TYPE_LABELS[type] || '单选题';
+        els.qTypeTag.className = 'question-type-tag ' + (TYPE_CLASSES[type] || 'tag-single');
+        els.qContent.innerHTML = escapeHtml(q.content);
+
+        // 渲染选项
+        els.optionsList.innerHTML = '';
+        var options = q.options || [];
+        var saved = answers[qid];
+
+        for (var i = 0; i < options.length; i++) {
+            (function (opt) {
+                var key = opt.key !== undefined ? opt.key : String(i);
+                var label = opt.content !== undefined ? opt.content : String(opt);
+
+                var item = document.createElement('label');
+                item.className = 'option-item';
+                item.setAttribute('data-key', key);
+
+                var isSelected = false;
+                if (type === 'multiple') {
+                    isSelected = Array.isArray(saved) && saved.indexOf(key) > -1;
+                } else {
+                    isSelected = saved === key;
+                }
+                if (isSelected) item.classList.add('selected');
+
+                var marker = document.createElement('span');
+                marker.className = 'option-marker';
+                marker.textContent = key;
+
+                var text = document.createElement('span');
+                text.className = 'option-text';
+                text.innerHTML = escapeHtml(label);
+
+                item.appendChild(marker);
+                item.appendChild(text);
+
+                item.addEventListener('click', function () {
+                    if (submitted) return;
+                    if (type === 'multiple') {
+                        var arr = Array.isArray(answers[qid]) ? answers[qid].slice() : [];
+                        var pos = arr.indexOf(key);
+                        if (pos > -1) {
+                            arr.splice(pos, 1);
+                            item.classList.remove('selected');
+                        } else {
+                            arr.push(key);
+                            item.classList.add('selected');
+                        }
+                        answers[qid] = arr.sort();
+                    } else {
+                        // 单选/判断：清除兄弟节点选中
+                        var siblings = els.optionsList.querySelectorAll('.option-item');
+                        siblings.forEach(function (s) { s.classList.remove('selected'); });
+                        item.classList.add('selected');
+                        answers[qid] = key;
+                    }
+                    updateProgress();
+                    updateAnswerCard();
+                });
+
+                els.optionsList.appendChild(item);
+            })(options[i]);
+        }
+
+        els.prevBtn.disabled = current === 0;
+        els.nextBtn.disabled = current === total - 1;
+
+        updateProgress();
+        updateAnswerCard();
+    }
+
+    function updateProgress() {
+        els.answeredCount.textContent = answeredCount();
+        els.totalCount.textContent = total;
+    }
+
+    function updateAnswerCard() {
+        els.answerGrid.innerHTML = '';
+        for (var i = 0; i < total; i++) {
+            (function (idx) {
+                var cell = document.createElement('div');
+                cell.className = 'answer-cell';
+                if (idx === current) cell.classList.add('current');
+                else if (isAnswered(idx)) cell.classList.add('answered');
+                cell.textContent = idx + 1;
+                cell.addEventListener('click', function () {
+                    if (submitted) return;
+                    current = idx;
+                    renderQuestion();
+                });
+                els.answerGrid.appendChild(cell);
+            })(i);
+        }
+    }
+
+    function pad(n) {
+        return n < 10 ? '0' + n : '' + n;
+    }
+
+    function updateCountdown() {
+        if (endTime === 0) return;
+        var remain = Math.max(0, Math.floor((endTime - Date.now()) / 1000));
+        var h = Math.floor(remain / 3600);
+        var m = Math.floor((remain % 3600) / 60);
+        var s = remain % 60;
+        els.countdown.textContent = (h > 0 ? pad(h) + ':' : '') + pad(m) + ':' + pad(s);
+
+        els.countdownChip.classList.remove('warning', 'danger');
+        if (remain <= 60) {
+            els.countdownChip.classList.add('danger');
+        } else if (remain <= 300) {
+            els.countdownChip.classList.add('warning');
+        }
+
+        if (remain <= 0) {
+            clearInterval(timerId);
+            if (!submitted) {
+                showToast('考试时间已到，正在自动提交...');
+                submitExam(true);
+            }
+        }
+    }
+
+    function buildAnswersPayload() {
+        var payload = {};
+        for (var i = 0; i < total; i++) {
+            var q = questions[i];
+            var a = answers[q.id];
+            if (a === undefined || a === null) {
+                payload[q.id] = (q.type === 'multiple') ? [] : '';
+            } else {
+                payload[q.id] = a;
+            }
+        }
+        return payload;
+    }
+
+    function submitExam(auto) {
+        if (submitted) return;
+        submitted = true;
+        clearInterval(timerId);
+
+        var unanswered = total - answeredCount();
+        var payload = {
+            exam_id: examId,
+            answers: buildAnswersPayload()
+        };
+
+        els.submitBtn.disabled = true;
+        els.submitBtn.textContent = '提交中...';
+
+        fetch('/api/exam/submit', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        })
+        .then(function (resp) {
+            return resp.json().then(function (data) {
+                return { ok: resp.ok, data: data };
+            });
+        })
+        .then(function (res) {
+            var data = res.data || {};
+            if (res.ok && (data.success || data.code === 0 || data.code === 200)) {
+                showResult(data, auto);
+            } else {
+                submitted = false;
+                els.submitBtn.disabled = false;
+                els.submitBtn.textContent = '提交考试';
+                showToast((data.message || data.error || data.msg) || '提交失败，请重试');
+                restartTimerIfLeft();
+            }
+        })
+        .catch(function () {
+            submitted = false;
+            els.submitBtn.disabled = false;
+            els.submitBtn.textContent = '提交考试';
+            showToast('网络异常，请检查连接后重试');
+            restartTimerIfLeft();
+        });
+    }
+
+    function restartTimerIfLeft() {
+        if (endTime > Date.now()) {
+            timerId = setInterval(updateCountdown, 1000);
+        }
+    }
+
+    function showResult(data, auto) {
+        var score = (data.score !== undefined ? data.score : null);
+        var correct = (data.correct_count !== undefined ? data.correct_count
+                      : (data.correct !== undefined ? data.correct : 0));
+        var passLine = (data.pass_score !== undefined ? data.pass_score : 60);
+
+        var isPass = score === null ? null : (score >= passLine);
+        els.resultScore.textContent = score === null ? '--' : score;
+        els.resultScore.className = 'result-score ' + (isPass === null ? '' : (isPass ? 'pass' : 'fail'));
+        els.resultTitle.textContent = auto ? '考试时间到，已自动提交' : '考试已提交';
+        els.statCorrect.textContent = correct;
+        els.statTotal.textContent = total;
+        els.resultOverlay.classList.add('show');
+    }
+
+    function confirmSubmit() {
+        if (submitted) return;
+        var unanswered = total - answeredCount();
+        if (unanswered > 0) {
+            if (!confirm('您还有 ' + unanswered + ' 题未作答，确定要提交吗？')) return;
+        } else {
+            if (!confirm('确定要提交考试吗？提交后将无法修改答案。')) return;
+        }
+        submitExam(false);
+    }
+
+    // === 事件绑定 ===
+    els.prevBtn.addEventListener('click', function () {
+        if (current > 0) { current--; renderQuestion(); }
+    });
+
+    els.nextBtn.addEventListener('click', function () {
+        if (current < total - 1) { current++; renderQuestion(); }
+    });
+
+    els.submitBtn.addEventListener('click', confirmSubmit);
+
+    els.closeResultBtn.addEventListener('click', function () {
+        els.resultOverlay.classList.remove('show');
+    });
+
+    // 键盘快捷键
+    document.addEventListener('keydown', function (e) {
+        if (submitted) return;
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+        if (e.key === 'ArrowLeft' && current > 0) { current--; renderQuestion(); }
+        if (e.key === 'ArrowRight' && current < total - 1) { current++; renderQuestion(); }
+    });
+
+    // === 初始化 ===
+    if (total === 0) {
+        els.questionCard.innerHTML =
+            '<div class="exam-empty">' +
+            '<div class="empty-icon">[ ]</div>' +
+            '<div>本次考试暂无题目</div>' +
+            '</div>';
+        els.totalNo.textContent = 0;
+        els.totalCount.textContent = 0;
+        els.prevBtn.disabled = true;
+        els.nextBtn.disabled = true;
+        els.submitBtn.disabled = true;
+    } else {
+        els.totalNo.textContent = total;
+        els.totalCount.textContent = total;
+        renderQuestion();
+    }
+
+    if (durationMin > 0) {
+        endTime = Date.now() + durationMin * 60 * 1000;
+        updateCountdown();
+        timerId = setInterval(updateCountdown, 1000);
+    } else {
+        els.countdown.textContent = '不限时';
+    }
+})();
+</script>
+{% endblock %}

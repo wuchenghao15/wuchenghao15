@@ -1,0 +1,1208 @@
+---
+name: "mtscos-param"
+description: 基于《系统参数数据规范与操作规范》的方法论 Skill。解决核心问题：参数分类 (系统/业务/AI/安全) + 存储 + 验证 + 7 步审核 + 备份。适合人群：AI Agent + 人类开发者, 所有涉及该领域的活动。典型使用场景：AI Agent 准备修改该领域代码 → Trae 自动触发此 Skill；人类开发者不确定合规性 → 查 Skill；CI 自检失败 → 回溯规则原因。
+---
+
+# 系统参数数据规范与操作规范 - 方法论 Skill
+
+> 基于 MTSCOS AI 项目规则治理体系 的《系统参数数据规范与操作规范》
+>
+> 本 Skill 仅供个人学习使用
+
+## 概述
+
+### 解决什么问题
+参数分类 (系统/业务/AI/安全) + 存储 + 验证 + 7 步审核 + 备份
+
+### 目标受众
+AI Agent + 人类开发者, 所有涉及该领域的活动
+
+### 核心收益
+- 硬约束不可绕过
+- 自动拦截机制 (4 层)
+- AI 自动遵守
+- 落库留痕可追溯
+
+---
+
+## 快速上手
+
+> 一句话概括：参数分类 (系统/业务/AI/安全) + 存储 + 验证 + 7 步审核 + 备份
+
+**最简使用流程：**
+1. **Preflight**
+2. **Execute**
+3. **Verify**
+4. **Close**
+
+**核心原则速记：**
+- 敏感参数加密存储
+- 参数修改必须落库 mt_rule_changelog
+- 备份 3 份异地
+
+---
+
+## 核心方法
+
+### 方法步骤
+
+#### 步骤 1: Preflight
+
+确认规则适用 + STATUS=ACTIVE
+
+**具体操作：**
+- 查 RULE_META
+- 确认 intercept_layers
+
+**依赖关系：** L0 §14
+
+---
+
+#### 步骤 2: Execute
+
+按 系统参数数据规范与操作规范 条款执行
+
+**具体操作：**
+- 遵守硬约束
+- 禁止违反
+- 落库
+
+**依赖关系：** Preflight
+
+---
+
+#### 步骤 3: Verify
+
+CI 自检 + 规则完整性扫描
+
+**具体操作：**
+- mt_rule_integrity_scan PASS
+- 无 mt_rule_violation_alert
+
+**依赖关系：** Execute
+
+---
+
+#### 步骤 4: Close
+
+落库 changelog + 结案
+
+**具体操作：**
+- 更新 RULE_META version
+- 记录变更
+
+**依赖关系：** Verify
+
+---
+
+### 核心原则
+
+- **敏感参数加密存储**
+- **参数修改必须落库 mt_rule_changelog**
+- **备份 3 份异地**
+- **参数值变更自动触发验证**
+
+### 注意事项与警告
+
+- ⚠️ 参数值改了没验证 → 系统异常
+- ⚠️ 备份不足 → 灾难无法恢复
+
+**避坑指南：**
+- 执行前先读 RULE_META
+- 规则修改走 7 步审批
+- CI 自检必过
+
+---
+
+## 使用指南
+
+### 适用场景
+
+✅ **推荐使用：**
+- 系统参数/配置/存储/验证/审核
+
+❌ **不推荐使用：**
+- 与该领域无关的纯只读活动
+
+### 前置准备
+
+**知识准备：**
+- 读懂 RULE_META
+- 理解层级优先级 (L0 > L1 > L2)
+- 知道 intercept_layers 是什么
+
+**工具准备：**
+- rules_engine 8 组件
+- CI 流水线
+- sys_rule_enforcer daemon
+
+**环境准备：**
+- Flask before_request hook 生效
+- Git pre-commit hook 已安装
+
+### 预期产出
+
+**直接产出：**
+变更已落库 + 无规则违反事件
+
+**阶段性产出：**
+- CI 自检通过
+- mt_rule_changelog 记录
+
+**成功标准：**
+- 无 mt_rule_violation_alert
+- mt_rule_integrity_scan PASS
+
+### 检验标准
+
+CI 自检 + 落库检查 + 违反事件表空
+
+**自测清单：**
+- [ ] RULE_META 完整
+- [ ] 硬约束未被修改
+- [ ] CI PASS
+- [ ] 违反事件表空
+
+---
+
+## 深入理解
+
+### 核心原理
+
+规则引擎 + 有限状态机 + 拦截器模式 + Fail-Closed
+
+**为什么有效：**
+4 层拦截 (git hook + Flask before_request + CI + git push) + daemon 自动执行 + 落库留痕 → 无法绕过
+
+### 关键提问
+
+在使用此方法时，请思考以下问题：
+
+1. RULE_ID=MT_RULE_PARAM, STATUS=ACTIVE, 我是否遵守了所有硬约束?
+2. 有没有跳步?
+3. 落库了吗?
+4. CI 会过吗?
+
+---
+
+## 实践资源
+
+### 配套工具与模板
+
+**工具清单：**
+- rules_engine 8 组件
+- sys_rule_enforcer daemon
+- auto_rule_strengthener
+- auto_patrol 6 人巡逻队
+
+**模板：**
+- mt_rule_changelog schema
+- pre-commit hook 模板
+
+**参考案例：**
+- session 端口漂移事故 → 复盘后新增 §14 网络治理
+
+### 学习路径
+
+**入门阶段：**
+- 读懂 RULE_META 的每个字段
+- 理解层级优先级
+- 看一次拦截事件
+
+**进阶路径：**
+- 扩展 intercept_layers
+- 自定义 activity_type
+- 写 CI 自检规则
+
+**关键里程碑：**
+- 首次活动完全合规
+- CI 自检 100% PASS
+- 7 天无拦截
+
+### 方法变体
+
+**常见变体：**
+- MINIMAL (仅 CI + before_request)
+- FULL (4 层全拦)
+
+**场景调整：**
+- 紧急修复: Security 缩短但不跳过
+
+### 进阶技巧
+
+- **弱约束自动强化**: auto_rule_strengthener 检测到 '应该'/'建议' 自动改成 '必须'
+
+---
+
+## AI 辅助建议
+
+### 适合 AI 辅助的步骤
+
+- **sys_rule_enforcer 规则自动学习 + 弱约束扫描**: 可由 AI 协助完成
+- **auto_rule_strengthener 弱约束自动修复为强约束**: 可由 AI 协助完成
+- **rule_integrity_scanner CI 自检**: 可由 AI 协助完成
+- **auto_patrol 6 人巡逻队自动修复**: 可由 AI 协助完成
+
+### 人机协作模式
+
+AI 自动执行规则 + 自动修复弱约束, 人类做终审 + 规则修改审批 (7 步)
+
+### 自动化机会
+
+- 弱约束 → 强约束自动修复
+- 拦截事件 → 自动告警 → 自动投喂脑库
+- CI 自检 → 自动阻断合并
+
+---
+
+## Skill 使用说明
+
+### 典型调用场景
+
+- AI Agent 准备修改该领域代码 → Trae 自动触发此 Skill
+- 人类开发者不确定合规性 → 查 Skill
+- CI 自检失败 → 回溯规则原因
+
+### 触发条件
+
+当用户出现以下情况时，触发此 Skill：
+- 参数调整/配置变更
+- 用户请求 '改一下 XX' 且 XX 在此领域
+- Trae 需要判断合规性
+
+### 输入参数
+
+- 活动类型
+- 影响范围
+- 安全等级
+
+### 输出格式
+
+规则约束清单 + 执行步骤 + 验证标准 + 交叉引用 + RULE_ID/LEVEL
+
+---
+
+## 
+
+---
+
+## 规则原文 (完整嵌入)
+
+> 以下为 系统参数数据规范与操作规范.md 全文, 所有条款均为**硬约束**, 不可绕过。
+
+---
+alwaysApply: true
+---
+<!-- RULE_META_START
+RULE_ID: MT_RULE_PARAM
+RULE_NAME: 系统参数数据规范与操作规范
+RULE_LEVEL: L2 操作
+RULE_VERSION: v1.2.0
+EFFECTIVE_DATE: 2026-08-18
+STATUS: ACTIVE
+VIOLATION_CODE: PARAM-RULE-VIOLATION
+INTERCEPT_LAYERS: [pre_commit, before_request, ci_check, git_hook]
+RESPONSIBLE_ROLE: super_admin
+DEPENDS_ON: [MT_IRON_RULE_12STEPS, MT_RULE_DEV, MT_RULE_SYS_OPS]
+MODIFY_APPROVAL_FLOW: 7_STEP (提议→2管理员同意→EigenFlux 5人磋商≥4/5→SA终审→保密撤回)
+BYPASS_ALLOWED: false
+LAST_CHANGED: 2026-09-17
+RULE_META_END -->
+# MTSCOS AI 项目系统参数数据规范与操作规范
+
+> **层级**: L2 操作 | **优先级**: 服从 [§14 IRON_RULE](§14强制开发12步骤独立约束规则.md) (L0) | **索引**: [规则总索引](00-规则总索引.md)
+
+## 1. 总则
+
+### 1.1 目的
+
+为规范 MTSCOS AI 项目系统参数管理，确保参数数据的一致性、安全性和可维护性，统一参数标准和操作流程，特制定本规范。
+
+### 1.2 适用范围
+
+本规范适用于 MTSCOS AI 项目中所有系统参数的管理活动，包括：
+
+- 参数定义与分类
+- 参数存储与读取
+- 参数修改与更新
+- 参数验证与审核
+- 参数权限控制
+- 参数备份与恢复
+
+### 1.3 核心原则
+
+| 原则 | 说明 |
+|------|------|
+| **统一标准** | 所有参数必须遵循统一的命名规范和数据格式 |
+| **安全优先** | 参数修改必须经过权限验证和审核流程 |
+| **可追溯** | 参数变更必须记录完整的操作日志 |
+| **一致性** | 参数必须与数据库同步，防止前后端数据不一致 |
+| **分级管理** | 参数按作用域和敏感程度进行分级管理 |
+| **默认值** | 关键参数必须设置合理的默认值 |
+| **巡检驱动** | 参数管理必须纳入 AI 巡检闭环，支持自动检测和修复 |
+| **法律准则合规** | 所有参数管理活动必须遵循法律准则文件规定 |
+| **自动修复闭环** | 发现参数问题自动触发修复流程，修复结果记录到数据库并投喂脑库 |
+
+---
+
+## 2. 参数分类体系
+
+### 2.1 参数分类结构
+
+参数采用三级分类结构：
+
+```text
+一级分类（参数域）
+├── 二级分类（模块）
+│   └── 三级分类（具体参数）
+```
+
+### 2.2 参数域（一级分类）
+
+| 参数域 | 代码 | 说明 | 示例 |
+|--------|------|------|------|
+| **系统配置** | `system` | 系统核心配置参数 | 系统名称、版本号 |
+| **安全配置** | `security` | 安全相关参数 | 密码策略、认证配置 |
+| **数据库配置** | `database` | 数据库连接和优化参数 | 连接池大小、超时时间 |
+| **AI 引擎配置** | `ai` | AI 引擎相关参数 | 模型配置、训练参数 |
+| **考试系统** | `exam` | 考试系统参数 | 考试时长、题目数量 |
+| **用户管理** | `user` | 用户管理参数 | 注册限制、权限配置 |
+| **通知系统** | `notification` | 通知相关参数 | 通知频率、渠道配置 |
+| **备份恢复** | `backup` | 备份恢复参数 | 备份频率、保留周期 |
+| **监控告警** | `monitor` | 监控告警参数 | 告警阈值、监控频率 |
+| **缓存配置** | `cache` | 缓存相关参数 | 缓存策略、过期时间 |
+| **日志配置** | `logging` | 日志相关参数 | 日志级别、输出路径 |
+
+### 2.3 模块分类（二级分类）
+
+各参数域的二级分类示例：
+
+| 参数域 | 二级分类 |
+|--------|---------|
+| `system` | `general`, `network`, `performance`, `feature_flags` |
+| `security` | `auth`, `password`, `rate_limit`, `session` |
+| `database` | `connection`, `optimization`, `backup`, `migration` |
+| `ai` | `model`, `training`, `inference`, `worker` |
+| `exam` | `paper`, `question`, `timer`, `grading` |
+| `user` | `registration`, `profile`, `permission`, `role` |
+| `notification` | `email`, `sms`, `push`, `frequency` |
+| `backup` | `schedule`, `retention`, `encryption`, `emergency` |
+| `monitor` | `metrics`, `alert`, `health`, `dashboard` |
+| `cache` | `redis`, `memory`, `ttl`, `strategy` |
+| `logging` | `level`, `format`, `rotation`, `storage` |
+
+### 2.4 参数命名规范
+
+#### 2.4.1 命名格式
+
+参数键采用点号分隔的分层命名：
+
+```text
+<参数域>.<模块>.<参数名>
+```
+
+#### 2.4.2 命名规则
+
+| 层级 | 规范 | 示例 |
+|------|------|------|
+| 参数域 | 小写，单一单词 | `system`, `security`, `ai` |
+| 模块 | 小写，单一单词 | `general`, `auth`, `model` |
+| 参数名 | 小写，下划线分隔 | `system_name`, `password_min_length` |
+
+#### 2.4.3 命名示例
+
+| 参数键 | 说明 |
+|--------|------|
+| `system.general.name` | 系统名称 |
+| `system.general.version` | 系统版本号 |
+| `security.auth.session_timeout` | 会话超时时间 |
+| `security.password.min_length` | 密码最小长度 |
+| `ai.model.default_model` | 默认 AI 模型 |
+| `exam.paper.duration_minutes` | 考试时长（分钟） |
+| `database.connection.pool_size` | 数据库连接池大小 |
+| `cache.redis.ttl_hours` | Redis 缓存过期时间（小时） |
+
+---
+
+## 3. 参数数据类型规范
+
+### 3.1 支持的数据类型
+
+| 类型 | 说明 | 示例 |
+|------|------|------|
+| **string** | 字符串类型 | `system.general.name = "MTSCOS AI"` |
+| **integer** | 整数类型 | `security.password.min_length = 8` |
+| **float** | 浮点数类型 | `monitor.metrics.cpu_threshold = 90.0` |
+| **boolean** | 布尔类型 | `ai.worker.auto_scaling = true` |
+| **json** | JSON 对象类型 | `exam.timer.config = {"min": 30, "max": 180}` |
+| **list** | 列表类型 | `security.auth.allowed_roles = ["admin", "user"]` |
+| **datetime** | 日期时间类型 | `system.maintenance.last_run = "2026-07-11T02:00:00"` |
+
+### 3.2 数据类型验证规则
+
+| 类型 | 验证规则 |
+|------|---------|
+| **string** | 非空检查、长度限制（最大 255 字符）、格式验证 |
+| **integer** | 范围检查、非负检查（根据参数定义） |
+| **float** | 范围检查、精度限制 |
+| **boolean** | 只能为 `true` 或 `false` |
+| **json** | JSON 格式验证、结构验证 |
+| **list** | 非空检查、元素类型验证、长度限制 |
+| **datetime** | ISO8601 格式验证、时间范围检查 |
+
+### 3.3 参数值序列化
+
+所有参数值统一使用 JSON 格式存储：
+
+| 原始类型 | JSON 序列化格式 |
+|---------|---------------|
+| string | `"value"` |
+| integer | `123` |
+| float | `123.45` |
+| boolean | `true` / `false` |
+| json | `{"key": "value"}` |
+| list | `["item1", "item2"]` |
+| datetime | `"2026-07-11T02:00:00"` |
+
+---
+
+## 4. 参数作用域规范
+
+### 4.1 作用域类型
+
+| 作用域 | 代码 | 说明 | 优先级 |
+|--------|------|------|--------|
+| **GLOBAL** | `global` | 全局参数，对所有用户生效 | 1 |
+| **USER** | `user` | 用户级参数，针对特定用户 | 2 |
+| **SESSION** | `session` | 会话级参数，仅当前会话有效 | 3 |
+| **SYSTEM** | `system` | 系统级参数，仅系统内部使用 | 0 |
+
+### 4.2 作用域继承规则
+
+参数查找遵循以下优先级（从高到低）：
+
+```text
+SESSION → USER → GLOBAL → SYSTEM → 默认值
+```
+
+### 4.3 作用域使用规范
+
+| 作用域 | 适用场景 | 示例 |
+|--------|---------|------|
+| **GLOBAL** | 系统全局配置 | 默认语言、时区、主题 |
+| **USER** | 用户个性化设置 | 用户偏好、显示设置 |
+| **SESSION** | 临时会话配置 | 当前会话的临时状态 |
+| **SYSTEM** | 系统内部配置 | 数据库连接信息、API 密钥 |
+
+---
+
+## 5. 参数存储规范
+
+### 5.1 数据库表结构
+
+```sql
+CREATE TABLE IF NOT EXISTS system_settings (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    setting_key TEXT NOT NULL UNIQUE,
+    value TEXT,
+    category TEXT DEFAULT 'general',
+    description TEXT,
+    data_type TEXT DEFAULT 'string',
+    scope TEXT DEFAULT 'global',
+    is_active BOOLEAN DEFAULT 1,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+### 5.2 字段说明
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `id` | INTEGER | 是 | 主键，自增 |
+| `setting_key` | TEXT | 是 | 参数键，唯一 |
+| `value` | TEXT | 是 | 参数值（JSON 序列化） |
+| `category` | TEXT | 否 | 参数分类 |
+| `description` | TEXT | 否 | 参数描述 |
+| `data_type` | TEXT | 否 | 数据类型 |
+| `scope` | TEXT | 否 | 作用域 |
+| `is_active` | BOOLEAN | 否 | 是否启用 |
+| `created_at` | TIMESTAMP | 否 | 创建时间 |
+| `updated_at` | TIMESTAMP | 否 | 更新时间 |
+
+### 5.3 索引优化
+
+| 索引名称 | 字段 | 用途 |
+|---------|------|------|
+| `idx_settings_key` | `setting_key` | 加速参数查找 |
+| `idx_settings_category` | `category` | 加速分类查询 |
+| `idx_settings_scope` | `scope` | 加速作用域查询 |
+
+### 5.4 缓存机制
+
+| 缓存策略 | 说明 |
+|---------|------|
+| **缓存时间** | TTL 300 秒（5 分钟） |
+| **缓存刷新** | 参数修改后立即更新缓存 |
+| **缓存失效** | 定期检查缓存过期时间 |
+| **缓存一致性** | 确保缓存与数据库同步 |
+
+---
+
+## 6. 参数操作流程规范
+
+### 6.1 参数操作类型
+
+| 操作 | 说明 | 权限要求 |
+|------|------|---------|
+| **查询** | 获取参数值 | 所有角色 |
+| **修改** | 更新参数值 | 管理员角色 |
+| **创建** | 新增参数 | 超级管理员 |
+| **删除** | 删除参数 | 超级管理员 |
+| **批量操作** | 批量修改参数 | 超级管理员 |
+| **重置** | 恢复默认值 | 管理员角色 |
+
+### 6.2 参数修改流程
+
+```text
+发起修改请求 → 权限验证 → 参数验证 → 审核（如需）→ 执行修改 → 更新缓存 → 记录日志
+```
+
+#### 6.2.1 权限验证
+
+| 参数类型 | 允许角色 |
+|---------|---------|
+| **普通参数** | admin, super_admin, hardware_admin |
+| **敏感参数** | super_admin, hardware_admin |
+| **系统参数** | hardware_admin |
+
+#### 6.2.2 参数验证
+
+| 验证项 | 说明 |
+|--------|------|
+| **键格式验证** | 符合命名规范 |
+| **数据类型验证** | 值符合指定类型 |
+| **范围验证** | 值在允许范围内 |
+| **格式验证** | 值格式正确 |
+| **依赖验证** | 不破坏参数依赖关系 |
+
+#### 6.2.3 审核流程
+
+| 参数级别 | 审核要求 |
+|---------|---------|
+| **LEVEL 1** | 自动审核，直接通过 |
+| **LEVEL 2** | AI 审核 + 人工确认 |
+| **LEVEL 3** | 必须人工审批 |
+
+### 6.3 参数查询流程
+
+```text
+发起查询请求 → 权限验证 → 缓存查找 → 数据库查找 → 返回结果
+```
+
+### 6.4 参数创建流程
+
+```text
+提交参数定义 → 参数验证 → 唯一性检查 → 写入数据库 → 更新缓存 → 记录日志
+```
+
+### 6.5 参数删除流程
+
+```text
+发起删除请求 → 权限验证 → 依赖检查 → 删除确认 → 执行删除 → 更新缓存 → 记录日志
+```
+
+---
+
+## 7. 参数验证规则
+
+### 7.1 参数键验证
+
+| 规则 | 说明 |
+|------|------|
+| **格式** | 必须符合 `<域>.<模块>.<名称>` 格式 |
+| **字符** | 只能包含小写字母、数字和下划线 |
+| **层级** | 必须至少包含 2 个层级 |
+| **长度** | 总长度不超过 100 字符 |
+| **唯一性** | 参数键必须全局唯一 |
+
+### 7.2 参数值验证
+
+#### 7.2.1 通用验证
+
+| 规则 | 说明 |
+|------|------|
+| **非空检查** | 必填参数不能为空 |
+| **类型匹配** | 值类型必须与参数定义一致 |
+| **范围检查** | 值必须在允许范围内 |
+| **格式检查** | 值格式必须符合要求 |
+
+#### 7.2.2 特定类型验证
+
+| 类型 | 验证规则 |
+|------|---------|
+| **string** | 长度 1-255 字符，禁止特殊字符 |
+| **integer** | 必须为整数，符合范围限制 |
+| **float** | 必须为有效浮点数，符合精度要求 |
+| **boolean** | 只能为 `true` 或 `false` |
+| **json** | 必须为有效 JSON 格式 |
+| **list** | 不能为空，元素类型一致 |
+| **datetime** | 必须为 ISO8601 格式 |
+
+### 7.3 参数依赖验证
+
+| 规则 | 说明 |
+|------|------|
+| **前置依赖** | 检查依赖参数是否存在 |
+| **值依赖** | 检查参数值是否符合依赖关系 |
+| **冲突检测** | 检测参数之间的冲突 |
+| **兼容性** | 确保参数变更不破坏兼容性 |
+
+---
+
+## 8. 参数权限控制规范
+
+### 8.1 参数权限等级
+
+| 等级 | 说明 | 允许操作 |
+|------|------|---------|
+| **L0** | 系统级参数 | 仅硬件管理员可修改 |
+| **L1** | 敏感参数 | 超级管理员和硬件管理员可修改 |
+| **L2** | 管理参数 | 管理员及以上可修改 |
+| **L3** | 普通参数 | 所有管理员可修改 |
+| **L4** | 公开参数 | 所有角色可查看 |
+
+### 8.2 参数权限配置
+
+| 参数域 | 默认权限等级 |
+|--------|------------|
+| `system` | L1 |
+| `security` | L0 |
+| `database` | L0 |
+| `ai` | L1 |
+| `exam` | L2 |
+| `user` | L2 |
+| `notification` | L3 |
+| `backup` | L1 |
+| `monitor` | L2 |
+| `cache` | L1 |
+| `logging` | L2 |
+
+### 8.3 操作权限矩阵
+
+| 操作 | guest | user | student | teacher | admin | super_admin | hardware_admin |
+|------|-------|------|---------|---------|-------|-------------|----------------|
+| 查看普通参数 | 是 | 是 | 是 | 是 | 是 | 是 | 是 |
+| 查看敏感参数 | 否 | 否 | 否 | 否 | 是 | 是 | 是 |
+| 修改普通参数 | 否 | 否 | 否 | 否 | 是 | 是 | 是 |
+| 修改敏感参数 | 否 | 否 | 否 | 否 | 否 | 是 | 是 |
+| 创建参数 | 否 | 否 | 否 | 否 | 否 | 是 | 是 |
+| 删除参数 | 否 | 否 | 否 | 否 | 否 | 是 | 是 |
+
+---
+
+## 9. 参数变更日志规范
+
+### 9.1 日志记录内容
+
+| 字段 | 说明 |
+|------|------|
+| `log_id` | 日志唯一标识 |
+| `operation` | 操作类型（create/update/delete/reset） |
+| `setting_key` | 参数键 |
+| `old_value` | 修改前的值 |
+| `new_value` | 修改后的值 |
+| `operator` | 操作人 |
+| `operator_role` | 操作人角色 |
+| `timestamp` | 操作时间 |
+| `ip_address` | 操作 IP 地址 |
+| `reason` | 修改原因（可选） |
+| `approval_status` | 审批状态 |
+| `approval_by` | 审批人 |
+
+### 9.2 日志存储
+
+| 存储方式 | 说明 |
+|---------|------|
+| **数据库** | 存储完整日志记录 |
+| **文件日志** | 存储操作日志文件 |
+| **AI 学习** | 重要变更自动记录到知识脑库 |
+
+### 9.3 日志查询
+
+| 查询维度 | 说明 |
+|---------|------|
+| **按参数键** | 查询特定参数的变更历史 |
+| **按操作人** | 查询特定用户的操作记录 |
+| **按时间范围** | 查询指定时间范围内的变更 |
+| **按操作类型** | 查询特定类型的操作记录 |
+
+---
+
+## 10. 参数备份与恢复规范
+
+### 10.1 备份策略
+
+| 备份类型 | 频率 | 保留周期 |
+|---------|------|---------|
+| **自动备份** | 每日 02:00 | 30 天 |
+| **手动备份** | 按需 | 永久 |
+| **紧急备份** | 参数变更前自动触发 | 7 天 |
+
+### 10.2 备份内容
+
+| 内容 | 说明 |
+|------|------|
+| **参数数据** | 所有参数的当前值 |
+| **参数定义** | 参数的分类、类型、描述 |
+| **变更日志** | 参数变更历史记录 |
+| **依赖关系** | 参数之间的依赖配置 |
+
+### 10.3 恢复流程
+
+```text
+选择备份 → 验证备份完整性 → 确认恢复 → 执行恢复 → 更新缓存 → 验证恢复结果
+```
+
+### 10.4 恢复验证
+
+| 验证项 | 说明 |
+|--------|------|
+| **数据完整性** | 确保所有参数恢复成功 |
+| **缓存一致性** | 确保缓存与数据库同步 |
+| **系统稳定性** | 确保参数恢复后系统正常运行 |
+| **业务验证** | 验证关键业务功能正常 |
+
+---
+
+## 11. 参数默认值规范
+
+### 11.1 默认值设置原则
+
+| 原则 | 说明 |
+|------|------|
+| **安全性** | 默认值必须符合安全要求 |
+| **合理性** | 默认值必须合理可行 |
+| **兼容性** | 默认值必须向后兼容 |
+| **可修改** | 默认值必须可被用户修改 |
+
+### 11.2 关键参数默认值
+
+| 参数键 | 默认值 | 说明 |
+|--------|--------|------|
+| `system.general.name` | `"MTSCOS AI"` | 系统名称 |
+| `system.general.version` | `"v17.22.0"` | 系统版本号 |
+| `security.auth.session_timeout` | `1800` | 会话超时时间（秒） |
+| `security.password.min_length` | `8` | 密码最小长度 |
+| `security.password.max_length` | `32` | 密码最大长度 |
+| `database.connection.pool_size` | `10` | 数据库连接池大小 |
+| `database.connection.timeout` | `30` | 数据库连接超时（秒） |
+| `ai.worker.auto_scaling` | `true` | AI 员工自动扩展 |
+| `exam.paper.duration_minutes` | `90` | 默认考试时长（分钟） |
+| `monitor.metrics.cpu_threshold` | `90.0` | CPU 告警阈值（%） |
+| `monitor.metrics.memory_threshold` | `90.0` | 内存告警阈值（%） |
+| `cache.redis.ttl_hours` | `24` | Redis 缓存过期时间（小时） |
+| `logging.level` | `"INFO"` | 日志级别 |
+
+---
+
+## 12. 参数同步规范
+
+### 12.1 同步机制
+
+| 机制 | 说明 |
+|------|------|
+| **数据库优先** | 参数以数据库为准，缓存为辅助 |
+| **实时同步** | 参数修改后立即更新缓存 |
+| **定期同步** | 定时检查缓存与数据库一致性 |
+| **强制同步** | 支持手动触发同步 |
+
+### 12.2 同步流程
+
+```text
+参数修改 → 写入数据库 → 更新缓存 → 通知相关组件
+```
+
+### 12.3 同步验证
+
+| 验证项 | 说明 |
+|--------|------|
+| **缓存一致性** | 缓存值与数据库值一致 |
+| **组件同步** | 相关组件已获取最新参数 |
+| **前端同步** | 前端已更新参数显示 |
+| **AI 同步** | AI 员工已获取最新配置 |
+
+---
+
+## 13. 参数管理 API 规范
+
+### 13.1 API 端点
+
+| 端点 | 方法 | 说明 | 权限 |
+|------|------|------|------|
+| `/api/system_params/list` | GET | 列出所有参数 | admin+ |
+| `/api/system_params/get` | GET | 获取单个参数 | admin+ |
+| `/api/system_params/set` | POST | 设置参数 | admin+ |
+| `/api/system_params/create` | POST | 创建参数 | super_admin+ |
+| `/api/system_params/delete` | DELETE | 删除参数 | super_admin+ |
+| `/api/system_params/reset` | POST | 重置为默认值 | admin+ |
+| `/api/system_params/batch` | POST | 批量操作 | super_admin+ |
+| `/api/system_params/logs` | GET | 查询变更日志 | admin+ |
+| `/api/system_params/backup` | POST | 备份参数 | super_admin+ |
+| `/api/system_params/restore` | POST | 恢复参数 | super_admin+ |
+
+### 13.2 请求格式
+
+```json
+{
+    "key": "security.password.min_length",
+    "value": 12,
+    "scope": "global",
+    "description": "密码最小长度",
+    "reason": "安全要求升级"
+}
+```
+
+### 13.3 响应格式
+
+```json
+{
+    "code": 200,
+    "message": "success",
+    "data": {
+        "key": "security.password.min_length",
+        "value": 12,
+        "scope": "global",
+        "updated_at": "2026-07-11T10:00:00"
+    },
+    "timestamp": "2026-07-11T10:00:00"
+}
+```
+
+---
+
+## 14. 参数管理工具规范
+
+### 14.1 管理界面
+
+| 功能 | 说明 |
+|------|------|
+| **参数列表** | 按分类展示所有参数 |
+| **参数搜索** | 支持按关键字搜索 |
+| **参数编辑** | 支持修改参数值 |
+| **参数创建** | 支持创建新参数 |
+| **参数删除** | 支持删除参数 |
+| **变更日志** | 查看参数变更历史 |
+| **批量操作** | 支持批量修改参数 |
+| **备份恢复** | 支持参数备份和恢复 |
+
+### 14.2 AI 辅助管理
+
+| 功能 | 说明 |
+|------|------|
+| **参数标准** | AI 根据系统状态标准参数优化 |
+| **异常检测** | AI 检测参数配置异常 |
+| **自动修复** | AI 自动修复参数配置问题 |
+| **智能分析** | AI 分析参数对系统性能的影响 |
+
+---
+
+## 15. 参数巡检规范
+
+### 15.1 巡检驱动的参数管理
+
+| 原则 | 说明 |
+|------|------|
+| **巡检优先** | 所有参数变更必须通过 AI 巡检引擎检查 |
+| **自动修复** | 检测到的参数问题自动触发修复流程 |
+| **法律准则合规** | 所有参数管理活动必须遵循法律准则文件规定 |
+| **错误上报** | 参数错误自动上报到数据库 |
+| **学习闭环** | 修复经验自动积累到脑库 |
+
+### 15.2 参数巡检检查项
+
+| 检查项 | 说明 | 严重程度 |
+|--------|------|----------|
+| 参数命名规范检查 | 是否符合参数命名规范 | 高 |
+| 参数格式验证 | 参数值是否符合数据类型和格式要求 | 高 |
+| 参数范围检查 | 参数值是否在允许范围内 | 高 |
+| 参数权限检查 | 是否有足够权限修改参数 | 高 |
+| 参数一致性检查 | 缓存与数据库是否一致 | 中 |
+| 参数默认值检查 | 关键参数是否设置默认值 | 中 |
+| 参数过期检查 | 临时参数是否已过期 | 中 |
+| 参数完整性检查 | 必填参数是否完整 | 高 |
+| 参数安全检查 | 敏感参数是否加密存储 | 高 |
+| 参数审计检查 | 参数变更是否有审计记录 | 中 |
+
+### 15.3 参数巡检流程
+
+```text
+1. 参数变更提交
+2. AI 巡检引擎检查参数合规性
+3. 检测参数命名、格式、范围、权限
+4. 发现问题自动记录到数据库
+5. 触发自动修复流程（如参数格式错误自动修正）
+6. 修复结果记录到脑库
+7. 生成参数巡检报告
+```
+
+### 15.4 参数巡检 API
+
+| API | 方法 | 说明 | 权限 |
+|-----|------|------|------|
+| `/api/system_params/inspect` | POST | 检查参数合规性 | admin+ |
+| `/api/system_params/fix` | POST | 自动修复参数问题 | admin+ |
+| `/api/system_params/report` | GET | 获取参数巡检报告 | admin+ |
+
+---
+
+## 参数管理自查清单
+
+参数管理操作完成后必须逐条检查：
+
+### 参数定义
+
+- [ ] 参数键符合命名规范
+- [ ] 参数数据类型正确
+- [ ] 参数分类设置正确
+- [ ] 参数作用域设置正确
+
+### 参数验证
+
+- [ ] 参数值符合类型要求
+- [ ] 参数值在允许范围内
+- [ ] 参数格式验证通过
+- [ ] 参数依赖关系正常
+
+### 权限控制
+
+- [ ] 操作权限符合要求
+- [ ] 敏感参数有足够权限
+- [ ] 操作已记录日志
+
+### 数据一致性
+
+- [ ] 数据库已更新
+- [ ] 缓存已同步
+- [ ] 前端已刷新
+
+### 备份恢复
+
+- [ ] 参数已备份
+- [ ] 备份文件完整
+- [ ] 恢复流程验证通过
+
+---
+
+## 16. SSOT单一权威数据源参数管理规范
+
+### 16.1 SSOT参数架构
+
+**核心原则**：数据库是参数的唯一权威数据源，所有文件级参数配置必须通过SSOT同步。
+
+```text
+参数访问架构
+├── SSOT核心表 (unified_settings)
+│   ├── 参数统一存储
+│   ├── SA规则覆盖 (sa_rule_overrides)
+│   └── 审计日志 (settings_audit_log)
+├── 桥接函数层
+│   ├── _mt_get_config_rule() - 统一读取
+│   └── _mt_set_config_rule() - 统一写入
+├── 中间件层 (_mt_check_rules_on_request)
+│   ├── 请求前规则校验
+│   ├── 参数一致性检查
+│   └── 违例拦截
+└── 前端规则中心面板
+    ├── 审批待办 Tab
+    ├── 提议表单 Tab
+    └── 模拟测试 Tab
+```
+
+### 16.2 SSOT参数三张核心表
+
+| 表名 | 用途 | 权限 | 说明 |
+|-----|------|------|------|
+| `unified_settings` | 统一参数存储 | 读: admin+ / 写: super_admin | SSOT主表，所有参数的唯一真相源 |
+| `sa_rule_overrides` | SA规则覆盖 | 读: SA / 写: SA (wuchenghao15唯一) | 超级管理员对规则的特殊覆盖配置，带VIKEY校验 |
+| `settings_audit_log` | 参数审计日志 | 读: system_admin+ / 写: system自动 | 所有参数变更的完整审计追踪 |
+
+### 16.3 SSOT桥接函数使用规范
+
+**强制要求**：所有参数读写必须通过以下桥接函数，禁止直接访问旧配置文件或旧表：
+
+```python
+# ✅ 正确：统一读取
+value = _mt_get_config_rule("SECURITY", "password_min_length", default=8)
+
+# ✅ 正确：统一写入 (带7步审批检查)
+_mt_set_config_rule("SECURITY", "password_min_length", 12, 
+                   operator="wuchenghao15", reason="安全策略升级")
+
+# ❌ 错误：直接读旧文件
+# value = SystemRulesExtension.SECURITY["password_min_length"]
+```
+
+### 16.4 SystemRulesExtension自动吸纳规则
+
+原`SystemRulesExtension`类中200+硬编码规则已自动迁移至`legal_red_lines`表：
+
+| 迁移项 | 说明 | 同步时机 |
+|-------|------|---------|
+| SECURITY域规则 | 密码策略、会话超时、速率限制 | 启动时自动同步 |
+| MAINTENANCE域规则 | 巡检频率、自动修复配置 | 启动时自动同步 |
+| PERMISSION域规则 | 角色权限、登录尝试限制 | 启动时自动同步 |
+| AI_ENGINE域规则 | 模型配置、温度参数、超时设置 | 启动时自动同步 |
+| EXAM域规则 | 考试时长、组卷参数、阅卷配置 | 启动时自动同步 |
+
+---
+
+## 17. 参数修改7步审批流程
+
+### 17.1 不同规则层级的审批简化路径
+
+| 参数规则层级 | 需执行的审批步骤 | 触发EigenFlux | 需VIKEY检测 |
+|------------|----------------|-------------|-----------|
+| IRON_RULE (铁规) | 完整7步流程 | ✅ 必须 (5人≥4/5) | ✅ 终审强制 |
+| RED_LINE (红线) | 完整7步流程 | ✅ 必须 (5人≥4/5) | ✅ 终审强制 |
+| RED_WALL (红墙) | Step1-2-3-4-5-6 (跳过Step7保密撤回) | ✅ 必须 | ⚠️ 终审标准 |
+| CONSTRAINT (制约) | Step1-2-6 (管理员同意即生效) | ⚠️ 异常时触发 | ❌ 不强制 |
+| WARNING (提示) | Step1-6 (AI自动审核) | ❌ 仅记录 | ❌ 不强制 |
+
+### 17.2 参数变更EigenFlux异常矩阵
+
+参数修改触发以下12类EigenFlux异常时，自动启动AI5人磋商：
+
+| 异常事件码 | 触发场景 | AI磋商关注点 | 标准修复措施 |
+|-----------|---------|------------|------------|
+| `param_conflict_iron_rule` | 参数修改与IRON_RULE冲突 | 合规审计员主导 | 驳回提议，重新设计 |
+| `param_rollback_risk` | 参数回滚方案不明确 | 实施工程师主导 | 补充回滚方案后重审 |
+| `param_permission_escalation` | 参数修改导致权限提升 | 安全审计员主导 | 降低权限或添加审计 |
+| `param_ssot_break` | 破坏SSOT一致性 | DBA主导 | 修复同步逻辑后重审 |
+| `param_perf_degrade` | 参数导致性能下降≥20% | 升级分析师主导 | 性能调优后重审 |
+| `param_data_loss_risk` | 参数可能导致数据丢失 | DBA主导 | 补充备份方案后重审 |
+| `param_security_hole` | 参数引入安全漏洞 | 安全审计员主导 | 修复漏洞后重审 |
+| `param_legal_violation` | 参数违反法律法规 | 合规审计员主导 | 合规修正后重审 |
+| `param_incompatible_change` | 参数破坏向后兼容 | 升级分析师主导 | 提供迁移脚本后重审 |
+| `param_audit_gap` | 参数缺失审计追踪 | 全员确认 | 补充审计点后重审 |
+| `param_vikey_bypass` | 尝试绕过VIKEY检测 | 安全审计员+DBA | 强制添加VIKEY校验 |
+| `param_grace_abuse` | 滥用宽限窗口 | 合规审计员主导 | 缩小宽限范围或驳回 |
+
+### 17.3 参数修改API端点 (10+新接口)
+
+| API端点 | 方法 | 权限 | 对应审批步骤 |
+|---------|------|------|------------|
+| `/_rules/proposals` | POST | admin+ | Step1: 创建提议 |
+| `/_rules/proposals` | GET | admin+ | 查看提议列表 |
+| `/_rules/proposals/{id}/vote` | POST | admin+ (非提议人) | Step2: 管理员投票 |
+| `/_rules/proposals/{id}/eigenflux` | POST | system自动 / SA触发 | Step3: EigenFlux AI5人磋商 |
+| `/_rules/proposals/{id}/firewall_review` | POST | system_admin+ | Step4: AI防火墙复审 |
+| `/_rules/proposals/{id}/final_approve` | POST | super_admin (VIKEY) | Step5: 终审 + 适配期选择 |
+| `/_rules/proposals/{id}/withdraw` | POST | super_admin (无痕) | Step7: 保密撤回 |
+| `/_rules/proposals/{id}/simulate` | POST | admin+ | 规则模拟测试 (不实际生效) |
+| `/_rules/simulate` | POST | admin+ | 全局规则链模拟测试 |
+| `/_rules/unified_settings/read` | POST | admin+ | SSOT参数读取 |
+| `/_rules/unified_settings/write` | POST | super_admin + 审批 | SSOT参数写入 |
+| `/_rules/bypass_requests` | POST | teacher+ | 申请跳过某规则 |
+| `/_rules/grace_windows` | POST | system_admin+ | 授予临时宽限窗口 |
+
+---
+
+## 18. 参数异常EigenFlux自动处理流程
+
+### 18.1 参数异常自动检测→磋商→修复闭环
+
+```text
+1. 参数配置变更提交
+2. 中间件_mt_check_rules_on_request() 实时校验
+3. 命中12类异常矩阵 → 生成事件码
+4. POST /api/eigenflux/report_anomaly 上报异常
+5. AI员工5人小组自动磋商 (升级/合规/安全/DBA/实施)
+   - 投票决策 (≥4/5通过)
+   - 生成裁决 + 修复必须
+6. 前端自动应用强制修复 + 显示磋商面板
+7. 修复结果写入rule_violation_audit + 投喂脑库
+8. 异常冷却60秒/类，防止重复触发
+```
+
+### 18.2 参数异常冷却与节流规则
+
+为保护系统资源，EigenFlux异常磋商内置节流机制：
+
+| 节流项 | 配置值 | 说明 |
+|-------|-------|------|
+| 同类异常冷却 | 60秒 | 同一event_code 60秒内不重复磋商 |
+| 事件流滑动窗口 | 1200ms | 2秒内的异常聚合为一批处理 |
+| 单次批量上限 | 20件 | 单次磋商最多处理20个关联异常 |
+| 每日磋商上限 | 1000次 | 全系统每日最大AI磋商次数 |
+| fetch失败静默 | ✅ | 上报失败不阻塞业务流程，仅降级日志 |
+
+---
+
+## 参数管理自查清单 (补充SSOT与审批)
+
+### SSOT合规性
+
+- [ ] 参数读写通过_mt_get_config_rule/_mt_set_config_rule桥接函数
+- [ ] 无直接访问SystemRulesExtension硬编码配置的代码
+- [ ] 参数变更触发7步审批流程 (按规则层级简化)
+- [ ] SA规则覆盖已通过VIKEY实时检测
+
+### 规则审批流程
+
+- [ ] IRON_RULE/RED_LINE参数变更完成完整7步审批
+- [ ] EigenFlux AI5人投票≥4/5通过
+- [ ] SA终审通过_super_admin_vikey_check()实时检测
+- [ ] 适配期选择正确 (立即适配 / 2个工作日后)
+- [ ] 参数模拟测试通过 (/_rules/simulate接口)
+
+### EigenFlux异常处理
+
+- [ ] 12类参数异常事件码已正确映射
+- [ ] 异常上报API回调钩子正常挂载
+- [ ] AI5人磋商面板前端正确渲染
+- [ ] 修复必须自动应用成功率≥80%
+
+---
+
+**规则版本**：v11.0.0
+**生效日期**：2026-08-04
+**适用范围**：MTSCOS AI 项目所有系统参数管理活动
+**优先级**：本规则优先级高于其他开发规则，参数管理必须优先遵循本规范
+**新增章节**：§16 SSOT单一权威数据源 §17 参数修改7步审批 §18 参数异常EigenFlux自动处理
+
+
+---
+
+## 🪐 仙女座参数感知联动（vv1.2.0 新增）
+
+> 本章定义本规则与仙女座引擎（auto_evolution + autosync_andromeda）的强制协作机制。
+> **禁止**仙女座绕过本规则执行任何操作。
+
+
+### A. 参数变更 → rule_knowledge 重新 ingest
+
+系统参数修改 (mt_system_parameters):
+- **必须**触发 mt_andromeda_rule_knowledge 重新 ingest (trigger_type='param_update')
+- 参数安全级别变更 → 触发 [SECURITY] patch bump 检查
+
+### B. 参数阈值触发版本 bump
+
+关键参数阈值**必须**与仙女座引擎联动:
+- auto_evolution_failure_threshold (默认 3) → 触发 [EVOLUTION-FIX]
+- employee_abnormal_threshold (默认 20) → 触发 [EMPLOYEE-HEAL]
+- rule_knowledge_refresh_threshold (默认 50) → 触发 [RULE-REFRESH]
+
+### C. 参数变更审计
+
+参数变更**必须**:
+- 写 mt_parameter_audit_log (source='param_change')
+- 通知 rule_enforcer 立即重读
+- 仙女座 auto_evolution 感知到参数变更 → 自动调整演化策略
+
+
+参考资料
+
+- 原书：《系统参数数据规范与操作规范》
+- 作者：MTSCOS AI 项目规则治理体系
+- 免责声明：本 Skill 基于原书内容提炼，仅供个人学习使用

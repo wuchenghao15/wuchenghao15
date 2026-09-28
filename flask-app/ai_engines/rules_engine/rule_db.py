@@ -276,3 +276,101 @@ class RuleDB:
 def init_tables(db_path: Optional[str] = None) -> RuleDB:
     """初始化3张规则治理表, 返回 RuleDB 实例"""
     return RuleDB(db_path=db_path)
+
+
+# ============================================================
+# §12.4 仙女座 mt_params 启动自动初始化
+# v2.1.0 新增: rules_engine 加载时确保 mt_params 表存在 + 核心 daemon 周期参数
+# 来源: flow_andromeda_v62_fix_20260922_001 经验沉淀
+# ============================================================
+def ensure_mt_params_defaults() -> Optional[int]:
+    """
+    启动时自动初始化 mt_params:
+      1. 确保表存在 (CREATE TABLE IF NOT EXISTS)
+      2. INSERT OR IGNORE 18 条核心 daemon CYCLE 参数 (幂等)
+      3. 返回实际插入的行数 (0=已全部存在)
+
+    DB 路径优先级:
+      a. engines/app.db (仙女座 v6.2 修复后活跃库)
+      b. _runtime/databases/Database/app.db (legacy)
+
+    Returns:
+        Optional[int]: 插入行数, None 表示 DB 不可用
+    """
+    # 路径解析 (与 ai_smart_mount_engine.py 保持一致)
+    _flask_app_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    _project_root = os.path.dirname(_flask_app_dir)
+    candidates = [
+        os.path.join(_flask_app_dir, "engines", "app.db"),
+        os.path.join(_project_root, "_runtime", "databases", "Database", "app.db"),
+    ]
+    db_path = None
+    for p in candidates:
+        if os.path.exists(p):
+            db_path = p
+            break
+    if db_path is None:
+        return None
+
+    try:
+        conn = sqlite3.connect(db_path, timeout=10)
+        cur = conn.cursor()
+        cur.execute("PRAGMA busy_timeout=60000")
+        cur.execute("PRAGMA journal_mode=WAL")
+
+        # 建表 (与 deploy_mac_autoloader.py L92-108 完全对齐)
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS mt_params (
+                param_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                param_group TEXT NOT NULL,
+                param_key TEXT NOT NULL,
+                param_value TEXT,
+                param_type TEXT DEFAULT 'string',
+                description TEXT,
+                is_sensitive INTEGER DEFAULT 0,
+                is_readonly INTEGER DEFAULT 0,
+                created_at TEXT,
+                updated_at TEXT,
+                updated_by TEXT,
+                UNIQUE(param_group, param_key)
+            )
+        """)
+
+        # 18 条核心 daemon 周期参数 (幂等 INSERT OR IGNORE)
+        _now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        _DAEMON_DEFAULTS = [
+            ("smart_mount","sys_heartbeat_writer_interval_sec","30","int","心跳写入周期"),
+            ("smart_mount","sys_patrol_inspector_interval_sec","60","int","巡检周期"),
+            ("smart_mount","sys_auto_repair_interval_sec","120","int","自动修复周期"),
+            ("smart_mount","sys_local_inference_interval_sec","120","int","本地推理周期"),
+            ("smart_mount","sys_rule_enforcer_interval_sec","300","int","规则执行周期"),
+            ("smart_mount","sys_auto_patrol_interval_sec","300","int","自动巡逻周期"),
+            ("smart_mount","sys_auto_hire_interval_sec","300","int","自动雇佣周期"),
+            ("smart_mount","sys_eigenflux_network_interval_sec","120","int","EigenFlux 网络周期"),
+            ("smart_mount","sys_deep_inspection_interval_sec","600","int","深度巡检周期"),
+            ("smart_mount","sys_file_organizer_interval_sec","600","int","文件整理周期"),
+            ("smart_mount","sys_copy_inspection_interval_sec","900","int","文案巡检周期"),
+            ("smart_mount","sys_andromeda_auto_evolution_interval_sec","600","int","仙女座演化周期"),
+            ("smart_mount","sys_github_fusion_scan_interval_sec","3600","int","GitHub 融合周期"),
+            ("smart_mount","sys_error_digest_interval_sec","1800","int","错题消化周期"),
+            ("smart_mount","sys_ramanujan_derive_interval_sec","600","int","拉马努金推导周期"),
+            ("ollama","host","http://127.0.0.1:11435","str","Ollama 服务地址"),
+            ("ollama","embed_model","nomic-embed-text","str","嵌入模型"),
+            ("ollama","derive_model","qwen2.5:7b","str","推导模型"),
+        ]
+
+        inserted = 0
+        for row in _DAEMON_DEFAULTS:
+            cur.execute("""
+                INSERT OR IGNORE INTO mt_params
+                (param_group, param_key, param_value, param_type, description,
+                 is_sensitive, is_readonly, created_at, updated_at, updated_by)
+                VALUES (?,?,?,?,?,0,0,?,?,?)
+            """, row + (_now, _now, "rules_engine_autoseed"))
+            inserted += cur.rowcount
+
+        conn.commit()
+        conn.close()
+        return inserted
+    except sqlite3.Error:
+        return None

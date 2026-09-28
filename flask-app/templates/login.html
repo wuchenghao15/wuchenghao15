@@ -1,0 +1,636 @@
+{% extends "base_unified.html" %}
+{% block title %}{{ t("login.heading") }}{% endblock %}
+{% block page_title %}{{ t("login.heading") }}{% endblock %}
+
+{% block extra_head %}
+<style>
+.login-container {
+    max-width: 420px;
+    margin: 40px auto;
+    background: var(--mtscos-bg-card);
+    border: 1px solid var(--mtscos-border-light);
+    border-radius: var(--mtscos-radius-xl);
+    padding: 40px;
+    box-shadow: var(--mtscos-shadow-md);
+}
+.login-container h1 {
+    text-align: center;
+    color: var(--mtscos-text-primary);
+    margin-bottom: 6px;
+    font-size: 28px;
+}
+.subtitle {
+    text-align: center;
+    color: var(--mtscos-text-secondary);
+    margin-bottom: 28px;
+    font-size: 13px;
+}
+.form-group { margin-bottom: 18px; }
+.form-group label {
+    display: block;
+    color: var(--mtscos-text-primary);
+    margin-bottom: 8px;
+    font-weight: 600;
+    font-size: 14px;
+}
+.form-group input {
+    width: 100%;
+    padding: 12px 14px;
+    border: 2px solid var(--mtscos-border-light);
+    border-radius: var(--mtscos-radius-md);
+    font-size: 14px;
+    transition: border-color 0.2s;
+    box-sizing: border-box;
+    background: var(--mtscos-bg-card);
+    color: var(--mtscos-text-primary);
+}
+.form-group input:focus {
+    outline: none;
+    border-color: var(--mtscos-primary-base);
+}
+.form-options {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 22px;
+    font-size: 13px;
+}
+.remember-me {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--mtscos-text-secondary);
+    cursor: pointer;
+}
+.forgot-password {
+    color: var(--mtscos-primary-base);
+    text-decoration: none;
+}
+.forgot-password:hover { text-decoration: underline; }
+.btn-login {
+    width: 100%;
+    padding: 14px;
+    background: var(--mtscos-primary-base);
+    color: var(--mtscos-text-inverse);
+    border: none;
+    border-radius: var(--mtscos-radius-md);
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background .2s, transform .2s;
+}
+.btn-login:hover {
+    background: var(--mtscos-primary-dark-2);
+    transform: translateY(-1px);
+}
+.register-link {
+    text-align: center;
+    margin-top: 18px;
+    font-size: 13px;
+    color: var(--mtscos-text-secondary);
+}
+.register-link a {
+    color: var(--mtscos-primary-base);
+    text-decoration: none;
+    font-weight: 600;
+}
+.flash-message {
+    background: var(--mtscos-warning-soft);
+    border: 1px solid var(--mtscos-warning);
+    color: var(--mtscos-warning);
+    padding: 10px 14px;
+    border-radius: var(--mtscos-radius-md);
+    margin-bottom: 16px;
+    font-size: 13px;
+}
+.flash-error { background: var(--mtscos-danger-soft); border-color: var(--mtscos-danger); color: var(--mtscos-danger); }
+.flash-success { background: var(--mtscos-success-soft); border-color: var(--mtscos-success); color: var(--mtscos-success); }
+.login-feedback { display: none; padding: 10px 14px; border-radius: var(--mtscos-radius-md); margin-bottom: 16px; font-size: 13px; }
+.login-feedback.error { display: block; background: var(--mtscos-danger-soft); border: 1px solid var(--mtscos-danger); color: var(--mtscos-danger); }
+.login-feedback.info { display: block; background: var(--mtscos-warning-soft); border: 1px solid var(--mtscos-warning); color: var(--mtscos-warning); }
+.home-link { text-align: center; margin-top: 12px; font-size: 12px; }
+.home-link a { color: var(--mtscos-text-tertiary); text-decoration: none; }
+/* === 指纹认证区域 === */
+.fp-section { margin: 0 0 20px; padding: 16px; background: var(--mtscos-primary-soft); border: 1px solid var(--mtscos-primary-light); border-radius: var(--mtscos-radius-lg); display: none; }
+.fp-section.verified { background: var(--mtscos-success-soft); border-color: var(--mtscos-success); }
+.fp-section-title { display: flex; align-items: center; gap: 8px; color: var(--mtscos-primary-dark-1); font-size: 13px; font-weight: 600; margin-bottom: 12px; }
+.fp-section.verified .fp-section-title { color: var(--mtscos-success); }
+.fp-btn { width: 100%; padding: 13px; border-radius: var(--mtscos-radius-md); border: 2px dashed var(--mtscos-primary-base); background: var(--mtscos-bg-card); color: var(--mtscos-primary-dark-1); font-size: 14px; font-weight: 600; cursor: pointer; transition: all .25s; display: flex; align-items: center; justify-content: center; gap: 10px; }
+.fp-btn:hover { border-style: solid; background: var(--mtscos-primary-soft); }
+.fp-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.fp-btn.scanning { border-style: solid; animation: fpPulse 1.2s ease-in-out infinite; }
+@keyframes fpPulse { 0%,100% { box-shadow: 0 0 0 0 rgba(91,143,185,0.4);} 50% { box-shadow: 0 0 0 15px rgba(91,143,185,0);} }
+.fp-btn.success { background: var(--mtscos-success-soft); border-color: var(--mtscos-success); color: var(--mtscos-success); border-style: solid; }
+.fp-btn.error { background: var(--mtscos-danger-soft); border-color: var(--mtscos-danger); color: var(--mtscos-danger); border-style: solid; }
+.fp-icon { font-size: 20px; }
+.fp-status { margin-top: 10px; text-align: center; font-size: 12px; color: var(--mtscos-text-secondary); }
+.fp-unsupported { margin-top: 10px; padding: 9px; background: rgba(251,191,36,0.08); border: 1px solid rgba(251,191,36,0.3); border-radius: var(--mtscos-radius-sm); color: #d97706; font-size: 12px; text-align: center; }
+/* ═══ 🌌 仙女座演化引擎启动画面 ═══ */
+.login-wrapper { max-width: 820px; margin: 32px auto 0; padding: 0 16px; }
+.evo-hero {
+    position: relative; width: 100%; aspect-ratio: 2.4/1;
+    background: radial-gradient(ellipse at 50% 40%, rgba(155,89,182,.10) 0%, rgba(11,31,58,.05) 60%, transparent 100%);
+    border: 1px solid var(--mtscos-border-light, #e2e8f0);
+    border-radius: var(--mtscos-radius-xl, 16px);
+    overflow: hidden; margin-bottom: 20px;
+    box-shadow: 0 4px 20px -4px rgba(11,31,58,.08);
+}
+.evo-hero svg { width: 100%; height: 100%; display: block; }
+.evo-hero-title {
+    position: absolute; top: 14px; left: 18px;
+    display: flex; align-items: center; gap: 10px;
+    font-size: 14px; font-weight: 800; color: var(--mtscos-text-primary, #0B1F3A);
+}
+.evo-hero-title .evo-orb {
+    width: 22px; height: 22px; border-radius: 50%;
+    background: linear-gradient(135deg, #9B59B6, #2E86DE);
+    box-shadow: 0 0 14px rgba(155,89,182,.5);
+    animation: evoPulse 3s ease-in-out infinite;
+}
+.evo-hero-title .evo-hint { font-size: 11px; color: var(--mtscos-text-secondary, #6b7a8f); font-weight: 400; }
+@keyframes evoPulse { 0%,100%{ box-shadow: 0 0 8px rgba(155,89,182,.4); } 50%{ box-shadow: 0 0 20px rgba(155,89,182,.7); } }
+.evo-hero-status {
+    position: absolute; top: 16px; right: 18px;
+    padding: 5px 14px; border-radius: 999px;
+    font-size: 11px; font-weight: 700; border: 1px solid;
+    display: flex; align-items: center; gap: 6px;
+}
+.evo-hero-status.green  { background: rgba(34,197,94,.08); color:#166534; border-color: rgba(34,197,94,.3); }
+.evo-hero-status.yellow { background: rgba(234,179,8,.08); color:#854d0e; border-color: rgba(234,179,8,.3); }
+.evo-hero-status.red    { background: rgba(239,68,68,.08); color:#991b1b; border-color: rgba(239,68,68,.3); }
+.evo-hero-status .evo-dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; animation: evoDot 1.5s ease-in-out infinite; }
+@keyframes evoDot { 0%,100%{ opacity:1; transform:scale(1); } 50%{ opacity:.5; transform:scale(.6); } }
+.evo-hero-bottom {
+    position: absolute; bottom: 10px; left: 0; right: 0;
+    display: flex; justify-content: center; gap: 22px; flex-wrap: wrap;
+    font-size: 11px; color: var(--mtscos-text-secondary, #6b7a8f);
+}
+.evo-hero-bottom span { display: inline-flex; align-items: center; gap: 5px; }
+.evo-hero-bottom strong { color: #9B59B6; font-weight: 700; font-family: ui-monospace, monospace; }
+
+/* 登录框宽度适配 */
+.login-container { max-width: 460px; margin: 0 auto; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="login-wrapper">
+    <!-- 🌌 仙女座-阿尔法 · 自演化引擎启动画面 -->
+    <section class="evo-hero" id="evoHero">
+        <div class="evo-hero-title">
+            <span class="evo-orb"></span>
+            <span>仙女座-阿尔法 · Andromeda-Alpha 自演化引擎</span>
+            <span class="evo-hint">本地 Ollama qwen2.5 · Mac mini 双向同步 · cycle <strong id="evoCycleNum">—</strong></span>
+        </div>
+        <div class="evo-hero-status yellow" id="evoStatus">
+            <span class="evo-dot"></span><span id="evoStatusLabel">引擎 · 初始化中...</span>
+        </div>
+        <!-- SVG 简化版银河 (黑洞 cycle + 6 指标星) -->
+        <svg viewBox="0 0 800 360" preserveAspectRatio="xMidYMid meet">
+            <defs>
+                <radialGradient id="evoBg" cx="50%" cy="50%" r="50%">
+                    <stop offset="0%" stop-color="rgba(155,89,182,.12)"/>
+                    <stop offset="100%" stop-color="transparent"/>
+                </radialGradient>
+                <radialGradient id="evoBlackHole" cx="50%" cy="50%" r="50%">
+                    <stop offset="0%" stop-color="#0B1F3A" stop-opacity="1"/>
+                    <stop offset="60%" stop-color="#2E86DE" stop-opacity="0.5"/>
+                    <stop offset="100%" stop-color="#9B59B6" stop-opacity="0"/>
+                </radialGradient>
+                <radialGradient id="evoFusion" cx="50%" cy="50%" r="50%">
+                    <stop offset="0%" stop-color="#FF6B9D" stop-opacity="0.85"/>
+                    <stop offset="50%" stop-color="#9B59B6" stop-opacity="0.5"/>
+                    <stop offset="100%" stop-color="transparent"/>
+                </radialGradient>
+                <radialGradient id="evoGold" cx="50%" cy="50%" r="50%">
+                    <stop offset="0%" stop-color="#FFD700" stop-opacity="0.85"/>
+                    <stop offset="100%" stop-color="transparent"/>
+                </radialGradient>
+                <radialGradient id="evoBlue" cx="50%" cy="50%" r="50%">
+                    <stop offset="0%" stop-color="#2E86DE" stop-opacity="0.85"/>
+                    <stop offset="100%" stop-color="transparent"/>
+                </radialGradient>
+                <radialGradient id="evoPurple" cx="50%" cy="50%" r="50%">
+                    <stop offset="0%" stop-color="#9B59B6" stop-opacity="0.85"/>
+                    <stop offset="100%" stop-color="transparent"/>
+                </radialGradient>
+                <radialGradient id="evoPink" cx="50%" cy="50%" r="50%">
+                    <stop offset="0%" stop-color="#FF6B9D" stop-opacity="0.85"/>
+                    <stop offset="100%" stop-color="transparent"/>
+                </radialGradient>
+            </defs>
+            <!-- 背景 -->
+            <circle cx="400" cy="175" r="270" fill="url(#evoBg)"/>
+            <!-- 椭圆轨道 (暗) -->
+            <ellipse cx="400" cy="175" rx="250" ry="100" fill="none" stroke="rgba(155,89,182,.08)" stroke-width="1"/>
+            <ellipse cx="400" cy="175" rx="190" ry="72"  fill="none" stroke="rgba(46,134,222,.08)" stroke-width="1"/>
+            <!-- 背景小星 -->
+            <g fill="rgba(155,89,182,.25)">
+                <circle cx="70"  cy="55"  r="1.5"/><circle cx="730" cy="40" r="1.2"/>
+                <circle cx="90"  cy="315" r="1"/><circle cx="710" cy="305" r="1.3"/>
+                <circle cx="25"  cy="175" r="1.2"/><circle cx="775" cy="195" r="1"/>
+                <circle cx="180" cy="25"  r="1"/><circle cx="610" cy="325" r="1.3"/>
+                <circle cx="340" cy="12"  r="0.8"/><circle cx="490" cy="335" r="0.9"/>
+                <circle cx="280" cy="80"  r="1"/><circle cx="530" cy="270" r="1.1"/>
+            </g>
+            <!-- 中心黑洞 = cycle -->
+            <g>
+                <circle cx="400" cy="175" r="40" fill="url(#evoBlackHole)"/>
+                <circle cx="400" cy="175" r="16" fill="#0B1F3A"/>
+                <text x="400" y="174" text-anchor="middle" fill="#fff" font-size="12" font-weight="800" font-family="ui-monospace, monospace" id="evoBhCycle">—</text>
+                <text x="400" y="188" text-anchor="middle" fill="rgba(255,255,255,.7)" font-size="8" font-family="ui-monospace, monospace">cycle</text>
+            </g>
+            <!-- 数据轨道 6 指标星 -->
+            <g id="evoStarsGroup">
+                <g class="evo-star" data-key="derived">
+                    <circle class="halo" cx="50" cy="340" r="13" fill="url(#evoFusion)" opacity=".85"/>
+                    <circle class="core" cx="50" cy="340" r="3.5" fill="#fff" opacity=".9"/>
+                    <text class="val" x="50" y="344" text-anchor="middle" fill="#fff" font-size="8" font-weight="700" font-family="ui-monospace, monospace">—</text>
+                </g>
+                <g class="evo-star" data-key="daemon">
+                    <circle class="halo" cx="140" cy="345" r="11" fill="url(#evoGold)" opacity=".85"/>
+                    <circle class="core" cx="140" cy="345" r="3" fill="#fff" opacity=".9"/>
+                    <text class="val" x="140" y="349" text-anchor="middle" fill="#fff" font-size="8" font-weight="700" font-family="ui-monospace, monospace">—</text>
+                </g>
+                <g class="evo-star" data-key="mini">
+                    <circle class="halo" cx="215" cy="346" r="9" fill="url(#evoBlue)" opacity=".85"/>
+                    <circle class="core" cx="215" cy="346" r="2.5" fill="#fff" opacity=".9"/>
+                    <text class="val" x="215" y="350" text-anchor="middle" fill="#fff" font-size="7" font-weight="700" font-family="ui-monospace, monospace">—</text>
+                </g>
+                <g class="evo-star" data-key="brain">
+                    <circle class="halo" cx="320" cy="346" r="11" fill="url(#evoPurple)" opacity=".85"/>
+                    <circle class="core" cx="320" cy="346" r="3" fill="#fff" opacity=".9"/>
+                    <text class="val" x="320" y="350" text-anchor="middle" fill="#fff" font-size="8" font-weight="700" font-family="ui-monospace, monospace">—</text>
+                </g>
+                <g class="evo-star" data-key="messages">
+                    <circle class="halo" cx="470" cy="346" r="10" fill="url(#evoBlue)" opacity=".85"/>
+                    <circle class="core" cx="470" cy="346" r="2.5" fill="#fff" opacity=".9"/>
+                    <text class="val" x="470" y="350" text-anchor="middle" fill="#fff" font-size="8" font-weight="700" font-family="ui-monospace, monospace">—</text>
+                </g>
+                <g class="evo-star" data-key="graph">
+                    <circle class="halo" cx="620" cy="345" r="13" fill="url(#evoPink)" opacity=".85"/>
+                    <circle class="core" cx="620" cy="345" r="3.5" fill="#fff" opacity=".9"/>
+                    <text class="val" x="620" y="349" text-anchor="middle" fill="#fff" font-size="8" font-weight="700" font-family="ui-monospace, monospace">—</text>
+                </g>
+            </g>
+        </svg>
+        <!-- 底部演化状态条 -->
+        <div class="evo-hero-bottom">
+            <span><i class="fas fa-sync"></i> 双向同步知识流</span>
+            <span><i class="fas fa-layer-group"></i> cycle 衍生 <strong id="evoPerCycle">—</strong></span>
+            <span><i class="fas fa-clock"></i> 上次演化 <strong id="evoLastRun">—</strong></span>
+            <span><i class="fas fa-heart-pulse"></i> autosync <strong id="evoHbAuto">—</strong> | evol <strong id="evoHbEvo">—</strong></span>
+        </div>
+    </section>
+
+    <div class="login-container">
+    <h1>{{ t("login.heading") }}</h1>
+    <div class="subtitle">{{ t("login.subtitle_full") }}</div>
+    <div id="loginFeedback" class="login-feedback" role="alert" aria-live="polite"></div>
+
+    {% if get_flashed_messages %}
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, msg in messages %}
+          <div class="flash-message flash-{{ 'error' if category == 'error' else 'warning' if category == 'message' else category }}">{{ msg }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+    {% endif %}
+
+    <form method="POST" action="/auth/login">
+        <div class="form-group">
+            <label for="username">{{ t('login.label.username') }}</label>
+            <input type="text" id="username" name="username" required
+                   autocomplete="username" placeholder="{{ t('login.placeholder.username') }}">
+        </div>
+
+        <div class="form-group">
+            <label for="password">{{ t('login.label.password') }}</label>
+            <input type="password" id="password" name="password" required
+                   autocomplete="current-password" placeholder="{{ t('login.placeholder.password') }}">
+        </div>
+
+        <!-- 超级管理员指纹认证区域（动态显示） -->
+        <div id="fpSection" class="fp-section">
+            <div class="fp-section-title">
+                <i class="fas fa-shield-halved"></i>
+                <span id="fpTitle" data-required="0">{{ t('login.fp.title_default') }}</span>
+            </div>
+            <input type="hidden" name="fingerprint_data" id="fpData" value="">
+            <button type="button" class="fp-btn" id="fpBtn" onclick="scanFingerprint()">
+                <i class="fas fa-fingerprint fp-icon"></i>
+                <span id="fpBtnText">{{ t('login.fp.btn_default') }}</span>
+            </button>
+            <div class="fp-status" id="fpStatus">{{ t('login.fp.status_default') }}</div>
+            <div id="fpUnsupported" class="fp-unsupported" style="display:none"></div>
+        </div>
+
+        <div class="form-options">
+            <label class="remember-me">
+                <input type="checkbox" name="remember_me" id="remember_me">
+                {{ t('login.remember_me') }}
+            </label>
+            <a href="/forgot-password" class="forgot-password">{{ t('login.forgot_password') }}</a>
+        </div>
+
+        <button type="submit" class="btn-login">{{ t('login.button.submit') }}</button>
+
+        <div class="register-link">
+            {{ t("login.no_account") }}<a href="/register">{{ t("login.register_now") }}</a>
+        </div>
+        <div class="home-link">
+            <a href="/"><i class="fas fa-arrow-left"></i> {{ t('login.back_home') }}</a>
+        </div>
+    </form>
+</div>
+</div><!-- /login-wrapper -->
+
+<script>
+// i18n lookup table — 所有 JS 硬编码通过这里 (Jinja2 渲染, 单引号配合 JS 双引号值)
+const L = {
+  // WebAuthn
+  wpNoApi:           {{ t('login.webauthn.no_api')          | tojson }},
+  wpNeedHttps:       {{ t('login.webauthn.need_https')      | tojson }},
+  // FP title
+  fpTitleSA:         {{ t('login.fp.title_sa')               | tojson }},
+  fpTitleUser:       {{ t('login.fp.title_user')             | tojson }},
+  // FP step texts
+  fpRequesting:      {{ t('login.fp.requesting')             | tojson }},
+  fpStep1:           {{ t('login.fp.step1')                  | tojson }},
+  fpChallengeFail:   {{ t('login.fp.challenge_fail')         | tojson }},
+  fpTouchSensor:     {{ t('login.fp.touch_sensor')           | tojson }},
+  fpStep2:           {{ t('login.fp.step2')                  | tojson }},
+  fpVerifying:       {{ t('login.fp.verifying')              | tojson }},
+  fpStep3:           {{ t('login.fp.step3')                  | tojson }},
+  fpVerifyFail:      {{ t('login.fp.verify_fail')            | tojson }},
+  fpSuccess:         {{ t('login.fp.success')                | tojson }},
+  fpVerifiedLogin:   {{ t('login.fp.verified_login')         | tojson }},
+  fpCancelled:       {{ t('login.fp.cancelled')              | tojson }},
+  fpCancelledMsg:    {{ t('login.fp.cancelled_msg')          | tojson }},
+  fpSecurityErr:     {{ t('login.fp.security_err')            | tojson }},
+  fpNeedHttps:       {{ t('login.fp.need_https')             | tojson }},
+  fpRetry:           {{ t('login.fp.retry')                  | tojson }},
+  fpErrPrefix:       {{ t('login.fp.err_prefix')             | tojson }},
+  fpClick:           {{ t('login.fp.click')                  | tojson }},
+  // Login form
+  fpSARequired:      {{ t('login.fp.sa_required')            | tojson }},
+  enterCredentials:  {{ t('login.enter_credentials')         | tojson }},
+  loggingIn:         {{ t('login.logging_in')                | tojson }},
+  serverInvalid:     {{ t('login.server_invalid')             | tojson }},
+  loginFailed:        {{ t('login.login_failed')              | tojson }},
+  networkError:      {{ t('login.network_error')             | tojson }},
+  backHome:          {{ t('login.back_home')                  | tojson }},
+};
+
+// === WebAuthn 指纹硬件认证 ===
+function b64urlToBuf(b64url) {
+    var b64 = b64url.replace(/-/g, '+').replace(/_/g, '/');
+    var raw = atob(b64);
+    var buf = new Uint8Array(raw.length);
+    for (var i = 0; i < raw.length; i++) buf[i] = raw.charCodeAt(i);
+    return buf.buffer;
+}
+function bufToB64url(buf) {
+    var bytes = new Uint8Array(buf);
+    var binary = '';
+    for (var i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+    return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+}
+function checkWebAuthnSupport() {
+    if (!window.PublicKeyCredential) return { supported: false, reason: L.wpNoApi };
+    if (!window.isSecureContext && location.hostname !== '127.0.0.1' && location.hostname !== 'localhost')
+        return { supported: false, reason: L.wpNeedHttps.replace('{host}', location.protocol + '//' + location.hostname) };
+    return { supported: true };
+}
+
+// 用户名变化时检测是否显示指纹区域
+document.getElementById('username').addEventListener('input', function() {
+    var username = this.value.trim().toLowerCase();
+    var fpSection = document.getElementById('fpSection');
+    if (!username) { fpSection.style.display = 'none'; return; }
+    fetch('/api/mobile/fingerprint/status?username=' + encodeURIComponent(username), { credentials: 'same-origin' })
+        .then(r => r.json()).then(function(data) {
+            if (data.success && (data.is_super_admin || data.fingerprint_enabled)) {
+                fpSection.style.display = 'block';
+                document.getElementById('fpUnsupported').style.display = 'none';
+                document.getElementById('fpBtn').disabled = false;
+                var sp = checkWebAuthnSupport();
+                if (!sp.supported) {
+                    var u = document.getElementById('fpUnsupported');
+                    u.style.display = 'block';
+                    u.innerHTML = '<i class="fas fa-triangle-exclamation"></i> ' + sp.reason;
+                    document.getElementById('fpBtn').disabled = true;
+                }
+                var fpTitleEl = document.getElementById('fpTitle');
+                fpTitleEl.textContent = data.is_super_admin ? L.fpTitleSA : L.fpTitleUser;
+                fpTitleEl.dataset.required = data.is_super_admin ? '1' : '0';
+            } else {
+                fpSection.style.display = 'none';
+            }
+        }).catch(() => { fpSection.style.display = 'none'; });
+});
+
+// 核心：调用终端指纹硬件
+async function scanFingerprint() {
+    var username = document.getElementById('username').value.trim().toLowerCase();
+    if (!username) { alert(L.enterCredentials); return; }
+    var fpBtn = document.getElementById('fpBtn');
+    var fpBtnText = document.getElementById('fpBtnText');
+    var fpStatus = document.getElementById('fpStatus');
+    var fpSection = document.getElementById('fpSection');
+    var sp = checkWebAuthnSupport();
+    if (!sp.supported) { alert(sp.reason); return; }
+
+    fpBtn.classList.add('scanning'); fpBtn.disabled = true;
+    fpBtnText.innerHTML = '<i class="fas fa-spinner fa-spin"></i> ' + L.fpRequesting;
+    fpStatus.textContent = L.fpStep1;
+    try {
+        var resp = await fetch('/api/mobile/fingerprint/challenge', {
+            method: 'POST', credentials: 'same-origin',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username: username })
+        });
+        var cfg = await resp.json();
+        if (!cfg.success) throw new Error(cfg.message || L.fpChallengeFail);
+
+        fpBtnText.innerHTML = '<i class="fas fa-spinner fa-spin"></i> ' + L.fpTouchSensor;
+        fpStatus.textContent = L.fpStep2;
+        var assertion = await navigator.credentials.get({ publicKey: {
+            challenge: b64urlToBuf(cfg.challenge),
+            allowCredentials: [], userVerification: 'required',
+            timeout: cfg.timeout || 60000,
+        }});
+
+        fpBtnText.innerHTML = '<i class="fas fa-spinner fa-spin"></i> ' + L.fpVerifying;
+        fpStatus.textContent = L.fpStep3;
+        var verifyResp = await fetch('/api/mobile/fingerprint/verify', {
+            method: 'POST', credentials: 'same-origin',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                username: username,
+                credential_id: bufToB64url(assertion.rawId),
+                authenticator_data: bufToB64url(assertion.response.authenticatorData),
+                client_data_json: bufToB64url(assertion.response.clientDataJSON),
+                signature: bufToB64url(assertion.response.signature),
+                user_handle: assertion.response.userHandle ? bufToB64url(assertion.response.userHandle) : '',
+            })
+        });
+        var result = await verifyResp.json();
+        if (!result.success) throw new Error(result.message || L.fpVerifyFail);
+
+        document.getElementById('fpData').value = result.fingerprint_data;
+        fpBtn.classList.remove('scanning'); fpBtn.classList.add('success');
+        fpBtnText.innerHTML = '<i class="fas fa-check-circle"></i> ' + L.fpSuccess;
+        fpStatus.textContent = L.fpVerifiedLogin;
+        fpSection.classList.add('verified');
+    } catch (err) {
+        fpBtn.classList.remove('scanning'); fpBtn.classList.add('error'); fpBtn.disabled = false;
+        if (err.name === 'NotAllowedError') {
+            fpBtnText.innerHTML = '<i class="fas fa-xmark-circle"></i> ' + L.fpCancelled;
+            fpStatus.textContent = L.fpCancelledMsg;
+        } else if (err.name === 'SecurityError') {
+            fpBtnText.innerHTML = '<i class="fas fa-triangle-exclamation"></i> ' + L.fpSecurityErr;
+            fpStatus.textContent = L.fpNeedHttps;
+        } else {
+            fpBtnText.innerHTML = '<i class="fas fa-rotate-right"></i> ' + L.fpRetry;
+            fpStatus.textContent = L.fpErrPrefix + (err.message || '');
+        }
+        setTimeout(() => {
+            fpBtn.classList.remove('error');
+            fpBtnText.innerHTML = '<i class="fas fa-fingerprint fp-icon"></i> ' + L.fpClick;
+        }, 3500);
+    }
+}
+
+// 表单提交：AJAX POST JSON 到 /auth/login
+var loginInFlight = false;
+function showLoginFeedback(message, type) {
+    var feedback = document.getElementById('loginFeedback');
+    feedback.textContent = message;
+    feedback.className = 'login-feedback ' + (type || 'error');
+}
+document.querySelector('form').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    if (loginInFlight) return false;
+    var fpSection = document.getElementById('fpSection');
+    var fpData = document.getElementById('fpData').value;
+    var fpTitleEl = document.getElementById('fpTitle');
+    // 用 data-required 属性判断 (已 i18n, 不能靠 includes('必选'))
+    if (fpSection.style.display !== 'none' && fpTitleEl.dataset.required === '1' && !fpData) {
+        showLoginFeedback(L.fpSARequired, 'info');
+        return false;
+    }
+    var username = document.getElementById('username').value.trim();
+    var password = document.getElementById('password').value;
+    var remember = document.getElementById('remember_me').checked;
+    var btn = this.querySelector('.btn-login');
+    var origText = btn.textContent;
+    if (!username || !password) {
+        showLoginFeedback(L.enterCredentials, 'info');
+        return false;
+    }
+    showLoginFeedback('', '');
+    loginInFlight = true;
+    btn.textContent = L.loggingIn;
+    btn.disabled = true;
+    try {
+        var resp = await fetch('/auth/login', {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                username: username,
+                password: password,
+                remember_me: remember,
+                fingerprint_data: fpData || ''
+            })
+        });
+        var contentType = resp.headers.get('content-type') || '';
+        if (!contentType.includes('application/json')) {
+            throw new Error(L.serverInvalid);
+        }
+        var data = await resp.json();
+        if (data.success) {
+            window.location.href = data.redirect || '/index';
+        } else {
+            showLoginFeedback(data.message || L.loginFailed, 'error');
+            loginInFlight = false;
+            btn.textContent = origText;
+            btn.disabled = false;
+        }
+    } catch(err) {
+        showLoginFeedback(L.networkError + err.message, 'error');
+        loginInFlight = false;
+        btn.textContent = origText;
+        btn.disabled = false;
+    }
+});
+
+(function() {
+    var sp = checkWebAuthnSupport();
+    if (!sp.supported) console.warn('[MTSCOS] WebAuthn 不支持:', sp.reason);
+})();
+</script>
+
+<!-- 🌌 仙女座演化引擎启动画面 JS -->
+<script>
+(function(){
+    function evoRefresh(){
+        fetch('/api/andromeda/stats', { cache:'no-store' })
+            .then(function(r){ return r.ok ? r.json() : null; })
+            .then(function(data){
+                var cycleEl = document.getElementById('evoCycleNum');
+                var bhEl = document.getElementById('evoBhCycle');
+                var statusEl = document.getElementById('evoStatus');
+                var statusLabel = document.getElementById('evoStatusLabel');
+                if (!data || !data.success) {
+                    if (statusEl){ statusEl.className = 'evo-hero-status red'; statusLabel.textContent = '引擎 · 离线'; }
+                    return;
+                }
+                var ev = data.evolution || {};
+                var db = data.db_tables || {};
+                var da = data.daemons || {};
+                var mini = (data.infra || {}).mini || {};
+                var st = data.andromeda_status || {};
+                // cycle
+                if (cycleEl) cycleEl.textContent = ev.cycle_count || '—';
+                if (bhEl) bhEl.textContent = ev.cycle_count || '—';
+                // 6 指标星
+                var starMap = {
+                    'derived':  (ev.total_derived || 0).toLocaleString(),
+                    'brain':    (db.brain_enhanced?.count || 0).toLocaleString(),
+                    'messages': (db.eigenflux_messages?.count || 0).toLocaleString(),
+                    'graph':    ((db.graph_nodes?.count||0)+(db.graph_relations?.count||0)).toLocaleString(),
+                    'daemon':   ((da.autosync?.is_alive?1:0)+(da.evolution?.is_alive?1:0))+'/2',
+                    'mini':     mini.alive ? (mini.latency_ms||'?')+'ms' : '离线'
+                };
+                Object.keys(starMap).forEach(function(k){
+                    var el = document.querySelector('.evo-star[data-key="'+k+'"] .val');
+                    if (el) el.textContent = starMap[k];
+                });
+                // 底部状态条
+                var perC = document.getElementById('evoPerCycle'); if(perC) perC.textContent = ev.derived_per_cycle || '—';
+                var lastR = document.getElementById('evoLastRun');
+                if (lastR){ var lm = db.eigenflux_messages?.latest; lastR.textContent = lm ? String(lm).substring(5) : '—'; }
+                var autoHb = (da.autosync&&da.autosync.heartbeat)||'—';
+                var evoHb  = (da.evolution && da.evolution.heartbeat)||'—';
+                var hbA = document.getElementById('evoHbAuto'); if(hbA) hbA.textContent = autoHb!=='—' ? String(autoHb).substring(11) : '—';
+                var hbE = document.getElementById('evoHbEvo');  if(hbE) hbE.textContent  = evoHb!=='—' ? String(evoHb).substring(11)  : '—';
+                // 状态 pill
+                if (statusEl) {
+                    var health = st.health || 'yellow';
+                    statusEl.className = 'evo-hero-status ' + health;
+                    statusLabel.textContent = (st.label || '引擎运行中') + (st.score != null ? ' · '+st.score : '');
+                }
+            })
+            .catch(function(){
+                var se = document.getElementById('evoStatus');
+                if (se){ se.className = 'evo-hero-status red'; se.querySelector('#evoStatusLabel').textContent = '引擎 · 连接失败'; }
+            });
+    }
+    evoRefresh();
+    setInterval(evoRefresh, 30000);
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,137 @@
+{# 仙女座星系 — 系列详情页 #}
+{% extends "governance/base.html" %}
+{% block title %}{{ series.title }} · 仙女座星系{% endblock %}
+{% block body %}
+
+<style>
+.sd-hero{display:flex;align-items:flex-end;gap:12px;margin-bottom:16px;flex-wrap:wrap}
+.sd-hero h1{font-size:20px;margin:0;color:#fff}
+.sd-hero .sub{color:var(--muted);font-size:13px}
+.role-chip{display:inline-flex;align-items:center;gap:4px;padding:2px 10px;border-radius:999px;font-size:12px;background:#1e293b;color:#cbd5e1;margin-right:6px}
+.role-chip.teacher{background:#0c4a6e;color:#bae6fd}
+.role-chip.professor{background:#064e3b;color:#bbf7d0}
+.role-chip.scholar{background:#581c87;color:#e9d5ff}
+.ep-card{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:14px;margin-bottom:10px}
+.ep-head{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.ep-num{display:flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;background:#0e1832;color:var(--pri);font-weight:700;font-size:13px}
+.ep-title{flex:1;color:#fff;font-weight:600}
+.ep-body{background:#0b1328;border:1px solid var(--bd);border-radius:8px;padding:10px;margin-top:8px;white-space:pre-wrap;color:#cbd5e1;font-size:12.5px;max-height:200px;overflow:auto}
+.ep-actions{display:flex;gap:6px;margin-top:8px}
+.ep-actions button{padding:4px 10px;border-radius:6px;background:#1e293b;color:#cbd5e1;border:1px solid var(--bd);font-size:12px;cursor:pointer}
+.ep-actions button:hover{background:#334155;color:#fff}
+.ep-actions button.pass{background:#052e16;color:#bbf7d0;border-color:#14532d}
+.ep-actions button.block{background:#450a0a;color:#fecaca;border-color:#7f1d1d}
+.ep-compliance{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.c7-tag{font-size:11px;padding:2px 6px;border-radius:4px;background:#1e293b;color:#94a3b8;font-family:ui-monospace,Menlo,monospace}
+.c7-tag.pass{background:#052e16;color:#bbf7d0}
+.c7-tag.block{background:#450a0a;color:#fecaca}
+.c7-tag.review{background:#451a03;color:#fde68a}
+.back-link{display:inline-flex;align-items:center;gap:6px;color:var(--muted);font-size:13px;margin-bottom:10px}
+.back-link:hover{color:#fff;text-decoration:none}
+#compliance-result{margin-top:8px}
+.c7-row{display:grid;grid-template-columns:100px 1fr;gap:4px 12px;font-size:12px}
+.c7-row .k{color:var(--muted)}
+</style>
+
+<a class="back-link" href="/admin/galaxy">← 返回星系总览</a>
+
+<div class="sd-hero">
+  <h1>{{ series.title }}</h1>
+  <span class="badge info">Series</span>
+  <span class="role-chip {{ series.role_type.split('_')[-1] }}">{{ role_label }}</span>
+  <span class="badge chip">{{ level_label }}</span>
+  {% if series.subject %}<span class="badge chip">{{ series.subject }}</span>{% endif %}
+  <span style="margin-left:auto;color:var(--muted);font-size:12px">
+    集数: {{ series.total_episodes or 0 }} · 状态: <span class="badge {{ 'ok' if series.status=='compliance_pass' else ('bad' if series.status=='blocked' else 'warn') }}">{{ series.status }}</span>
+  </span>
+</div>
+
+{% if series.description %}
+  <p style="color:var(--muted);font-size:13px;margin-bottom:14px">{{ series.description }}</p>
+{% endif %}
+
+{% if episodes %}
+  {% for ep in episodes %}
+    <div class="ep-card" id="ep-{{ ep.episode_id }}">
+      <div class="ep-head">
+        <span class="ep-num">{{ ep.episode_no }}</span>
+        <span class="ep-title">{{ ep.title }}</span>
+        {% if ep.compliance_pass %}
+          <span class="badge ok">✅ PASS</span>
+        {% elif ep.status == 'blocked' %}
+          <span class="badge bad">🚫 BLOCK</span>
+        {% else %}
+          <span class="badge warn">{{ ep.status }}</span>
+        {% endif %}
+        {% if ep.douyin_video_id %}
+          <span class="badge info">🎬 已发布</span>
+        {% endif %}
+      </div>
+
+      {# 集级合规汇总 #}
+      {% set cm = compliance_map.get(ep.episode_id, {'checks':[]}) %}
+      {% if cm.checks %}
+        <div class="ep-compliance">
+          {% for tag in cm.checks %}
+            {% set parts = tag.split('=') %}
+            <span class="c7-tag {{ parts[1].lower() }}">{{ parts[0] }}={{ parts[1] }}</span>
+          {% endfor %}
+        </div>
+      {% endif %}
+
+      {% if ep.script %}
+        <details>
+          <summary style="cursor:pointer;color:var(--muted);font-size:12px">📜 查看脚本</summary>
+          <div class="ep-body">{{ ep.script[:2000] }}{% if ep.script|length > 2000 %}... ({{ ep.script|length }} chars){% endif %}</div>
+        </details>
+      {% endif %}
+
+      <div class="ep-actions">
+        <button onclick="checkCompliance('{{ ep.episode_id }}')">🛡️ 全量合规重查</button>
+        <button onclick="precheck('{{ ep.episode_id }}')">⚡ 快速预检</button>
+      </div>
+      <div id="compliance-result-{{ ep.episode_id }}"></div>
+    </div>
+  {% endfor %}
+{% else %}
+  <div class="card" style="text-align:center;color:var(--muted)">
+    此系列还没有集数
+  </div>
+{% endif %}
+
+<script>
+async function precheck(eid){
+  const script = document.querySelector('#ep-'+eid+' .ep-body')?.textContent || '';
+  const out = document.getElementById('compliance-result-'+eid);
+  out.innerHTML = '<span style="color:#fde68a">预检中...</span>';
+  const res = await fetch('/api/galaxy/compliance/precheck',
+    {method:'POST', headers:{'Content-Type':'application/json'},
+     body:JSON.stringify({text:script.slice(0,1000)})});
+  const j = await res.json();
+  if(j.ok && j.pass){
+    out.innerHTML = '<span class="badge ok">✅ PASS 快速预检 (无极限词/红线/隐私)</span>';
+  } else {
+    out.innerHTML = '<span class="badge bad">🚫 BLOCK</span> ' + (j.blockers||[]).join(', ');
+  }
+}
+async function checkCompliance(eid){
+  const script = document.querySelector('#ep-'+eid+' .ep-body')?.textContent || '';
+  const out = document.getElementById('compliance-result-'+eid);
+  out.innerHTML = '<span style="color:#fde68a">全量合规审查中 (C1~C7)...</span>';
+  const res = await fetch('/api/galaxy/compliance/check',
+    {method:'POST', headers:{'Content-Type':'application/json'},
+     body:JSON.stringify({text:script.slice(0,2000), content_id:eid, content_type:'script'})});
+  const j = await res.json();
+  if(!j.ok){ out.innerHTML = '<span class="badge bad">❌ '+j.error+'</span>'; return; }
+  const d = j.data;
+  let html = '<div style="margin-top:6px">';
+  for(const [ck,v] of Object.entries(d.checks)){
+    const cls = v.result.toLowerCase();
+    html += `<div class="c7-row"><span class="k">${ck}</span><span class="c7-tag ${cls}">${v.result} (${v.score})</span></div>`;
+  }
+  html += `<div style="margin-top:6px;font-weight:700;color:${d.overall=='PASS'?'#bbf7d0':(d.overall=='BLOCK'?'#fecaca':'#fde68a')}">👉 整体: ${d.overall}</div>`;
+  html += '</div>';
+  out.innerHTML = html;
+}
+</script>
+{% endblock %}

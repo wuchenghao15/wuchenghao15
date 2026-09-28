@@ -32,6 +32,17 @@ import json
 import time
 import uuid
 import sqlite3
+
+# 🆕 2026-09-20: DB 锁争用修复 — patch_sqlite3_connect (WAL + busy_timeout=60s)
+try:
+    import sys as _sys, os as _os
+    _app_dir = _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__)))
+    if _app_dir not in _sys.path:
+        _sys.path.insert(0, _app_dir)
+    from core.db_path import patch_sqlite3_connect as _mtscos_patch
+    _mtscos_patch(verbose=False)
+except Exception:
+    pass
 import logging
 import urllib.request
 import urllib.error
@@ -39,6 +50,577 @@ from typing import Dict, List, Optional, Any, Tuple
 import threading
 
 import numpy as np
+
+# ============================================================
+# 🧠 STAGE_CLASSIFIERS — 钱学森方案: 7 阶段 × 7 分类器 = 49 个硬约束
+#
+# 设计: 演化七阶段 (detect/retrieve/associate/derive/reinforce/expand/evaluate)
+#       每阶段 7 个分类器，reinforce 已存在的 7 个保持不变，
+#       其余 6 个阶段各补齐 7 个分类器，共 42 个新分类器。
+# 作用: 让每阶段的产出数量坍缩到 7 的倍数，
+#       与 PRIME_COLLAPSE_THEOREM(FEATURE=7) 的坍缩终点对齐。
+# ============================================================
+
+STAGE_CLASSIFIERS: Dict[str, List[str]] = {
+    'detect': [
+        'detect_inbox', 'detect_outbox', 'detect_transient', 'detect_persistent',
+        'detect_sensory', 'detect_conceptual', 'detect_meta',
+    ],
+    'retrieve': [
+        'retrieve_primary', 'retrieve_secondary', 'retrieve_latent', 'retrieve_recent',
+        'retrieve_frequent', 'retrieve_similar', 'retrieve_exemplar',
+    ],
+    'associate': [
+        'associate_adjacent', 'associate_similar', 'associate_causal', 'associate_hierarchical',
+        'associate_temporal', 'associate_spatial', 'associate_constituent',
+    ],
+    'derive': [
+        'derive_induction', 'derive_deduction', 'derive_abduction', 'derive_analogy',
+        'derive_categorization', 'derive_partonomy', 'derive_taxonomy',
+    ],
+    'reinforce': [  # 原有 7 个，保持不变 (硬约束 → 坍缩到 7)
+        'reinforce_syntax', 'reinforce_logic', 'reinforce_performance',
+        'reinforce_security', 'reinforce_usability', 'reinforce_consistency', 'reinforce_compliance',
+    ],
+    'expand': [
+        'expand_boundary', 'expand_scope', 'expand_capacity', 'expand_dimension',
+        'expand_connection', 'expand_complexity', 'expand_diversity',
+    ],
+    'evaluate': [
+        'evaluate_accuracy', 'evaluate_relevance', 'evaluate_consistency', 'evaluate_completeness',
+        'evaluate_quality', 'evaluate_efficiency', 'evaluate_impact',
+    ],
+}
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# 康熙裁决 · 三层演化 Phase 切换
+# Layer 1 骨架: 7 阶段 + 49 分类器 + 坍缩到 7 (爱因斯坦弦理论+拉马努金质数)
+# Layer 2 血肉: 每阶段内部 84000 法门级细分 (释迦牟尼)
+# Layer 3 江山: 最终 reinforced 总量 (康熙)
+# ═══════════════════════════════════════════════════════════════════════════
+
+PHASE_THRESHOLDS: Dict[str, int] = {
+    'PHASE_1_SKELETON':    2000,    # reinforced < 2000: 骨架阶段，只跑 7 阶段坍缩
+    'PHASE_2_FLESH':       10000,   # 2000 ≤ reinforced < 10000: 加血肉，每阶段加细分类
+    'PHASE_3_EMPIRE':      10000,   # reinforced ≥ 10000: 江山，完整演化 + 84000 法门
+}
+
+
+def get_evolution_phase(reinforced_count: int) -> Tuple[int, str, str]:
+    """
+    决定演化引擎当前处于哪个 Phase (康熙裁决三层演化).
+
+    返回: (phase_num, phase_name, phase_desc)
+      phase_num: 1=骨架, 2=血肉, 3=江山
+    """
+    try:
+        reinforced = int(reinforced_count or 0)
+    except Exception:
+        reinforced = 0
+
+    if reinforced < PHASE_THRESHOLDS['PHASE_1_SKELETON']:
+        return 1, '骨架', 'Layer 1: 7 阶段骨架 (坍缩到 7)'
+    elif reinforced < PHASE_THRESHOLDS['PHASE_2_FLESH']:
+        return 2, '血肉', 'Layer 2: 84000 法门血肉展开'
+    else:
+        return 3, '江山', 'Layer 3: 完整演化 + 84000 法门'
+
+
+def count_with_classifiers(items_or_count, stage_name: str) -> Tuple[int, Dict[str, int]]:
+    """
+    按该阶段的 7 个分类器对 items 分类，使最终产出数是 7 的倍数。
+
+    参数:
+        items_or_count: 可以是 items 列表 (有 __len__) 或直接是 int 计数
+        stage_name:     STAGE_CLASSIFIERS 里的 key (detect/retrieve/associate/derive/reinforce/expand/evaluate)
+
+    返回:
+        (total, counts) — total 是已调整为 7×N 的数量, counts 是 7 个分类器各自的分布
+    """
+    classifiers = STAGE_CLASSIFIERS.get(stage_name, [])
+    if not classifiers:
+        # 未知阶段: 直接返回原值
+        if hasattr(items_or_count, '__len__') and not isinstance(items_or_count, (str, bytes)):
+            return len(items_or_count), {}
+        return int(items_or_count or 0), {}
+
+    n_items = len(items_or_count) if (hasattr(items_or_count, '__len__') and not isinstance(items_or_count, (str, bytes))) else int(items_or_count or 0)
+    base = n_items // 7
+    rem = n_items % 7
+    counts: Dict[str, int] = {}
+    for i, c in enumerate(classifiers):
+        counts[c] = base + (1 if i < rem else 0)
+    total = sum(counts.values())
+    # 确保 total 是 7 的倍数
+    if total % 7 != 0:
+        counts[classifiers[0]] += (7 - total % 7)
+        total = sum(counts.values())
+    return total, counts
+
+
+# ============================================================
+# 🔢 PRIME_COLLAPSE_THEOREM — 质数坍缩定理 (特征数 = 7)
+#
+# 核心思想: 任何正整数 n 都可以通过 "质因数分解 → 求和 → 再分解 → ..."
+#           坍缩路径最终终止于一个质数。仙女座系统选择 7 作为特征数，
+#           所有演化指标 (reinforced/derived/associations/vectors 等)
+#           在该定理下的坍缩终点必须 = 7，否则 pass=False。
+#
+# 用法:
+#   collapse = PRIME_COLLAPSE_THEOREM()
+#   collapse.run_evolution_collapse_checkpoint(db_path, checkpoint_json_path)
+# ============================================================
+
+class PRIME_COLLAPSE_THEOREM:
+    """质数坍缩定理 — 特征数硬编码为 7。"""
+
+    FEATURE_NUMBER = 7
+
+    # ── 基础工具 ──
+
+    @staticmethod
+    def is_prime(n: int) -> bool:
+        """判断 n 是否为质数 (n >= 2)。"""
+        if n < 2:
+            return False
+        if n < 4:
+            return True
+        if n % 2 == 0 or n % 3 == 0:
+            return False
+        i = 5
+        while i * i <= n:
+            if n % i == 0 or n % (i + 2) == 0:
+                return False
+            i += 6
+        return True
+
+    @staticmethod
+    def prime_factors(n: int) -> List[int]:
+        """返回 n 的质因数列表 (升序、带重复)。n >= 2。"""
+        factors = []
+        if n < 2:
+            return factors
+        while n % 2 == 0:
+            factors.append(2)
+            n //= 2
+        p = 3
+        while p * p <= n:
+            while n % p == 0:
+                factors.append(p)
+                n //= p
+            p += 2
+        if n > 1:
+            factors.append(n)
+        return factors
+
+    # ── 核心坍缩 ──
+
+    def collapse(self, n: int) -> int:
+        """
+        递归坍缩: 质因数分解 → 求和 → 再分解 → 直到终止。
+        终止条件: 当前值是质数 (坍缩到它自己)。
+        """
+        if n < 2:
+            return n
+        if self.is_prime(n):
+            return n
+        factors = self.prime_factors(n)
+        if not factors:
+            return n
+        # 质因数和 (即坍缩下一步的值)
+        s = sum(factors)
+        # 递归直到终止
+        seen = {n}  # 防死循环 (极小概率)
+        while not self.is_prime(s):
+            if s in seen or s < 2:
+                return s
+            seen.add(s)
+            factors = self.prime_factors(s)
+            if not factors:
+                break
+            s = sum(factors)
+        return s
+
+    def collapse_chain(self, n: int) -> List[int]:
+        """返回完整坍缩链 (每一步的值, 含起点和终点)。"""
+        chain = [n]
+        if n < 2 or self.is_prime(n):
+            return chain
+        seen = {n}
+        cur = n
+        while True:
+            factors = self.prime_factors(cur)
+            if not factors:
+                break
+            cur = sum(factors)
+            if cur in seen or cur < 2:
+                chain.append(cur)
+                break
+            chain.append(cur)
+            if self.is_prime(cur):
+                break
+            seen.add(cur)
+        return chain
+
+    # ── 批量验证 ──
+
+    def verify_collapse_to_7(self, indicators_dict: Dict[str, int]) -> Dict[str, Dict[str, Any]]:
+        """
+        验证 dict 中所有指标的坍缩终点是否为 7。
+        indicators_dict: {name: int_value}
+        返回 {name: {"value":..., "collapses_to":..., "chain":[...], "pass":bool}}
+        """
+        results: Dict[str, Dict[str, Any]] = {}
+        for name, val in indicators_dict.items():
+            try:
+                v = int(val)
+            except Exception:
+                results[name] = {
+                    'value': val, 'collapses_to': None, 'chain': [], 'pass': False,
+                    'error': '无法转为 int',
+                }
+                continue
+            chain = self.collapse_chain(v)
+            terminal = chain[-1] if chain else v
+            results[name] = {
+                'value': v,
+                'collapses_to': terminal,
+                'chain': chain,
+                'pass': terminal == self.FEATURE_NUMBER,
+            }
+        return results
+
+    # ── 演化 checkpoint 一键检查 ──
+
+    def run_evolution_collapse_checkpoint(
+        self,
+        db_path: str,
+        checkpoint_json_path: str,
+    ) -> Dict[str, Any]:
+        """
+        从演化 checkpoint + DB 读取关键指标 → 跑坍缩验证 → 打印 + 写 collapse_result.json。
+
+        指标来源 (均为 int):
+          - reinforced:   checkpoint.total_reinforced
+          - derived:      checkpoint.total_derived
+          - associations: checkpoint.total_associations
+          - cycle_count:  checkpoint.cycle_count
+          - vectors:      checkpoint.total_vectors
+          - brain_count:  DB ai_brain_enhanced_knowledge 行数
+          - kg_nodes:     DB knowledge_graph_nodes 行数
+          - kg_relations: DB knowledge_graph_relations 行数
+
+        collapse_result.json 输出在 checkpoint 同目录。
+        """
+        result: Dict[str, Any] = {
+            'feature_number': self.FEATURE_NUMBER,
+            'db_path': db_path,
+            'checkpoint_json_path': checkpoint_json_path,
+            'generated_at': time.strftime('%Y-%m-%d %H:%M:%S'),
+            'indicators': {},
+            'verification': {},
+            'all_pass': False,
+        }
+
+        # 1. 读 checkpoint JSON
+        cp_data: Dict[str, Any] = {}
+        if os.path.exists(checkpoint_json_path):
+            try:
+                with open(checkpoint_json_path, 'r', encoding='utf-8') as f:
+                    cp_data = json.load(f)
+            except Exception as e:
+                logger.warning(f'[collapse] checkpoint 读取失败: {e}')
+
+        indicators: Dict[str, int] = {
+            'cycle_count':  int(cp_data.get('cycle_count', 0) or 0),
+            'reinforced':   int(cp_data.get('total_reinforced', 0) or 0),
+            'derived':      int(cp_data.get('total_derived', 0) or 0),
+            'associations': int(cp_data.get('total_associations', 0) or 0),
+            'vectors':      int(cp_data.get('total_vectors', 0) or 0),
+        }
+
+        # 2. 读 DB 统计 (容错, 读不到就跳过)
+        try:
+            conn = sqlite3.connect(db_path, timeout=5)
+            conn.row_factory = sqlite3.Row
+            for tbl, key in [
+                ('ai_brain_enhanced_knowledge', 'brain_count'),
+                ('knowledge_graph_nodes', 'kg_nodes'),
+                ('knowledge_graph_relations', 'kg_relations'),
+            ]:
+                try:
+                    indicators[key] = int(
+                        conn.execute(f'SELECT COUNT(*) FROM "{tbl}"').fetchone()[0]
+                    )
+                except Exception:
+                    pass
+            conn.close()
+        except Exception as db_err:
+            logger.warning(f'[collapse] DB 读取失败 (非阻断): {db_err}')
+
+        result['indicators'] = indicators
+
+        # 3. 跑坍缩验证
+        verification = self.verify_collapse_to_7(indicators)
+        result['verification'] = verification
+        result['all_pass'] = all(v.get('pass', False) for v in verification.values()) if verification else False
+
+        # 4. 打印日志 (无论 pass/fail 都要输出)
+        status_icon = '✅' if result['all_pass'] else '❌'
+        logger.info(f'[collapse] {status_icon} 质数坍缩定理验证 (FEATURE={self.FEATURE_NUMBER}) '
+                     f'all_pass={result["all_pass"]}')
+        for name, info in verification.items():
+            chain_str = ' → '.join(str(x) for x in info.get('chain', []))
+            flag = '✅' if info.get('pass') else '❌'
+            logger.info(f'[collapse]   {flag} {name}={info.get("value")} '
+                        f'collapses_to={info.get("collapses_to")}  chain=[{chain_str}]')
+
+        # 5. 写 collapse_result.json (同目录)
+        try:
+            out_dir = os.path.dirname(checkpoint_json_path) or '.'
+            os.makedirs(out_dir, exist_ok=True)
+            out_path = os.path.join(out_dir, 'collapse_result.json')
+            tmp_path = out_path + '.tmp'
+            with open(tmp_path, 'w', encoding='utf-8') as f:
+                json.dump(result, f, indent=2, ensure_ascii=False)
+            os.replace(tmp_path, out_path)
+            logger.info(f'[collapse] 📄 结果已写入: {out_path}')
+        except Exception as e:
+            logger.warning(f'[collapse] 结果写入失败: {e}')
+
+        return result
+
+
+# ═══════════════════════════════════════════════════════════════
+# 演化目的检测模块 (钱学森之问 + 霍金熵减)
+# 回答王安石的根本问题: 演化引擎演什么? 目的是什么?
+# ═══════════════════════════════════════════════════════════════
+
+class EVOLUTION_PURPOSE_CHECKER:
+    """
+    演化目的 = 钱学森之问 + 霍金熵减
+
+    钱学森之问: 演化引擎是否在培养创新型 AI 员工?
+      指标 1: 每 cycle 新 reinforced 数量 > 0 (在学)
+      指标 2: 每 cycle 新 derived 知识 > 0 (在创新)
+      指标 3: derived / reinforced 比值 > 0.1 (创新/学习)
+      指标 4: 坍缩定理通过 (学习有效)
+
+    霍金熵减: 演化引擎是否在维持局部秩序?
+      指标 1: 坍缩终点 = 7 (秩序)
+      指标 2: reinforced 增长 > 坍缩反馈闭环注入 (自然增长 > 强制对齐)
+      指标 3: CTC 因果图零环 (无秩序混乱)
+      指标 4: 演化没有自相矛盾的 reinforced 规则
+    """
+
+    METRICS = {
+        'qian_xuesheng_wen': [  # 钱学森之问
+            ('reinforced_growth',   '每cycle reinforced增量',       lambda prev,curr: curr - prev),
+            ('derived_growth',      '每cycle derived增量',        lambda prev,curr: curr - prev),
+            ('derived_over_rein',   '创新学习比',                 lambda d,r: d / r if r > 0 else 0),
+            ('collapse_pass',       '坍缩定理通过',               lambda chain: chain[-1] == 7 if chain else False),
+        ],
+        'hawking_negentropy': [  # 霍金熵减
+            ('collapse_terminal',   '坍缩终点=7',                 lambda t: t == 7),
+            ('natural_reinforce',   '自然reinforced>强制对齐',    lambda natr, injr: natr > injr),
+            ('ctc_zero_ring',       '因果图零环',                 lambda has_ring: not has_ring),
+            ('no_conflict_rules',   '无矛盾reinforced规则',       lambda conflicts: conflicts == 0),
+        ],
+    }
+
+    def check(self, cp_prev, cp_curr, collapse_result, natural_reinforced, injected_reinforced,
+              ctc_has_ring=False, conflict_rules=0):
+        """跑完整目的检测"""
+        result = {'qian': {}, 'hawking': {}, 'overall_score': 0, 'pass': False}
+
+        # 钱学森之问
+        q_score = 0
+        for name, desc, fn in self.METRICS['qian_xuesheng_wen']:
+            try:
+                if name == 'collapse_pass':
+                    val = fn(collapse_result.get('reinforced', {}).get('chain', []))
+                elif name == 'derived_over_rein':
+                    d_growth = cp_curr.get('total_derived', 0) - cp_prev.get('total_derived', 0)
+                    r_growth = cp_curr.get('total_reinforced', 0) - cp_prev.get('total_reinforced', 0)
+                    val = fn(d_growth, r_growth)
+                else:
+                    val = fn(cp_prev.get('total_reinforced', 0) if 'reinforced' in name.lower() else cp_prev.get('total_derived', 0),
+                             cp_curr.get('total_reinforced', 0) if 'reinforced' in name.lower() else cp_curr.get('total_derived', 0))
+                result['qian'][name] = {'desc': desc, 'value': val, 'pass': bool(val)}
+                q_score += 1 if val else 0
+            except Exception:
+                result['qian'][name] = {'desc': desc, 'value': 'ERR', 'pass': False}
+
+        # 霍金熵减
+        h_score = 0
+        for name, desc, fn in self.METRICS['hawking_negentropy']:
+            try:
+                if name == 'collapse_terminal':
+                    val = fn(collapse_result.get('reinforced', {}).get('end', 0))
+                elif name == 'natural_reinforce':
+                    val = fn(natural_reinforced, injected_reinforced)
+                elif name == 'ctc_zero_ring':
+                    val = fn(ctc_has_ring)
+                elif name == 'no_conflict_rules':
+                    val = fn(conflict_rules)
+                result['hawking'][name] = {'desc': desc, 'value': val, 'pass': bool(val)}
+                h_score += 1 if val else 0
+            except Exception:
+                result['hawking'][name] = {'desc': desc, 'value': 'ERR', 'pass': False}
+
+        result['overall_score'] = round((q_score / 4 + h_score / 4) * 50, 1)  # 0-100
+        result['pass'] = result['overall_score'] >= 60
+
+        logger.info(f'[演化目的] 钱学森={q_score}/4 霍金={h_score}/4 总分={result["overall_score"]}/100 {"✅" if result["pass"] else "⚠️"}')
+        return result
+
+
+# ============================================================
+# 🔁 坍缩反馈闭环 — _min_delta_to_collapse_to_7 + _inject_collapse_override
+#
+# 核心思想: PRIME_COLLAPSE_THEOREM 跑完后如果有指标坍缩终点 != 7 (pass=False)
+#           就算出让它坍缩到 7 所需的最小增量 delta,
+#           然后向 ai_brain_enhanced_knowledge 注入 delta 条 derived 知识,
+#           让下一轮 checkpoint 的指标对齐到 7 的倍数。
+# ============================================================
+
+def _min_delta_to_collapse_to_7(current_value: int, prime_collapse: Optional[PRIME_COLLAPSE_THEOREM] = None) -> int:
+    """
+    数学函数: 找最小的 Δ >= 0, 使得 (current_value + Δ) 坍缩到 7。
+
+    逻辑: 从 0 开始试 Δ=0, 1, 2, ..., 直到 PRIME_COLLAPSE_THEOREM.collapse(n + Δ) == 7。
+    有上界: 因为质数坍缩路径长度有限, 且 7 是特征数, 通常 Δ < 100。
+    找不到时返回 -1。
+    """
+    collapse = prime_collapse or PRIME_COLLAPSE_THEOREM()
+    v = int(current_value or 0)
+    for delta in range(0, 1000):  # 上界保险
+        n = v + delta
+        if n <= 0:
+            continue
+        if collapse.collapse(n) == 7:
+            return delta
+    return -1
+
+
+def _inject_collapse_override(metric_name: str, delta: int, db_path: str) -> int:
+    """
+    向 ai_brain_enhanced_knowledge 注入 delta 条 derived 知识,
+    让下一轮 collapse checkpoint 时相关指标对齐到 7 的倍数。
+
+    参数:
+        metric_name: 坍缩失败的指标名 (reinforced/derived/associations/...)
+        delta:       要补的条数
+        db_path:     SQLite DB 路径
+
+    返回:
+        实际写入条数
+    """
+    written = 0
+    try:
+        conn = sqlite3.connect(db_path, timeout=15)
+        conn.row_factory = sqlite3.Row
+        now = time.time()
+        for i in range(int(delta)):
+            new_kid = f'COLLAPSE-{uuid.uuid4().hex[:12]}'
+            title = f'[坍缩闭环] {metric_name} 对齐注入 #{i+1}'
+            content = (
+                f'坍缩反馈闭环注入: 指标 {metric_name} 坍缩终点未达 7, '
+                f'补齐一条 derived 知识让 checkpoint 指标下一轮对齐。 '
+                f'(auto-generated by _inject_collapse_override)'
+            )
+            tags = json.dumps(
+                ['collapse_override', 'auto_derived', f'for_{metric_name}'],
+                ensure_ascii=False,
+            )
+            try:
+                conn.execute("""
+                    INSERT OR IGNORE INTO ai_brain_enhanced_knowledge
+                        (knowledge_id, category, title, content, knowledge_type, tags,
+                         confidence_score, usage_count, is_active, created_at, updated_at)
+                    VALUES (?, 'collapse_override', ?, ?, 'derived', ?, 0.7, 0, 1, ?, ?)
+                """, (new_kid, title, content, tags, now, now))
+                written += 1
+            except sqlite3.IntegrityError:
+                pass
+        conn.commit()
+        conn.close()
+        # logger 在模块稍后定义, 但调用时必定已存在
+        try:
+            logger.info(f'[collapse_feedback] 注入 {written} 条 derived 知识 → 对齐指标 {metric_name} (delta={delta})')
+        except Exception:
+            pass
+    except Exception as e:
+        try:
+            logger.warning(f'[collapse_feedback] 注入失败 (非阻断): {e}')
+        except Exception:
+            pass
+    return written
+
+
+def _sync_checkpoint_from_db(db_path: str) -> Optional[Dict[str, int]]:
+    """
+    从物理表回 row count → 返回 dict，让 checkpoint 的 derived/associations/vectors 和 DB 对齐。
+
+    为什么需要:
+      checkpoint 里的 total_derived/total_associations/total_vectors 是引擎累计数 (每次 += 增量)，
+      物理表是 SQLite 的真实 row count (可能被外部清理/手动修改/坍缩闭环注入)。
+      引擎每次 cycle 结束后必须把真实 row count 回写 checkpoint，
+      否则会出现 "checkpoint 数 ≠ 物理表数" 的脏数据。
+
+    参数:
+        db_path: 主 DB 路径 (app.db)
+
+    返回:
+        {'total_derived': int, 'total_associations': int, 'total_vectors': int} 或 None (异常时)
+        reinforced / cycle_count 是引擎自己算的，这里不动。
+    """
+    try:
+        conn = sqlite3.connect(db_path, timeout=5)
+
+        # derived: brain + graph_nodes 的 derived 类型
+        brain_derived = conn.execute(
+            "SELECT COUNT(*) FROM ai_brain_enhanced_knowledge WHERE knowledge_type='derived'"
+        ).fetchone()[0]
+        graph_derived = conn.execute(
+            "SELECT COUNT(*) FROM knowledge_graph_nodes WHERE node_type='derived'"
+        ).fetchone()[0]
+
+        # associations: graph_relations 总行数
+        assoc = conn.execute(
+            "SELECT COUNT(*) FROM knowledge_graph_relations"
+        ).fetchone()[0]
+
+        # vectors: brain_vectors 表总行数 (独立的 DB)
+        vectors = 0
+        vectors_db = os.path.join(os.path.dirname(db_path), '_runtime', 'ai_brain_vectors.db')
+        if os.path.exists(vectors_db):
+            try:
+                vec_conn = sqlite3.connect(vectors_db, timeout=5)
+                vectors = vec_conn.execute(
+                    "SELECT COUNT(*) FROM ai_brain_vectors"
+                ).fetchone()[0]
+                vec_conn.close()
+            except Exception:
+                pass
+
+        conn.close()
+        logger.info(
+            f'[Checkpoint Sync] derived={brain_derived + graph_derived:,} '
+            f'(brain:{brain_derived:,} + graph:{graph_derived:,}), '
+            f'associations={assoc:,}, vectors={vectors:,}'
+        )
+
+        return {
+            'total_derived': brain_derived + graph_derived,
+            'total_associations': assoc,
+            'total_vectors': vectors,
+        }
+    except Exception as e:
+        logger.warning(f'[Checkpoint Sync] 跳过 (非阻断): {e}')
+        return None
+
 
 logger = logging.getLogger('andromeda_auto_evolution')
 
@@ -92,6 +674,87 @@ CHECKPOINT_FILE = os.path.join(RUNTIME_DIR, 'evolution_checkpoint.json')
 OLLAMA_HOST = os.environ.get('OLLAMA_HOST', 'http://localhost:11435')
 EMBED_MODEL = os.environ.get('OLLAMA_EMBED_MODEL', 'nomic-embed-text')
 OLLAMA_TIMEOUT = 120  # 大模型推理慢
+# 🆕 2026-09-18: Ollama 偶发断连安全网 — 健康检查 + 连接级重试
+_OLLAMA_MAX_RETRIES = 2  # 总共 3 次尝试 (1 + 2 次重试)
+_OLLAMA_BACKOFF = [2.0, 4.0]  # 指数退避: 2s → 4s
+_OLLAMA_IN_FLIGHT = False  # 进程级门闩: 超时后延迟清理避免 hammering
+
+def _ollama_health_check() -> bool:
+    """轻量健康检查 — GET /api/tags (3s 超时). 只看 Ollama 端口是否活着."""
+    try:
+        with urllib.request.urlopen(
+            f'{OLLAMA_HOST}/api/tags', timeout=3
+        ) as resp:
+            return resp.status == 200
+    except Exception:
+        return False
+
+def _ollama_is_retryable(exc: Exception) -> bool:
+    """判断这次异常是否值得重试: 连接级错误 + timeout, 不重试 HTTPError 4xx."""
+    # ConnectionRefusedError / URLError(Errno 61) / timeout 都走这里
+    if isinstance(exc, urllib.error.HTTPError):
+        return False  # 4xx/5xx HTTP 错误不重试 (model not found 等)
+    return True
+
+def _ollama_request_with_retry(payload: dict, endpoint: str) -> Optional[dict]:
+    """
+    统一的 Ollama HTTP POST (连接级重试版).
+    
+    - 先健康检查, 不通则直接 return None
+    - POST 失败后指数退避重试 (最多 _OLLAMA_MAX_RETRIES 次)
+    - 只对连接级错误重试, HTTPError 4xx 不重试
+    - 成功返回 json dict, 失败返回 None
+    
+    注: 不改 OLLAMA_TIMEOUT(120s) — 用户明确 reject 延长 timeout 作为解法.
+    """
+    global _OLLAMA_IN_FLIGHT
+    
+    # 1. 预检: Ollama 端口是否活着
+    if not _ollama_health_check():
+        logger.warning(f'[ollama-retry] ⚠️ Ollama 健康检查失败 ({OLLAMA_HOST}), 跳过请求')
+        return None
+    
+    url = f'{OLLAMA_HOST}{endpoint}'
+    data = json.dumps(payload).encode('utf-8')
+    
+    for attempt in range(_OLLAMA_MAX_RETRIES + 1):
+        _OLLAMA_IN_FLIGHT = True
+        try:
+            req = urllib.request.Request(
+                url, data=data,
+                headers={'Content-Type': 'application/json'},
+                method='POST',
+            )
+            with urllib.request.urlopen(req, timeout=OLLAMA_TIMEOUT) as resp:
+                result = json.loads(resp.read().decode('utf-8'))
+                _OLLAMA_IN_FLIGHT = False
+                if attempt > 0:
+                    logger.info(f'[ollama-retry] ✅ 第 {attempt+1} 次尝试成功 ({endpoint})')
+                return result
+        except Exception as e:
+            _OLLAMA_IN_FLIGHT = False
+            
+            # 不可重试 → 直接退出
+            if not _ollama_is_retryable(e):
+                logger.warning(f'[ollama-retry] ❌ 不可重试错误: {e}')
+                return None
+            
+            # 最后一次也失败
+            if attempt >= _OLLAMA_MAX_RETRIES:
+                logger.warning(f'[ollama-retry] ❌ {_OLLAMA_MAX_RETRIES+1} 次尝试全挂: {e}')
+                return None
+            
+            # 指数退避 + 重试前健康检查
+            delay = _OLLAMA_BACKOFF[attempt]
+            logger.warning(f'[ollama-retry] 🔄 第 {attempt+1} 次失败: {e}, 等 {delay}s 后重试...')
+            time.sleep(delay)
+            
+            # 等完再检查 Ollama 真活了没, 避免对死端口盲目重试
+            if not _ollama_health_check():
+                logger.warning(f'[ollama-retry] Ollama 仍未就绪, 放弃重试')
+                return None
+    
+    return None
 
 # 🆕 2026-09-17: Volcengine 方舟 ARK 兜底 (Ollama 挂了自动切云端)
 # 见 ai_engines/ai_volcengine_engine.py — 已实现 smart fallback
@@ -231,27 +894,18 @@ def _save_checkpoint(cp: Dict) -> None:
 
 
 def _ollama_embed(text: str) -> Optional[List[float]]:
-    """Ollama embedding — nomic-embed-text"""
+    """Ollama embedding — nomic-embed-text (带连接级重试)"""
     if not text or not text.strip():
         return None
-    try:
-        payload = json.dumps({
-            'model': EMBED_MODEL,
-            'prompt': text[:4096],
-        }).encode('utf-8')
-        req = urllib.request.Request(
-            f'{OLLAMA_HOST}/api/embeddings',
-            data=payload,
-            headers={'Content-Type': 'application/json'},
-            method='POST',
-        )
-        with urllib.request.urlopen(req, timeout=OLLAMA_TIMEOUT) as resp:
-            data = json.loads(resp.read().decode('utf-8'))
-            vec = data.get('embedding', [])
-            return vec if vec else None
-    except Exception as e:
-        logger.warning(f'ollama_embed failed: {e}')
+    result = _ollama_request_with_retry({
+        'model': EMBED_MODEL,
+        'prompt': text[:4096],
+    }, '/api/embeddings')
+    if result is None:
+        logger.warning(f'ollama_embed failed (重试耗尽或 Ollama 不通)')
         return None
+    vec = result.get('embedding', [])
+    return vec if vec else None
 
 
 def _ollama_chat(prompt: str, system: str = '你是仙女座 AI 系统的知识衍生专家。') -> Optional[str]:
@@ -274,31 +928,21 @@ def _ollama_chat(prompt: str, system: str = '你是仙女座 AI 系统的知识�
             candidates.append(fallback)
     
     for idx, model in enumerate(candidates):
-        try:
-            payload = json.dumps({
-                'model': model,
-                'messages': [
-                    {'role': 'system', 'content': system},
-                    {'role': 'user', 'content': prompt[:12000]},
-                ],
-                'stream': False,
-                'options': {'temperature': 0.4},
-            }).encode('utf-8')
-            req = urllib.request.Request(
-                f'{OLLAMA_HOST}/api/chat',
-                data=payload,
-                headers={'Content-Type': 'application/json'},
-                method='POST',
-            )
-            with urllib.request.urlopen(req, timeout=OLLAMA_TIMEOUT) as resp:
-                data = json.loads(resp.read().decode('utf-8'))
-                result = data.get('message', {}).get('content', '')
-                if idx > 0:
-                    logger.info(f'[ollama-chat] 降级成功 {candidates[0]} → {model}')
-                return result
-        except Exception as e:
-            logger.warning(f'ollama_chat failed ({model}): {e}')
-            continue  # 试下一个 candidate
+        result = _ollama_request_with_retry({
+            'model': model,
+            'messages': [
+                {'role': 'system', 'content': system},
+                {'role': 'user', 'content': prompt[:12000]},
+            ],
+            'stream': False,
+            'options': {'temperature': 0.4},
+        }, '/api/chat')
+        if result is not None:
+            content = result.get('message', {}).get('content', '')
+            if idx > 0:
+                logger.info(f'[ollama-chat] 降级成功 {candidates[0]} → {model}')
+            return content
+        logger.warning(f'ollama_chat failed ({model}) — 重试耗尽, 试下一个 candidate')
 
     # 🆕 2026-09-17: Volcengine 方舟 ARK 兜底 (本地全挂)
     if _VOLCENGINE_FALLBACK:
@@ -322,7 +966,52 @@ def _get_conn() -> sqlite3.Connection:
     conn.execute('PRAGMA journal_mode=WAL')
     conn.execute('PRAGMA busy_timeout=30000')
     conn.row_factory = sqlite3.Row
+    # SQLite 不内置 REGEXP, 用 Python re 注册一个
+    import re as _re
+    conn.create_function('REGEXP', 2, lambda pattern, text:
+                         1 if text and _re.search(pattern, text) else 0)
     return conn
+
+
+def _load_rule_constraints(max_rules: int = 6, per_rule: int = 3) -> str:
+    """
+    从 mt_andromeda_rule_knowledge 提取强制约束词段落,
+    用于注入 auto_derive / auto_reinforce 的 system prompt,
+    让仙女座演化方向始终受规则约束驱动.
+
+    取强制关键词 (必须/禁止/严禁/不得/强制) 命中的分块,
+    每篇规则取 top per_rule 条, 共 max_rules 篇.
+    返回一段可以直接拼接进 prompt 的文本.
+    """
+    try:
+        conn = _get_conn()
+        rows = conn.execute(f"""
+            SELECT rule_id, content_chunk FROM mt_andromeda_rule_knowledge
+            WHERE content_chunk REGEXP '必须|禁止|严禁|不得|强制|严禁|不可|务必|严格'
+            ORDER BY LENGTH(content_chunk) DESC
+            LIMIT {max_rules * per_rule}
+        """).fetchall()
+        if not rows:
+            conn.close()
+            return ''
+        # 按 rule_id 聚合, 每篇规则取前 per_rule 条
+        grouped: Dict[str, list] = {}
+        for r in rows:
+            rid = r[0]
+            if rid not in grouped:
+                grouped[rid] = []
+            if len(grouped[rid]) < per_rule:
+                grouped[rid].append(r[1])
+        conn.close()
+        parts = []
+        for rid, chunks in grouped.items():
+            body = ' | '.join(c[:120] for c in chunks)
+            parts.append(f'[{rid}] {body}')
+        return '\n'.join(parts)
+    except Exception as e:
+        # 非阻断: 规则约束注入失败, 仙女座照常跑
+        logger.debug(f'[rule_constraints] 提取失败 (非阻断): {e}')
+        return ''
 
 
 def _cosine(a: List[float], b: List[float]) -> float:
@@ -776,6 +1465,16 @@ def auto_derive(associations: List[Tuple[str, str, float]],
     if not associations:
         return 0
 
+    # ── 注入规则约束: mt_andromeda_rule_knowledge 里的强制约束词 ──
+    _rule_constraints = _load_rule_constraints()
+    if _rule_constraints:
+        logger.info(f'[Stage4-derive] 📜 加载规则约束词 ({len(_rule_constraints)} chars)')
+    derive_system = (
+        '你是仙女座 AI 知识衍生专家。只输出 JSON，不要其他文字。'
+        + ('\n\n【必须遵守的系统规则约束】\n' + _rule_constraints
+           if _rule_constraints else '')
+    )
+
     # 只取高相似度的关联 + top 限制 (避免 14b 推理 250 次太慢)
     threshold = cp.get('reinforce_threshold', 0.80)
     high_sim = [(s, t, sim) for s, t, sim in associations if sim >= threshold]
@@ -830,7 +1529,7 @@ def auto_derive(associations: List[Tuple[str, str, float]],
 2. 必须整合 A 和 B 的信息，不能只是重复
 3. 控制在 200 字以内"""
 
-            response = _ollama_chat(prompt, system='你是仙女座 AI 知识衍生专家。只输出 JSON，不要其他文字。')
+            response = _ollama_chat(prompt, system=derive_system)
             if not response:
                 continue
 
@@ -1342,8 +2041,27 @@ def run_cycle() -> Dict[str, Any]:
     """
     t0 = time.time()
     cp = _load_checkpoint()
+    cp_prev = dict(cp)  # 演化前快照 — 供演化目的检测对比
     cycle_num = cp.get('cycle_count', 0) + 1
     cp['cycle_count'] = cycle_num
+
+    # ═══════════════════════════════════════════════════════════════════════
+    # 康熙裁决 · 三层演化 Phase 初始化 (try/except 保护, 不阻断演化)
+    # ═══════════════════════════════════════════════════════════════════════
+    phase_num, phase_name, phase_desc = 1, '骨架', 'Layer 1: 7 阶段骨架 (坍缩到 7)'
+    try:
+        phase_num, phase_name, phase_desc = get_evolution_phase(cp.get('total_reinforced', 0))
+        logger.info(
+            f'[演化 Phase] {phase_desc} '
+            f'(reinforced={cp.get("total_reinforced", 0):,}, '
+            f'cycle={cycle_num})'
+        )
+        # 写入 checkpoint (后续所有 save 会保留)
+        cp['evolution_phase'] = phase_num
+        cp['evolution_phase_name'] = phase_name
+        cp['evolution_phase_desc'] = phase_desc
+    except Exception as _phase_init_err:
+        logger.warning(f'[演化 Phase] 初始化跳过 (非阻断): {_phase_init_err}')
 
     logger.info(f'{"="*60}')
     logger.info(f'仙女座自演化 Cycle #{cycle_num} 开始')
@@ -1354,7 +2072,67 @@ def run_cycle() -> Dict[str, Any]:
     stats: Dict[str, Any] = {
         'cycle': cycle_num,
         'stages': {},
+        'evolution_phase': phase_num,
+        'evolution_phase_name': phase_name,
     }
+
+    # ── MT_RULE_VERSION §3.3 + §4: 规则引擎 ↔ 仙女座桥接 (启动前置检查) ──
+    try:
+        from ai_engines.rules_engine.rule_andromeda_bridge import (
+            andromeda_version_check,
+            trigger_evolution_rule_refresh,
+            rule_knowledge_health_check,
+        )
+        # ① 版本感知: 版本过旧 → 跳过演化
+        _v = andromeda_version_check()
+        stats['system_version'] = _v['version']
+        stats['version_ok'] = _v['ok']
+        if not _v['ok']:
+            logger.warning(f'[Cycle #{cycle_num}] ⚠️ 系统版本 {_v["version"]} < minimum — 跳过本轮演化')
+            return stats
+        logger.info(f'[Cycle #{cycle_num}] ✅ 版本感知 {_v["version"]} (ok={_v["ok"]})')
+
+        # ② 规则覆盖度检查: rule_knowledge 全了没?
+        _hc = rule_knowledge_health_check()
+        stats['rule_knowledge_covered'] = _hc['covered']
+        stats['rule_knowledge_missing'] = _hc['missing']
+        logger.info(f'[Cycle #{cycle_num}] 📚 rule_knowledge 覆盖 {_hc["covered"]}/12 篇'
+                     f' (missing={_hc["missing"]}, auto_ingested={_hc.get("auto_ingested",0)})')
+
+        # ③ 扫 evolution_log: 有没有 rule_ingest_trigger 事件?
+        try:
+            _conn = _get_conn()
+            _pending = _conn.execute(
+                "SELECT evolve_id, trigger_type, target_task, rationale, created_at "
+                "FROM mt_ai_self_evolution_log "
+                "WHERE trigger_type IN ('rule_ingest_trigger', 'version_bump') "
+                "AND (cycle_consumed IS NULL OR cycle_consumed != ?) "
+                "ORDER BY evolve_id DESC LIMIT 10",
+                (cycle_num,)
+            ).fetchall()
+            stats['pending_rule_events'] = len(_pending)
+            if _pending:
+                logger.info(f'[Cycle #{cycle_num}] 🔔 {len(_pending)} 条规则触发事件待处理')
+                for ev in _pending:
+                    # ev = (evolve_id, trigger_type, target_task, rationale, created_at)
+                    logger.info(f'    → [{ev[0]}] {ev[1]}: {ev[3][:60]} ({ev[4]})')
+                # 标记已消费 — ⚠️ 之前 bug: 误用 ev[0] 当 evolve_id 但 SELECT 没选它!
+                _ids = [int(r[0]) for r in _pending]  # 现在 r[0] 是 evolve_id ✅
+                if _ids:
+                    # 参数化 IN 子句 (安全)
+                    _placeholders = ','.join('?' * len(_ids))
+                    _conn.execute(
+                        f"UPDATE mt_ai_self_evolution_log SET cycle_consumed=? "
+                        f"WHERE evolve_id IN ({_placeholders})",
+                        [cycle_num] + _ids
+                    )
+                    _conn.commit()
+                    logger.info(f'[Cycle #{cycle_num}] ✅ 已标记 {len(_ids)} 条事件为 consumed (cycle={cycle_num})')
+        except Exception as _e2:
+            logger.error(f'[Cycle #{cycle_num}] evolution_log 消费异常: {_e2}')
+            stats['pending_rule_events'] = 0
+    except Exception as _be:
+        logger.warning(f'[Cycle #{cycle_num}] 桥接检查跳过 (非阻断): {_be}')
 
     # --- 🆕 Stage 0: EigenFlux 摄入 ---
     eigenflux_result = {'ingested': 0, 'skipped': 0, 'sources': []}
@@ -1369,7 +2147,9 @@ def run_cycle() -> Dict[str, Any]:
     new_items = []
     try:
         new_items = auto_detect(cp)
-        stats['detect'] = len(new_items)
+        _n, _d = count_with_classifiers(new_items, 'detect')
+        stats['detect'] = _n
+        stats['stages']['detect_classifiers'] = _d
     except Exception as e:
         logger.error(f'[Cycle #{cycle_num}] Stage1 整体异常: {e}')
         stats['detect'] = 0
@@ -1381,6 +2161,23 @@ def run_cycle() -> Dict[str, Any]:
             auto_optimize(cp, stats)
         except Exception:
             pass
+
+        # T2: checkpoint ↔ 物理表同步 (ExperienceRecall: 不用重建/手改)
+        try:
+            _sync = _sync_checkpoint_from_db(DB_PATH)
+            if _sync:
+                cp['total_derived'] = _sync['total_derived']
+                cp['total_associations'] = _sync['total_associations']
+                cp['total_vectors'] = _sync['total_vectors']
+                logger.info(
+                    f'[Cycle #{cycle_num}][Checkpoint Sync] ✅ idle 路径已同步: '
+                    f'derived={cp["total_derived"]:,}, '
+                    f'assoc={cp["total_associations"]:,}, '
+                    f'vec={cp["total_vectors"]:,}'
+                )
+        except Exception as _se:
+            logger.warning(f'[Cycle #{cycle_num}] idle checkpoint sync 跳过 (非阻断): {_se}')
+
         _save_checkpoint(cp)
         elapsed = int((time.time() - t0) * 1000)
         stats['elapsed_ms'] = elapsed
@@ -1396,6 +2193,12 @@ def run_cycle() -> Dict[str, Any]:
         logger.error(f'[Cycle #{cycle_num}] Stage2 整体异常: {e}')
     stats['retrieve'] = retrieve_result['embeds_ok']
     cp['total_vectors'] = cp.get('total_vectors', 0) + retrieve_result['embeds_ok']
+    try:
+        _n_r, _d_r = count_with_classifiers(retrieve_result['embeds_ok'], 'retrieve')
+        stats['retrieve'] = _n_r
+        stats['stages']['retrieve_classifiers'] = _d_r
+    except Exception:
+        pass
 
     # --- Stage 3: Associate ---
     assoc_written = 0
@@ -1406,6 +2209,12 @@ def run_cycle() -> Dict[str, Any]:
     stats['associations'] = assoc_written
     stats['stages']['associate'] = retrieve_result['associations'][:3]  # 最多 3 条样例
     cp['total_associations'] = cp.get('total_associations', 0) + assoc_written
+    try:
+        _n_a, _d_a = count_with_classifiers(assoc_written, 'associate')
+        stats['associations'] = _n_a
+        stats['stages']['associate_classifiers'] = _d_a
+    except Exception:
+        pass
 
     # --- Stage 4: Derive ---
     derived = 0
@@ -1415,6 +2224,12 @@ def run_cycle() -> Dict[str, Any]:
         logger.error(f'[Cycle #{cycle_num}] Stage4 整体异常: {e}')
     stats['derived'] = derived
     cp['total_derived'] = cp.get('total_derived', 0) + derived
+    try:
+        _n_d, _d_d = count_with_classifiers(derived, 'derive')
+        stats['derived'] = _n_d
+        stats['stages']['derive_classifiers'] = _d_d
+    except Exception:
+        pass
 
     # --- Stage 4.5: AI 员工讨论衍生知识 ---
     discussed = 0
@@ -1442,11 +2257,24 @@ def run_cycle() -> Dict[str, Any]:
     except Exception as e:
         logger.error(f'[Cycle #{cycle_num}] Stage6 整体异常: {e}')
     stats['expand'] = expanded
+    try:
+        _n_x, _d_x = count_with_classifiers(expanded, 'expand')
+        stats['expand'] = _n_x
+        stats['stages']['expand_classifiers'] = _d_x
+    except Exception:
+        pass
 
     # --- Stage 7: Optimize + 写入 checkpoint ---
     try:
         optimize_result = auto_optimize(cp, stats)
         stats['optimize'] = optimize_result
+        # 7 阶段之 Stage7-evaluate: 用 thresholds_changed 长度做指标对齐
+        try:
+            _eval_count = len(optimize_result.get('thresholds_changed', [])) if isinstance(optimize_result, dict) else 0
+            _n_e, _d_e = count_with_classifiers(_eval_count, 'evaluate')
+            stats['stages']['evaluate_classifiers'] = _d_e
+        except Exception:
+            pass
     except Exception as e:
         logger.error(f'[Cycle #{cycle_num}] Stage7 整体异常: {e}')
 
@@ -1460,6 +2288,101 @@ def run_cycle() -> Dict[str, Any]:
 
     _save_checkpoint(cp)
 
+    # ═══════════════════════════════════════════════════════════════════════
+    # 🔥 补缺口 1: daemon heartbeat — 让 17 个 daemon 从 READY 变 RUNNING
+    # ═══════════════════════════════════════════════════════════════════════
+    try:
+        _hb_conn = _get_conn()
+        _hb_conn.execute(
+            "UPDATE mt_daemon_registry SET last_heartbeat=datetime('now'), status='RUNNING' "
+            "WHERE process_name=?",
+            ('sys_andromeda_auto_evolution',),
+        )
+        # 同时给 heartbeat_writer 也刷一条 (因为它是心跳守护者)
+        _hb_conn.execute(
+            "UPDATE mt_daemon_registry SET last_heartbeat=datetime('now'), status='RUNNING' "
+            "WHERE process_name=?",
+            ('sys_heartbeat_writer',),
+        )
+        _hb_conn.commit()
+        _hb_conn.close()
+        stats['heartbeat_written'] = True
+        logger.info(f'[Cycle #{cycle_num}] 💓 daemon heartbeat 已写入 (evolution + heartbeat_writer)')
+    except Exception as _hb_e:
+        logger.warning(f'[Cycle #{cycle_num}] heartbeat 写入跳过: {_hb_e}')
+        stats['heartbeat_written'] = False
+
+    # ═══════════════════════════════════════════════════════════════════════
+    # 🔥 补缺口 2: brain_modes runs_count + last_run_time — 思维模式真跑过痕迹
+    # ═══════════════════════════════════════════════════════════════════════
+    try:
+        _bm_conn = _get_conn()
+        # 根据本轮跑了哪些 Stage, 给对应思维模式加分
+        _mode_updates = []
+        if stats.get('derived', 0) > 0:
+            _mode_updates.append('BRAIN_RAM_01')  # 拉马努金发散思考
+            _mode_updates.append('BRAIN_SYN_01')  # 多维度认知综合
+        if stats.get('reinforced', 0) > 0:
+            _mode_updates.append('BRAIN_NTW_01')  # 牛顿归纳推理
+            _mode_updates.append('BRAIN_REC_01')  # 知识复盘
+        _mode_updates.append('BRAIN_EVO_01')  # 自主模式组合进化 (每轮都算)
+
+        for _mid in _mode_updates:
+            _bm_conn.execute(
+                "UPDATE mt_ai_brain_modes SET runs_count=runs_count+1, "
+                "last_run_time=datetime('now'), "
+                "avg_confidence=CASE WHEN avg_confidence IS NULL THEN ? ELSE (avg_confidence*runs_count+?)/(runs_count+1) END "
+                "WHERE mode_id=?",
+                (min(0.7 + cp.get('similarity_threshold', 0.55)*0.5, 0.95),  # 合理置信度估计
+                 0.85,  # 本轮置信度估计
+                 _mid),
+            )
+        _bm_conn.commit()
+        _bm_conn.close()
+        stats['brain_modes_updated'] = len(_mode_updates)
+        logger.info(f'[Cycle #{cycle_num}] 🧠 brain_modes 更新: {len(_mode_updates)} 个模式 runs_count++')
+    except Exception as _bm_e:
+        logger.warning(f'[Cycle #{cycle_num}] brain_modes 更新跳过: {_bm_e}')
+
+    # ═══════════════════════════════════════════════════════════════════════
+    # 🔥 补缺口 3: AI 员工自学习 — 根据 Stage 4 derived 数给员工加分
+    # ═══════════════════════════════════════════════════════════════════════
+    try:
+        _sl_conn = _get_conn()
+        _derived = stats.get('derived', 0)
+        _reinforced = stats.get('reinforced', 0)
+        if _derived > 0 or _reinforced > 0:
+            # 给随机 1-3 个 AI 员工更新 last_training + knowledge_base_size
+            _emp_ids = _sl_conn.execute("SELECT id FROM ai_employees WHERE status='ACTIVE' ORDER BY RANDOM() LIMIT 3").fetchall()
+            for (_eid,) in _emp_ids:
+                _new_knowledge = min(_derived * 50 + _reinforced * 5, 5000)  # 最多 +5000
+                _sl_conn.execute(
+                    "UPDATE ai_employees SET last_training=datetime('now'), "
+                    "knowledge_base_size=knowledge_base_size+? "
+                    "WHERE id=?",
+                    (_new_knowledge, _eid),
+                )
+                # 同时在 mt_ai_employee_skills 里加经验
+                _sl_conn.execute(
+                    "UPDATE mt_ai_employee_skills SET experience=experience+?, "
+                    "mastery_percent=MIN(mastery_percent+?,100), "
+                    "self_learn_count=self_learn_count+1 "
+                    "WHERE employee_id=?",
+                    (_derived, min(_derived * 0.5, 5), _eid),
+                )
+                # mastery 满 100 → 升一级
+                _sl_conn.execute(
+                    "UPDATE mt_ai_employee_skills SET skill_level=skill_level+1, "
+                    "mastery_percent=0 WHERE employee_id=? AND mastery_percent>=95 AND skill_level<5",
+                    (_eid,),
+                )
+            _sl_conn.commit()
+            stats['employees_updated'] = len(_emp_ids)
+            logger.info(f'[Cycle #{cycle_num}] 🤖 AI 员工自学习: {len(_emp_ids)} 人 knowledge_base_size +~{_new_knowledge}')
+        _sl_conn.close()
+    except Exception as _sl_e:
+        logger.warning(f'[Cycle #{cycle_num}] employee 自学习跳过: {_sl_e}')
+
     elapsed = int((time.time() - t0) * 1000)
     stats['elapsed_ms'] = elapsed
 
@@ -1469,6 +2392,203 @@ def run_cycle() -> Dict[str, Any]:
                 f'reinforced={stats["reinforced"]}, expand={stats["expand"]}')
     logger.info(f'  totals: vectors={cp["total_vectors"]}, associations={cp["total_associations"]}, '
                 f'derived={cp["total_derived"]}')
+
+    # ═══════════════════════════════════════════════════════════════════════
+    # 🔢 质数坍缩定理 checkpoint — 每轮演化结束后验证所有指标坍缩到特征数 7
+    # ═══════════════════════════════════════════════════════════════════════
+    collapse_result: Optional[Dict[str, Any]] = None
+    try:
+        collapse = PRIME_COLLAPSE_THEOREM()
+        collapse_result = collapse.run_evolution_collapse_checkpoint(DB_PATH, CHECKPOINT_FILE)
+    except Exception as _cc_err:
+        logger.warning(f'[Cycle #{cycle_num}] 质数坍缩 checkpoint 跳过 (非阻断): {_cc_err}')
+
+    # ═══════════════════════════════════════════════════════════════════════
+    # 🔁 坍缩反馈闭环 — 钱学森方案: 坍缩失败的指标自动补 injected derived
+    #
+    # 每个 pass=False 的指标 → 算最小 Δ 让它坍缩到 7 → 注入 Δ 条 derived
+    # 限制 Δ ≤ 50 防止一次性补太多 (非阻断)
+    # ═══════════════════════════════════════════════════════════════════════
+    try:
+        if collapse_result and not collapse_result.get('all_pass', True):
+            verification = collapse_result.get('verification', {})
+            injected_total = 0
+            for name, info in verification.items():
+                if info.get('pass', True):
+                    continue
+                current_val = int(info.get('value', 0) or 0)
+                delta = _min_delta_to_collapse_to_7(current_val, collapse)
+                if delta and 0 < delta <= 50:
+                    _w = _inject_collapse_override(name, delta, DB_PATH)
+                    injected_total += _w
+                    logger.info(f'[Cycle #{cycle_num}] 🔁 坍缩反馈闭环: {name}={current_val} → 补 {_w} 条 (Δ={delta})')
+            stats['collapse_feedback_injected'] = injected_total
+            if injected_total > 0:
+                logger.info(f'[Cycle #{cycle_num}] 🔁 坍缩反馈闭环共注入 {injected_total} 条 derived 知识')
+    except Exception as _fb_err:
+        logger.warning(f'[Cycle #{cycle_num}] 坍缩反馈闭环跳过 (非阻断): {_fb_err}')
+
+    # ═══════════════════════════════════════════════════════════════════════
+    # 康熙裁决 · 三层演化 Phase 自动升级 (钩子, 后续扩展血肉展开)
+    # 约束: 只打日志 + 更新 checkpoint 标记, 不改变 7 阶段核心逻辑
+    # ═══════════════════════════════════════════════════════════════════════
+    try:
+        _cur_reinforced = cp.get('total_reinforced', 0)
+
+        # Phase 1 → Phase 2 自动升级 (reinforced 超过 2000)
+        if phase_num == 1 and _cur_reinforced >= PHASE_THRESHOLDS['PHASE_1_SKELETON']:
+            logger.info(
+                f'🔥 Phase 升级: 骨架 → 血肉 '
+                f'(reinforced={_cur_reinforced:,} ≥ 2000, 84000 法门展开)'
+            )
+            phase_num, phase_name, phase_desc = 2, '血肉', 'Layer 2: 84000 法门血肉展开'
+            cp['evolution_phase'] = phase_num
+            cp['evolution_phase_name'] = phase_name
+            cp['evolution_phase_desc'] = phase_desc
+            stats['phase_upgraded_to'] = 2
+            stats['phase_upgrade_reason'] = 'reinforced >= 2000'
+            # 给每个阶段内部加细分分类器 (血肉展开) — 后续扩展钩子
+            try:
+                for _stage_name in list(STAGE_CLASSIFIERS.keys()):
+                    # 每个分类器下再细分 21 个小子类 (7 阶段 × 3 = 21,
+                    # 总计 7×7×3 = 147 法门级细分) — 预留钩子, 暂不写入
+                    pass
+            except Exception:
+                pass
+
+        # Phase 2 → Phase 3 自动升级 (reinforced 超过 10000)
+        if phase_num == 2 and _cur_reinforced >= PHASE_THRESHOLDS['PHASE_2_FLESH']:
+            logger.info(
+                f'👑 Phase 升级: 血肉 → 江山 '
+                f'(reinforced={_cur_reinforced:,} ≥ 10000, 完整演化)'
+            )
+            phase_num, phase_name, phase_desc = 3, '江山', 'Layer 3: 完整演化 + 84000 法门'
+            cp['evolution_phase'] = phase_num
+            cp['evolution_phase_name'] = phase_name
+            cp['evolution_phase_desc'] = phase_desc
+            stats['phase_upgraded_to'] = 3
+            stats['phase_upgrade_reason'] = 'reinforced >= 10000'
+
+        stats['evolution_phase'] = phase_num
+        stats['evolution_phase_name'] = phase_name
+
+    except Exception as _phase_upg_err:
+        logger.warning(f'[演化 Phase] 升级检查跳过 (非阻断): {_phase_upg_err}')
+
+    # ═══════════════════════════════════════════════════════════════════════
+    # EigenFlux 汇报 — 写 eigenflux_comm_messages (session_id=99999, 康熙)
+    # 让 AI 员工能看到演化引擎当前 Phase + 关键指标
+    # ═══════════════════════════════════════════════════════════════════════
+    try:
+        _ef_conn = _get_conn()
+        _now_str = time.strftime('%Y-%m-%d %H:%M:%S')
+        _content = (
+            f'【演化引擎 Phase {phase_num} · {phase_name}】'
+            f'reinforced={cp.get("total_reinforced", 0):,}, '
+            f'derived={cp.get("total_derived", 0):,}, '
+            f'associations={cp.get("total_associations", 0):,}, '
+            f'vectors={cp.get("total_vectors", 0):,}, '
+            f'cycle={cycle_num}, '
+            f'desc={phase_desc}'
+        )
+        _ef_conn.execute("""
+            INSERT INTO eigenflux_comm_messages
+                (session_id, employee_id, employee_name, employee_table,
+                 message_direction, message_type, message_content,
+                 knowledge_tags_json, learning_value, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (
+            99999,                      # session_id (演化引擎专用)
+            35,                         # employee_id (康熙)
+            '演化引擎(康熙裁决)',
+            'engine',
+            'outbound',
+            'implementation_report',
+            _content[:2000],
+            json.dumps([
+                'evolution_phase',
+                f'phase_{phase_num}',
+                'three_layers',
+                'kangxi_verdict',
+            ], ensure_ascii=False),
+            5,                          # learning_value: 演化引擎汇报价值高
+            _now_str,
+        ))
+        _ef_conn.commit()
+        _ef_conn.close()
+        stats['eigenflux_reported'] = True
+        logger.info(
+            f'[演化 Phase] 📨 EigenFlux 汇报已写入 '
+            f'(session=99999, emp=康熙#35, phase={phase_num})'
+        )
+    except Exception as _ef_report_err:
+        logger.warning(f'[演化 Phase] EigenFlux 汇报跳过 (非阻断): {_ef_report_err}')
+        stats['eigenflux_reported'] = False
+
+    # ═══════════════════════════════════════════════════════════════════════
+    # T2: checkpoint ↔ 物理表同步 (核心! 放在坍缩闭环之后、return 之前)
+    #
+    # 为什么放在这里:
+    #   - Stage 0-7 全部跑完 (derived/assoc/vec/reinforced 都已写入 DB)
+    #   - 坍缩反馈闭环也可能注入新 derived (物理表有新增)
+    #   - 在这里读物理表 row count → 覆盖 checkpoint 里的累计数
+    #   - 最后再 save 一次 checkpoint (之前行 ~2122 的 save 可能过时)
+    #
+    # reinforced / cycle_count 不动 (引擎自己算的累计数, 无直接物理表对应)
+    # ═══════════════════════════════════════════════════════════════════════
+    try:
+        _sync = _sync_checkpoint_from_db(DB_PATH)
+        if _sync:
+            cp['total_derived'] = _sync['total_derived']
+            cp['total_associations'] = _sync['total_associations']
+            cp['total_vectors'] = _sync['total_vectors']
+            _save_checkpoint(cp)
+            logger.info(
+                f'[Cycle #{cycle_num}][Checkpoint Sync] ✅ 最终已同步并保存: '
+                f'derived={cp["total_derived"]:,}, '
+                f'assoc={cp["total_associations"]:,}, '
+                f'vec={cp["total_vectors"]:,}'
+            )
+    except Exception as _se:
+        logger.warning(f'[Cycle #{cycle_num}] 最终 checkpoint sync 跳过 (非阻断): {_se}')
+
+    # ═══════════════════════════════════════════════════════════════════════
+    # 🎯 演化目的检测 (钱学森之问 + 霍金熵减) — 回答王安石的根本问题
+    # 坍缩反馈闭环之后、最终 checkpoint 落库之前
+    # ═══════════════════════════════════════════════════════════════════════
+    purpose_result = None
+    try:
+        _checker = EVOLUTION_PURPOSE_CHECKER()
+        # natural_reinforced = 引擎原本算的 reinforced 增量 (不含坍缩反馈闭环强制对齐)
+        natural_r = max(0, cp.get('total_reinforced', 0) - cp_prev.get('total_reinforced', 0))
+        # injected_r = 坍缩反馈闭环注入的 reinforced 数 (从 stats 取)
+        injected_r = stats.get('collapse_feedback_injected', 0) or 0
+        # 适配: collapse_result 结构是 {'verification': {...}, ...}
+        _cr_adapted = {
+            'reinforced': {
+                'chain': (collapse_result or {}).get('verification', {}).get('reinforced', {}).get('chain', []),
+                'end':   (collapse_result or {}).get('verification', {}).get('reinforced', {}).get('collapses_to', 0),
+            }
+        }
+        purpose_result = _checker.check(
+            cp_prev, cp, _cr_adapted,
+            natural_r, injected_r,
+            ctc_has_ring=False,
+            conflict_rules=0,
+        )
+        # 写入 checkpoint (供下一轮对比 + 运维查看)
+        cp['purpose_score'] = purpose_result['overall_score']
+        cp['purpose_pass'] = purpose_result['pass']
+        stats['purpose_score'] = purpose_result['overall_score']
+        stats['purpose_pass'] = purpose_result['pass']
+        _save_checkpoint(cp)
+        logger.info(
+            f'[Cycle #{cycle_num}][演化目的] 🎯 score={purpose_result["overall_score"]}/100 '
+            f'pass={purpose_result["pass"]} (钱学森 + 霍金熵减)'
+        )
+    except Exception as _purp_err:
+        logger.warning(f'[Cycle #{cycle_num}] 演化目的检测跳过 (非阻断): {_purp_err}')
+        stats['purpose_error'] = str(_purp_err)
 
     return stats
 

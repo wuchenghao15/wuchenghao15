@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+{# ===========================================================================
+ # 异常页基类 · 三层继承 (L1: exception_base.html)
+ # 8类异常页(400/401/403/404/500/502/503/504) 统一继承本基类
+ #
+ # 消费:
+ #   · mtscos_design_tokens.css — Element Plus Design Token 变量体系
+ #   · mtscos_components.css    — 15个通用组件样式(异常页mtscos-exception/按钮/卡片等)
+ #   · mtscos_components.js     — MTSCOSTheme主题切换 + MTSCOSToast
+ #
+ # Jinja2 继承块:
+ #   {% block page_title %}   — 浏览器<title> (默认: {{ status }} - MTSCOS)
+ #   {% block exception_meta %}— 异常元信息(status/code/title/description/repair/severity/icon)
+ #   {% block exception_actions %} — 操作按钮区域(可覆盖)
+ #   {% block extra_content %} — 自定义内容区域(可追加)
+ # ========================================================================= #}
+<html lang="zh-CN" data-theme="{{ session.get('theme','auto') if session else 'auto' }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="MTSCOS 异常页">
+    {% block exception_meta %}
+    {# 子类必须覆盖: 定义 status / err_code / title / description / repair / severity / icon #}
+    {% set status = 500 %}
+    {% set err_code = 'E_SRV_500' %}
+    {% set title = '{{ t('auto.exception_base.x_3a7e461f', default='服务器内部错误') }}' %}
+    {% set description = '服务器处理请求时发生异常' %}
+    {% set repair = '请稍后重试，或联系运维人员' %}
+    {% set severity = 'critical' %}
+    {% set icon = '🛠️' %}
+    {% endblock %}
+    <title>{% block page_title %}{{ status }} {{ title }} - MTSCOS{% endblock %}</title>
+
+    {# L1 Design Token: 对齐 contract.yaml §11 token_layer #}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/mtscos_design_tokens.css') }}">
+    {# L1.5 兼容垫片: 旧变量(--theme-*/--accent-text等)桥接到新Token (B轮议题2) #}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/mtscos_compat_shim.css') }}">
+    {# L2 通用组件样式: 对齐 contract.yaml §11 components_layer #}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/mtscos_components.css') }}">
+
+    {# CSRF Token: 对齐 contract.yaml §10 csrf_interceptor #}
+    <meta name="csrf-token" content="{{ csrf_token() if csrf_token else '' }}">
+
+    <style>
+        /* 异常页专用玻璃态背景渐变 (消费 --el-color-primary 系列 Token) */
+        body.exception-page {
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: var(--mtscos-spacing-lg);
+            background:
+                radial-gradient(1200px 600px at 10% 0%, var(--el-color-primary-light-9) 0%, transparent 60%),
+                radial-gradient(800px 500px at 100% 100%, var(--el-color-success-light-9) 0%, transparent 50%),
+                var(--el-bg-color-page);
+            font-family: var(--el-font-family);
+            color: var(--el-text-color-primary);
+            transition: background var(--mtscos-transition-base) ease;
+        }
+        [data-theme="dark"] body.exception-page {
+            background:
+                radial-gradient(1200px 600px at 10% 0%, rgba(64,158,255,0.12) 0%, transparent 60%),
+                radial-gradient(800px 500px at 100% 100%, rgba(103,194,58,0.08) 0%, transparent 50%),
+                var(--el-bg-color-page);
+        }
+        .exception-wrap {
+            width: 100%;
+            max-width: 720px;
+            animation: mtscos-anim-fade-in var(--mtscos-animation-duration-base) ease var(--mtscos-animation-delay-fast);
+            animation-fill-mode: both;
+        }
+        .mtscos-exception__status-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--mtscos-spacing-xs);
+            padding: 4px 12px;
+            border-radius: var(--el-border-radius-round);
+            font-size: 12px;
+            font-weight: var(--el-font-weight-primary);
+            margin-bottom: var(--mtscos-spacing-md);
+        }
+        /* severity 主题色映射 (对照 contract.yaml §3 severity) */
+        .severity--info     { background: var(--el-color-info-light-9);    color: var(--el-color-info);    }
+        .severity--warning  { background: var(--el-color-warning-light-9); color: var(--el-color-warning); }
+        .severity--error    { background: var(--el-color-danger-light-9);  color: var(--el-color-danger);  }
+        .severity--critical { background: var(--el-color-critical-light-9); color: var(--el-color-critical); }
+
+        .trace-box {
+            margin-top: var(--mtscos-spacing-md);
+            padding: var(--mtscos-spacing-sm) var(--mtscos-spacing-md);
+            background: var(--el-fill-color-light);
+            border-radius: var(--el-border-radius-base);
+            font-family: var(--el-font-family-mono, ui-monospace, Menlo, Consolas, monospace);
+            font-size: 12px;
+            color: var(--el-text-color-secondary);
+            word-break: break-all;
+            text-align: left;
+        }
+        .trace-box__label {
+            font-size: 11px;
+            color: var(--el-text-color-placeholder);
+            margin-bottom: 4px;
+            letter-spacing: 0.05em;
+        }
+        .exception-code__sub {
+            font-size: 14px;
+            color: var(--el-text-color-secondary);
+            font-weight: var(--el-font-weight-regular);
+            margin-left: var(--mtscos-spacing-sm);
+        }
+    </style>
+</head>
+<body class="exception-page">
+    {# ============ L3 设备外壳块(可选): 三端(admin/student/mobile)可覆盖此块注入顶部导航/侧边栏 #}
+    {% block device_chrome %}{% endblock %}
+
+    <div class="exception-wrap">
+        {# ============ mtscos-exception 异常页核心组件 (对照 mtscos_components.css §异常页) ============ #}
+        <div class="mtscos-exception mtscos-exception--{{ status }} mtscos-card mtscos-card--glass">
+            {# severity 标记 #}
+            <div class="mtscos-exception__status-tag severity--{{ severity }}">
+                <span>{{ icon }}</span>
+                <span>HTTP {{ status }} · {{ err_code }}</span>
+            </div>
+
+            {# 大号状态码 + 异常码副标题 (消费 --el-color-primary 渐变) #}
+            <div class="mtscos-exception__code">
+                {{ status }}
+                <span class="exception-code__sub">{{ err_code }}</span>
+            </div>
+
+            {# 标题 + 描述 (消费 mtscos-exception 组件样式) #}
+            <div class="mtscos-exception__title">{{ title }}</div>
+            <div class="mtscos-exception__description">{{ description }}</div>
+
+            {# 修复建议 (mtscos-exception__repair, 对照 contract.yaml §1 repair_suggestion) #}
+            {% if repair %}
+            <div class="mtscos-exception__repair">💡 {{ repair }}</div>
+            {% endif %}
+
+            {# ============ 操作按钮 (四维组合: mtscos-btn--{primary,secondary,round,default}) ============ #}
+            <div class="mtscos-exception__actions">
+                {% block exception_actions %}
+                <button type="button" class="mtscos-btn mtscos-btn--primary mtscos-btn--round" onclick="history.back()" aria-label="{{ t('auto.exception_base.x_27e0ca87', default='返回上一页') }}">
+                    ← 返回上一页
+                </button>
+                <a href="/" class="mtscos-btn mtscos-btn--secondary mtscos-btn--round" aria-label="{{ t('auto.exception_base.x_5a136705', default='返回首页') }}">
+                    🏠 返回首页
+                </a>
+                <button type="button" class="mtscos-btn mtscos-btn--default mtscos-btn--round" onclick="location.reload()" aria-label="{{ t('auto.exception_base.x_c938dc46', default='刷新当前页') }}">
+                    🔄 刷新重试
+                </button>
+                {% endblock %}
+            </div>
+
+            {# trace_id 审计追踪 (对照 contract.yaml §1 trace_id 字段) #}
+            {% set trace_id = trace_id if trace_id else (request.headers.get('X-Trace-Id') if request else '') %}
+            {% if trace_id %}
+            <div class="trace-box">
+                <div class="trace-box__label">{{ t('auto.exception_base.trace_id___x_22667eba', default='TRACE_ID · 运维审计') }}</div>
+                <code>{{ trace_id }}</code>
+            </div>
+            {% endif %}
+
+            {# 子类可追加自定义内容 #}
+            {% block extra_content %}{% endblock %}
+        </div>
+    </div>
+
+    {# ============ L3 页面底部块(可选): 三端可覆盖此块闭合外壳div或追加底部导航 ============ #}
+    {% block page_footer %}{% endblock %}
+
+    {# ============ L3 交互组件: 主题初始化 + Toast (纯原生JS零依赖) ============ #}
+    <script src="{{ url_for('static', filename='js/mtscos_components.js') }}"></script>
+    <script>
+        // 初始化明暗主题 (读取localStorage或session['theme'], 支持跟随系统)
+        try {
+            var themeFromFlask = {{ (session.get('theme') if session else '') | tojson | safe }};
+            if (themeFromFlask && MTSCOSTheme.VALID_THEMES.indexOf(themeFromFlask) !== -1) {
+                MTSCOSTheme.set(themeFromFlask);
+            } else {
+                MTSCOSTheme.init();
+            }
+        } catch (e) { MTSCOSTheme && MTSCOSTheme.init(); }
+    </script>
+</body>
+</html>

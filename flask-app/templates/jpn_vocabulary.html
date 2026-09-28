@@ -1,0 +1,165 @@
+{% extends "base_unified.html" %}
+{% block title %}語彙カード · Vocabulary · JLPT {{ level }}{% endblock %}
+{% block page_title %}Vocabulary · {{ level }}{% endblock %}
+
+{% block extra_head %}
+<style>
+:root { --jp-vermilion:#C8102E; --jp-vermilion-soft:rgba(200,16,46,.10);
+       --jp-indigo:#2F4F6F; --jp-indigo-soft:rgba(47,79,111,.10);
+       --jp-sumi:#2C2C2C; }
+.jp-vocab-toolbar { display:flex; gap:8px; margin-bottom:16px; align-items:center; }
+.jp-filter-btn { padding:5px 14px; border-radius:20px; border:1px solid var(--mtscos-border-light);
+    background:var(--mtscos-bg-card); font-size:12px; cursor:pointer; transition:all .15s;
+    color:var(--mtscos-text-secondary); font-weight:500; }
+.jp-filter-btn.active { background:var(--jp-indigo); color:#fff; border-color:var(--jp-indigo); }
+.jp-filter-btn:hover { border-color:var(--jp-indigo); color:var(--jp-indigo); }
+.jp-filter-btn.active:hover { color:#fff; }
+.jp-progress-chip { margin-left:auto; font-size:12px; color:var(--mtscos-text-tertiary);
+    padding:5px 14px; background:var(--jp-vermilion-soft); border-radius:20px; color:var(--jp-vermilion); font-weight:600; }
+.jp-vocab-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(240px,1fr)); gap:12px; }
+.jp-vocab-card {
+    background:var(--mtscos-bg-card); border:1px solid var(--mtscos-border-light);
+    border-radius:var(--mtscos-radius-lg); padding:16px; position:relative; overflow:hidden;
+    transition:transform .2s, box-shadow .2s, border-color .2s;
+    display:flex; flex-direction:column;
+}
+.jp-vocab-card:hover { transform:translateY(-3px); box-shadow:0 6px 20px rgba(0,0,0,.08); border-color:var(--jp-indigo); }
+.jp-vocab-card.mastered::before { content:""; position:absolute; top:0; right:0; width:0; height:0;
+    border-top:32px solid var(--jp-vermilion); border-left:32px solid transparent; }
+.jp-vocab-card.mastered::after { content:"✓"; position:absolute; top:4px; right:6px; color:#fff; font-size:10px; font-weight:700; z-index:1; }
+.jp-vocab-card.just-studied { animation:jp-pop .4s ease; }
+@keyframes jp-pop { 0%{transform:scale(1)} 40%{transform:scale(1.05);border-color:#2a9d3f} 100%{transform:scale(1)} }
+.jp-vc-word { font-family:"Yu Mincho","Noto Serif JP",serif; font-size:28px; font-weight:700; color:var(--jp-sumi); line-height:1; }
+.jp-vc-kana { font-size:14px; color:var(--jp-indigo); margin:4px 0 2px; font-weight:600; }
+.jp-vc-romanji { font-size:11px; color:var(--mtscos-text-tertiary); font-style:italic; }
+.jp-vc-meaning { font-size:13px; color:var(--mtscos-text-primary); margin-top:8px; line-height:1.5; }
+.jp-vc-pos { font-size:10px; color:var(--jp-vermilion); text-transform:uppercase; letter-spacing:1px; font-weight:600; }
+.jp-vc-actions { margin-top:12px; display:flex; gap:6px; }
+.jp-vc-btn { flex:1; padding:7px 10px; border-radius:6px; border:1px solid var(--mtscos-border-light);
+    background:#fff; font-size:12px; cursor:pointer; transition:all .15s; font-weight:600; }
+.jp-vc-btn.memorized { color:#2a9d3f; border-color:#2a9d3f; }
+.jp-vc-btn.memorized:hover { background:#2a9d3f; color:#fff; }
+.jp-vc-btn.need { color:var(--jp-vermilion); border-color:var(--jp-vermilion); }
+.jp-vc-btn.need:hover { background:var(--jp-vermilion); color:#fff; }
+.jp-vc-btn:disabled { opacity:.5; cursor:not-allowed; }
+.jp-vc-srs { margin-top:6px; font-size:10px; color:var(--mtscos-text-tertiary); text-align:center; }
+.jp-pagination { display:flex; gap:6px; justify-content:center; margin-top:24px; }
+.jp-pagination a { padding:6px 14px; border:1px solid var(--mtscos-border-light); border-radius:var(--mtscos-radius-md);
+    font-size:12px; color:var(--mtscos-text-secondary); text-decoration:none; transition:all .15s; }
+.jp-pagination a:hover { background:var(--jp-indigo-soft); color:var(--jp-indigo); }
+.jp-pagination .current { background:var(--jp-indigo); color:#fff; border-color:var(--jp-indigo); }
+.jp-empty { text-align:center; padding:60px 20px; color:var(--mtscos-text-tertiary); }
+.jp-empty-icon { font-size:48px; margin-bottom:12px; color:var(--jp-indigo); opacity:.3; }
+.jp-toast { position:fixed; top:20px; right:20px; padding:12px 20px; border-radius:8px;
+    color:#fff; font-size:13px; font-weight:600; z-index:9999; box-shadow:0 8px 24px rgba(0,0,0,.18);
+    transform:translateX(120%); transition:transform .3s ease; max-width:320px; }
+.jp-toast.show { transform:translateX(0); }
+.jp-toast.ok { background:#2a9d3f; }
+.jp-toast.err { background:var(--jp-vermilion); }
+.jp-toast.info { background:var(--jp-indigo); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div style="margin-bottom:20px;font-size:13px;color:var(--mtscos-text-tertiary)">
+    <a href="/japanese_page" style="color:var(--jp-indigo);text-decoration:none">{{ t('auto.jpn_vocabulary.__x_____a85766c6', default='← 日本語ポータル') }}</a>
+    <span style="margin:0 6px">›</span> 語彙カード
+    {% if level %}<span style="margin:0 6px">›</span> <strong style="color:var(--jp-vermilion)">{{ level }}</strong>{% endif %}
+</div>
+
+<div class="jp-vocab-toolbar">
+    {% for lv in levels %}
+    <a href="/japanese/vocabulary?level={{ lv }}" class="jp-filter-btn {% if level==lv %}active{% endif %}">{{ lv }}</a>
+    {% endfor %}
+    <span class="jp-progress-chip" id="mastered-chip">{{ mastered }} / {{ total }} 語マスター</span>
+</div>
+
+{% if words %}
+<div class="jp-vocab-grid">
+    {% for w in words %}
+    <div class="jp-vocab-card {% if w.is_mastered %}mastered{% endif %}" data-word-id="{{ w.word_id }}" data-level="{{ w.level }}">
+        <div class="jp-vc-pos">{{ w.pos or '—' }}</div>
+        <div class="jp-vc-word">{{ w.word }}</div>
+        <div class="jp-vc-kana">{{ w.kana or '' }}</div>
+        <div class="jp-vc-romanji">{{ w.romanji or '' }}</div>
+        <div class="jp-vc-meaning">{{ w.meaning_cn or '' }}{% if w.meaning_jp %} · <span style="font-family:'Yu Mincho',serif">{{ w.meaning_jp }}</span>{% endif %}</div>
+        <div class="jp-vc-actions">
+            <button class="jp-vc-btn memorized" onclick="event.stopPropagation(); studyWord('{{ w.word_id }}','{{ w.level }}',1,this)">{{ t('auto.jpn_vocabulary.x_____cb27cf3c', default='覚えた ✅') }}</button>
+            <button class="jp-vc-btn need" onclick="event.stopPropagation(); studyWord('{{ w.word_id }}','{{ w.level }}',0,this)">まだ ❌</button>
+        </div>
+        <div class="jp-vc-srs" id="srs-{{ w.word_id }}">{{ t('auto.jpn_vocabulary.___if_w_is_m_71d57a9c', default='{% if w.is_mastered %}マスター済 · 次回復習: 自動{% else %}未学習{% endif %}') }}</div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="jp-empty">
+    <div class="jp-empty-icon">📚</div>
+    <div>{{ t('auto.jpn_vocabulary.x_a6a48986', default='该级别暂无词汇') }}</div>
+</div>
+{% endif %}
+
+{% set total_pages = ((total|int + per_page|int - 1) / per_page|int) | int %}
+{% if total_pages > 1 %}
+<div class="jp-pagination">
+    {% for p in range(1, total_pages+1) %}
+    <a href="/japanese/vocabulary?level={{ level }}&page={{ p }}" class="{% if p==page %}current{% endif %}">{{ p }}</a>
+    {% endfor %}
+</div>
+{% endif %}
+
+<script>
+let _toastTimer = null;
+function jpToast(msg, kind='info') {
+    let t = document.getElementById('__jp_toast__');
+    if (!t) { t = document.createElement('div'); t.id='__jp_toast__'; t.className='jp-toast'; document.body.appendChild(t); }
+    t.className = 'jp-toast ' + kind + ' show';
+    t.innerText = msg;
+    clearTimeout(_toastTimer);
+    _toastTimer = setTimeout(()=> t.classList.remove('show'), 2400);
+}
+
+let _studiedCount = 0;
+function studyWord(wordId, level, isCorrect, btn) {
+    const card = btn.closest('.jp-vocab-card');
+    const sibling = btn.parentElement.querySelector('.jp-vc-btn:not([disabled])');
+    btn.disabled = true;
+    if (sibling) sibling.disabled = true;
+
+    fetch('/api/japanese/vocabulary/study', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': '{{ csrf_token }}' },
+        body: JSON.stringify({ word_id: wordId, level: level, is_correct: isCorrect })
+    })
+    .then(r => r.json())
+    .then(d => {
+        if (d.success) {
+            const g = d.data.srs_grade;
+            const mastered = g >= 5;
+            if (mastered && !card.classList.contains('mastered')) {
+                card.classList.add('mastered');
+                _studiedCount++;
+                const chip = document.getElementById('mastered-chip');
+                if (chip) chip.innerText = (parseInt(chip.innerText)||0) + ' 語学習中 · SRS Lv.' + g;
+            }
+            card.classList.add('just-studied');
+            setTimeout(()=> card.classList.remove('just-studied'), 500);
+            const srs = document.getElementById('srs-' + wordId);
+            if (srs) srs.innerText = mastered
+                ? '★ マスター済 SRS Lv.' + g
+                : 'SRS Lv.' + g + ' · 次回 ' + (d.data.next_review_at||'—').slice(5,16);
+            jpToast((isCorrect ? '覚えた！' : 'まだ ') + ' · SRS Lv.' + g, mastered ? 'ok' : (isCorrect ? 'info' : 'err'));
+        } else {
+            jpToast(d.error || '学習失敗', 'err');
+            btn.disabled = false;
+            if (sibling) sibling.disabled = false;
+        }
+    })
+    .catch(err => {
+        jpToast('网络错误: ' + err.message, 'err');
+        btn.disabled = false;
+        if (sibling) sibling.disabled = false;
+    });
+}
+</script>
+{% endblock %}

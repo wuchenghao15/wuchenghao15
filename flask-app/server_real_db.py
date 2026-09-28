@@ -3707,6 +3707,7 @@ _MT_HOTLINK_WHITELIST_PREFIXES = (
     '/static/', '/assets/', '/auth/', '/_ui/', '/api/auth/',
     '/api/health', '/api/system_version', '/api/system_logo',
     '/api/neuralhub/employee_distribution',
+    '/andromeda/',
     '/api/neuralhub/daemon_tick',
     '/api/neuralhub/edu_reform_check',
     '/api/neuralhub/knowledge_inventory',

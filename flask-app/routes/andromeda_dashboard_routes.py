@@ -124,8 +124,7 @@ def _live_daemons() -> set:
     except Exception:
         return set()
     alive = set()
-    for line in out.split('
-'):
+    for line in out.split('\n'):
         if '_runtime/auto_daemons/' in line and 'python' in line.lower():
             try:
                 name = line.split('_runtime/auto_daemons/')[1].split('.py')[0].strip()
@@ -592,8 +591,7 @@ def api_persona_chat():
         body = _json.loads(resp.read().decode('utf-8'))
         answer = body.get('message', {}).get('content', '')
     except Exception as ex:
-        answer = f'[Ollama 未就绪，降级固定回答]
-{persona.get("name","AI")} 说：关于"{question[:30]}..."，这是一个值得深思的问题。让我从{persona.get("domain","这个领域")}的角度来思考...'
+        answer = f'[Ollama 未就绪，降级固定回答]\n{persona.get("name","AI")} 说：关于"{question[:30]}..."，这是一个值得深思的问题。让我从{persona.get("domain","这个领域")}的角度来思考...'
     return jsonify({'code': 0, 'data': {'persona': persona.get('name'), 'answer': answer}})
 
 
@@ -636,8 +634,7 @@ def api_iceberg_health():
     try:
         out = _sp.check_output(['lsof','-i',':8888','-t'], stderr=_sp.DEVNULL, timeout=3).decode().strip()
         flask_alive = bool(out)
-        flask_pid = out.split('
-')[0] if out else None
+        flask_pid = out.split('\n')[0] if out else None
     except Exception: pass
 
     # 2. daemon 心跳（真实计算 age = 距今多少秒，>= interval×2 标红）
@@ -997,9 +994,7 @@ def api_knowledge_ask():
 
 回答要自然、像真人、带一点个人风格。"""
 
-    full_prompt = f"{system_prompt}
-
-我的问题: {question}"
+    full_prompt = f"{system_prompt}\n\n我的问题: {question}"
 
     # 调 Ollama
     answer = None

@@ -1,0 +1,129 @@
+{% extends "base_unified.html" %}
+{% block title %}読解 · Reading · JLPT {{ level }}{% endblock %}
+{% block page_title %}Dokkai · Reading {{ level }}{% endblock %}
+{% block extra_head %}
+<style>
+:root { --jp-vermilion:#C8102E; --jp-indigo:#2F4F6F; --jp-sumi:#2C2C2C; }
+.jp-toolbar { display:flex; gap:8px; margin-bottom:16px; align-items:center; flex-wrap:wrap; }
+.jp-filter-btn { padding:5px 14px; border-radius:20px; border:1px solid var(--mtscos-border-light);
+    background:var(--mtscos-bg-card); font-size:12px; cursor:pointer; color:var(--mtscos-text-secondary); font-weight:500; text-decoration:none; }
+.jp-filter-btn.active { background:var(--jp-indigo); color:#fff; border-color:var(--jp-indigo); }
+.jp-progress-chip { margin-left:auto; font-size:12px; color:var(--jp-indigo); padding:5px 14px;
+    background:rgba(47,79,111,.1); border-radius:20px; font-weight:600; }
+.jp-rd-item {
+    background:var(--mtscos-bg-card); border:1px solid var(--mtscos-border-light); border-radius:var(--mtscos-radius-lg);
+    padding:22px; margin-bottom:14px; cursor:pointer; transition:all .15s;
+}
+.jp-rd-item:hover { transform:translateY(-1px); box-shadow:0 4px 14px rgba(0,0,0,.08); border-color:var(--jp-indigo); }
+.jp-rd-title { font-family:"Yu Mincho",serif; font-size:17px; font-weight:700; color:var(--jp-sumi); margin-bottom:6px; }
+.jp-rd-meta { font-size:11px; color:var(--mtscos-text-tertiary); margin-bottom:10px; }
+.jp-rd-type { display:inline-block; font-size:10px; padding:2px 10px; border-radius:12px;
+    background:rgba(200,16,46,.1); color:var(--jp-vermilion); font-weight:600; margin-right:6px; }
+.jp-rd-content { font-family:"Yu Mincho","Noto Serif JP",serif; font-size:14px; line-height:1.9; color:var(--jp-sumi); margin-bottom:14px; white-space:pre-wrap; }
+.jp-rd-toggle { font-size:11px; color:var(--jp-indigo); cursor:pointer; font-weight:600; }
+.jp-rd-cn { font-size:12px; color:var(--mtscos-text-tertiary); line-height:1.7; padding:10px; background:rgba(47,79,111,.04); border-radius:6px; margin-bottom:12px; display:none; }
+.jp-rd-cn.show { display:block; }
+.jp-rd-qblock { margin-top:12px; padding-top:12px; border-top:1px dashed var(--mtscos-border-light); display:none; }
+.jp-rd-qblock.show { display:block; }
+.jp-rd-q { margin-bottom:14px; }
+.jp-rd-q-num { font-size:13px; font-weight:700; color:var(--jp-vermilion); margin-bottom:4px; }
+.jp-rd-q-text { font-size:14px; font-weight:600; margin-bottom:8px; }
+.jp-rd-opt { display:block; padding:8px 12px; border:1px solid var(--mtscos-border-light); border-radius:6px; margin-bottom:4px; font-size:13px; cursor:pointer; background:#fff; transition:all .1s; }
+.jp-rd-opt:hover { border-color:var(--jp-indigo); }
+.jp-rd-opt.correct { border-color:#2a9d3f; background:rgba(42,157,63,.08); color:#2a9d3f; font-weight:600; }
+.jp-rd-opt.wrong { border-color:var(--jp-vermilion); background:rgba(200,16,46,.08); color:var(--jp-vermilion); }
+.jp-rd-submit { padding:8px 22px; background:var(--jp-indigo); color:#fff; border:none; border-radius:6px; cursor:pointer; font-weight:700; font-size:12px; margin-top:10px; }
+.jp-rd-result { margin-top:10px; font-size:13px; font-weight:700; display:none; }
+.jp-rd-result.ok { color:#2a9d3f; } .jp-rd-result.bad { color:var(--jp-vermilion); }
+.jp-empty { text-align:center; padding:60px; color:var(--mtscos-text-tertiary); }
+</style>
+{% endblock %}
+{% block content %}
+<div style="margin-bottom:16px;font-size:13px;color:var(--mtscos-text-tertiary)">
+    <a href="/japanese_page" style="color:var(--jp-indigo);text-decoration:none">{{ t('auto.jpn_reading.__x_____a85766c6', default='← 日本語ポータル') }}</a>
+    <span style="margin:0 6px">›</span> 読解練習
+</div>
+<div class="jp-toolbar">
+    {% for lv in levels %}
+    <a href="/japanese/reading?level={{ lv }}" class="jp-filter-btn {% if level==lv %}active{% endif %}">{{ lv }}</a>
+    {% endfor %}
+    <span class="jp-progress-chip">{{ done }} / {{ total }} 完了</span>
+</div>
+
+{% if items %}
+{% for it in items %}
+<div class="jp-rd-item" data-reading-id="{{ it.reading_id }}" data-level="{{ it.level }}">
+    <div class="jp-rd-title">{{ it.title }}</div>
+    <div class="jp-rd-meta">
+        <span class="jp-rd-type">{{ it.reading_type }}</span>
+        {{ it.level }} · {{ it.word_count }}字 · {{ it.questions|length }}問
+    </div>
+    <div class="jp-rd-content">{{ it.content_jp }}</div>
+    <div style="margin-bottom:6px">
+        <span class="jp-rd-toggle" onclick="this.nextElementSibling.classList.toggle('show')">{{ t('auto.jpn_reading.__x_x_7110c295', default='🔄 中国語訳を表示') }}</span>
+        <span class="jp-rd-toggle" onclick="this.parentElement.parentElement.querySelector('.jp-rd-qblock').classList.toggle('show')" style="margin-left:12px">📝 質問を出す ({{ it.questions|length }}問)</span>
+    </div>
+    <div class="jp-rd-cn">{{ it.content_cn }}</div>
+    {% if it.questions %}
+    <div class="jp-rd-qblock">
+    {% for q in it.questions %}
+    <div class="jp-rd-q" data-ans="{{ q.ans }}">
+        <div class="jp-rd-q-num">Q{{ loop.index }}.</div>
+        <div class="jp-rd-q-text">{{ q.q }}</div>
+        {% for opt in q.options %}
+        <div class="jp-rd-opt" data-i="{{ loop.index0 }}" onclick="pickOpt(this)">{{ loop.index }}. {{ opt }}</div>
+        {% endfor %}
+    </div>
+    {% endfor %}
+    <button class="jp-rd-submit" onclick="checkRd(this.parentElement)">{{ t('auto.jpn_reading.x_x___daeec07c', default='答え合わせ') }}</button>
+    <div class="jp-rd-result"></div>
+    </div>
+    {% endif %}
+</div>
+{% endfor %}
+{% else %}
+<div class="jp-empty">{{ t('auto.jpn_reading.x__x_______11429d45', default='該当する読解文章がありません') }}</div>
+{% endif %}
+
+<script>
+function pickOpt(el){
+    const parent = el.parentElement;
+    parent.querySelectorAll('.jp-rd-opt').forEach(o=>o.style.borderLeft='none');
+    el.style.borderLeft='3px solid var(--jp-indigo)';
+    parent.dataset.picked = el.dataset.i;
+}
+function checkRd(block){
+    let correct=0, total=0;
+    const answers = [];
+    block.querySelectorAll('.jp-rd-q').forEach(q=>{
+        total++;
+        const ans = parseInt(q.dataset.ans);
+        const picked = q.dataset.picked !== undefined ? parseInt(q.dataset.picked) : -1;
+        q.querySelectorAll('.jp-rd-opt').forEach(o=>{
+            o.classList.remove('correct','wrong');
+            if (parseInt(o.dataset.i) === ans) o.classList.add('correct');
+            else if (picked === parseInt(o.dataset.i) && picked !== ans) o.classList.add('wrong');
+        });
+        const isOk = (picked === ans);
+        if (isOk) correct++;
+        answers.push({question_index: total-1, correct_answer: ans, user_answer: picked, is_correct: isOk});
+    });
+    const pct = Math.round(correct/total*100);
+    const r = block.querySelector('.jp-rd-result');
+    r.className = 'jp-rd-result show ' + (pct>=60?'ok':'bad');
+    r.innerText = `${correct}/${total} (${pct}%) ${pct>=80?'Excellent!':''}`;
+    block.querySelector('.jp-rd-submit').disabled = true;
+    // 后端落库 jp_reading_records
+    const itemCard = block.closest('.jp-rd-item');
+    const rid = itemCard.dataset.readingId;
+    const lv  = itemCard.dataset.level;
+    if (rid) {
+        fetch('/api/japanese/reading/submit', {
+            method:'POST', credentials:'include',
+            headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({ reading_id: rid, level: lv, answers: answers, duration_sec: 0 })
+        }).catch(()=>{});
+    }
+}
+</script>
+{% endblock %}

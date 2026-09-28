@@ -1,0 +1,264 @@
+{# ======================================================================
+ * 冰山系统 (Iceberg System) · Jinja 宏 v1.0
+ * ======================================================================
+ * 用法（任何模板里）:
+ *   {% from 'macros/iceberg.html' import iceberg_shell, ice_layer, ice_peak_card, ice_seal, ice_cloud %}
+ *   {{ iceberg_shell(title='冰山系统') }}
+ *     {{ ice_layer('peak', title='雪峰', subtitle='Peak') }}
+ *       {{ ice_peak_card(label='活跃 AI 员工', value='10') }}
+ *     {% endice_layer %}
+ *     {{ ice_layer('spectrum', title='光影') }}
+ *       ...图谱 SVG...
+ *     {% endice_layer %}
+ *     {{ ice_layer('basement', title='渊底', collapsible=true) }}
+ *       ...DB 表格...
+ *     {% endice_layer %}
+ *   {% endiceberg_shell %}
+ * ======================================================================
+ *
+ * ═══════════════════════════════════════════════════
+ * 冰山三层命名 (苏轼 子瞻 · 赤壁赋):
+ *   {{ ice_layer('peak', '赤壁', 'RedCliff') }}        ← Peak
+ *   {{ ice_layer('spectrum', '承天寺', 'Chengtian') }} ← Spectrum
+ *   {{ ice_layer('basement', '东坡', 'Dongpo') }}       ← Basement
+ * ───────────────────────────────────────────────────
+ * 拗相公 Tab (王安石 介甫): 收集系统缺陷, 仅 SA 可见
+ * ═══════════════════════════════════════════════════
+ * ====================================================================== #}
+
+{# ─────────────────────────────────────────────────────────
+ * 冰山全局 CSS + Fonts 注入 (在 <head> 里调用一次)
+ * ───────────────────────────────────────────────────────── #}
+{% macro iceberg_head() %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/iceberg.css') }}">
+  <!-- 思源宋体 (中文标题) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Source+Han+Serif+SC:wght@400;700;900&family=Inter:wght@400;500;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+{% endmacro %}
+
+
+{# ─────────────────────────────────────────────────────────
+ * 印章装饰 (右下角)
+ * ───────────────────────────────────────────────────────── #}
+{% macro ice_seal(text='冰山') %}
+  <span class="ice-seal corner" title="冰山系统 · MTSCOS">
+    {{ text }}
+  </span>
+{% endmacro %}
+
+
+{# ─────────────────────────────────────────────────────────
+ * 云飘动画装饰 (雪峰层背景)
+ * ───────────────────────────────────────────────────────── #}
+{% macro ice_cloud() %}
+  <div class="ice-cloud cloud-1"></div>
+  <div class="ice-cloud cloud-2"></div>
+  <div class="ice-cloud cloud-3"></div>
+{% endmacro %}
+
+
+{# ─────────────────────────────────────────────────────────
+ * KPI 卡片 (雪峰层)
+ * ───────────────────────────────────────────────────────── #}
+{% macro ice_peak_card(label, value, sub=None, trend=None) %}
+  <div class="ice-card">
+    <div class="ice-kpi-value">{{ value }}</div>
+    <div class="ice-kpi-label">{{ label }}</div>
+    {% if sub %}
+      <div style="font-size:11px;color:var(--ice-ink-muted);margin-top:4px;">{{ sub }}</div>
+    {% endif %}
+  </div>
+{% endmacro %}
+
+
+{# ─────────────────────────────────────────────────────────
+ * 乔布斯极简 Peak 单总分 (Think Different)
+ * ───────────────────────────────────────────────────────── #}
+{% macro ice_peak_score(score, label='仙女座健康度', subtitle='Peak Score', cycle_count=none, reinforced=none, derived=none) %}
+<div class="iceberg-peak-score">
+  <div class="ice-score-wrap">
+    <div class="ice-score-value">{{ score }}</div>
+    <div class="ice-score-unit">/ 100</div>
+  </div>
+  <div class="ice-score-label">{{ label }}</div>
+  {% if subtitle %}<div class="ice-score-subtitle">{{ subtitle }}</div>{% endif %}
+  <div class="ice-score-bar-wrap">
+    <div class="ice-score-bar" style="width: var(--style-fix-30c17b7-0, inherit)%;
+      var(--style-fix-30c17b7-1, inherit)background: linear-gradient(90deg, #27ae60, #2ecc71);
+      var(--style-fix-30c17b7-2, inherit)background: linear-gradient(90deg, #f39c12, #e67e22);
+      var(--style-fix-30c17b7-3, inherit)background: linear-gradient(90deg, #c0392b, #e74c3c);var(--style-fix-30c17b7-4, inherit)"></div>
+  </div>
+  <!-- 3 个迷你指标 (演化 cycle / reinforced / derived) -->
+  <div class="ice-score-meta">
+    <span>🔄 cycle {{ cycle_count | default('—') }}</span>
+    <span>⚡ reinforced {{ reinforced | default('—') }}</span>
+    <span>🧠 derived {{ derived | default('—') }}</span>
+  </div>
+</div>
+{% endmacro %}
+
+
+{# ─────────────────────────────────────────────────────────
+ * 层级外壳 (三层布局)
+ * ───────────────────────────────────────────────────────── #}
+{% macro ice_layer(layer_name, title='', subtitle='', collapsible=false) %}
+  {% set layer_class = 'iceberg-' + layer_name %}
+  {% set collapsible_class = ' collapsed' if collapsible else '' %}
+  <section class="{{ layer_class }}{{ collapsible_class }}" data-ice-layer="{{ layer_name }}">
+
+    {# 雪峰层装饰: 云飘 + 印章 #}
+    {% if layer_name == 'peak' %}
+      {{ ice_cloud() }}
+    {% endif %}
+
+    {# 标题 #}
+    {% if title %}
+      <h2 class="ice-layer-title">
+        {{ title }}
+        {% if subtitle %}
+          <span class="ice-layer-subtitle">{{ subtitle }}</span>
+        {% endif %}
+      </h2>
+    {% endif %}
+
+    {# Peak 层: 自动渲染极简总分 (乔布斯方案) #}
+    {% if layer_name == 'peak' %}
+      {{ ice_peak_score(
+          peak_score | default(87),
+          label=peak_label | default('仙女座健康度'),
+          subtitle=peak_subtitle | default('Peak Score'),
+          cycle_count=peak_cycle_count | default(none),
+          reinforced=peak_reinforced | default(none),
+          derived=peak_derived | default(none)
+      ) }}
+    {% endif %}
+
+    {# Tab 折叠按钮 (basement) #}
+    {% if collapsible %}
+      <div class="ice-collapsible-toggle" onclick="document.querySelector('.{{ layer_class }}').classList.toggle('collapsed')">
+        ▶ {{ title }} (点击展开/折叠)
+      </div>
+
+      {# Basement 内置 Tab 区域 + 拗相公 #}
+      <div class="ice-tabs" role="tablist">
+        <button class="ice-tab active" data-tab="ice-tab-db">DB 浏览</button>
+        <button class="ice-tab" data-tab="ice-tab-evolve">演化日志</button>
+        <button class="ice-tab" data-tab="ice-tab-monitor">系统监控</button>
+        <button class="ice-tab aoxiang" data-tab="ice-tab-aoxiang">拗相公</button>
+      </div>
+    {% endif %}
+
+    {# 内容区 #}
+    <div class="ice-layer-content">
+      {{ caller() }}
+
+      {# 拗相公 Tab 占位 #}
+      {% if collapsible %}
+        <div id="ice-tab-db" class="ice-tab-content active"></div>
+        <div id="ice-tab-evolve" class="ice-tab-content"></div>
+        <div id="ice-tab-monitor" class="ice-tab-content"></div>
+        <div id="ice-tab-aoxiang" class="ice-tab-content">
+          <p style="opacity:0.6">🔴 此 Tab 仅对拗相公 (王安石) + SA 可见。收集冰山系统的缺陷、矛盾、冗余。</p>
+        </div>
+      {% endif %}
+    </div>
+
+    {# 盖章 #}
+    {{ ice_seal() }}
+
+  </section>
+{% endmacro %}
+
+
+{# ─────────────────────────────────────────────────────────
+ * 完整冰山外壳 (包含三层骨架)
+ * ───────────────────────────────────────────────────────── #}
+{% macro iceberg_shell(page_title='冰山系统 · MTSCOS') %}
+  <!DOCTYPE html>
+  <html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ page_title }}</title>
+    {{ iceberg_head() }}
+  
+<style data-inspection-auto-fix="inline-style-template">
+:root {
+    --style-fix-30c17b7-0: inherit;
+    --style-fix-30c17b7-1: inherit;
+    --style-fix-30c17b7-2: inherit;
+    --style-fix-30c17b7-3: inherit;
+    --style-fix-30c17b7-4: inherit;
+}
+/* -------- AI 自动修复：status → background 颜色（消除内联模板语法 IDE 红线） -------- */
+.eyebrow-dot { transition: background-color .2s ease; border-radius: 9999px; }
+</style>
+</head>
+  <body>
+    <main class="iceberg-root iceberg-shell iceberg-veil">
+      {{ caller() }}
+
+      <!-- 西施面纱模式 · hover 渐进展开 -->
+      <div class="ice-veil veil-layer-1" title="面纱层 1: 极简（默认只露 Peak）"></div>
+      <div class="ice-veil veil-layer-2" title="面纱层 2: 展 Spectrum（停留 3 秒）"></div>
+      <div class="ice-veil veil-layer-3" title="面纱层 3: 展 Basement（停留 10 秒）"></div>
+    </main>
+
+<script>
+(function() {
+  var shell = document.querySelector('.iceberg-veil');
+  if (!shell) return;
+  
+  var spectrumTimer, basementTimer;
+  var isPermanentBasement = false;
+  
+  // 鼠标进入 → 启动计时器
+  shell.addEventListener('mouseenter', function() {
+    if (isPermanentBasement) return;
+    spectrumTimer = setTimeout(function() {
+      shell.classList.add('veil-reveal-spectrum');
+      // 启动 basement 倒计时
+      basementTimer = setTimeout(function() {
+        shell.classList.add('veil-reveal-basement');
+      }, 7000); // 3s + 7s = 10s
+    }, 3000);
+  });
+  
+  // 鼠标离开 → 清除计时器 (已揭示的保持)
+  shell.addEventListener('mouseleave', function() {
+    clearTimeout(spectrumTimer);
+    clearTimeout(basementTimer);
+  });
+  
+  // 点击 Basement 区域 → 永久展开
+  shell.querySelector('.ice-layer-basement')?.addEventListener('click', function() {
+    isPermanentBasement = true;
+    shell.classList.add('veil-reveal-spectrum', 'veil-reveal-basement');
+  });
+  
+  // 右下角控制面板 (西施方案)
+  var controls = document.createElement('div');
+  controls.className = 'ice-veil-controls';
+  controls.innerHTML = '<button class="ice-veil-btn" data-veil="peak">雪峰 Only</button>' +
+                       '<button class="ice-veil-btn" data-veil="spectrum">+ 光影</button>' +
+                       '<button class="ice-veil-btn" data-veil="basement">+ 渊底</button>';
+  document.body.appendChild(controls);
+  
+  controls.querySelectorAll('.ice-veil-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var mode = btn.dataset.veil;
+      shell.classList.remove('veil-reveal-spectrum', 'veil-reveal-basement');
+      if (mode === 'spectrum' || mode === 'basement') shell.classList.add('veil-reveal-spectrum');
+      if (mode === 'basement') { shell.classList.add('veil-reveal-basement'); isPermanentBasement = true; }
+      
+      // 更新按钮 active 状态
+      controls.querySelectorAll('.ice-veil-btn').forEach(function(b) { b.classList.remove('active'); });
+      btn.classList.add('active');
+    });
+  });
+})();
+</script>
+  </body>
+  </html>
+{% endmacro %}

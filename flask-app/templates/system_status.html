@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{{ t('auto.system_status.x___mtscos_a_8baee6b9', default='系统状态面板 · MTSCOS AI') }}</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, "Helvetica Neue", Arial, "PingFang SC", sans-serif;
+         background: #f5f7fa; color: #2c3e50; min-height: 100vh; padding: 24px; }
+  .wrap { max-width: 1100px; margin: 0 auto; }
+  h1 { font-size: 22px; margin-bottom: 4px; }
+  .sub { color: #7f8c8d; font-size: 13px; margin-bottom: 24px; }
+  .hero { background: #fff; border-radius: 10px; padding: 20px 24px;
+          box-shadow: 0 2px 8px rgba(0,0,0,.06); margin-bottom: 20px;
+          display: flex; justify-content: space-between; align-items: center; }
+  .badge { padding: 6px 14px; border-radius: 20px; font-size: 13px; font-weight: 600; }
+  .badge.healthy  { background: #e8f8ef; color: #27ae60; }
+  .badge.degraded { background: #fef5e7; color: #d68910; }
+  .badge.critical { background: #fdecea; color: #c0392b; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 14px; }
+  .card { background: #fff; border-radius: 10px; padding: 18px 20px;
+          box-shadow: 0 2px 8px rgba(0,0,0,.06); }
+  .card h3 { font-size: 14px; color: #7f8c8d; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+  .dot.healthy  { background: #27ae60; }
+  .dot.degraded { background: #f39c12; }
+  .dot.critical { background: #c0392b; }
+  .dot.unknown  { background: #bdc3c7; }
+  .stat { display: flex; justify-content: space-between; font-size: 13px; padding: 3px 0; }
+  .stat .k { color: #7f8c8d; }
+  .stat .v { font-weight: 600; color: #2c3e50; }
+  footer { margin-top: 32px; text-align: center; color: #95a5a6; font-size: 12px; }
+  footer a { color: #3498db; text-decoration: none; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>{{ t('auto.system_status.___x_08b1532d', default='🖥️ 系统状态面板') }}</h1>
+  <p class="sub">{{ t('auto.system_status.v22_36_0___p_77a75fd4', default='v22.36.0 · Phase 7 局部 Factory 架构验证模块') }}</p>
+
+  <div class="hero">
+    <div>
+      <strong>{{ health.system_version or 'unknown' }}</strong>
+      <span style="color:#7f8c8d;margin-left:10px">容器 {{ health.container_version or '-' }}</span>
+      <span style="color:#7f8c8d;margin-left:10px">规则 {{ health.rules_version or '-' }}</span>
+    </div>
+    <span class="badge {{ overall_status.lower() }}">{{ overall_status }}</span>
+  </div>
+
+  {% set subs = subsystems or {} %}
+  {% if subs %}
+  <div class="grid">
+    {% for name, sub in subs.items() %}
+    <div class="card">
+      <h3>
+        <span class="dot {{ sub.get('status','unknown')|lower }}"></span>
+        {{ name|replace('_',' ')|title }}
+      </h3>
+      {% if sub is mapping %}
+        {% for k, v in sub.items() %}
+          {% if k != 'status' %}
+          <div class="stat"><span class="k">{{ k }}</span><span class="v">{{ v }}</span></div>
+          {% endif %}
+        {% endfor %}
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div style="background:#fff;border-radius:10px;padding:32px;text-align:center;color:#95a5a6">
+    <p>{{ t('auto.system_status.x____aggrega_c4050a00', default='子系统数据待填充 · _aggregate_system_health() 返回了空 subsystems') }}</p>
+  </div>
+  {% endif %}
+
+  <footer>
+    <a href="/index">{{ t('auto.system_status.__x_bfa6f584', default='← 返回首页') }}</a> · 生成于 {{ timestamp }} · 版本 {{ version }}
+  </footer>
+</div>
+</body>
+</html>

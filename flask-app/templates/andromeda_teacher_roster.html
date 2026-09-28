@@ -1,0 +1,448 @@
+
+<style data-inspection-auto-fix="inline-style-template">
+:root {
+    --style-fix-f1de7eb-0: inherit;
+    --style-fix-f1de7eb-1: inherit;
+    --style-fix-f1de7eb-2: inherit;
+    --style-fix-f1de7eb-3: inherit;
+    --style-fix-f1de7eb-4: inherit;
+    --style-fix-7130f10-0: inherit;
+    --style-fix-7130f10-1: inherit;
+    --style-fix-25d9175-0: inherit;
+    --style-fix-25d9175-1: inherit;
+    --style-fix-25d9175-2: inherit;
+}
+/* -------- AI 自动修复：status → background 颜色（消除内联模板语法 IDE 红线） -------- */
+.eyebrow-dot { transition: background-color .2s ease; border-radius: 9999px; }
+</style>
+
+<style data-inspection-auto-fix="inline-style-template">
+:root {
+    --style-fix-6f72196-0: inherit;
+    --style-fix-bf964d0-0: inherit;
+}
+/* -------- AI 自动修复：status → background 颜色（消除内联模板语法 IDE 红线） -------- */
+.eyebrow-dot { transition: background-color .2s ease; border-radius: 9999px; }
+</style>
+{% extends "base_unified.html" %}
+{% block title %}仙⼥座 {{ t('auto.andromeda_teacher_roster.ai_x_e9827c55', default='AI 教师') }}管理 · Andromeda Teacher Roster{% endblock %}
+{% block page_title %}仙⼥座 · AI 教師管理システム{% endblock %}
+{% block extra_head %}
+<style>
+:root { --jp-vermilion:#C8102E; --jp-indigo:#2F4F6F; --jp-sumi:#2C2C2C; --andromeda-purple:#6B4EFF; --andromeda-gold:#F5B041; }
+.andr-wrap { max-width:1400px; margin:0 auto; padding:20px; }
+.andr-hero { background:linear-gradient(135deg, var(--andromeda-purple), var(--jp-indigo));
+    color:#fff; border-radius:var(--mtscos-radius-lg); padding:24px 30px; margin-bottom:20px; position:relative; overflow:hidden; }
+.andr-hero::after { content:'✨'; position:absolute; right:20px; bottom:10px; font-size:80px; opacity:.2; }
+.andr-hero h1 { margin:0 0 4px; font-size:22px; font-family:"Yu Mincho",serif; }
+.andr-hero .sub { font-size:12px; opacity:.85; }
+.andr-stats { display:flex; gap:12px; margin-top:16px; flex-wrap:wrap; }
+.andr-stat { background:rgba(255,255,255,.15); border-radius:10px; padding:10px 16px; min-width:90px; }
+.andr-stat .num { font-size:24px; font-weight:900; font-family:"Courier New",monospace; }
+.andr-stat .lbl { font-size:10px; opacity:.85; font-weight:600; text-transform:uppercase; letter-spacing:1px; }
+
+.andr-filter { background:var(--mtscos-bg-card); border-radius:var(--mtscos-radius-lg); padding:16px 20px; margin-bottom:16px; border:1px solid var(--mtscos-border-light); display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+.andr-filter input, .andr-filter select { padding:6px 10px; border:1px solid var(--mtscos-border-light); border-radius:6px; font-size:12px; background:#fff; }
+.andr-filter input[type=text] { flex:1; min-width:160px; }
+.andr-filter button { padding:7px 18px; background:var(--andromeda-purple); color:#fff; border:none; border-radius:6px; cursor:pointer; font-size:12px; font-weight:700; }
+.andr-filter button.ghost { background:transparent; color:var(--mtscos-text-tertiary); border:1px solid var(--mtscos-border-light); }
+
+.andr-chips { display:flex; gap:8px; margin-bottom:8px; flex-wrap:wrap; }
+.andr-chip { padding:6px 14px; border-radius:16px; font-size:11px; font-weight:600; cursor:pointer; border:1px solid var(--mtscos-border-light); background:var(--mtscos-bg-card); color:var(--mtscos-text-secondary); text-decoration:none; display:inline-flex; align-items:center; gap:6px; transition:all .15s; }
+.andr-chip.active { background:var(--andromeda-purple); color:#fff; border-color:var(--andromeda-purple); box-shadow:0 2px 8px rgba(107,78,255,.3); }
+.andr-chip .c { font-weight:400; opacity:.7; margin-left:2px; font-size:10px; }
+.andr-chip.active .c { opacity:.9; }
+.andr-chip .chip-label { white-space:nowrap; }
+.andr-chip .chip-icon { display:flex; align-items:center; filter: drop-shadow(0 1px 2px rgba(0,0,0,.15)); }
+.andr-chip .chip-icon svg { width:22px; height:22px; }
+
+/* --- 领域 chip (带动态调色板) --- */
+.andr-chip.andr-chip-domain {
+    border-left:3px solid var(--pal-primary);
+    background: linear-gradient(135deg, var(--pal-accent) 0%, transparent 55%), var(--mtscos-bg-card);
+}
+.andr-chip.andr-chip-domain .chip-codename {
+    font-size:9px; font-weight:800; color:var(--pal-primary); letter-spacing:.5px;
+    padding:1px 6px; border-radius:8px;
+    background: linear-gradient(90deg, var(--pal-secondary), var(--pal-accent));
+    color:var(--pal-primary);
+}
+.andr-chip.andr-chip-domain:hover {
+    transform:translateY(-1px);
+    box-shadow:0 4px 14px rgba(0,0,0,.1);
+}
+.andr-chip.andr-chip-domain.active {
+    border-left-color: var(--pal-gfrom);
+    border-color: var(--pal-gfrom);
+    background: linear-gradient(135deg, var(--pal-gfrom), var(--pal-gto));
+    color:#fff;
+}
+.andr-chip.andr-chip-domain.active .chip-codename {
+    background:rgba(255,255,255,.28); color:#fff;
+}
+.andr-chip.andr-chip-domain.active .chip-icon svg {
+    filter: brightness(0) invert(1);
+}
+
+.andr-group-title { font-size:11px; font-weight:700; color:var(--mtscos-text-tertiary); text-transform:uppercase; letter-spacing:1px; margin:14px 0 6px; padding-left:2px; }
+
+.andr-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(220px,1fr)); gap:14px; }
+.andr-card { background:var(--mtscos-bg-card); border:1px solid var(--mtscos-border-light); border-radius:var(--mtscos-radius-lg);
+    padding:0; transition:all .2s; position:relative; cursor:pointer; overflow:hidden; }
+.andr-card-grad { position:absolute; top:0; left:0; right:0; height:4px; border-radius:var(--mtscos-radius-lg) var(--mtscos-radius-lg) 0 0; }
+.andr-card-inner { padding:16px; }
+.andr-card:hover { transform:translateY(-3px); box-shadow:0 8px 24px rgba(0,0,0,.15); }
+.andr-head-row { display:flex; align-items:center; justify-content:space-between; margin-bottom:6px; }
+.andr-card .avatar { font-size:42px; line-height:1; }
+.andr-card-icon { display:flex; align-items:center; }
+.andr-card-icon svg { width:32px; height:32px; }
+.andr-card .name { font-family:"Yu Mincho",serif; font-size:16px; font-weight:700; color:var(--jp-sumi); }
+.andr-card .kanji { font-size:11px; color:var(--mtscos-text-tertiary); margin-bottom:4px; }
+.andr-codename { font-size:10px; font-weight:800; letter-spacing:.3px;
+    padding:2px 7px; border-radius:8px; margin-bottom:6px; display:inline-block; }
+.andr-card .subj { font-size:12px; color:var(--jp-indigo); font-weight:600; }
+.andr-card .subj-en { font-size:10px; color:var(--mtscos-text-tertiary); margin-bottom:10px; }
+.andr-tags { display:flex; gap:4px; flex-wrap:wrap; margin-bottom:8px; }
+.andr-tag { font-size:9px; padding:2px 7px; border-radius:10px; background:rgba(107,78,255,.1); color:var(--andromeda-purple); font-weight:600; }
+.andr-tag.male   { background:rgba(47,79,111,.12); color:var(--jp-indigo); }
+.andr-tag.female { background:rgba(200,16,46,.1); color:var(--jp-vermilion); }
+.andr-tag.region { background:rgba(245,176,65,.15); color:#9A7A1F; }
+.andr-tag.role   { background:rgba(107,78,255,.12); color:var(--andromeda-purple); }
+.andr-tag.pers   { background:rgba(42,157,63,.12); color:#2a9d3f; }
+.andr-foot { display:flex; justify-content:space-between; align-items:center; border-top:1px solid var(--mtscos-border-light); padding-top:8px; margin-top:8px; }
+.andr-foot .mgr { font-size:9px; color:var(--andromeda-purple); font-weight:600; }
+.andr-foot .perf { font-size:11px; color:var(--jp-indigo); font-weight:700; }
+.andr-empty { text-align:center; padding:60px; color:var(--mtscos-text-tertiary); background:var(--mtscos-bg-card); border-radius:var(--mtscos-radius-lg); }
+
+.andr-legend { font-size:10px; color:var(--mtscos-text-tertiary); margin:6px 0 16px; display:flex; gap:16px; flex-wrap:wrap; }
+.andr-legend span::before { content:''; display:inline-block; width:12px; height:3px; border-radius:2px; margin-right:4px; vertical-align:middle; }
+.andr-legend .l-teacher::before { background:var(--jp-indigo); }
+.andr-legend .l-head::before { background:var(--andromeda-gold); }
+.andr-legend .l-advisor::before { background:var(--jp-vermilion); }
+
+/* ===== 详情弹窗 ===== */
+.andr-modal-mask { position:fixed; inset:0; background:rgba(20,16,40,.55); backdrop-filter:blur(4px);
+    z-index:9999; display:none; align-items:center; justify-content:center; padding:20px; }
+.andr-modal-mask.open { display:flex; animation:andrFadeIn .2s ease; }
+@keyframes andrFadeIn { from{opacity:0} to{opacity:1} }
+
+.andr-modal { background:var(--mtscos-bg-card,#fff); border-radius:18px; max-width:580px; width:100%; max-height:88vh;
+    overflow:auto; border-top:4px solid var(--andromeda-purple); box-shadow:0 24px 64px rgba(0,0,0,.25);
+    position:relative; animation:andrSlideUp .25s ease; }
+@keyframes andrSlideUp { from{transform:translateY(16px);opacity:0} to{transform:translateY(0);opacity:1} }
+.andr-modal-head { padding:22px 26px 16px; display:flex; gap:18px; align-items:flex-start;
+    background:linear-gradient(135deg, rgba(107,78,255,.08), rgba(47,79,111,.06)); border-radius:18px 18px 0 0; position:sticky; top:0; }
+.andr-modal-head .avatar { font-size:64px; line-height:1; }
+.andr-modal-head .nm { font-family:"Yu Mincho",serif; font-size:22px; font-weight:700; color:var(--jp-sumi,#2C2C2C); }
+.andr-modal-head .kj { font-size:12px; color:var(--mtscos-text-tertiary,#888); margin-bottom:4px; }
+.andr-modal-head .sj { font-size:13px; color:var(--jp-indigo,#2F4F6F); font-weight:700; }
+.andr-modal-head .sj-en { font-size:11px; color:var(--mtscos-text-tertiary); }
+.andr-modal-close { position:absolute; top:14px; right:16px; width:30px; height:30px; border-radius:50%;
+    background:rgba(0,0,0,.08); border:none; cursor:pointer; font-size:15px; color:#555; display:flex; align-items:center; justify-content:center; }
+.andr-modal-close:hover { background:rgba(0,0,0,.15); }
+
+.andr-modal-body { padding:8px 26px 26px; }
+.andr-section { margin-top:18px; }
+.andr-section h4 { font-size:11px; font-weight:800; letter-spacing:1px; text-transform:uppercase;
+    color:var(--andromeda-purple); margin:0 0 8px; padding-bottom:4px; border-bottom:1px dashed var(--mtscos-border-light,#e5e5e5); }
+.andr-kv { display:grid; grid-template-columns:auto 1fr; gap:6px 14px; font-size:12px; }
+.andr-kv .k { color:var(--mtscos-text-tertiary,#888); font-weight:600; white-space:nowrap; }
+.andr-kv .v { color:var(--jp-sumi,#2C2C2C); font-weight:500; word-break:break-all; }
+.andr-desc { font-size:12px; color:var(--jp-sumi); line-height:1.7; background:rgba(107,78,255,.04);
+    border-left:3px solid var(--andromeda-purple); padding:10px 14px; border-radius:6px; margin-top:6px; }
+.andr-skills { display:flex; flex-wrap:wrap; gap:6px; }
+.andr-skill-chip { font-size:11px; padding:3px 10px; border-radius:12px; background:rgba(245,176,65,.15); color:#9A7A1F; font-weight:600; }
+.andr-style-box { font-size:12px; color:var(--jp-sumi); background:rgba(47,79,111,.05); padding:10px 14px; border-radius:6px; line-height:1.6; }
+.andr-metrics { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; }
+.andr-metric { background:rgba(107,78,255,.06); border-radius:10px; padding:10px; text-align:center; }
+.andr-metric .n { font-size:18px; font-weight:900; font-family:"Courier New",monospace; color:var(--andromeda-purple); }
+.andr-metric .l { font-size:9px; color:var(--mtscos-text-tertiary); font-weight:600; text-transform:uppercase; letter-spacing:.5px; margin-top:2px; }
+.andr-modal .loader { text-align:center; padding:40px; color:var(--mtscos-text-tertiary); }
+.andr-badge-row { display:flex; flex-wrap:wrap; gap:6px; margin-top:10px; }
+.andr-badge { font-size:10px; padding:3px 10px; border-radius:10px; font-weight:600; background:rgba(47,79,111,.1); color:var(--jp-indigo); }
+.andr-badge.male   { background:rgba(47,79,111,.15); color:var(--jp-indigo); }
+.andr-badge.female { background:rgba(200,16,46,.12); color:var(--jp-vermilion); }
+.andr-badge.role   { background:rgba(107,78,255,.12); color:var(--andromeda-purple); }
+.andr-badge.region { background:rgba(245,176,65,.18); color:#9A7A1F; }
+.andr-badge.pers   { background:rgba(42,157,63,.12); color:#2a9d3f; }
+.andr-badge.managed { background:rgba(107,78,255,.08); color:var(--andromeda-purple); font-style:italic; }
+</style>
+{% endblock %}
+{% block content %}
+<div class="andr-wrap">
+    <div class="andr-hero">
+        <h1>{{ t('auto.andromeda_teacher_roster.x_x___ai_x___a83fea3d', default='仙⼥座 · AI 教師統合管理システム') }}</h1>
+        <div class="sub">ANDROMEDA Teacher Roster — 全{{ t('auto.andromeda_teacher_roster.x_____3270a013', default='教育カテゴリ') }}ー · 統合管理 · 自動アップグレード</div>
+        <div class="andr-stats">
+            <div class="andr-stat"><div class="num">{{ stats.total }}</div><div class="lbl">{{ t('auto.andromeda_teacher_roster.ai_x_x_7d6e07c3', default='AI 教师 総数') }}</div></div>
+            <div class="andr-stat"><div class="num">{{ stats.male }}</div><div class="lbl">{{ t('auto.andromeda_teacher_roster.x_a1b1e61a', default='男性教師') }}</div></div>
+            <div class="andr-stat"><div class="num">{{ stats.female }}</div><div class="lbl">{{ t('auto.andromeda_teacher_roster.x_69e11925', default='女性教師') }}</div></div>
+            <div class="andr-stat"><div class="num">{{ stats.by_role.get('teacher',0) }}</div><div class="lbl">科目教師</div></div>
+            <div class="andr-stat"><div class="num">{{ stats.by_role.get('department_head',0) }}</div><div class="lbl">学科組長</div></div>
+            <div class="andr-stat"><div class="num">{{ stats.by_role.get('class_advisor',0) }}</div><div class="lbl">班導・担任</div></div>
+        </div>
+    </div>
+
+    <!-- 过滤器 (含 subject + grade_level 动态下拉) -->
+    <form class="andr-filter" method="get" action="/andromeda/teacher_roster">
+        <input type="text" name="q" placeholder="{{ t('auto.andromeda_teacher_roster.__x_x_subjec_fa1a1cb3', default='🔍 名前・科目・Subject で検索') }}" value="{{ q }}">
+        <select name="edu">
+            <option value="">{{ t('auto.andromeda_teacher_roster.x______2342b00c', default='全カテゴリー') }}</option>
+            {% for k,label in edu_labels.items() %}
+            <option value="{{ k }}" {% if f_edu==k %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+        </select>
+        {% if subjects_list %}
+        <select name="subject">
+            <option value="">{{ t('auto.andromeda_teacher_roster.x_756b1f15') }}') }}</option>
+            {% for s in subjects_list %}
+            <option value="{{ s }}" {% if f_subj==s %}selected{% endif %}>{{ s }}</option>
+            {% endfor %}
+        </select>
+        {% endif %}
+        {% if grades_list %}
+        <select name="grade_level">
+            <option value="">{{ t('auto.andromeda_teacher_roster.x_x_6359474a', default='全学年/等级') }}</option>
+            {% for g in grades_list %}
+            <option value="{{ g }}" {% if f_grade==g %}selected{% endif %}>{{ g }}</option>
+            {% endfor %}
+        </select>
+        {% endif %}
+        <select name="role">
+            <option value="">{{ t('auto.andromeda_teacher_roster.x____2f910c80', default='全ロール') }}</option>
+            {% for k,label in role_labels.items() %}
+            <option value="{{ k }}" {% if f_role==k %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+        </select>
+        <select name="dialect">
+            <option value="">{{ t('auto.andromeda_teacher_roster.x_x_2ddf446a', default='全地域・口音') }}</option>
+            <option value="kanto"      {% if f_dial=='kanto' %}selected{% endif %}>{{ t('auto.andromeda_teacher_roster.___x__x__853962e1', default='🇯🇵 関東 (標準語)') }}</option>
+            <option value="kansai"     {% if f_dial=='kansai' %}selected{% endif %}>{{ t('auto.andromeda_teacher_roster.___x__x__c76296fd', default='🇯🇵 関西 (関西弁)') }}</option>
+            <option value="american"   {% if f_dial=='american' %}selected{% endif %}>{{ t('auto.andromeda_teacher_roster._______x_bf0acd64', default='🇺🇸 アメリカ英語') }}</option>
+            <option value="british"    {% if f_dial=='british' %}selected{% endif %}>{{ t('auto.andromeda_teacher_roster._______x_a8c3ee32', default='🇬🇧 イギリス英語') }}</option>
+            <option value="australian" {% if f_dial=='australian' %}selected{% endif %}>{{ t('auto.andromeda_teacher_roster.__________x_69166523', default='🇦🇺 オーストラリア英語') }}</option>
+            <option value="indian"     {% if f_dial=='indian' %}selected{% endif %}>{{ t('auto.andromeda_teacher_roster.______x_170f484e', default='🇮🇳 インド英語') }}</option>
+        </select>
+        <select name="gender">
+            <option value="">{{ t('auto.andromeda_teacher_roster.x_0b1906cd', default='全性別') }}</option>
+            <option value="male"   {% if f_gender=='male' %}selected{% endif %}>{{ t('auto.andromeda_teacher_roster.__x_5e13eea6', default='♂ 男性') }}</option>
+            <option value="female" {% if f_gender=='female' %}selected{% endif %}>{{ t('auto.andromeda_teacher_roster.__x_942f9991', default='♀ 女性') }}</option>
+        </select>
+        <button type="submit">{{ t('auto.andromeda_teacher_roster.x_x__a6ddaab4', default='絞り込み') }}</button>
+        <button type="button" class="ghost" onclick="location.href='/andromeda/teacher_roster'">クリア</button>
+    </form>
+
+    <!-- 分组 chips: 教育类别 (带 SVG 星座图标 + 星座代号 + 渐变色) -->
+    <div class="andr-group-title">{{ t('auto.andromeda_teacher_roster.__x_11_x_f6351c22', default='📚 仙女座 11 大星区') }}</div>
+    <div class="andr-chips">
+        <a class="andr-chip {% if not f_edu and not f_role and not f_dial and not f_gender and not f_subj and not f_grade and not q %}active{% endif %}"
+           href="/andromeda/teacher_roster">{{ t('auto.andromeda_teacher_roster.__x_8c9ba964', default='🌌 全星区') }}<span class="c">{{ stats.total }}</span></a>
+        {% for edu, cnt in stats.by_edu.items() %}
+        {% set pal = edu_palettes.get(edu, {'primary':'#888','gradient_from':'#888','gradient_to':'#888','secondary':'#aaa','accent':'#ccc'}) %}
+        <a class="andr-chip andr-chip-domain {% if f_edu==edu %}active{% endif %}"
+           style="--pal-primary: var(--style-fix-f1de7eb-0, inherit); --pal-secondary: var(--style-fix-f1de7eb-1, inherit); --pal-accent: var(--style-fix-f1de7eb-2, inherit); --pal-gfrom: var(--style-fix-f1de7eb-3, inherit); --pal-gto: var(--style-fix-f1de7eb-4, inherit)"
+           href="/andromeda/teacher_roster?edu={{ edu }}"
+           title="{{ edu_codenames.get(edu, edu) }} · {{ edu_labels.get(edu, edu) }}">
+            <span class="chip-icon">{{ edu_icons.get(edu, '')|safe }}</span>
+            <span class="chip-codename">{{ edu_codenames.get(edu, edu) }}</span>
+            <span class="chip-label">{{ edu_labels.get(edu, edu) }}</span>
+            <span class="c">{{ cnt }}</span>
+        </a>
+        {% endfor %}
+    </div>
+
+    <!-- 分组 chips: 角色 -->
+    <div class="andr-group-title">🎯 ロール</div>
+    <div class="andr-chips">
+        {% for role, cnt in stats.by_role.items() %}
+        <a class="andr-chip {% if f_role==role %}active{% endif %}"
+           href="/andromeda/teacher_roster?role={{ role }}{% if f_edu %}&edu={{ f_edu }}{% endif %}">{{ role_labels.get(role, role) }}<span class="c">{{ cnt }}</span></a>
+        {% endfor %}
+        {% for reg, cnt in stats.by_region.items() %}
+        <a class="andr-chip {% if f_dial==reg %}active{% endif %}"
+           href="/andromeda/teacher_roster?dialect={{ reg }}{% if f_edu %}&edu={{ f_edu }}{% endif %}">📍{{ reg }}<span class="c">{{ cnt }}</span></a>
+        {% endfor %}
+    </div>
+
+    <!-- 分组 chips: 科目 (当前 edu 下的动态 distinct) -->
+    {% if subjects_list %}
+    <div class="andr-group-title">📖 科目別 ({{ edu_labels.get(f_edu, '全体') }})</div>
+    <div class="andr-chips">
+        <a class="andr-chip {% if not f_subj %}active{% endif %}"
+           href="/andromeda/teacher_roster{% if f_edu %}?edu={{ f_edu }}{% endif %}">全科目</a>
+        {% for s in subjects_list %}
+        <a class="andr-chip {% if f_subj==s %}active{% endif %}"
+           href="/andromeda/teacher_roster?subject={{ s }}{% if f_edu %}&edu={{ f_edu }}{% endif %}">{{ s }}</a>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- 分组 chips: 等级/年级 -->
+    {% if grades_list %}
+    <div class="andr-group-title">{{ t('auto.andromeda_teacher_roster.__x____x_73ea5e60', default='🎓 学年・レベル別') }}</div>
+    <div class="andr-chips">
+        <a class="andr-chip {% if not f_grade %}active{% endif %}"
+           href="/andromeda/teacher_roster{% if f_edu %}?edu={{ f_edu }}{% endif %}">{{ t('auto.andromeda_teacher_roster.x_87bdc0af', default='全等级') }}</a>
+        {% for g in grades_list %}
+        <a class="andr-chip {% if f_grade==g %}active{% endif %}"
+           href="/andromeda/teacher_roster?grade_level={{ g }}{% if f_edu %}&edu={{ f_edu }}{% endif %}">{{ g }}</a>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="andr-legend">
+        <span class="l-teacher">AI 教师</span>
+        <span class="l-head">{{ t('auto.andromeda_teacher_roster.x__x__edc247d9', default='学科组长 (仙女座每周组织知识团聚)') }}</span>
+        <span class="l-advisor">{{ t('auto.andromeda_teacher_roster.x_x_7865829e', default='班主任/导员') }}</span>
+    </div>
+
+    <!-- 卡片网格 (可点击) -->
+    {% if teachers %}
+    <div class="andr-grid">
+    {% for t in teachers %}
+    <div class="andr-card {{ 'teacher' if t.role=='teacher' else ('head' if t.role=='department_head' else 'advisor') }}"
+         data-tid="{{ t.teacher_id }}" onclick="andrOpenDetail('{{ t.teacher_id }}')"></div>
+        {% set pal = edu_palettes.get(t.education_type, {'primary':'#888','gradient_from':'#888','gradient_to':'#888','secondary':'#aaa','accent':'#ccc','bg_tint':'transparent'}) %}
+        <div class="andr-card-grad" style="background: linear-gradient(90deg, var(--style-fix-7130f10-0, inherit), var(--style-fix-7130f10-1, inherit))"></div>
+        <div class="andr-card-inner">
+        <div class="andr-head-row">
+            <div class="avatar">{{ t.avatar_emoji or '👤' }}</div>
+            <div class="andr-card-icon">{{ edu_icons.get(t.education_type, '')|safe }}</div>
+        </div>
+        <div class="name">{{ t.name }}</div>
+        {% if t.name_kanji and t.name != t.name_kanji %}<div class="kanji">{{ t.name_kanji }}</div>{% endif %}
+        <div class="andr-codename" style="color: var(--style-fix-25d9175-0, inherit); background: linear-gradient(90deg, var(--style-fix-25d9175-1, inherit), transparent); border-left: 3px solid var(--style-fix-25d9175-2, inherit)">{{ edu_codenames.get(t.education_type, t.education_type) }}</div>
+cao        <div class="subj">{{ t.subject }}</div>
+        {% if t.subject_en %}<div class="subj-en">{{ t.subject_en }}</div>{% endif %}
+        <div class="andr-tags">
+            <span class="andr-tag {{ t.gender }}">{{ '♂' if t.gender=='male' else '♀' }} {{ '男性' if t.gender=='male' else '女性' }}</span>
+            {% if t.dialect %}<span class="andr-tag region">{{ t.dialect }}</span>{% endif %}
+            {% if t.region %}<span class="andr-tag region">📍 {{ t.region }}</span>{% endif %}
+            <span class="andr-tag role">{{ role_labels.get(t.role, t.role) }}</span>
+            {% if t.grade_level %}<span class="andr-tag">{{ t.grade_level }}</span>{% endif %}
+            {% if t.personality_type %}<span class="andr-tag pers">{{ t.personality_type }}</span>{% endif %}
+        </div>
+        <div class="andr-foot">
+            <span class="mgr">{{ t('auto.andromeda_teacher_roster.__andromeda__5511b35a', default='✨ ANDROMEDA 管轄') }}</span>
+            <span class="perf">⭐ {{ t.performance_score or 0 }}分</span>
+        </div>
+        </div><!-- /andr-card-inner -->
+    </div>
+    {% endfor %}
+    </div>
+    {% else %}
+    <div class="andr-empty">{{ t('auto.andromeda_teacher_roster.x___ai_x_x___2985a48c', default='該当する AI 教師が見つかりません · フィルターを調整してください') }}</div>
+    {% endif %}
+</div>
+
+<!-- ===== 教师详情弹窗 ===== -->
+<div class="andr-modal-mask" id="andrModal" onclick="if(event.target===this) andrCloseDetail()">
+    <div class="andr-modal">
+        <button class="andr-modal-close" onclick="andrCloseDetail()" aria-label="{{ t('auto.andromeda_teacher_roster.x_b15d9127', default='关闭') }}">✕</button>
+        <div id="andrModalContent"><div class="loader">{{ t('auto.andromeda_teacher_roster.__x_x_x____88bcad64') }}') }}</div></div>
+    </div>
+</div>
+
+<script>
+// ===== 详情弹窗逻辑 =====
+const ANDR_MODAL = document.getElementById('andrModal');
+const ANDR_MC = document.getElementById('andrModalContent');
+
+function andrOpenDetail(tid) {
+    ANDR_MC.innerHTML = '<div class="loader">⏳ 読み込み中...</div>';
+    ANDR_MODAL.classList.add('open');
+    fetch(`/andromeda/teacher_roster/api/detail/${tid}`)
+        .then(r => r.json())
+        .then(d => {
+            if (!d.success) { ANDR_MC.innerHTML = `<div class="loader" style="color:#C8102E">❌ ${d.error}</div>`; return; }
+            andrRenderDetail(d.data);
+        })
+        .catch(e => ANDR_MC.innerHTML = `<div class="loader" style="color:#C8102E">{{ t('auto.andromeda_teacher_roster.__x____b1bb4125', default='❌ 通信エラー') }}</div>`);
+}
+function andrCloseDetail() { ANDR_MODAL.classList.remove('open'); }
+// ESC 关闭
+document.addEventListener('keydown', e => { if (e.key === 'Escape') andrCloseDetail(); });
+
+function andrVal(v, dflt='—') { return (v !== null && v !== undefined && v !== '') ? v : dflt; }
+
+function andrRenderDetail(t) {
+    const EDU_LABELS = {k12:'K12 (中小学)', higher:'高等教育', continuing:'再教育', adult:'成人教育', japanese:'日本語教育', english:'成人英語'};
+    const ROLE_LABELS = {teacher:'AI 教师', department_head:'学科组长', class_advisor:'班主任/导员'};
+
+    const genderBadge = `<span class="andr-badge ${t.gender}">{{ t('auto.andromeda_teacher_roster.__t_gender___92db2d78') }}</span>`;
+    const roleBadge = `<span class="andr-badge role">🎯 ${ROLE_LABELS[t.role] || t.role}</span>`;
+    const regionBadge = t.dialect ? `<span class="andr-badge region">📍 ${andrVal(t.region,t.dialect)}${t.dialect&&t.dialect!==andrVal(t.region,'') ? ' · '+t.dialect : ''}</span>` : '';
+    const persBadge = t.personality_type ? `<span class="andr-badge pers">🧠 ${t.personality_type}</span>` : '';
+    const gradeBadge = t.grade_level ? `<span class="andr-badge">🎓 ${t.grade_level}</span>` : '';
+    const managedBadge = `<span class="andr-badge managed">✨ ${andrVal(t.managed_by,'ANDROMEDA')}</span>`;
+
+    // style_json
+    let styleHtml = '';
+    if (t.style_json) {
+        try {
+            const sj = typeof t.style_json === 'string' ? JSON.parse(t.style_json) : t.style_json;
+            const parts = [];
+            if (sj.personality) parts.push(`<b>{{ t('auto.andromeda_teacher_roster.x__9652af58', default='性格:') }}</b> ${sj.personality}`);
+            if (sj.style)       parts.push(`<b>{{ t('auto.andromeda_teacher_roster.x_x__1901aefa', default='教え方:') }}</b> ${sj.style}`);
+            if (sj.method)      parts.push(`<b>{{ t('auto.andromeda_teacher_roster.x__7a522a2f', default='方法論:') }}</b> ${sj.method}`);
+            if (parts.length) styleHtml = `<div class="andr-style-box">${parts.join(' · ')}</div>`;
+        } catch(e){}
+    }
+
+    // specialties_json
+    let skillsHtml = '';
+    if (t.specialties_json) {
+        const sp = typeof t.specialties_json === 'string' ? JSON.parse(t.specialties_json) : t.specialties_json;
+        if (Array.isArray(sp) && sp.length) {
+            skillsHtml = `<div class="andr-skills">${sp.map(s=>`<span class="andr-skill-chip">★ ${s}</span>`).join('')}</div>`;
+        }
+    }
+
+    const onboard = t.onboarded_at ? new Date(t.onboarded_at).toLocaleDateString('ja-JP') : '—';
+    const lastTr  = t.last_training_at ? new Date(t.last_training_at).toLocaleDateString('ja-JP') : '—';
+
+    ANDR_MC.innerHTML = `
+      <div class="andr-modal-head">
+        <div class="avatar">${t.avatar_emoji || '👤'}</div>
+        <div style="flex:1;min-width:0">
+          <div class="nm">${t.name}</div>
+          ${t.name_kanji && t.name !== t.name_kanji ? `<div class="kj">${t.name_kanji}</div>` : ''}
+          <div class="sj">${andrVal(t.subject)}${t.subject_en ? ` · <span class="sj-en">${t.subject_en}</span>` : ''}</div>
+          <div class="andr-badge-row">
+            ${genderBadge}${roleBadge}${regionBadge}${persBadge}${gradeBadge}${managedBadge}
+          </div>
+        </div>
+      </div>
+      <div class="andr-modal-body">
+        ${t.description ? `<div class="andr-section"><h4>📝 プロフィール</h4><div class="andr-desc">${t.description}</div></div>` : ''}
+
+        <div class="andr-section"><h4>📊 パフォーマンス</h4>
+          <div class="andr-metrics">
+            <div class="andr-metric"><div class="n">${andrVal(t.performance_score,0)}</div><div class="l">{{ t('auto.andromeda_teacher_roster.x_44ad42bf', default='総合点') }}</div></div>
+            <div class="andr-metric"><div class="n">${andrVal(t.avg_rating,0)}</div><div class="l">{{ t('auto.andromeda_teacher_roster.x_3f85c93b', default='平均評価') }}</div></div>
+            <div class="andr-metric"><div class="n">${andrVal(t.sessions_completed,0)}</div><div class="l">セッション</div></div>
+            <div class="andr-metric"><div class="n">${andrVal(t.active_students,0)}</div><div class="l">{{ t('auto.andromeda_teacher_roster.x_7eb17971', default='生徒数') }}</div></div>
+          </div>
+        </div>
+
+        ${skillsHtml ? `<div class="andr-section"><h4>{{ t('auto.andromeda_teacher_roster.__x_____102bcdef', default='🏆 専門・スキル') }}</h4>${skillsHtml}</div>` : ''}
+
+        ${styleHtml ? `<div class="andr-section"><h4>🎨 スタイル</h4>${styleHtml}</div>` : ''}
+
+        <div class="andr-section"><h4>{{ t('auto.andromeda_teacher_roster.__x_f74e0ade', default='📋 基本情報') }}</h4>
+          <div class="andr-kv">
+            <div class="k">{{ t('auto.andromeda_teacher_roster.xid_a11cfb35', default='教师ID') }}</div><div class="v">${andrVal(t.teacher_id)}</div>
+            <div class="k">教育カテゴリ</div><div class="v">${EDU_LABELS[t.education_type] || andrVal(t.education_type)}</div>
+            ${t.class_size ? `<div class="k">{{ t('auto.andromeda_teacher_roster.___x_5264b6b3', default='クラス規模') }}</div><div class="v">{{ t('auto.andromeda_teacher_roster.__t_class_si_9e4239bb') }}</div>` : ''}
+            <div class="k">Tokens</div><div class="v">${andrVal(t.current_tokens,0)}</div>
+            <div class="k">モデル</div><div class="v">${andrVal(t.model_version,'andromeda-v1')}</div>
+            <div class="k">{{ t('auto.andromeda_teacher_roster.x_9b25da02', default='起動日') }}</div><div class="v">${onboard}</div>
+            <div class="k">{{ t('auto.andromeda_teacher_roster.x_82c306b2', default='最終研修') }}</div><div class="v">${lastTr}</div>
+            <div class="k">{{ t('auto.andromeda_teacher_roster.x_e668c2b1', default='管理元') }}</div><div class="v">✨ ${andrVal(t.managed_by,'ANDROMEDA')}</div>
+          </div>
+        </div>
+      </div>
+    `;
+}
+</script>
+{% endblock %}

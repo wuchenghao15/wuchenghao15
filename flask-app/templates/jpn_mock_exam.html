@@ -1,0 +1,183 @@
+{% extends "base_unified.html" %}
+{% block title %}模擬試験 · {{ level }} · JLPT Mock{% endblock %}
+{% block page_title %}Mogi Shiken · {{ level }}{% endblock %}
+{% block extra_head %}
+<style>
+:root { --jp-vermilion:#C8102E; --jp-indigo:#2F4F6F; --jp-sumi:#2C2C2C; }
+.jp-exam-header { position:sticky; top:0; background:var(--mtscos-bg-card); z-index:10; padding:14px 20px;
+    border-bottom:1px solid var(--mtscos-border-light); display:flex; justify-content:space-between; align-items:center; }
+.jp-exam-timer { font-size:20px; font-weight:700; font-family:"Courier New",monospace; color:var(--jp-vermilion); }
+.jp-exam-submit { padding:10px 30px; background:var(--jp-vermilion); color:#fff; border:none; border-radius:8px; cursor:pointer; font-weight:700; }
+.jp-exam-submit:hover { background:#a00d25; }
+.jp-exam-submit:disabled { opacity:.5; cursor:not-allowed; }
+.jp-item-card {
+    background:var(--mtscos-bg-card); border:1px solid var(--mtscos-border-light); border-radius:var(--mtscos-radius-lg);
+    padding:22px; margin-bottom:14px;
+}
+.jp-item-kind { font-size:10px; padding:2px 10px; border-radius:10px; font-weight:600; margin-bottom:8px; display:inline-block; }
+.jp-item-kind.listening { background:rgba(47,79,111,.12); color:var(--jp-indigo); }
+.jp-item-kind.reading { background:rgba(200,16,46,.1); color:var(--jp-vermilion); }
+.jp-item-title { font-family:"Yu Mincho",serif; font-size:15px; font-weight:700; color:var(--jp-sumi); margin-bottom:8px; }
+.jp-item-content { font-family:"Yu Mincho",serif; font-size:14px; line-height:1.9; color:var(--jp-sumi); padding:12px 14px;
+    background:rgba(47,79,111,.04); border-radius:6px; margin-bottom:12px; white-space:pre-wrap; }
+.jp-eq { margin-bottom:12px; }
+.jp-eq-num { font-size:12px; font-weight:700; color:var(--jp-vermilion); margin-bottom:4px; }
+.jp-eq-text { font-size:14px; font-weight:600; margin-bottom:6px; }
+.jp-eq-opt { display:block; padding:8px 14px; border:1px solid var(--mtscos-border-light); border-radius:6px;
+    margin-bottom:4px; cursor:pointer; font-size:13px; background:#fff; transition:all .1s; }
+.jp-eq-opt:hover { border-color:var(--jp-indigo); background:rgba(47,79,111,.03); }
+.jp-eq-opt.picked { border-color:var(--jp-indigo); background:rgba(47,79,111,.08); font-weight:600; }
+.jp-eq-opt.correct { border-color:#2a9d3f; background:rgba(42,157,63,.08); color:#2a9d3f; font-weight:700; }
+.jp-eq-opt.wrong { border-color:var(--jp-vermilion); background:rgba(200,16,46,.08); color:var(--jp-vermilion); }
+.jp-submit-area { text-align:center; padding:30px; }
+.jp-result-card { background:linear-gradient(135deg, rgba(42,157,63,.12), rgba(47,79,111,.1));
+    border:1px solid rgba(42,157,63,.3); border-radius:var(--mtscos-radius-lg); padding:30px; text-align:center; margin:20px 0; }
+.jp-result-card h2 { font-size:28px; margin:0 0 10px; color:#2a9d3f; font-family:"Yu Mincho",serif; }
+.jp-result-score { font-size:48px; font-weight:900; color:var(--jp-indigo); margin:12px 0; }
+.jp-result-detail { font-size:14px; color:var(--mtscos-text-secondary); margin:8px 0; }
+.jp-result-level { font-size:16px; font-weight:700; color:var(--jp-vermilion); margin-top:12px; }
+.jp-nav-links { text-align:center; margin-top:20px; }
+.jp-nav-links a { color:var(--jp-indigo); text-decoration:none; font-weight:600; margin:0 10px; }
+.jp-nav-links a:hover { text-decoration:underline; }
+</style>
+{% endblock %}
+{% block content %}
+<div class="jp-exam-header">
+    <div>
+        <span style="font-size:11px;color:var(--jp-vermilion);font-weight:600">JLPT {{ level }}</span>
+        <span style="margin-left:8px;font-size:11px;color:var(--mtscos-text-tertiary)">総合モック · {{ items|length }}題 · {{ duration_min }}分</span>
+    </div>
+    <div class="jp-exam-timer" id="exam-timer">{{ duration_min }}:00</div>
+    <button class="jp-exam-submit" id="submit-all" onclick="submitAll()" disabled>{{ t('auto.jpn_mock_exam.x_x______f9bd3bdc', default='答え合わせをする') }}</button>
+</div>
+
+<div id="exam-content">
+{% for it in items %}
+<div class="jp-item-card">
+    <div class="jp-item-kind {{ it.kind }}">{{ '🎧 聴解' if it.kind=='listening' else '📖 読解' }} · {{ it.level }}</div>
+    <div class="jp-item-title">{{ it.title }}</div>
+    {% if it.kind == 'reading' and it.content_jp %}
+    <div class="jp-item-content">{{ it.content_jp }}</div>
+    {% elif it.kind == 'listening' and it.transcript_jp %}
+    <div class="jp-item-content">{{ it.transcript_jp }}</div>
+    {% endif %}
+    {% for q in it.questions %}
+    <div class="jp-eq" data-ans="{{ q.ans }}">
+        <div class="jp-eq-num">Q{{ loop.index }}.</div>
+        <div class="jp-eq-text">{{ q.q }}</div>
+        {% for opt in q.options %}
+        <div class="jp-eq-opt" onclick="pick(this)">{{ loop.index }}. {{ opt }}</div>
+        {% endfor %}
+    </div>
+    {% endfor %}
+</div>
+{% endfor %}
+</div>
+
+<div id="exam-result" style="display:none">
+    <div class="jp-result-card">
+        <h2>{{ t('auto.jpn_mock_exam._x_x_____96d018df', default='お疲れ様でした！') }}</h2>
+        <div class="jp-result-score" id="result-score">0%</div>
+        <div class="jp-result-detail" id="result-detail">0/{{ total_q }} 問題正解</div>
+        <div class="jp-result-level" id="result-level">{{ t('auto.jpn_mock_exam.____x______535d4320', default='💪 もう一度挑戦しましょう') }}</div>
+    </div>
+    <div class="jp-nav-links">
+        <a href="/japanese/mock">{{ t('auto.jpn_mock_exam.__x__4ac39906', default='← 戻る') }}</a>
+        <a href="/japanese/mock/{{ level }}">🔄 もう一度 {{ level }} を受ける</a>
+        <a href="/japanese_page">{{ t('auto.jpn_mock_exam.__x_____8bffdad4', default='🏠 日本語ポータル') }}</a>
+    </div>
+</div>
+
+<script>
+// === 计时 ===
+const DURATION = {{ duration_min }} * 60;
+let remain = DURATION;
+const timer = document.getElementById('exam-timer');
+const submitBtn = document.getElementById('submit-all');
+const submitArea = document.querySelector('.jp-submit-area');
+submitArea && submitArea.remove(); // 移除备用 submit area
+
+const interval = setInterval(() => {
+    remain--;
+    const m = Math.floor(remain/60).toString().padStart(2,'0');
+    const s = (remain%60).toString().padStart(2,'0');
+    timer.innerText = `${m}:${s}`;
+    if (remain <= 60) { timer.style.color = '#a00d25'; timer.style.animation = 'none'; }
+    if (remain <= 0) { clearInterval(interval); submitAll(true); }
+}, 1000);
+
+// === 至少答一题后激活 ===
+document.addEventListener('click', e => {
+    if (e.target.classList.contains('jp-eq-opt')) submitBtn.disabled = false;
+});
+
+function pick(el){
+    const parent = el.parentElement;
+    parent.querySelectorAll('.jp-eq-opt').forEach(o=>o.classList.remove('picked'));
+    el.classList.add('picked');
+}
+
+function submitAll(auto=false){
+    clearInterval(interval);
+    const eqs = document.querySelectorAll('.jp-eq');
+    let correct = 0, total = eqs.length;
+    const answersDict = {listening:[], reading:[]};  // 按 section 分
+    // 先把所有题目信息收集好以便分类
+    const itemCards = document.querySelectorAll('.jp-item-card');
+    let qIdxPerSection = {listening:0, reading:0};
+    itemCards.forEach(card => {
+        const kind = card.querySelector('.jp-item-kind');
+        const section = kind && kind.classList.contains('listening') ? 'listening' : 'reading';
+        const qs = card.querySelectorAll('.jp-eq');
+        qs.forEach(eq => {
+            const ans = parseInt(eq.dataset.ans);
+            const pickedOpt = eq.querySelector('.jp-eq-opt.picked');
+            const picked = pickedOpt ? parseInt(pickedOpt.innerText[0])-1 : -1;
+            eq.querySelectorAll('.jp-eq-opt').forEach((o,i) => {
+                o.classList.remove('picked','correct','wrong');
+                if (i === ans) o.classList.add('correct');
+                else if (picked === i && picked !== ans) o.classList.add('wrong');
+            });
+            const isOk = (picked === ans);
+            if (isOk) correct++;
+            answersDict[section].push({
+                question_index: qIdxPerSection[section],
+                correct_answer: ans, user_answer: picked, is_correct: isOk
+            });
+            qIdxPerSection[section]++;
+        });
+    });
+    // 禁用点击
+    document.querySelectorAll('.jp-eq-opt').forEach(o=>o.style.pointerEvents='none');
+    const pct = Math.round(correct/total*100);
+    const jlpt180 = Math.round(pct * 1.8);
+    document.getElementById('result-score').innerText = pct + '%';
+    document.getElementById('result-detail').innerText = `${correct}/${total} 正解 · JLPT 模擬点: ${jlpt180}/180`;
+    const lvl = document.getElementById('result-level');
+    if (pct >= 90) lvl.innerText = '🏆 素晴らしい！ 合格レベル';
+    else if (pct >= 70) lvl.innerText = '👍 合格圏内 · あと少し';
+    else if (pct >= 50) lvl.innerText = '📚 もう少し練習が必要';
+    else lvl.innerText = '💪 もう一度挑戦しましょう';
+    document.getElementById('exam-content').style.display = 'none';
+    document.getElementById('exam-result').style.display = 'block';
+    submitBtn.disabled = true;
+    submitBtn.innerText = auto ? '⏰ タイムアップ' : '終了';
+    const sessionId = '{{ level }}_' + Date.now();
+    // 上报 JLPT mock 落库
+    fetch('/api/japanese/jlpt/mock/{{ level }}/submit', {
+        method:'POST', credentials:'include',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({
+            session_id: sessionId,
+            level: '{{ level }}',
+            answers: answersDict,
+            duration_sec: DURATION-remain,
+        })
+    }).then(r=>r.json()).then(d=>{
+        if (d && d.success) {
+            document.getElementById('result-level').innerText += ` · 登録完了 (${d.data.score}点)`;
+        }
+    }).catch(()=>{});
+}
+</script>
+{% endblock %}

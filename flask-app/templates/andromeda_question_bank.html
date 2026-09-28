@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>{{ t('auto.andromeda_question_bank.x_x_4b9a9b28', default='仙女座·题库全景检测') }}</title>
+<style>
+:root{--bg:#0d1117;--fg:#e6edf3;--muted:#8b949e;--ok:#3fb950;--warn:#d29922;--err:#f85149;--card:#161b22;--bd:#30363d}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--fg);font-family:-apple-system,"Segoe UI","Noto Sans SC",sans-serif;padding:24px;max-width:1200px;margin:0 auto}
+h1{font-size:22px;margin-bottom:4px}
+.sub{color:var(--muted);font-size:13px;margin-bottom:20px}
+.hero{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px}
+.hero-card{background:var(--card);border:1px solid var(--bd);border-radius:8px;padding:14px}
+.hero-card .num{font-size:28px;font-weight:700}
+.hero-card .lbl{color:var(--muted);font-size:12px;margin-top:4px}
+.hero-card.ok .num{color:var(--ok)}
+.hero-card.warn .num{color:var(--warn)}
+table{width:100%;border-collapse:collapse;background:var(--card);border-radius:8px;overflow:hidden;border:1px solid var(--bd)}
+th,td{padding:10px 12px;text-align:left;border-bottom:1px solid var(--bd);font-size:13px}
+th{background:#21262d;color:var(--muted);font-weight:600;text-transform:uppercase;font-size:11px;letter-spacing:.5px}
+tr:last-child td{border-bottom:none}
+.badge{display:inline-block;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:600}
+.badge.ok{background:rgba(63,185,80,.15);color:var(--ok)}
+.badge.warn{background:rgba(210,153,34,.15);color:var(--warn)}
+.badge.err{background:rgba(248,81,73,.15);color:var(--err)}
+.bar{background:#21262d;border-radius:4px;height:6px;overflow:hidden;margin-top:4px;width:80px}
+.bar > div{height:100%;border-radius:4px}
+.bar.ok > div{background:var(--ok)}
+.bar.warn > div{background:var(--warn)}
+.bar.err > div{background:var(--err)}
+.issues{margin-top:20px}
+.issue-item{background:var(--card);border-left:3px solid var(--err);padding:12px;margin-bottom:8px;border-radius:0 6px 6px 0;font-size:13px}
+.section-title{margin:24px 0 10px;font-size:14px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+.code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;background:#21262d;padding:2px 6px;border-radius:3px;font-size:12px}
+</style>
+</head>
+<body>
+
+<h1>{{ t('auto.andromeda_question_bank.__x_x_92dccaba', default='🌌 仙女座·题库全景检测') }}</h1>
+<div class="sub">11 大星座{{ t('auto.andromeda_question_bank.x_605f569c', default='领域') }} · 实时扫描 question_bank + 独立学习表</div>
+
+<div id="report"></div>
+
+<script>
+fetch('/andromeda/question_bank/detect')
+  .then(r => r.json())
+  .then(j => render(j.report))
+  .catch(e => document.getElementById('report').innerHTML =
+    `<div style="color:#f85149">{{ t('auto.andromeda_question_bank.x____e_messa_89a99586') }}</div>`);
+
+function severityIcon(s){return {ok:'✅',warn:'⚠️',err:'❌'}[s]||'—'}
+function severityClass(s){return {ok:'ok',warn:'warn',err:'err'}[s]||''}
+
+function render(r){
+  const sm = r.summary;
+
+  // Hero
+  let hero = `
+  <div class="hero">
+    <div class="hero-card ok"><div class="num">${sm.total_questions}</div><div class="lbl">{{ t('auto.andromeda_question_bank.x_622158fb', default='总题库数') }}</div></div>
+    <div class="hero-card ${sm.overall_coverage_pct>=80?'ok':sm.overall_coverage_pct>=50?'warn':'err'}">
+      <div class="num">${sm.domains_with_content}/${sm.total_domains}</div>
+      <div class="lbl">{{ t('auto.andromeda_question_bank.x____sm_over_dad18894') }}</div>
+    </div>
+    <div class="hero-card warn"><div class="num">${sm.num_existing_categories}</div><div class="lbl">{{ t('auto.andromeda_question_bank.x_category_6fe7fbe1', default='已有 category') }}</div></div>
+    <div class="hero-card ${r.issues.length?'err':'ok'}"><div class="num">${r.issues.length}</div><div class="lbl">{{ t('auto.andromeda_question_bank.x_issues_8fcead2c', default='检测到 issues') }}</div></div>
+  </div>`;
+
+  // 领域表格
+  let rows = '';
+  const sortedDoms = Object.values(r.domains).sort((a,b)=>b.coverage_pct-a.coverage_pct);
+  for(const d of sortedDoms){
+    const sev = d.coverage_pct>=80?'ok':d.coverage_pct>0?'warn':'err';
+    const diffMatch = d.difficulty_match ? '✅' : (d.total>0 ? '—' : '');
+    const cats = d.categories_found.length ? d.categories_found.join(', ') : (d.independent_tables.length ? '{{ t('auto.andromeda_question_bank.x_bf816571', default='独立表') }}' : '—');
+    const barColor = sev==='ok'?'ok':sev==='warn'?'warn':'err';
+    rows += `<tr>
+      <td><span class="badge ${severityClass(sev)}">${severityIcon(sev)}</span></td>
+      <td><strong>${d.codename||d.label}</strong><br><span style="color:var(--muted);font-size:11px">${d.label} <span class="code">${d.domain}</span></span></td>
+      <td>${d.total}</td>
+      <td>
+        <div class="bar ${barColor}"><div style="width:${Math.max(2,d.coverage_pct)}%"></div></div>
+        <span style="font-size:11px;color:var(--muted)">${d.coverage_pct}%</span>
+      </td>
+      <td>${cats}</td>
+      <td style="font-size:11px;font-family:monospace">1:${d.difficulty_dist[1]} 2:${d.difficulty_dist[2]} 3:${d.difficulty_dist[3]} 4:${d.difficulty_dist[4]} 5:${d.difficulty_dist[5]}</td>
+      <td>${diffMatch}</td>
+      <td>${d.independent_tables.length ? d.independent_tables.map(t=>`<span class="code">${t.table}</span>`).join(' ') : ''}</td>
+    </tr>`;
+  }
+
+  let table = `
+  <table>
+    <thead><tr>
+      <th>{{ t('auto.andromeda_question_bank.x_3fea7ca7', default='状态') }}</th><th>领域</th><th>{{ t('auto.andromeda_question_bank.x_949f0ef1', default='总量') }}</th><th>{{ t('auto.andromeda_question_bank.x_00413048', default='覆盖率') }}</th>
+      <th>{{ t('auto.andromeda_question_bank.x_category_4c08e981', default='命中 category') }}</th><th>{{ t('auto.andromeda_question_bank.x__1_5__4859fb63', default='难度 (1-5)') }}</th><th>{{ t('auto.andromeda_question_bank.x_f504986f', default='匹配') }}</th><th>独立表</th>
+    </tr></thead>
+    <tbody>${rows}</tbody>
+  </table>`;
+
+  // Issues
+  let issues = '';
+  if(r.issues.length){
+    let items = '';
+    for(const i of r.issues){
+      items += `<div class="issue-item"><strong>[${i.severity}]</strong> ${i.type} — ${i.message}</div>`;
+    }
+    issues = `<div class="section-title">⚠️ Issues</div>${items}`;
+  }
+
+  // Recommendations
+  let recs = '';
+  if(r.recommendations.length){
+    let list = '';
+    for(const [idx, rec] of r.recommendations.entries()){
+      list += `<div class="issue-item" style="border-left-color:var(--warn)">#${idx+1} ${rec}</div>`;
+    }
+    recs = `<div class="section-title">💡 Recommendations</div>${list}`;
+  }
+
+  document.getElementById('report').innerHTML = hero + table + issues + recs;
+}
+</script>
+</body>
+</html>

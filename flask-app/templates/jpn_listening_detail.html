@@ -1,0 +1,146 @@
+{% extends "base_unified.html" %}
+{% block title %}{{ item.title }} · 聴解トレーニング{% endblock %}
+{% block page_title %}{{ item.title }}{% endblock %}
+{% block extra_head %}
+<style>
+:root { --jp-vermilion:#C8102E; --jp-indigo:#2F4F6F; --jp-sumi:#2C2C2C; }
+.jp-detail-card { background:var(--mtscos-bg-card); border:1px solid var(--mtscos-border-light); border-radius:var(--mtscos-radius-lg); padding:24px; margin-bottom:16px; }
+.jp-transcript-jp { font-family:"Yu Mincho","Noto Serif JP",serif; font-size:16px; line-height:1.9; color:var(--jp-sumi); padding:16px; background:rgba(47,79,111,.05); border-radius:8px; border-left:3px solid var(--jp-indigo); }
+.jp-transcript-cn { font-size:13px; color:var(--mtscos-text-tertiary); margin-top:12px; font-style:italic; }
+.jp-q-block { margin-top:20px; padding-top:20px; border-top:1px solid var(--mtscos-border-light); }
+.jp-q-num { font-size:14px; font-weight:700; color:var(--jp-vermilion); margin-bottom:8px; }
+.jp-q-text { font-size:14px; font-weight:600; color:var(--jp-sumi); margin-bottom:12px; }
+.jp-option { display:block; padding:10px 14px; margin-bottom:6px; border:1px solid var(--mtscos-border-light); border-radius:8px;
+    cursor:pointer; font-size:13px; transition:all .15s; background:#fff; }
+.jp-option:hover { border-color:var(--jp-indigo); background:rgba(47,79,111,.03); }
+.jp-option.selected { border-color:var(--jp-indigo); background:rgba(47,79,111,.08); font-weight:600; }
+.jp-option.correct { border-color:#2a9d3f; background:rgba(42,157,63,.1); color:#2a9d3f; }
+.jp-option.wrong { border-color:var(--jp-vermilion); background:rgba(200,16,46,.1); color:var(--jp-vermilion); }
+.jp-submit-btn { padding:12px 40px; background:var(--jp-indigo); color:#fff; border:none; border-radius:8px; cursor:pointer; font-size:14px; font-weight:700; margin-top:20px; }
+.jp-submit-btn:hover { background:#1f3a53; }
+.jp-tts-bar { display:flex; gap:8px; align-items:center; margin-bottom:12px; flex-wrap:wrap; }
+.jp-tts-btn {
+    padding:8px 16px; background:var(--jp-vermilion); color:#fff; border:none; border-radius:20px;
+    cursor:pointer; font-size:12px; font-weight:600; transition:all .15s;
+}
+.jp-tts-btn:hover { background:#a00d25; }
+.jp-tts-btn.secondary { background:var(--jp-indigo); }
+.jp-tts-btn.secondary:hover { background:#1f3a53; }
+.jp-tts-btn.playing { animation:pulse 1s infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.5} }
+.jp-tts-label { font-size:11px; color:var(--mtscos-text-tertiary); }
+.jp-tts-speed { font-size:11px; display:flex; align-items:center; gap:4px; }
+.jp-tts-speed select { padding:2px 6px; border:1px solid var(--mtscos-border-light); border-radius:4px; font-size:11px; }
+.jp-result { margin-top:20px; padding:16px; border-radius:8px; font-weight:700; font-size:16px; text-align:center; }
+.jp-result.ok { background:rgba(42,157,63,.1); color:#2a9d3f; }
+.jp-result.bad { background:rgba(200,16,46,.1); color:var(--jp-vermilion); }
+</style>
+{% endblock %}
+{% block content %}
+<div style="margin-bottom:16px;font-size:13px;color:var(--mtscos-text-tertiary)">
+    <a href="/japanese_page" style="color:var(--jp-indigo);text-decoration:none">{{ t('auto.jpn_listening_detail.__x_____a85766c6', default='← 日本語ポータル') }}</a>
+    <span style="margin:0 6px">›</span>
+    <a href="/japanese/listening?level={{ item.level }}" style="color:var(--jp-indigo);text-decoration:none">聴解 · {{ item.level }}</a>
+    <span style="margin:0 6px">›</span> {{ item.title }}
+</div>
+
+<div class="jp-detail-card">
+    <div style="font-size:12px;color:var(--jp-vermilion);font-weight:600;margin-bottom:8px">🎧 {{ item.level }} · {{ item.listening_type }} · {{ item.duration_sec }}秒</div>
+    <div class="jp-tts-bar">
+        <button class="jp-tts-btn" id="jp-tts-main" onclick="playTTS(mainText)">{{ t('auto.jpn_listening_detail.__x_x__92e6acbd', default='🔊 読み上げ') }}</button>
+        <button class="jp-tts-btn secondary" onclick="playTTS(mainText, 0.75)">🐢 ゆっくり</button>
+        <button class="jp-tts-btn secondary" onclick="stopTTS()">{{ t('auto.jpn_listening_detail.__x_d7ed2203', default='⏹ 停止') }}</button>
+        <span class="jp-tts-label" id="jp-tts-status">Web Speech API</span>
+    </div>
+    <div class="jp-transcript-jp" id="jp-main-text">{{ item.transcript_jp|replace('\n','<br>') }}</div>
+    <div class="jp-transcript-cn">訳: {{ item.transcript_cn }}</div>
+</div>
+
+<div class="jp-detail-card">
+    <div style="font-size:14px;font-weight:700;color:var(--jp-sumi);margin-bottom:12px">{{ t('auto.jpn_listening_detail.__x_2c14287f', default='📝 質問') }}</div>
+    <form id="quiz-form">
+    {% for q in item.questions %}
+    <div class="jp-q-block" data-q="{{ loop.index0 }}" data-ans="{{ q.ans }}">
+        <div class="jp-q-num">問{{ loop.index }}.</div>
+        <div class="jp-q-text">{{ q.q }}</div>
+        {% for opt in q.options %}
+        <label class="jp-option">
+            <input type="radio" name="q_{{ loop.parent.loop.index0 }}" value="{{ loop.index0 }}" style="margin-right:8px">
+            {{ opt }}
+        </label>
+        {% endfor %}
+    </div>
+    {% endfor %}
+    <button type="button" class="jp-submit-btn" onclick="submitQuiz()">{{ t('auto.jpn_listening_detail.x_x___daeec07c', default='答え合わせ') }}</button>
+    </form>
+    <div id="quiz-result"></div>
+</div>
+
+<script>
+// === Web Speech API (日本語合成) ===
+const mainText = document.getElementById('jp-main-text').innerText.replace(/\s+/g,' ').trim();
+const _tts = window.speechSynthesis;
+let _jpVoice = null;
+
+function _pickJpVoice(){
+    if (!_tts) return null;
+    const all = _tts.getVoices();
+    return all.find(v => /ja|JP|Japanese/i.test(v.lang + ' ' + v.name)) || null;
+}
+// some browsers populate voices async
+if (_tts && _tts.onvoiceschanged !== undefined) {
+    _tts.onvoiceschanged = () => { _jpVoice = _pickJpVoice(); };
+}
+setTimeout(() => { _jpVoice = _pickJpVoice(); }, 500);
+
+function playTTS(text, rate=1.0) {
+    if (!_tts) { alert('お使いのブラウザは音声合成に対応していません'); return; }
+    _tts.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = 'ja-JP';
+    u.rate = rate;
+    u.pitch = 1.0;
+    if (_jpVoice) u.voice = _jpVoice;
+    const btn = document.getElementById('jp-tts-main');
+    const status = document.getElementById('jp-tts-status');
+    u.onstart = () => { btn.classList.add('playing'); status.innerText = '🔊 再生中...'; };
+    u.onend = () => { btn.classList.remove('playing'); status.innerText = '再生終了'; };
+    u.onerror = () => { btn.classList.remove('playing'); status.innerText = 'エラー'; };
+    _tts.speak(u);
+}
+function stopTTS(){ if (_tts) _tts.cancel(); }
+
+// === Quiz ===
+function submitQuiz() {
+    const blocks = document.querySelectorAll('.jp-q-block');
+    let correct = 0, total = blocks.length;
+    const answers = [];
+    blocks.forEach(b => {
+        const ans = parseInt(b.dataset.ans);
+        const sel = b.querySelector(`input[name="q_${b.dataset.q}"]:checked`);
+        const val = sel ? parseInt(sel.value) : -1;
+        const options = b.querySelectorAll('.jp-option');
+        options.forEach((o, i) => {
+            o.classList.remove('selected','correct','wrong');
+            if (i === ans) o.classList.add('correct');
+            else if (sel && i === val && i !== ans) o.classList.add('wrong');
+        });
+        if (val === ans) correct++;
+        answers.push({kana_char:'q_'+b.dataset.q, kana_type:'listening', correct_answer: ans, romanji:'', user_answer: val, is_correct: val===ans});
+    });
+    const pct = Math.round(correct/total*100);
+    const r = document.getElementById('quiz-result');
+    r.className = 'jp-result ' + (pct>=60?'ok':'bad');
+    r.innerText = `結果: ${correct}/${total} (${pct}%)  ${pct>=80?'Excellent!':pct>=60?'頑張りましょう':'もう一度挑戦！'}`;
+    document.querySelectorAll('#quiz-form input[type=radio]').forEach(x=>x.disabled=true);
+    document.querySelector('.jp-submit-btn').disabled = true;
+    document.querySelector('.jp-submit-btn').innerText = '終了';
+    // 后端落库 listening record
+    fetch('/api/japanese/listening/submit', {
+        method:'POST', credentials:'include',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ listening_id: '{{ item.listening_id }}', level: '{{ item.level }}', answers, total, correct })
+    }).catch(()=>{});
+}
+</script>
+{% endblock %}

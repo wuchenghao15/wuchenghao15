@@ -1,0 +1,221 @@
+{% extends "base_unified.html" %}
+{% block title %}語彙レビュー · Vocabulary Review{% endblock %}
+{% block page_title %}Goi Rebyuu · 語彙レビュー{% endblock %}
+{% block extra_head %}
+<style>
+:root { --jp-vermilion:#C8102E; --jp-indigo:#2F4F6F; --jp-sumi:#2C2C2C; }
+.jp-rv-wrap { max-width:720px; margin:0 auto; }
+.jp-rv-header {
+    background:linear-gradient(135deg, rgba(200,16,46,.08), rgba(47,79,111,.08));
+    border-radius:var(--mtscos-radius-lg); padding:16px 20px; margin-bottom:16px;
+    border:1px solid rgba(47,79,111,.2);
+}
+.jp-rv-header h2 { font-family:"Yu Mincho",serif; font-size:20px; margin:0 0 4px; color:var(--jp-sumi); }
+.jp-rv-header .jp-sub { font-size:12px; color:var(--mtscos-text-secondary); }
+.jp-rv-progress { height:6px; background:var(--mtscos-border-light); border-radius:3px; overflow:hidden; margin-top:8px; }
+.jp-rv-progress .fill { height:100%; background:var(--jp-indigo); transition:width .3s; }
+.jp-rv-progress .fill.ok { background:#2a9d3f; }
+.jp-rv-controls { display:flex; gap:8px; margin-top:10px; flex-wrap:wrap; }
+.jp-rv-controls button {
+    padding:6px 16px; border-radius:18px; border:1px solid var(--jp-indigo);
+    background:#fff; color:var(--jp-indigo); font-size:12px; cursor:pointer; font-weight:600;
+}
+.jp-rv-controls button:hover { background:var(--jp-indigo); color:#fff; }
+.jp-rv-controls button.primary { background:var(--jp-vermilion); color:#fff; border-color:var(--jp-vermilion); }
+.jp-rv-controls button.primary:hover { background:#a00d25; }
+
+.jp-rv-card {
+    background:var(--mtscos-bg-card); border:1px solid var(--mtscos-border-light);
+    border-radius:var(--mtscos-radius-lg); padding:28px; margin-bottom:14px;
+    text-align:center; box-shadow:0 2px 8px rgba(0,0,0,.04);
+}
+.jp-rv-card .jp-word-kanji { font-family:"Yu Mincho",serif; font-size:56px; font-weight:900; color:var(--jp-sumi); line-height:1.1; margin-bottom:4px; }
+.jp-rv-card .jp-word-kana { font-family:"Yu Mincho",serif; font-size:24px; color:var(--jp-indigo); margin-bottom:4px; }
+.jp-rv-card .jp-word-romaji { font-size:14px; color:var(--mtscos-text-secondary); letter-spacing:1px; }
+.jp-rv-card .jp-word-pos {
+    display:inline-block; font-size:10px; padding:3px 10px; background:var(--jp-indigo); color:#fff;
+    border-radius:10px; margin-top:12px; font-weight:600;
+}
+.jp-rv-card .jp-meaning { font-family:"Yu Mincho",serif; font-size:18px; font-weight:700; color:var(--jp-vermilion); margin-top:16px; padding:10px; background:rgba(200,16,46,.06); border-radius:8px; }
+.jp-rv-card .jp-example { margin-top:12px; padding:12px; background:rgba(47,79,111,.05); border-radius:6px; text-align:left; }
+.jp-rv-card .jp-example .jp-ex-jp { font-family:"Yu Mincho",serif; font-size:14px; color:var(--jp-sumi); line-height:1.7; }
+.jp-rv-card .jp-example .jp-ex-cn { font-size:12px; color:var(--mtscos-text-tertiary); margin-top:4px; font-style:italic; }
+.jp-rv-tip { font-size:11px; color:var(--mtscos-text-tertiary); margin-top:10px; }
+
+.jp-rv-actions { display:flex; gap:10px; justify-content:center; margin-top:16px; }
+.jp-rv-actions button {
+    padding:14px 36px; border:none; border-radius:10px; cursor:pointer; font-size:14px; font-weight:700; transition:all .15s;
+}
+.jp-rv-actions .no { background:rgba(200,16,46,.1); color:var(--jp-vermilion); border:1px solid rgba(200,16,46,.3); }
+.jp-rv-actions .no:hover { background:var(--jp-vermilion); color:#fff; }
+.jp-rv-actions .yes { background:rgba(42,157,63,.1); color:#2a9d3f; border:1px solid rgba(42,157,63,.3); }
+.jp-rv-actions .yes:hover { background:#2a9d3f; color:#fff; }
+.jp-rv-actions .skip { background:var(--mtscos-bg-card); color:var(--mtscos-text-tertiary); border:1px solid var(--mtscos-border-light); }
+.jp-rv-actions .skip:hover { background:var(--mtscos-border-light); }
+
+.jp-rv-empty { text-align:center; padding:60px 20px; background:var(--mtscos-bg-card); border-radius:var(--mtscos-radius-lg); border:1px solid var(--mtscos-border-light); }
+.jp-rv-empty h3 { font-family:"Yu Mincho",serif; color:var(--jp-indigo); margin:0 0 8px; }
+.jp-rv-empty p { color:var(--mtscos-text-tertiary); font-size:13px; margin:0 0 16px; }
+.jp-rv-empty .jp-stats { display:flex; justify-content:center; gap:20px; margin-top:16px; }
+.jp-rv-empty .jp-stats div { text-align:center; }
+.jp-rv-empty .jp-stats .num { font-size:24px; font-weight:900; color:var(--jp-vermilion); }
+.jp-rv-empty .jp-stats .lbl { font-size:11px; color:var(--mtscos-text-tertiary); }
+</style>
+{% endblock %}
+{% block content %}
+<div style="margin-bottom:16px;font-size:13px;color:var(--mtscos-text-tertiary)">
+    <a href="/japanese_page" style="color:var(--jp-indigo);text-decoration:none">{{ t('auto.jpn_vocabulary_review.__x_____a85766c6', default='← 日本語ポータル') }}</a>
+    <span style="margin:0 6px">›</span> 語彙レビュー
+</div>
+
+<div class="jp-rv-wrap">
+    <div class="jp-rv-header">
+        <h2>今日の復習 ({{ due_count }}語)</h2>
+        <div class="jp-sub">{{ t('auto.jpn_vocabulary_review.srs________x_e7a993a4', default='SRS アルゴリズムが自動でスケジュール · 間隔反復学習') }}</div>
+        <div class="jp-rv-progress"><div class="fill" id="jp-progress-fill" style="width:0%"></div></div>
+        <div class="jp-rv-controls">
+            <button onclick="startReview()" class="primary" id="jp-start-btn">{{ t('auto.jpn_vocabulary_review.______x_ab8b3cbc', default='📚 レビュー開始') }}</button>
+            <button onclick="loadWords(true)">{{ t('auto.jpn_vocabulary_review.__x_3ee987b3', default='🔄 最新化') }}</button>
+            <button onclick="document.getElementById('jp-stats').style.display='block'">{{ t('auto.jpn_vocabulary_review.__x_606d4a24', default='📊 統計') }}</button>
+        </div>
+        <div id="jp-stats" style="display:none;margin-top:10px;font-size:11px;color:var(--mtscos-text-tertiary)">
+            読み込み中...
+        </div>
+    </div>
+
+    <div id="jp-rv-body">
+        <div class="jp-rv-empty">
+            <h3>{{ t('auto.jpn_vocabulary_review.x________2c085f8a', default='準備はいいですか？') }}</h3>
+            <p>{{ t('auto.jpn_vocabulary_review._____x_______c4d552de', default='「レビュー開始」をクリックすると、今日復習する語彙が出ます') }}</p>
+            <div style="font-size:48px;margin-top:20px">📖</div>
+        </div>
+    </div>
+</div>
+
+<script>
+let words = {{ words_json|tojson|safe }};
+let idx = 0, correct = 0, wrong = 0;
+let showAnswer = false;
+
+function loadWords(force=false){
+    fetch('/api/japanese/vocabulary/review?limit=20', {credentials:'include'})
+        .then(r=>r.json())
+        .then(d=>{
+            if (d && d.success) {
+                words = d.data.words || [];
+                document.querySelector('.jp-rv-header .jp-sub').innerText =
+                    `本日のレビュー単語: ${d.data.due_count} 語 (SRS)`;
+            }
+        }).catch(()=>{});
+}
+
+function startReview(){
+    if (!words || words.length === 0) {
+        fetch('/api/japanese/vocabulary/review?limit=20', {credentials:'include'})
+            .then(r=>r.json())
+            .then(d=>{
+                if (d && d.success && d.data.words.length) {
+                    words = d.data.words;
+                    idx = 0; correct = 0; wrong = 0;
+                    renderCard();
+                } else {
+                    document.getElementById('jp-rv-body').innerHTML = `
+                        <div class="jp-rv-empty">
+                            <h3>{{ t('auto.jpn_vocabulary_review.__x______x__fa562af1', default='🎉 本日のレビューは終了！') }}</h3>
+                            <p>{{ t('auto.jpn_vocabulary_review.x__x_x_______a28d0863', default='全ての語彙を掌握しています · 明日もお楽しみに') }}</p>
+                            <div style="font-size:48px">🏆</div>
+                        </div>`;
+                }
+            }).catch(()=>{ alert('API エラー'); });
+        return;
+    }
+    idx = 0; correct = 0; wrong = 0;
+    renderCard();
+}
+
+function renderCard(){
+    if (idx >= words.length) {
+        finish(); return;
+    }
+    const w = words[idx];
+    const pct = Math.round((idx) / words.length * 100);
+    document.getElementById('jp-progress-fill').style.width = pct + '%';
+    const pos = w.pos || '名詞';
+    document.getElementById('jp-rv-body').innerHTML = `
+        <div class="jp-rv-card">
+            ${w.kanji ? `<div class="jp-word-kanji">${w.kanji}</div>` : ''}
+            ${w.kana ? `<div class="jp-word-kana">${w.kana}</div>` : ''}
+            ${w.romanji ? `<div class="jp-word-romaji">${w.romanji}</div>` : ''}
+            <span class="jp-word-pos">${pos}</span>
+            <div class="jp-rv-tip">カードをクリックまたは「答えを見る」ボタンで{{ t('auto.jpn_vocabulary_review.x_c7aff062', default='意味') }}を表示</div>
+            <div class="jp-word-meaning" id="jp-meaning" style="display:none"></div>
+            ${w.example_jp ? `<div class="jp-example">
+                <div class="jp-ex-jp">${w.example_jp}</div>
+                ${w.example_cn ? `<div class="jp-ex-cn">${w.example_cn}</div>` : ''}
+            </div>` : ''}
+        </div>
+        <div class="jp-rv-actions">
+            <button class="no" onclick="grade(false)" ${showAnswer?'':'disabled style="opacity:.4"'}>❌ まだ</button>
+            <button class="skip" onclick="toggleAnswer()">{{ t('auto.jpn_vocabulary_review.__x__x__7b5ba5b4', default='🔍 答えを見る') }}</button>
+            <button class="yes" onclick="grade(true)" ${showAnswer?'':'disabled style="opacity:.4"'}>✅ {{ t('auto.jpn_vocabulary_review.x___70dca735', default='覚えた') }}</button>
+        </div>
+    `;
+    document.getElementById('jp-rv-card')?.addEventListener('click', toggleAnswer);
+    showAnswer = false;
+    // 点击 body 切换
+    setTimeout(() => {
+        document.querySelector('.jp-rv-card')?.addEventListener('click', toggleAnswer, {once:true});
+    }, 50);
+}
+
+function toggleAnswer(){
+    const el = document.getElementById('jp-meaning');
+    if (!el) return;
+    const w = words[idx];
+    el.innerHTML = `
+        <div style="font-size:11px;color:var(--mtscos-text-tertiary);margin-bottom:4px">意味</div>
+        <div class="jp-meaning">${w.meaning_cn || '—'}</div>
+    `;
+    el.style.display = 'block';
+    showAnswer = true;
+    // 开启 grade 按钮
+    document.querySelectorAll('.jp-rv-actions button').forEach(b=>{
+        if (b.disabled !== undefined) b.disabled = false;
+    });
+}
+
+function grade(isCorrect){
+    const w = words[idx];
+    if (isCorrect) correct++; else wrong++;
+    // 落库
+    fetch('/api/japanese/vocabulary/study', {
+        method:'POST', credentials:'include',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ word_id: w.word_id, level: w.level || '', is_correct: isCorrect?1:0 })
+    }).catch(()=>{});
+    idx++;
+    renderCard();
+}
+
+function finish(){
+    document.getElementById('jp-progress-fill').classList.add('ok');
+    document.getElementById('jp-progress-fill').style.width = '100%';
+    const pct = Math.round(correct/(correct+wrong)*100) || 0;
+    document.getElementById('jp-rv-body').innerHTML = `
+        <div class="jp-rv-empty">
+            <h3>{{ t('auto.jpn_vocabulary_review.x_____x__c95088a3', default='本日のレビュー完了！') }}</h3>
+            <div style="font-size:48px;margin:16px 0">${pct>=80?'🎉':pct>=60?'👍':'💪'}</div>
+            <div class="jp-stats">
+                <div><div class="num">${correct}</div><div class="lbl">覚えた</div></div>
+                <div><div class="num">${wrong}</div><div class="lbl">まだ</div></div>
+                <div><div class="num">${pct}%</div><div class="lbl">{{ t('auto.jpn_vocabulary_review.x_0e4a541a', default='正答率') }}</div></div>
+            </div>
+            <p style="margin-top:16px">{{ t('auto.jpn_vocabulary_review.__pct__80__x_469f4e5a') }}</p>
+            <div style="margin-top:20px">
+                <button onclick="startReview()" style="padding:10px 30px;background:var(--jp-vermilion);color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:700">{{ t('auto.jpn_vocabulary_review.____x_a5bcf1fc', default='🔄 もう一度') }}</button>
+                <button onclick="location.href='/japanese_page'" style="padding:10px 30px;background:var(--jp-indigo);color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:700;margin-left:8px">🏠 ポータル</button>
+            </div>
+        </div>`;
+}
+</script>
+{% endblock %}

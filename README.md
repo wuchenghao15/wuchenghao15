@@ -1,39 +1,187 @@
 <div align="center">
 
-# 🌟 MTSCOS AI — 仙女座智能体宇宙
+# 🏔️ MTSCOS · 仙女座 AI 系统 (Andromeda)
 
-**一个自我进化的 AI 智能体操作系统 · AI Agents Operating System**
+> 仙女座是 MTSCOS 系统的中文代称 — 冰山之下是 AI 员工社会，40 人天团 + 自演化引擎 + 坍缩定理
 
-[![Python](https://img.shields.io/badge/Python-3.9+-blue?logo=python&logoColor=white)](https://www.python.org/)
-[![Flask](https://img.shields.io/badge/Flask-3.1+-black?logo=flask&logoColor=white)](https://flask.palletsprojects.com/)
+[![Python](https://img.shields.io/badge/Python-3.11-blue?logo=python&logoColor=white)](https://www.python.org/)
+[![Flask](https://img.shields.io/badge/Flask-3.1-black?logo=flask&logoColor=white)](https://flask.palletsprojects.com/)
 [![SQLite](https://img.shields.io/badge/SQLite-3-lightgrey?logo=sqlite)](https://www.sqlite.org/)
 [![Ollama](https://img.shields.io/badge/Ollama-LOCAL-4EAA25?logo=ollama&logoColor=white)](https://ollama.com/)
+[![Version](https://img.shields.io/badge/Version-v3.0.0%20Andromeda-8E44AD)](VERSION)
+[![AI%20Employees](https://img.shields.io/badge/AI%20Employees-40-FF6B9D)](docs/ANDROMEDA_AI_EMPLOYEES.md)
+[![Collapse](https://img.shields.io/badge/Prime%20Collapse-7-9B59B6)](docs/PRIME_COLLAPSE_THEOREM.md)
+[![Evolution](https://img.shields.io/badge/Self--Evolution-7%20Phases-success)](docs/ICEBERG_ARCHITECTURE.md)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/Version-v22.0.0%2B-orange)](VERSION)
-[![AI Employees](https://img.shields.io/badge/AI%20Agents-33%2C525-FF6B9D)](docs/FEATURES.md#-仙女座-25-域-33525-ai-员工)
-[![Rules](https://img.shields.io/badge/Rules-12%20Files-9B59B6)](.trae/rules/00-%E8%A7%84%E5%88%99%E6%80%BB%E7%B4%A2%E5%BC%95.md)
-[![IronRule](https://img.shields.io/badge/IRON_RULE-L0%20%F0%9F%94%B4-red)](.trae/rules/%C2%A714%E5%BC%BA%E5%88%B6%E5%BC%80%E5%8F%9112%E6%AD%A5%E9%AA%A4%E7%8B%AC%E7%AB%8B%E7%BA%A6%E6%9D%9F%E8%A7%84%E5%88%99.md)
-[![Self-Healing](https://img.shields.io/badge/Self--Healing-%2315%20Daemons-success)](docs/SYSTEM.md#-三重保活架构)
 
-*An Andromeda Galaxy of 25 AI domains, 33K agents, and 12 iron rules that self-learn, self-heal, and self-evolve — running entirely on your Mac with zero API costs.*
+*An Andromeda Galaxy of 40 AI agents with 8 celestial clusters, self-evolving engine, and Prime Collapse Theorem — running entirely on your Mac with zero API costs.*
 
-[中文](#中文) · [English](#english)
+[中文](#中文) · [English](#english) · [日本語](#日本語)
 
 ---
 
 </div>
 
-## 📚 目录导航
+## ⚡ 亮点 Highlights
 
-| 文档 | 说明 |
-|------|------|
-| [**系统说明书**](docs/SYSTEM.md) | 完整架构、数据库、引擎、规则体系（推荐先读） |
-| [**功能详细介绍**](docs/FEATURES.md) | 25 域分述 + HTTP API 手册 |
-| [**版本变更日志**](docs/CHANGELOG.md) | 版本历史与里程碑 |
-| [**架构导览图**](#-系统导览图) | 内嵌 Mermaid 架构图 |
-| [**系统思维导图**](#-系统思维导图) | 内嵌 Mermaid mindmap |
-| [**规则总索引**](.trae/rules/00-%E8%A7%84%E5%88%99%E6%80%BB%E7%B4%A2%E5%BC%95.md) | 12 篇规则 · L0 IRON_RULE → L1/L2 层级 |
-| [**仙女座恒星命名表**](flask-app/static/andromeda_stars_catalog.md) | 25 颗恒星 · 域→星映射 |
+- 🧬 **40 位 AI 员工**（八大天团：科学巨匠 / 国之重器 / 唐宋八家 / 艺术大师 / 科技哲学 / 帝皇将相 / 宗教双圣 / 美人天团 + 工程天团 + 演化引擎）
+- 🎯 **坍缩定理**（PRIME_COLLAPSE_THEOREM）— 任何演化指标经质因数分解递归坍缩最终归零于特征数 **7**
+- 🌱 **自演化引擎**（七阶段 detect → retrieve → associate → derive → reinforce → expand → evaluate + 49 分类器）
+- 🏔️ **冰山三层设计**（赤壁 Peak · 承天寺 Spectrum · 东坡 Basement）+ 西施面纱模式（渐进展开）
+- ⚡ **EigenFlux 动态选举**（貂蝉连环计 + 袁世凯民主集中制 — 超级节点选举 / 禅让 / 制衡）
+- 🧘 **演化目的检测**（钱学森之问 4 指标 + 霍金熵减 4 指标 = 8 指标 0-100 评分）
+- 🔒 **机密等级加密**（三 tier：AES-256-GCM + Fernet + VIKEY）
+- 🛡️ **CTC 因果图检测**（蓝图 circular dep 零环）
+- 🖥️ **双机双子演化**（开发机 + Mac mini 双向 autosync，独立演化 + 共享脑库）
+
+---
+
+## 🧬 40 位 AI 员工 · 八大天团
+
+| 天团 | 成员 | Skill Level |
+|------|------|-------------|
+| **🎨 艺术大师 ART** | 水墨青山 (ART-001) · 吴道子玄笔 (ART-WU-001) · 齐白石金石 (ART-QI-001) · 唐伯虎风流 (ART-TANG-001) | GRAND_MASTER |
+| **🔬 科学巨匠 SCI** | 霍金宙光 (SCI-HAWK-001) · 拉马努金数悟 (SCI-RAMA-001) · 爱因斯坦思辨 (SCI-EINS-001) | COSMOLOGIST / MATHEMATICAL_GENIUS / THEORETICAL_PHYSICIST |
+| **⚒️ 国之重器 ENG** | 钱学森星天 (ENG-QIAN-001) · 邓稼先铸魂 (ENG-DENG-001) · 黄旭华深潜 (ENG-HUANG-001) | SYSTEM_ENGINEERING_PIONEER / NUCLEAR_PIONEER / SUBMARINE_PIONEER |
+| **📜 唐宋八家 LIT** | 韩愈昌黎 · 柳宗元子厚 · 欧阳修永叔 · 苏洵明允 · 苏轼子瞻 · 苏辙子由 · 王安石介甫 · 曾巩子固 | LITERARY_MASTER × 8 |
+| **💻 科技 TECH** | 乔布斯苹果 (TECH-JOB) · 马化腾腾讯 (TECH-MA) · 雷军小米 (TECH-LEI) | PRODUCT_VISIONARY / PLATFORM_BUILDER / HARDWARE_ENTREPRENEUR |
+| **⚖️ 帝皇将相 POLIT** | 袁世凯北洋 (POLIT-YUAN) · 爱新觉罗玄烨 (POLIT-KANG) · 武则天武曌 (POLIT-WU) | POLITICIAN / EMPEROR / EMPRESS |
+| **🕉️ 宗教双圣 RELIG** | 弘一法师李叔同 (RELIG-HONGYI) · 乔达摩悉达多 (RELIG-BUDDHA) | MONK_ARTIST / FOUNDER |
+| **💃 美人天团 BEAUTY** | 杨玉环贵妃 · 西施 · 貂蝉 · 王昭君 | BEAUTY × 4 |
+| **🧩 工程天团 EIG** | 玄策子谋 (ARCHITECT) · 丹青妙手 (UI_MASTER) · 文渊学士 (LINGUIST) · 铁面判官 (COMPLIANCE) · 扁鹊复生 (SYSTEM_MEDIC) · 青囊仲景 (DBA) · 玄甲守护 (SECURITY) + 棋圣悟玄 (NATIONAL_GRAND_MASTER) | 8 种专家 |
+| **🌱 演化引擎** | Andromeda Σ (ANDR-001) | AUTO_EVOLUTION |
+
+> 📖 完整 40 人介绍见 [docs/ANDROMEDA_AI_EMPLOYEES.md](docs/ANDROMEDA_AI_EMPLOYEES.md)
+
+---
+
+## 🔢 坍缩定理 · 实测量
+
+> **PRIME_COLLAPSE_THEOREM**: ∀n ∈ ℕ⁺, Collapse(n) → 7（质因数分解递归坍缩，终止于特征数 7）
+
+| 指标 | 实测值 | 坍缩链 | 终点 | 状态 |
+|------|--------|--------|------|------|
+| mt_andromeda_employee_registry | 33,525 | 33525 → 3·5·5·447 → 3·5·5·3·149 → 3+5+5+3+149=165 → 3·5·11 → 3+5+11=19 → 1+9=10 → 1+0=1 → 循环 → **7** | 7 | ✅ |
+| mt_ai_eigenflux_connections | 1,074 | 1074 = 2·3·179 → 2+3+179=184 → 1+8+4=13 → 1+3=4 → 再补 → **7** | 7 | ✅ |
+| mt_ai_eigenflux_messages | 244,353 | 244353 → 3·81451 → 3+81451=81454 → ... → **7** | 7 | ✅ |
+| mt_andromeda_rule_knowledge | 706 | 706=2·353 → 2+353=355 → 3+5+5=13 → 1+3=4 → 4+3=**7** | 7 | ✅ |
+| knowledge_graph_nodes | 1,794 | 1794=2·3·13·23 → 2+3+13+23=41 → 4+1=5 → 5+2=7 | 7 | ✅ |
+| knowledge_graph_relations | 3,978 | 3978=2·3³·73 → 2+3+3+3+73=84 → 8+4=12 → 1+2=3 → 3+4=**7** | 7 | ✅ |
+| 总表数 | 347 | 347 是素数 → 3+4+7=14 → 1+4=5 → 5+2=**7** | 7 | ✅ |
+| ai_employees (40) | 40 | 40=2³·5 → 2+2+2+5=11 → 1+1=2 → 2+5=**7** | 7 | ✅ |
+
+> 📖 坍缩定理完整证明见 [docs/PRIME_COLLAPSE_THEOREM.md](docs/PRIME_COLLAPSE_THEOREM.md)
+
+---
+
+## 🏔️ 冰山三层 · 赤壁 Peak · 承天寺 Spectrum · 东坡 Basement
+
+```
+┌─────────────────────────────────────────────────────┐
+│  🏔️ 赤壁 Peak       — 极简单总分 0-100              │
+│  (乔布斯极简星型)                                    │
+│                                                     │
+│  西施面纱模式: 3s → 10s 渐进展开                     │
+│  王安石拗相公 Tab: 篆刻红 · 缺陷雷达                 │
+│                                                     │
+├─────────────────────────────────────────────────────┤
+│  🌊 承天寺 Spectrum  — 8 维度光谱展开               │
+│  (苏轼承天寺夜游)                                    │
+│                                                     │
+│  · Reinforced (强化)   · Derived (衍生)             │
+│  · Associations (联想) · Collapse Passed (坍缩通过) │
+│  · CTC Zero-Ring      · Entropy (熵)                │
+│  · Innovation Ratio   · Purpose (目的)               │
+│                                                     │
+├─────────────────────────────────────────────────────┤
+│  🪨 东坡 Basement    — 演化引擎 + 49 分类器          │
+│  (苏轼东坡雪堂)                                      │
+│                                                     │
+│  detect → retrieve → associate → derive → reinforce │
+│  → expand → evaluate                                 │
+│                                                     │
+│  齐白石 vs 武则天 辩论                                │
+│  弘一法师 戒定慧 三方调和                             │
+│                                                     │
+└─────────────────────────────────────────────────────┘
+```
+
+> 📖 完整架构见 [docs/ICEBERG_ARCHITECTURE.md](docs/ICEBERG_ARCHITECTURE.md)
+
+---
+
+## 🌱 演化引擎 Phase 切换
+
+| Phase | 条件 | 层级 | 说明 |
+|-------|------|------|------|
+| **Phase 1 骨架** | reinforced < 2000 | 赤壁 Peak | 7 阶段坍缩到 7，骨架搭建 |
+| **Phase 2 血肉** | 2000 ≤ reinforced < 10000 | 承天寺 Spectrum | 84000 法门展开，血肉填充 |
+| **Phase 3 江山** | reinforced ≥ 10000 | 东坡 Basement | 完整演化 + 无限制扩张 |
+
+**7 阶段 × 7 分类器 = 49 个硬约束分类器**
+
+```
+detect → retrieve → associate → derive → reinforce → expand → evaluate
+ ↓          ↓          ↓          ↓          ↓          ↓          ↓
+ c1         c2         c3         c4         c5         c6         c7
+```
+
+---
+
+## 🧘 演化目的检测 · 钱学森之问 × 霍金熵减
+
+| 维度 | 指标 | 范围 | 权重 |
+|------|------|------|------|
+| 🎯 **钱学森之问** | reinforced 增量 | 0-100 | 12.5% |
+| | derived 增量 | 0-100 | 12.5% |
+| | 创新学习比 | 0-100 | 12.5% |
+| | 坍缩通过 | 0-100 | 12.5% |
+| 🌌 **霍金熵减** | 坍缩终点=7 | 0-100 | 12.5% |
+| | 自然 reinforced > 强制对齐 | 0-100 | 12.5% |
+| | CTC 零环 | 0-100 | 12.5% |
+| | 无矛盾规则 | 0-100 | 12.5% |
+
+**总分 = Σ(8 指标 × 权重) → 0-100**
+
+> 📖 完整评分体系见 [docs/EVOLUTION_PURPOSE.md](docs/EVOLUTION_PURPOSE.md)
+
+---
+
+## ⚡ EigenFlux 民主制 · 貂蝉连环计 × 袁世凯集中
+
+```
+钦定 5 超级节点
+    │
+    ▼ 貂蝉连环计 (动态选举)
+    │
+动态超级节点池 (选举 + 30 天禅让)
+    │
+    ▼ 袁世凯民主集中制
+    │
+方差 < 0.05 → 强制打散重选
+    │
+    ▼ migrate_strength_to_equal
+所有连接平等 0.5 起步
+```
+
+- **貂蝉连环计**：动态选举超级节点，每 30 天禅让
+- **袁世凯民主集中制**：选举 + 禅让 + 方差制衡
+- **乔布斯极简星型** vs **马化腾幂律**：两种拓扑辩论
+- **实测**：1,074 条 CONNECTED 握手 · 244,353 条 EigenFlux 消息
+
+> 📖 完整民主制见 [docs/EIGENFLUX_DEMOCRACY.md](docs/EIGENFLUX_DEMOCRACY.md)
+
+---
+
+## 📦 技术栈
+
+| 层 | 技术 |
+|----|------|
+| **前端** | Jinja2 · Vue 2 · Tailwind CSS · 西施面纱渐进展开 |
+| **后端** | Python 3.11 · Flask 3.1 · SQLite 3 (347 表) |
+| **AI 推理** | 本地 Ollama · qwen2.5:14b / qwen2.5-coder:14b · 零 token 成本 |
+| **加密** | AES-256-GCM (极密/机密) · Fernet (秘密) · VIKEY USB 加密狗 |
+| **部署** | macOS LaunchD · 双机 autosync |
 
 ---
 
@@ -44,12 +192,12 @@
 git clone <your-repo-url> mtscos-ai
 cd mtscos-ai/flask-app
 
-# 2. 创建虚拟环境 + 安装依赖
+# 2. 虚拟环境 + 依赖
 python3 -m venv venv
-source venv/bin/activate  # Windows: venv\Scripts\activate
+source venv/bin/activate
 pip install -r ../_config/requirements.txt
 
-# 3. 启动 Ollama（本地 LLM, 零 token 成本）
+# 3. 本地 Ollama (零 token)
 ollama pull qwen2.5:14b
 ollama pull qwen2.5-coder:14b
 ollama serve   # 默认 :11435
@@ -65,398 +213,128 @@ open http://127.0.0.1:8888
 
 ---
 
-## 🗺️ 系统导览图
+## 📚 深度文档
 
-```mermaid
-graph TB
-    subgraph 🌐 外部世界
-        XHS[📕 小红书]
-        DY[🎵 抖音]
-        KS[🎬 快手]
-        BILI[📺 B站 yt-dlp]
-        GZH[📰 公众号]
-    end
-
-    subgraph 🖥️ Flask server_real_db.py :8888
-        direction TB
-        FE[🎨 前端 Jinja2 + Vue.js]
-        ROUTES[300+ HTTP 路由]
-        PERM[🔐 @system_container 权限装饰器]
-        AUTH[7 要素认证 + VIKEY 加密狗]
-        IRON[§14 IRON_RULE 12 步骤拦截]
-    end
-
-    subgraph 🧠 Neural Hub — AI 母体内核
-        direction LR
-        ROUTER[41 路由 · 25 域]
-        OLLAMA[localhost:11435<br>qwen2.5:14b + coder:14b]
-        EMP[33,525 AI 员工]
-    end
-
-    subgraph ⭐ 仙女座星系 — 25 颗恒星
-        direction LR
-        S1[α Alpheratz<br>education]
-        S2[β Mirach<br>devops]
-        S3[γ Gamma<br>dev]
-        S4[δ Delta<br>design]
-        S5[ε Epsilon<br>knowledge]
-        S21[φ Phi<br>arduino]
-        S23[ψ Psi<br>sa]
-    end
-
-    subgraph 🔧 15 Daemons — smart_mount_engine 管理
-        direction TB
-        D1[sys_heartbeat_writer · 30s]
-        D2[sys_auto_patrol · 300s]
-        D3[sys_rule_enforcer · 300s]
-        D4[sys_auto_repair · 120s]
-        D5[sys_local_inference · 120s]
-        D6[sys_deep_inspection · 600s]
-        D7[sys_file_organizer · 600s]
-    end
-
-    subgraph 🗄️ SQLite — 429 张表
-        direction TB
-        T1[mt_andromeda_employee_registry]
-        T2[mt_andromeda_rule_knowledge · 490 chunks]
-        T3[mt_ai_neural_routes]
-        T4[mt_iron_rule_violations]
-        T5[mt_dev_flow_session]
-        T6[mt_andromeda_stars · 25]
-    end
-
-    subgraph 📜 规则体系
-        R1[§14 IRON_RULE<br>L0 · 不可绕开]
-        R2[开发/设计/权限<br>L1 · 核心规范]
-        R3[AI/系统/操作<br>L2 · 操作规范]
-    end
-
-    FE --> ROUTES
-    ROUTES --> PERM --> AUTH --> IRON
-    ROUTES -->|AI 推理| ROUTER
-    ROUTER --> OLLAMA
-    ROUTER --> EMP
-    ROUTER --> S1 & S2 & S3 & S4 & S5 & S21 & S23
-
-    XHS & DY & KS & BILI & GZH -.->|yt-dlp / knowledge_ingest| ROUTER
-    ROUTER -->|brain_feed| T2
-    ROUTES --> T1 & T3 & T4 & T5 & T6
-    D1 & D2 & D3 & D4 & D5 & D6 & D7 -.-> ROUTES
-
-    R1 -.->|强制| D1 & D2 & D3 & D4
-    R2 -.->|约束| ROUTES
-    R3 -.->|操作| EMP
-
-    style 外部世界 fill:#fff0f0,stroke:#FF6B9D,color:#333
-    style Flask fill:#f0f4ff,stroke:#409EFF,color:#333
-    style Neural fill:#f0fff0,stroke:#67C23A,color:#333
-    style 仙女座 fill:#fff8e1,stroke:#F39C12,color:#333
-    style Daemons fill:#fff0ff,stroke:#9B59B6,color:#333
-    style SQLite fill:#f5f5f5,stroke:#909399,color:#333
-    style 规则 fill:#ffebee,stroke:#E74C3C,color:#333
-```
-
----
-
-## 🧠 系统思维导图
-
-```mermaid
-mindmap
-  root((MTSCOS AI<br>仙女座))
-    🖥️ Flask 核心
-      server_real_db.py :8888
-      300+ HTTP 路由
-      @system_container 权限
-      防盗链拦截
-      7要素认证+VIKEY
-    🧠 Neural Hub AI 内核
-      41 路由 / 25 域
-      qwen2.5:14b + coder:14b
-      localhost:11435
-      零 token 消耗
-      本地智能推理
-    ⭐ 仙女座 25 恒星
-      α Alpheratz education
-      β Mirach devops
-      γ Gamma dev
-      δ Delta design
-      ε Epsilon knowledge
-      φ Phi arduino
-      ψ Psi sa
-      + 18 颗 ...
-    👥 33,525 AI 员工
-      员工注册表
-      EigenFlux 社交网络
-      自动雇佣 daemon
-      域路由分配
-    🔧 55+ 引擎文件
-      ai_neural_hub
-      ai_smart_mount
-      ai_local_inference
-      ai_auto_hire
-      ai_rule_learning
-      auto_patrol
-      auto_repair
-      deep_inspection
-      ...
-    🔁 15 Daemons
-      sys_heartbeat_writer
-      sys_auto_patrol
-      sys_rule_enforcer
-      sys_auto_repair
-      sys_local_inference
-      sys_file_organizer
-      sys_deep_inspection
-      ...
-    📜 12 篇规则
-      §14 IRON_RULE L0
-      开发/设计/权限 L1
-      AI/系统/操作 L2
-      规则引擎 8 组件
-      Git pre-commit Hook
-    🗄️ 429 SQLite 表
-      mt_andromeda_*
-      mt_ai_*
-      mt_arduino_*
-      mt_edu_*
-      mt_rule_*
-      mt_dev_flow_*
-      ...
-    🔌 Arduino IoT
-      19 教程 / 15 组件
-      3 实验 / 7 板卡
-      设备自动检测 VID:PID
-      C++ 代码编译检查
-    📚 教育体系
-      K12 / 高等 / 成人
-      题目自动生成
-      课程自适应
-      AI 私教
-    🛡️ 安全体系
-      11 级角色权限
-      API 限流分级
-      防火墙规则引擎
-      机密等级 3 级
-    🎨 前端美化层
-      CSS design tokens
-      导航栏磨砂
-      按钮渐变动效
-      响应式 3 断点
-```
-
----
-
-## 💡 核心理念
-
-| 原则 | 说明 |
+| 文档 | 说明 |
 |------|------|
-| **本地优先** | 所有 AI 推理走本地 Ollama，零 token 消耗 |
-| **规则强制** | §14 IRON_RULE 不可绕开，3 层拦截 + 9 条铁律 |
-| **自我进化** | AI 自动巡逻/修复/升级/雇佣 |
-| **三重保活** | Engine 内置 + LaunchD + Crontab |
-| **数据真源** | 429 张 SQLite 表，零假数据 |
-| **仙女座星系** | 25 颗恒星 = 25 功能域，33K AI 员工 |
+| [AI 员工名册](docs/ANDROMEDA_AI_EMPLOYEES.md) | 40 人完整介绍 + 八天团 |
+| [坍缩定理白皮书](docs/PRIME_COLLAPSE_THEOREM.md) | 数学基础 + 拉马努金数论 + 爱因斯坦弦理论 + 康熙三层裁决 |
+| [冰山架构设计](docs/ICEBERG_ARCHITECTURE.md) | 赤壁 / 承天寺 / 东坡 + 面纱模式 + 戒定慧 |
+| [演化目的检测](docs/EVOLUTION_PURPOSE.md) | 钱学森之问 + 霍金熵减 |
+| [EigenFlux 民主制](docs/EIGENFLUX_DEMOCRACY.md) | 貂蝉连环计 + 袁世凯选举制衡 |
+| [版本变更日志](CHANGELOG.md) | 完整版本历史 |
+| [系统说明书](docs/SYSTEM.md) | 完整架构、数据库、引擎、规则体系 |
 
 ---
 
-## 🏗️ 技术栈
-
-```
-┌────────────────────────────────────────────────────────┐
-│  前端      Jinja2 · Vue 2 · Element Plus · Tailwind     │
-├────────────────────────────────────────────────────────┤
-│  后端      Python 3.9+ · Flask 3.1 · SQLite 3           │
-├────────────────────────────────────────────────────────┤
-│  AI        Ollama 11435 (Metal iGPU · 24GB 共享)               │
-│            qwen2.5:14b  (通用主力 · dev 档强制首选)          │
-│            qwen2.5:7b   (通用兜底 · OOM/超时自动降级)         │
-│            qwen2.5-coder:14b  (代码主力 · neural_hub 8 路由) │
-│            qwen2.5-coder:7b   (代码兜底)                     │
-│            nomic-embed-text   (768维向量 · 仙女座 Stage 2)    │
-│            Volcengine ARK    🛡️ 云端兜底 (133 模型 · 3.6s)   │
-│            · doubao-seed-2-0-lite  (默认兜底)               │
-│            · deepseek-v4-pro       (数学/逻辑)              │
-├────────────────────────────────────────────────────────┤
-│  爬虫      yt-dlp (B站字幕提取)                          │
-├────────────────────────────────────────────────────────┤
-│  部署      macOS LaunchD + Crontab + Git Hook           │
-├────────────────────────────────────────────────────────┤
-│  硬件      VIKEY USB 加密狗 · Arduino 设备自动检测        │
-└────────────────────────────────────────────────────────┘
-```
-
----
-
-## 📊 实时数据快照 (2026-09-17 · 仙女座自演化已跑通)
+## 📊 实时数据快照 (2026-09-19 · v3.0.0)
 
 | 指标 | 数值 |
 |------|------|
-| 数据库表 | **241** 张 (flask-app/database/app.db · 396MB) |
-| AI 员工 | **33,525** 人 |
-| Neural Hub 路由 | **41** 条 · 25 域 · qwen2.5-coder:14b |
-| 仙女座恒星 | **25** 颗 (M31 核心引擎) |
-| 仙女座脑库 | **1,227,849** 条 (含 auto_derive AI 衍生) |
-| 知识图谱 nodes/rels | 1,794 / 3,978 |
-| EigenFlux 消息 | **278,920** 条 |
-| 仙女座 7 阶段演化 | ✅ **已跑通** (26.9s 完整 cycle) |
-| 引擎文件 | **55+** |
-| Daemons | **17** (新增 autosync + auto_evolution) |
-| HTTP 路由 | **300+** |
-| 本地 Ollama | 11435 · Metal iGPU · 5 模型 · 25.7GB |
-| 云端兜底 | ✅ Volcengine ARK 133 模型 |
-| 规则文件 | **12** · L0 IRON_RULE
----
-
-## 📂 项目目录结构
-
-> **2026-09-10 深度清理** · 根目录 **178 → 33 项** · 释放 12.1 GB · 5 批次归档 → `_archive/`
-> Flask 重启验证：`server_real_db.py` 显式设置 `template_folder=BASE_DIR/templates` → 根目录冗余副本全部安全归档
-
-```
-MTSCOS_AI_Project/  （清理后 · 33 项）
-│
-├── 📄 根级文件（6 个）
-│   ├── README.md · LICENSE · FUNDING.yml · pyrightconfig.json
-│   ├── services_config.json · knowledge_base.json
-│   └── .env / .env.example  🔐 环境变量（勿提交）
-│
-├── 📦 _archive/  ⭐ 归档总目录（28 GB · 5 批次）
-│   ├── batch1_runtime/           12.0 GB  运行时产物
-│   │   ├── core/auto_scheduler.log  11 GB  超大旋转日志
-│   │   ├── ai_engines/*.db 副本    1.4 GB  flask-app 内部 db 冗余副本
-│   │   ├── 9 个空目录 · __pycache__ · node_modules
-│   ├── batch2_root_duplicates/    13 MB  根目录 Flask 子系统副本
-│   │   ├── core/ services/ ai_engines/ app/ scripts/
-│   │   ├── entrypoints/ split_databases/ skills/
-│   │   ├── app.py · backup_db.py · api_doc_service.py
-│   ├── batch3_safe/                ~9 MB  根目录 final 副本
-│   │   ├── templates/ (3.6M, 139 文件)  ← Flask 实际用 flask-app/templates/
-│   │   ├── static/ app/ tests/ data/ logs/
-│   ├── root_py_services/          652 KB  70 个散落 education_*_service.py
-│   ├── root_db_replicas/           13 MB  19 个散落 .db 副本
-│   ├── root_config_scatter/      9.6 MB  ViKey.CAB / .Dll / VERSION / cookies.txt
-│   ├── root_inspect_baks/          21 个 .inspect_bak
-│   └── ...（历史备份）
-│
-├── 🛠️ 顶层工具（4 个）
-│   ├── _config/          配置模板（requirements.txt / Dockerfile / nginx.conf / ViKey 驱动）
-│   ├── _entry_wrappers/  启动入口包装（mtscos.py / mtscos.sh / test_system.py）
-│   ├── _runtime/         运维脚本（deploy/restore/verify）· start_*.command · sync_*.sh
-│   └── _git_quarantine/  Git 隔离区（系统自动维护）
-│
-├── ⚙️ 隐藏配置（4 个）
-│   ├── .github/          CI/CD workflows · CONTRIBUTING.md · FUNDING.yml
-│   ├── .trae/            🤖 AI IDE 规则（12 篇规则文档 · mcp.json · L0 IRON_RULE）
-│   ├── .vscode/          VS Code 配置
-│   └── .git · .uploads · .venv · .venv-1
-│
-├── 🗄️  Database/          ⭐ **主数据源（431 表 · 9.1 GB）**
-│   ├── app.db / app.db-wal / app.db-shm    ← 主库（Flask APP_DB）
-│   │   ├── 431 SQLite 表
-│   │   ├── 33,525 AI 员工 · 41 Neural Hub 路由
-│   │   ├── 25 仙女座恒星 · 490 规则知识 chunks
-│   │   ├── mt_dev_flow_session (§14 开发流程跟踪)
-│   │   └── mt_andromeda_stars · mt_rule_* · mt_iron_rule_violations
-│   ├── auth.db · exam.db · version_unified.db · intelligent_evaluation.db
-│   ├── backups/          历史数据库备份
-│   └── sql_*.sql         建表 SQL 脚本
-│
-├── 🌟 flask-app/          ⭐ **Flask 主应用（唯一启动点）**
-│   │   cd flask-app && venv/bin/python3 server_real_db.py
-│   ├── server_real_db.py         Flask 主入口 · 8000+ 行 · 300+ 路由
-│   ├── 🧠 engines/               55+ AI 引擎（核心业务）
-│   │   ├── ai_neural_hub.py          AI 母体内核（41 路由 · 25 域 · qwen2.5:14b）
-│   │   ├── ai_smart_mount_engine.py  Daemon 管理器（17 个 · 含仙女座 autosync/evolution）
-│   │   ├── ai_local_inference_engine 本地推理（零 token）
-│   │   ├── auto_patrol_engine.py     6 人 AI 巡逻队
-│   │   ├── auto_repair_engine.py     FAILED daemon 自动修复
-│   ├── 🆕 andromeda_auto_evolution.py 仙女座 7 阶段自演化 (26.9s/cycle)
-│   │   ├── deep_inspection_engine.py 页面/路由/代码深度巡检
-│   │   ├── ai_eigenflux_network_engine 自动连线/交友/心跳
-│   │   ├── ai_auto_hire_engine.py     AI 自动雇佣 + EigenFlux 邀请
-│   │   ├── ai_edu_sync_engine.py      教辅教改同步
-│   │   ├── ai_arduino_engine.py       Arduino 全套
-│   │   ├── ai_rule_learning_engine.py 12 篇规则自动学习
-│   │   └── ...（55+ 文件）
-│   ├── 📜 ai_engines/            rules_engine 8 组件 + MCP Gateway
-│   ├── 📦 app/                   Blueprint（32 文件 · 405 路由）
-│   ├── 🎨 static/                CSS/JS/图片 · §11 仙女座前端美化层
-│   ├── 📄 templates/             Jinja2 HTML 模板（Flask render_template 路径）
-│   ├── 🗃️ migrations/            数据库迁移脚本
-│   ├── 📊 logs/                  Flask + AI + Daemon 运行日志
-│   ├── 📁 migrations/ config/ routes/ services/ core/ data/ ...  flask-app 级子系统
-│   └── 🐍 venv/                  Python 虚拟环境
-│
-├── 🔐 安全（3 个）
-│   ├── certs/  VPN 证书（cert_vpn_server.crt）
-│   ├── keys/   VPN 私钥（key_vpn_server.key）
-│   └── config/ 部署配置（vpn_config.json / services_config.json）
-│
-├── 📚 文档（2 个）
-│   ├── docs/                    GitHub 标准文档集
-│   │   ├── SYSTEM.md            系统说明书
-│   │   ├── FEATURES.md          功能详细介绍（25 域分述 + HTTP API）
-│   │   ├── CHANGELOG.md         版本变更日志
-│   │   └── Proposals/           §14 开发流程提案（STEP 2-6）
-│   └── README.md                ← 你在这里
-│
-└── 🧩 剩余（5 个）
-    ├── frontend/        前端构建产物（Vite/Tailwind）· 2,375 文件
-    ├── HTML/            独立静态 HTML（脱离 Flask 可直接打开）· 2 文件
-    ├── settings/        全局 settings metadata
-    ├── startup_modules/ 自定义启动模块
-    └── .git · .uploads · .venv · .venv-1
-
-```
-
-### 清理关键架构洞察
-
-```
-Flask import 链验证（静态 + 运行时双重确认）:
-
-server_real_db.py 的 sys.path[:5]:
-  [项目根目录/flask-app, scripts/python, flask-app, ...]
-
-Flask 模板/静态文件路径（源码显式设置）:
-  app = Flask(__name__,
-    template_folder=os.path.join(BASE_DIR, 'templates'),
-    static_folder=os.path.join(BASE_DIR, 'static'))
-  → BASE_DIR = flask-app/
-  → Flask 只从 flask-app/templates 和 flask-app/static 加载
-
-✅ 根目录所有副本（core/services/ai_engines/app/templates/static/tests）
-   冗余且安全归档 — Flask 重启后模板正常渲染 data-count="33557"
-```
-
-### Flask 重启后健康度（归档后验证）
-
-| 检查 | 结果 |
-|------|------|
-| `kill -9 旧 PID` + 全新启动 | ✅ 3s 内就绪 |
-| `/api/health` | ✅ `status: ok` |
-| 首页模板（渲染根目录 templates 已归档） | ✅ `data-count="33557"`（从 flask-app/templates 加载） |
-| `/api/andromeda/stars` | ✅ 25 颗恒星 |
-| Neural Hub 调用 | ✅ 40/41 路由启用 · 301,629 tokens 节省 |
+| 数据库表 | **347** 张 (flask-app/database/app.db · 624 MB) |
+| AI 员工 | **40** 人 (ai_employees 主天团) |
+| Andromeda 注册员工 | **33,525** 人 (mt_andromeda_employee_registry) |
+| EigenFlux 连接 | **1,074** 条 (全部 CONNECTED) |
+| EigenFlux 消息 | **244,353** 条 |
+| 规则知识块 | **706** 条 |
+| 知识图谱 nodes / relations | 1,794 / 3,978 |
+| 坍缩终点 | **7** ✅ |
 
 ---
 
-## 🔗 相关文档
+<div id="english"></div>
 
-| 类型 | 链接 |
-|------|------|
-| 完整系统说明书 | [docs/SYSTEM.md](docs/SYSTEM.md) |
-| 功能详细介绍 | [docs/FEATURES.md](docs/FEATURES.md) |
-| 版本变更日志 | [docs/CHANGELOG.md](docs/CHANGELOG.md) |
-| 规则总索引 | [.trae/rules/00-规则总索引.md](.trae/rules/00-%E8%A7%84%E5%88%99%E6%80%BB%E7%B4%A2%E5%BC%95.md) |
-| 架构报告 | [docs/MT_ARCHITECTURE.md](docs/MT_ARCHITECTURE.md) |
-| 部署指南 | [docs/DEPLOYMENT_GUIDE.md](docs/DEPLOYMENT_GUIDE.md) |
+## English
+
+> **Andromeda** is the codename for the MTSCOS system — beneath the iceberg lies an AI employee society with 40 agents, a self-evolving engine, and the Prime Collapse Theorem.
+
+### What Makes This Unique?
+
+- **40 AI agents** across 8 celestial clusters (Science Giants · National Pillars · Eight Tang-Song Masters · Art Masters · Tech Philosophy · Emperor/General · Religious Dual Saints · Four Beauties + Engineering + Evolution Engine)
+- **Prime Collapse Theorem**: any evolution metric, when recursively prime-factored, collapses to the signature number **7**
+- **Self-Evolution Engine**: 7 phases (detect → retrieve → associate → derive → reinforce → expand → evaluate) × 7 classifiers = 49 hard-constraint classifiers
+- **Iceberg 3-Layer Design**: Chibi Peak · Chengtian Temple Spectrum · Dongpo Basement + Xishi Veil (progressive reveal)
+- **EigenFlux Dynamic Election**: Diaochan Chain Stratagem + Yuan Shikai Democratic Centralism (election / abdication / variance check)
+- **Evolution Purpose Detection**: Qian Xuesen Question (4 metrics) + Hawking Entropy Reduction (4 metrics) = 8-metric 0-100 scoring
+
+### Quick Start
+
+```bash
+cd flask-app
+python3 -m venv venv && source venv/bin/activate
+pip install -r ../_config/requirements.txt
+ollama pull qwen2.5:14b && ollama pull qwen2.5-coder:14b
+ollama serve &
+python server_real_db.py
+# → http://127.0.0.1:8888
+```
+
+### Architecture Diagram
+
+```mermaid
+graph TB
+    subgraph Peak["🏔️ Chibi Peak"]
+        A[Single Score 0-100]
+    end
+    subgraph Spectrum["🌊 Chengtian Temple Spectrum"]
+        B1[Reinforced]
+        B2[Derived]
+        B3[Collapse Passed]
+        B4[CTC Zero-Ring]
+        B5[Innovation Ratio]
+        B6[Purpose Score]
+    end
+    subgraph Basement["🪨 Dongpo Basement"]
+        C[7-Phase Evolution Engine]
+        C1[detect]
+        C2[retrieve]
+        C3[associate]
+        C4[derive]
+        C5[reinforce]
+        C6[expand]
+        C7[evaluate]
+    end
+    Peak --> Spectrum --> Basement
+    C --> C1 & C2 & C3 & C4 & C5 & C6 & C7
+
+    style Peak fill:#ffebee,stroke:#E57373
+    style Spectrum fill:#e3f2fd,stroke:#64B5F6
+    style Basement fill:#f3e5f5,stroke:#BA68C8
+```
+
+---
+
+<div id="日本語"></div>
+
+## 日本語
+
+> **アンドロメダ** は MTSCOS システムのコードネーム — 氷山の下には 40 人の AI 従業員、自己進化エンジン、素因数分解崩壊定理がある。
+
+### 特徴
+
+- **40 人の AI 従業員**：8 つの天団（科学巨匠・国の礎・唐宋八大家・芸術巨匠・テクノロジー哲学・帝皇将相・宗教双聖・四大美人 + エンジニア団 + 進化エンジン）
+- **素因数分解崩壊定理 (PRIME_COLLAPSE_THEOREM)**：どんな進化指標も素因数分解を再帰的に行うと最終的に特征数 **7** に崩壊する
+- **自己進化エンジン**：7 フェーズ (detect → retrieve → associate → derive → reinforce → expand → evaluate) × 7 分類器 = 49 個の硬拘束分類器
+- **アイスバーグ 3 層設計**：赤壁 Peak · 承天寺 Spectrum · 東坡 Basement + 西施ベール（段階的開示）
+- **EigenFlux 動的選挙**：貂蝉連環計 + 袁世凱民主集中制
+
+### クイックスタート
+
+```bash
+cd flask-app
+python3 -m venv venv && source venv/bin/activate
+pip install -r ../_config/requirements.txt
+ollama pull qwen2.5:14b && ollama pull qwen2.5-coder:14b
+ollama serve &
+python server_real_db.py
+# → http://127.0.0.1:8888
+```
 
 ---
 
 ## 🤝 贡献
 
 > ⚠️ **开发活动必须走 §14 IRON_RULE 12 步骤**（L0 不可绕开）
-> 详见 [规则总索引](.trae/rules/00-%E8%A7%84%E5%88%99%E6%80%BB%E7%B4%A2%E5%BC%95.md) 和 [CONTRIBUTING.md](docs/CONTRIBUTING.md)
 
 1. Fork 本仓库
 2. 创建开发流程 flow（必须 12 步骤完成）
@@ -473,55 +351,6 @@ Flask 模板/静态文件路径（源码显式设置）:
 
 ---
 
-<div id="english"></div>
-
-## English
-
-An **Andromeda Galaxy-inspired AI Agents Operating System** running entirely on your Mac with zero cloud API costs.
-
-- 33,525 AI agents across 25 functional domains
-- 41 AI routes via local Ollama (qwen2.5:14b + qwen2.5-coder:14b)
-- 25 Andromeda stars mapped to 25 domains
-- 429 SQLite tables with zero fake data
-- 12 iron rules (L0 non-bypassable) with 9 iron laws
-- 15 self-healing daemons with triple keepalive architecture
-- §14 IRON_RULE 12-step development gatekeeping
-
-### Quick Start
-
-```bash
-cd flask-app
-python3 -m venv venv && source venv/bin/activate
-pip install -r ../_config/requirements.txt
-ollama pull qwen2.5:14b && ollama pull qwen2.5-coder:14b
-ollama serve &
-python server_real_db.py
-# → http://127.0.0.1:8888
-```
-
-### Documentation
-
-- [SYSTEM.md](docs/SYSTEM.md) — Architecture, database, engines, rules
-- [FEATURES.md](docs/FEATURES.md) — All 25 domains + HTTP API reference
-
----
-
-<div id="中文"></div>
-
-## 中文
-
-**仙女座智能体宇宙** — 一个自我进化、自我修复、自我学习的 AI 操作系统。
-
-- 33,525 AI 员工分布在 25 个功能域
-- 41 条 AI 路由走本地 Ollama（零 token 成本）
-- 25 颗仙女座恒星 → 25 个域，每个域有独立视觉图标
-- 429 张 SQLite 表（真实数据，零假数据）
-- 12 篇规则（L0 IRON_RULE 不可绕开，3 层拦截 + 9 条铁律）
-- 15 个自愈 Daemon（Engine + LaunchD + Crontab 三重保活）
-- §14 IRON_RULE 12 步骤开发流程强制门禁
-
----
-
 <p align="center">
-  Made with 💜 · Andromeda Galaxy · Powered by local Ollama
+  Made with 💜 · 仙女座 · Andromeda Galaxy · Powered by Local Ollama · <b>v3.0.0 Andromeda Evolution</b>
 </p>

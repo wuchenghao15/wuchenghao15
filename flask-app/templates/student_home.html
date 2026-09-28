@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ t('auto.student_home.x___mtscos_a_be9a45b1', default='学生主页 - MTSCOS AI') }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/mtscos_design_tokens.css') }}">
+    <link rel="stylesheet" href="/assets/font-awesome/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--el-bg-color-page, #0d1117);
+            color: var(--el-text-color-primary, #c9d1d9);
+            min-height: 100vh;
+        }
+        .header {
+            background: var(--el-bg-color-overlay, #161b22);
+            border-bottom: 1px solid var(--el-border-color, #30363d);
+            padding: 16px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .header h1 { font-size: 20px; color: var(--el-color-primary, #58a6ff); }
+        .header .user-info { display: flex; align-items: center; gap: 16px; font-size: 14px; }
+        .header .user-info span { color: var(--el-text-color-secondary, #8b949e); }
+        .header .user-info .badge {
+            background: var(--el-color-primary-light-5, #bc8cff);
+            color: var(--el-bg-color-page, #0d1117);
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .container { max-width: 1200px; margin: 0 auto; padding: 24px; }
+        .section-title {
+            font-size: 18px;
+            color: var(--el-text-color-primary, #c9d1d9);
+            margin: 24px 0 16px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--el-border-color, #30363d);
+        }
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 16px;
+        }
+        .card {
+            background: var(--el-bg-color, #1c2128);
+            border: 1px solid var(--el-border-color, #30363d);
+            border-radius: 8px;
+            padding: 20px;
+            transition: border-color 0.2s, transform 0.2s;
+        }
+        .card:hover { border-color: var(--el-color-primary, #58a6ff); transform: translateY(-2px); }
+        .card h3 { font-size: 16px; margin-bottom: 12px; }
+        .card .icon { font-size: 24px; margin-bottom: 12px; }
+        .card .desc { font-size: 13px; color: var(--el-text-color-secondary, #8b949e); margin-bottom: 12px; line-height: 1.5; }
+        .card a {
+            display: inline-block;
+            color: var(--el-color-primary, #58a6ff);
+            text-decoration: none;
+            font-size: 13px;
+            padding: 6px 16px;
+            border: 1px solid var(--el-color-primary, #58a6ff);
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+        .card a:hover { background: var(--el-color-primary, #58a6ff); color: var(--el-bg-color-page, #0d1117); }
+        .stats-bar {
+            display: flex;
+            gap: 24px;
+            background: var(--el-bg-color-overlay, #161b22);
+            border: 1px solid var(--el-border-color, #30363d);
+            border-radius: 8px;
+            padding: 16px 24px;
+            margin-bottom: 24px;
+        }
+        .stat-item { text-align: center; flex: 1; }
+        .stat-item .num { font-size: 24px; font-weight: bold; color: var(--el-color-primary, #58a6ff); }
+        .stat-item .label { font-size: 12px; color: var(--el-text-color-secondary, #8b949e); margin-top: 4px; }
+        .footer {
+            text-align: center;
+            padding: 24px;
+            color: var(--el-text-color-secondary, #8b949e);
+            font-size: 12px;
+            border-top: 1px solid var(--el-border-color, #30363d);
+            margin-top: 40px;
+        }
+        .icon-primary { color: var(--el-color-primary, #58a6ff); }
+        .icon-success { color: var(--el-color-success, #3fb950); }
+        .icon-warning { color: var(--el-color-warning, #d29922); }
+        .icon-danger { color: var(--el-color-danger, #f85149); }
+        .icon-accent { color: var(--el-color-primary-light-5, #bc8cff); }
+        /* P1: 我的K12学情面板 */
+        .k12-panel {
+            background: var(--el-bg-color-overlay, #161b22);
+            border: 1px solid var(--el-color-primary, #58a6ff);
+            border-radius: 10px;
+            padding: 18px 24px;
+            margin-bottom: 24px;
+        }
+        .k12-panel-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+        .k12-title { font-size: 15px; font-weight: 600; color: var(--el-text-color-primary, #c9d1d9); }
+        .k12-title i { color: var(--el-color-primary, #58a6ff); margin-right: 8px; }
+        .k12-level {
+            font-size: 14px; font-weight: 700; color: var(--el-color-warning, #d29922);
+            background: var(--el-color-warning-light-9, rgba(210,153,34,.12));
+            padding: 3px 12px; border-radius: 12px;
+        }
+        .k12-grid { display: flex; gap: 24px; }
+        .k12-item { text-align: center; flex: 1; }
+        .k12-item .num { font-size: 22px; font-weight: bold; color: var(--el-color-success, #3fb950); }
+        .k12-item .label { font-size: 12px; color: var(--el-text-color-secondary, #8b949e); margin-top: 4px; }
+        .k12-msg { font-size: 12px; color: var(--el-text-color-secondary, #8b949e); margin-top: 10px; min-height: 14px; }
+        /* P2: 死链卡片禁用态(功能未上线, 不再跳到404) */
+        .card.disabled { opacity: .55; }
+        .card .soon {
+            display: inline-block; font-size: 12px; padding: 6px 16px;
+            color: var(--el-text-color-secondary, #8b949e);
+            border: 1px dashed var(--el-border-color, #30363d); border-radius: 4px; cursor: not-allowed;
+        }
+        @media (max-width: 640px) {
+            .stats-bar, .k12-grid { flex-wrap: wrap; gap: 12px; }
+            .stat-item, .k12-item { flex: 0 0 calc(50% - 6px); }
+        }
+    </style>
+</head>
+<body>
+<div class="header">
+    <h1>{{ t('auto.student_home.mtscos_ai_x_05e2600f', default='MTSCOS AI 学生主页') }}</h1>
+    <div class="user-info">
+        <span>{{ today }}</span>
+        <span>{{ user.username }}</span>
+        <span class="badge">{{ user.role }}</span>
+    </div>
+</div>
+<div class="container">
+    <div class="stats-bar" id="stats-bar">
+        <div class="stat-item"><div class="num" id="stat-exams">--</div><div class="label">{{ t('auto.student_home.x_7746fb87', default='考试') }}</div></div>
+        <div class="stat-item"><div class="num" id="stat-courses">--</div><div class="label">{{ t('auto.student_home.x_58983b0d', default='课程') }}</div></div>
+        <div class="stat-item"><div class="num" id="stat-credits">--</div><div class="label">{{ t('auto.student_home.x_294ca6ae', default='学分') }}</div></div>
+        <div class="stat-item"><div class="num" id="stat-ai">--</div><div class="label">{{ t('auto.student_home.aix_e77319d4', default='AI对话') }}</div></div>
+    </div>
+
+    <!-- P1: 我的K12学情面板(真实数据, 数据源 /api/k12/game/status/<本人uid>, 无档案则温和提示, 禁止假数据) -->
+    <div class="k12-panel" id="k12-panel">
+        <div class="k12-panel-head">
+            <span class="k12-title"><i class="fas fa-gamepad"></i> {{ t('auto.student_home.x_d19faa5a', default='我的学习等级') }}</span>
+            <span class="k12-level" id="k12-level">--</span>
+        </div>
+        <div class="k12-grid">
+            <div class="k12-item"><div class="num" id="k12-points">--</div><div class="label">{{ t('auto.student_home.x_e06ab0e3', default='总积分') }}</div></div>
+            <div class="k12-item"><div class="num" id="k12-streak">--</div><div class="label">{{ t('auto.student_home.x_x__6f7e6022', default='连续学习(天)') }}</div></div>
+            <div class="k12-item"><div class="num" id="k12-next">--</div><div class="label">{{ t('auto.student_home.x_add2c43f', default='距下一等级') }}</div></div>
+        </div>
+        <div class="k12-msg" id="k12-msg"></div>
+    </div>
+
+    <h2 class="section-title">{{ t('auto.student_home.x_e03183c0', default='考试中心') }}</h2>
+    <div class="card-grid">
+        <div class="card disabled">
+            <div class="icon icon-primary"><i class="fas fa-file-alt"></i></div>
+            <h3>{{ t('auto.student_home.x_c15365f0', default='考试列表') }}</h3>
+            <p class="desc">{{ t('auto.student_home.x__x_73d02244', default='查看可用考试, 开始答题') }}</p>
+            <span class="soon">{{ t('auto.student_home.x_b9764d88', default='考试中心建设中') }}</span>
+        </div>
+        <div class="card disabled">
+            <div class="icon icon-success"><i class="fas fa-book"></i></div>
+            <h3>{{ t('auto.student_home.x_224b4a25', default='每日练习') }}</h3>
+            <p class="desc">{{ t('auto.student_home.x__x_dc5ab204', default='每日精选题目, 巩固知识') }}</p>
+            <span class="soon">{{ t('auto.student_home.x_f8cbd175', default='学生练习页建设中') }}</span>
+        </div>
+        <div class="card disabled">
+            <div class="icon icon-warning"><i class="fas fa-pencil-ruler"></i></div>
+            <h3>{{ t('auto.student_home.x_04ed8667', default='错题本') }}</h3>
+            <p class="desc">{{ t('auto.student_home.x__x_db203625', default='回顾错题, 查漏补缺') }}</p>
+            <span class="soon">{{ t('auto.student_home.x_cd23b675', default='学生错题本建设中') }}</span>
+        </div>
+    </div>
+
+    <h2 class="section-title">{{ t('auto.student_home.x_90a39574', default='学习中心') }}</h2>
+    <div class="card-grid">
+        <div class="card disabled">
+            <div class="icon icon-accent"><i class="fas fa-graduation-cap"></i></div>
+            <h3>{{ t('auto.student_home.x_38c9af3a', default='课程列表') }}</h3>
+            <p class="desc">{{ t('auto.student_home.x_7aa4d22d', default='浏览已选课程和学习进度') }}</p>
+            <span class="soon">{{ t('auto.student_home.x_c0deced4', default='学生课程页建设中') }}</span>
+        </div>
+        <div class="card disabled">
+            <div class="icon icon-primary"><i class="fas fa-route"></i></div>
+            <h3>{{ t('auto.student_home.x_372b13e1', default='学习路径') }}</h3>
+            <p class="desc">{{ t('auto.student_home.x_4800aa40', default='个性化学习路径推荐') }}</p>
+            <span class="soon">{{ t('auto.student_home.x_5a834d64', default='学习路径建设中') }}</span>
+        </div>
+        <div class="card disabled">
+            <div class="icon icon-success"><i class="fas fa-tasks"></i></div>
+            <h3>{{ t('auto.student_home.x_b9419397', default='作业任务') }}</h3>
+            <p class="desc">{{ t('auto.student_home.x_a9368fc0', default='查看和提交课程作业') }}</p>
+            <span class="soon">{{ t('auto.student_home.x_d9c5b3ee', default='学生作业页建设中') }}</span>
+        </div>
+    </div>
+
+    <h2 class="section-title">{{ t('auto.student_home.ai_x_c1fc9527', default='AI 辅助学习') }}</h2>
+    <div class="card-grid">
+        <div class="card disabled">
+            <div class="icon icon-accent"><i class="fas fa-robot"></i></div>
+            <h3>{{ t('auto.student_home.ai_x_06d5b99e', default='AI 辅导') }}</h3>
+            <p class="desc">{{ t('auto.student_home.x__x_d6a785e2', default='智能辅导, 答疑解惑') }}</p>
+            <span class="soon">{{ t('auto.student_home.ai_x_8dd56740', default='AI 辅导建设中') }}</span>
+        </div>
+        <div class="card disabled">
+            <div class="icon icon-primary"><i class="fas fa-brain"></i></div>
+            <h3>{{ t('auto.student_home.ai_x_10766a6f', default='AI 学习仪表盘') }}</h3>
+            <p class="desc">{{ t('auto.student_home.x__x_442da616', default='学习数据分析, 进度跟踪') }}</p>
+            <span class="soon">{{ t('auto.student_home.x_30daf3f4', default='学生仪表盘建设中') }}</span>
+        </div>
+        <div class="card disabled">
+            <div class="icon icon-success"><i class="fas fa-lightbulb"></i></div>
+            <h3>{{ t('auto.student_home.x_01609b0d', default='自适应学习') }}</h3>
+            <p class="desc">{{ t('auto.student_home.ai_x_f4089183', default='AI 驱动的个性化学习方案') }}</p>
+            <span class="soon">{{ t('auto.student_home.x_2683d03d', default='自适应学习建设中') }}</span>
+        </div>
+    </div>
+
+    <h2 class="section-title">{{ t('auto.student_home.x_4b24dbc9', default='学分与职业') }}</h2>
+    <div class="card-grid">
+        <div class="card disabled">
+            <div class="icon icon-warning"><i class="fas fa-star"></i></div>
+            <h3>{{ t('auto.student_home.x_ac4b3315', default='学分查询') }}</h3>
+            <p class="desc">{{ t('auto.student_home.x_f355d959', default='查看已获学分和学分要求') }}</p>
+            <span class="soon">{{ t('auto.student_home.x_99711865', default='学分查询建设中') }}</span>
+        </div>
+        <div class="card disabled">
+            <div class="icon icon-danger"><i class="fas fa-chart-bar"></i></div>
+            <h3>{{ t('auto.student_home.x_a807da72', default='学情分析') }}</h3>
+            <p class="desc">{{ t('auto.student_home.x_fc05be32', default='个人学习数据分析和报告') }}</p>
+            <span class="soon">{{ t('auto.student_home.x_052a8e70', default='个人学情报告建设中') }}</span>
+        </div>
+    </div>
+</div>
+<div class="footer">
+    MTSCOS AI Project | 登录时间: {{ user.login_time_str }} | 认证方式: {{ user.auth_method }}
+</div>
+<script>
+// 加载真实统计数据 (数据库唯一数据源, 禁止假数据)
+fetch('/api/health').then(r=>r.json()).then(d=>{
+    document.getElementById('stat-ai').textContent = d.ai_employees || '0';
+}).catch(()=>{});
+fetch('/api/homepage/stats').then(r=>r.json()).then(d=>{
+    if(d.exams) document.getElementById('stat-exams').textContent = d.exams;
+    if(d.courses) document.getElementById('stat-courses').textContent = d.courses;
+    if(d.credits) document.getElementById('stat-credits').textContent = d.credits;
+}).catch(()=>{});
+
+// P1: 我的K12学情(仅拉取本人数据; 接口有IDOR防护, 查他人返回403)
+(function(){
+    var myUid = {{ user.user_id | tojson }};
+    function setMsg(t){ document.getElementById('k12-msg').textContent = t; }
+    if(!myUid || myUid === 0){ document.getElementById('k12-panel').style.display = 'none'; return; }
+    fetch('/api/k12/game/status/' + encodeURIComponent(myUid))
+        .then(function(r){
+            if(r.status === 401){ document.getElementById('k12-panel').style.display = 'none'; return null; }
+            if(r.status === 403){ setMsg('仅可查看本人学情'); return null; }
+            return r.json();
+        })
+        .then(function(d){
+            if(!d) return;
+            if(d.success === false){ setMsg(d.error || '学情暂不可用'); return; }
+            document.getElementById('k12-points').textContent = d.total_points != null ? d.total_points : '0';
+            document.getElementById('k12-streak').textContent = d.daily_streak != null ? d.daily_streak : '0';
+            document.getElementById('k12-next').textContent = d.points_to_next_level != null ? d.points_to_next_level : '--';
+            document.getElementById('k12-level').textContent = (d.level_icon ? d.level_icon + ' ' : '') + (d.level_name || ('Lv.' + (d.current_level || 1)));
+            if((d.total_points || 0) === 0){ setMsg('暂无学习积分, 完成练习即可解锁等级'); }
+        })
+        .catch(function(){ setMsg('学情加载失败'); });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,2203 @@
+---
+name: "mtscos-design"
+description: 基于《设计规范》的方法论 Skill。解决核心问题：统一 Element Plus 设计 Token/颜色/排版/组件, 禁止硬编码颜色。适合人群：AI Agent + 人类开发者, 所有涉及该领域的活动。典型使用场景：AI Agent 准备修改该领域代码 → Trae 自动触发此 Skill；人类开发者不确定合规性 → 查 Skill；CI 自检失败 → 回溯规则原因。
+---
+
+# 设计规范 - 方法论 Skill
+
+> 基于 MTSCOS AI 项目规则治理体系 的《设计规范》
+>
+> 本 Skill 仅供个人学习使用
+
+## 概述
+
+### 解决什么问题
+统一 Element Plus 设计 Token/颜色/排版/组件, 禁止硬编码颜色
+
+### 目标受众
+AI Agent + 人类开发者, 所有涉及该领域的活动
+
+### 核心收益
+- 硬约束不可绕过
+- 自动拦截机制 (4 层)
+- AI 自动遵守
+- 落库留痕可追溯
+
+---
+
+## 快速上手
+
+> 一句话概括：统一 Element Plus 设计 Token/颜色/排版/组件, 禁止硬编码颜色
+
+**最简使用流程：**
+1. **Preflight**
+2. **Execute**
+3. **Verify**
+4. **Close**
+
+**核心原则速记：**
+- 禁止硬编码颜色值 (如 #3b82f6)
+- 统一使用 Element Plus CSS 变量
+- 深色主题必须适配
+
+---
+
+## 核心方法
+
+### 方法步骤
+
+#### 步骤 1: Preflight
+
+确认规则适用 + STATUS=ACTIVE
+
+**具体操作：**
+- 查 RULE_META
+- 确认 intercept_layers
+
+**依赖关系：** L0 §14
+
+---
+
+#### 步骤 2: Execute
+
+按 设计规范 条款执行
+
+**具体操作：**
+- 遵守硬约束
+- 禁止违反
+- 落库
+
+**依赖关系：** Preflight
+
+---
+
+#### 步骤 3: Verify
+
+CI 自检 + 规则完整性扫描
+
+**具体操作：**
+- mt_rule_integrity_scan PASS
+- 无 mt_rule_violation_alert
+
+**依赖关系：** Execute
+
+---
+
+#### 步骤 4: Close
+
+落库 changelog + 结案
+
+**具体操作：**
+- 更新 RULE_META version
+- 记录变更
+
+**依赖关系：** Verify
+
+---
+
+### 核心原则
+
+- **禁止硬编码颜色值 (如 #3b82f6)**
+- **统一使用 Element Plus CSS 变量**
+- **深色主题必须适配**
+- **响应式断点统一**
+
+### 注意事项与警告
+
+- ⚠️ 硬编码颜色 → 下次改主题全站搜替换
+- ⚠️ 深色主题漏了 → 夜间模式反白异常
+
+**避坑指南：**
+- 执行前先读 RULE_META
+- 规则修改走 7 步审批
+- CI 自检必过
+
+---
+
+## 使用指南
+
+### 适用场景
+
+✅ **推荐使用：**
+- 前端 UI/Element Plus 组件/颜色/排版
+
+❌ **不推荐使用：**
+- 与该领域无关的纯只读活动
+
+### 前置准备
+
+**知识准备：**
+- 读懂 RULE_META
+- 理解层级优先级 (L0 > L1 > L2)
+- 知道 intercept_layers 是什么
+
+**工具准备：**
+- rules_engine 8 组件
+- CI 流水线
+- sys_rule_enforcer daemon
+
+**环境准备：**
+- Flask before_request hook 生效
+- Git pre-commit hook 已安装
+
+### 预期产出
+
+**直接产出：**
+变更已落库 + 无规则违反事件
+
+**阶段性产出：**
+- CI 自检通过
+- mt_rule_changelog 记录
+
+**成功标准：**
+- 无 mt_rule_violation_alert
+- mt_rule_integrity_scan PASS
+
+### 检验标准
+
+CI 自检 + 落库检查 + 违反事件表空
+
+**自测清单：**
+- [ ] RULE_META 完整
+- [ ] 硬约束未被修改
+- [ ] CI PASS
+- [ ] 违反事件表空
+
+---
+
+## 深入理解
+
+### 核心原理
+
+规则引擎 + 有限状态机 + 拦截器模式 + Fail-Closed
+
+**为什么有效：**
+4 层拦截 (git hook + Flask before_request + CI + git push) + daemon 自动执行 + 落库留痕 → 无法绕过
+
+### 关键提问
+
+在使用此方法时，请思考以下问题：
+
+1. RULE_ID=MT_RULE_DESIGN, STATUS=ACTIVE, 我是否遵守了所有硬约束?
+2. 有没有跳步?
+3. 落库了吗?
+4. CI 会过吗?
+
+---
+
+## 实践资源
+
+### 配套工具与模板
+
+**工具清单：**
+- rules_engine 8 组件
+- sys_rule_enforcer daemon
+- auto_rule_strengthener
+- auto_patrol 6 人巡逻队
+
+**模板：**
+- mt_rule_changelog schema
+- pre-commit hook 模板
+
+**参考案例：**
+- session 端口漂移事故 → 复盘后新增 §14 网络治理
+
+### 学习路径
+
+**入门阶段：**
+- 读懂 RULE_META 的每个字段
+- 理解层级优先级
+- 看一次拦截事件
+
+**进阶路径：**
+- 扩展 intercept_layers
+- 自定义 activity_type
+- 写 CI 自检规则
+
+**关键里程碑：**
+- 首次活动完全合规
+- CI 自检 100% PASS
+- 7 天无拦截
+
+### 方法变体
+
+**常见变体：**
+- MINIMAL (仅 CI + before_request)
+- FULL (4 层全拦)
+
+**场景调整：**
+- 紧急修复: Security 缩短但不跳过
+
+### 进阶技巧
+
+- **弱约束自动强化**: auto_rule_strengthener 检测到 '应该'/'建议' 自动改成 '必须'
+
+---
+
+## AI 辅助建议
+
+### 适合 AI 辅助的步骤
+
+- **sys_rule_enforcer 规则自动学习 + 弱约束扫描**: 可由 AI 协助完成
+- **auto_rule_strengthener 弱约束自动修复为强约束**: 可由 AI 协助完成
+- **rule_integrity_scanner CI 自检**: 可由 AI 协助完成
+- **auto_patrol 6 人巡逻队自动修复**: 可由 AI 协助完成
+
+### 人机协作模式
+
+AI 自动执行规则 + 自动修复弱约束, 人类做终审 + 规则修改审批 (7 步)
+
+### 自动化机会
+
+- 弱约束 → 强约束自动修复
+- 拦截事件 → 自动告警 → 自动投喂脑库
+- CI 自检 → 自动阻断合并
+
+---
+
+## Skill 使用说明
+
+### 典型调用场景
+
+- AI Agent 准备修改该领域代码 → Trae 自动触发此 Skill
+- 人类开发者不确定合规性 → 查 Skill
+- CI 自检失败 → 回溯规则原因
+
+### 触发条件
+
+当用户出现以下情况时，触发此 Skill：
+- 前端页面开发
+- 用户请求 '改一下 XX' 且 XX 在此领域
+- Trae 需要判断合规性
+
+### 输入参数
+
+- 活动类型
+- 影响范围
+- 安全等级
+
+### 输出格式
+
+规则约束清单 + 执行步骤 + 验证标准 + 交叉引用 + RULE_ID/LEVEL
+
+---
+
+## 
+
+---
+
+## 规则原文 (完整嵌入)
+
+> 以下为 设计规范.md 全文, 所有条款均为**硬约束**, 不可绕过。
+
+---
+alwaysApply: true
+---
+<!-- RULE_META_START
+RULE_ID: MT_RULE_DESIGN
+RULE_NAME: 设计规范
+RULE_LEVEL: L1 核心
+RULE_VERSION: v1.2.0
+EFFECTIVE_DATE: 2026-08-18
+STATUS: ACTIVE
+VIOLATION_CODE: DESIGN-RULE-VIOLATION
+INTERCEPT_LAYERS: [pre_commit, before_request, ci_check, git_hook]
+RESPONSIBLE_ROLE: super_admin
+DEPENDS_ON: [MT_IRON_RULE_12STEPS, MT_RULE_DEV]
+MODIFY_APPROVAL_FLOW: 7_STEP (提议→2管理员同意→EigenFlux 5人磋商≥4/5→SA终审→保密撤回)
+BYPASS_ALLOWED: false
+LAST_CHANGED: 2026-09-17
+RULE_META_END -->
+# MTSCOS AI 项目设计规范
+
+> **层级**: L1 核心 | **优先级**: 服从 [§14 IRON_RULE](§14强制开发12步骤独立约束规则.md) (L0) | **索引**: [规则总索引](00-规则总索引.md)
+
+## 1. 设计理念
+
+> **核心原则**：统一、规范、可维护、可扩展、巡检驱动
+
+MTSCOS AI 项目采用 **Element Plus Design Token** 作为设计系统基础，实现全项目视觉风格的统一。所有页面、组件、交互必须遵循本规范，禁止脱离设计系统独立定义样式。
+
+### 1.1 核心原则详解
+
+| 原则 | 说明 |
+|------|------|
+| **统一** | 所有设计元素必须使用统一的设计系统，禁止自定义样式 |
+| **规范** | 严格遵循设计规范，确保一致性和可预测性 |
+| **可维护** | 设计元素易于维护和更新，支持主题切换 |
+| **可扩展** | 设计系统支持扩展，适应未来需求变化 |
+| **巡检驱动** | 设计规范必须纳入 AI 巡检闭环，支持自动检测和修复 |
+| **法律准则合规** | 所有设计活动必须遵循法律准则文件规定 |
+| **自动修复闭环** | 发现设计问题自动触发修复流程，修复结果记录到数据库并投喂脑库 |
+
+## 2. 颜色系统
+
+### 2.1 主色调（Element Plus 蓝色系）
+
+| 变量名 | CSS 变量 | 值 | 用途 |
+|--------|---------|-----|------|
+| 主色 | `var(--el-color-primary)` | `#409eff` | 主按钮、链接、高亮元素 |
+| 主色浅 3 | `var(--el-color-primary-light-3)` | `#79bbff` | 悬停状态、边框高亮 |
+| 主色浅 5 | `var(--el-color-primary-light-5)` | `#a0cfff` | 轻量高亮、背景点缀 |
+| 主色浅 7 | `var(--el-color-primary-light-7)` | `#c6e2ff` | 极浅高亮、分割线 |
+| 主色深 2 | `var(--el-color-primary-dark-2)` | `#337ecc` | 按下状态、深色背景 |
+| 本地别名 | `var(--color-primary)` | `var(--el-color-primary)` | 统一引用 |
+
+### 2.2 语义色体系
+
+| 变量名 | CSS 变量 | 值 | 用途 |
+|--------|---------|-----|------|
+| 成功色 | `var(--el-color-success)` | `#67c23a` | 成功状态、确认操作 |
+| 警告色 | `var(--el-color-warning)` | `#e6a23c` | 警告提示、待处理 |
+| 危险色 | `var(--el-color-danger)` | `#f56c6c` | 错误状态、删除操作 |
+| 信息色 | `var(--el-color-info)` | `#909399` | 信息提示、辅助说明 |
+
+### 2.3 背景色体系
+
+| 变量名 | CSS 变量 | 值 | 用途 |
+|--------|---------|-----|------|
+| 页面背景 | `var(--el-bg-color-page)` | `#f5f7fa` | 页面底色 |
+| 卡片背景 | `var(--el-bg-color)` | `#ffffff` | 卡片、面板背景 |
+| 深色背景 | `var(--bg-dark)` | `#0f172a` | 管理端深色主题 |
+
+### 2.4 文字色体系
+
+| 变量名 | CSS 变量 | 值 | 用途 |
+|--------|---------|-----|------|
+| 一级文字 | `var(--el-text-color-primary)` | `#303133` | 标题、主要内容 |
+| 二级文字 | `var(--el-text-color-regular)` | `#606266` | 次要内容、说明文字 |
+| 三级文字 | `var(--el-text-color-secondary)` | `#909399` | 辅助信息、占位符 |
+
+### 2.5 禁止硬编码的颜色值
+
+以下颜色值**禁止在任何代码中直接使用**，必须使用对应的 CSS 变量：
+
+| 禁止使用 | 应使用 |
+|---------|--------|
+| `#3b82f6` | `var(--el-color-primary)` |
+| `#8b5cf6` | `var(--color-secondary)` |
+| `#10b981` | `var(--el-color-success)` |
+| `#f59e0b` | `var(--el-color-warning)` |
+| `#ef4444` | `var(--el-color-danger)` |
+| `#0f172a` | `var(--bg-dark)` |
+| `#2d3748` | `var(--el-text-color-primary)` |
+| `#718096` | `var(--el-text-color-secondary)` |
+
+## 3. 字体系统
+
+### 3.1 字体家族
+
+```css
+font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+```
+
+### 3.2 字体大小
+
+| 变量名 | 值 | 用途 |
+|--------|-----|------|
+| `var(--el-font-size-xs)` | 12px | 标签、徽章 |
+| `var(--el-font-size-sm)` | 13px | 辅助文字、表单标签 |
+| `var(--el-font-size-base)` | 14px | 正文、按钮文字 |
+| `var(--el-font-size-lg)` | 16px | 标题、重要文字 |
+| `var(--el-font-size-xl)` | 18px | 二级标题 |
+
+### 3.3 字体粗细
+
+| 变量名 | 值 | 用途 |
+|--------|-----|------|
+| `var(--el-font-weight-primary)` | 500 | 中等加粗 |
+| `font-weight: 600` | 600 | 标题、重要文字 |
+| `font-weight: 700` | 700 | 粗标题、强调文字 |
+
+## 4. 间距系统
+
+基于 **8px 基准** 的间距变量：
+
+| 变量名 | 值 | 用途 |
+|--------|-----|------|
+| `var(--spacing-1)` | 4px | 微小间距 |
+| `var(--spacing-2)` | 8px | 小间距 |
+| `var(--spacing-3)` | 12px | 中等间距 |
+| `var(--spacing-4)` | 16px | 标准间距 |
+| `var(--spacing-5)` | 20px | 较大间距 |
+| `var(--spacing-6)` | 24px | 大间距 |
+| `var(--spacing-8)` | 32px | 超大间距 |
+| `var(--spacing-10)` | 40px | 页面级间距 |
+
+## 5. 圆角系统
+
+| 变量名 | 值 | 用途 |
+|--------|-----|------|
+| `var(--el-border-radius-sm)` | 2px | 紧凑元素 |
+| `var(--el-border-radius-base)` | 4px | 基础圆角 |
+| `var(--el-border-radius-round)` | 20px | 胶囊形 |
+| `var(--border-radius-xl)` | 12px | 卡片、弹窗 |
+| `var(--border-radius-2xl)` | 16px | 大卡片 |
+
+## 6. 阴影系统
+
+| 变量名 | 值 | 用途 |
+|--------|-----|------|
+| `var(--el-shadow-sm)` | `0 1px 2px rgba(0,0,0,0.05)` | 微小阴影 |
+| `var(--el-shadow)` | `0 2px 12px rgba(0,0,0,0.1)` | 标准阴影 |
+| `var(--el-shadow-md)` | `0 4px 20px rgba(0,0,0,0.1)` | 中等阴影 |
+| `var(--el-shadow-lg)` | `0 8px 32px rgba(0,0,0,0.12)` | 大阴影 |
+
+## 7. 组件规范
+
+### 7.1 按钮规范（Vibe Coding 四维组合体系 · 强制）
+
+> **来源**：Vibe Coding 术语手册 · 按钮篇（作者：敲代码的小虾米，抖音视频 https://v.douyin.com/930jajV4yGI/）
+> **核心理念**：按钮是 **四个独立维度** 的组合，维度之间完全正交，可自由组合；任何按钮都必须同时从四个维度各取一个值；避免一屏出现两个实心按钮。
+
+#### 7.1.1 维度总览
+
+| 维度 | 可选值 | 说明 | 强制要求 |
+|------|--------|------|----------|
+| **① 变体 (Variant)** | `solid` / `outline` / `text` / `link` | 实心按钮 · 描边按钮 · 文字按钮 · 链接按钮，代表操作层级高低 | 必须指定且唯一 |
+| **② 颜色 (Color)** | `primary` / `success` / `warning` / `info` / `danger` / `neutral` | 主色 · 成功 · 警告 · 信息 · 危险 · 中性，与变体完全正交 | 必须指定且唯一 |
+| **③ 尺寸 (Size)** | `sm` / `md` / `lg` / `block` | 小 · 中(默认) · 大 · 通栏；通栏最易按，移动端优先级最高 | 必须指定且唯一 |
+| **④ 状态 (State)** | `default` / `hover` / `pressed` / `focus` / `disabled` / `loading` | 默认 · 悬停 · 按下 · 聚焦 · 禁用 · 加载，每个状态有独立视觉效果 | CSS伪类实现，禁用/加载必须显式 |
+
+> **正交组合**：颜色 × 变体 可任意组合（例如 `outline-danger`、`text-warning`、`solid-neutral` 全部合法）。原 `.btn-primary` = `solid-primary-md-default` 的简写。
+
+#### 7.1.2 维度一 · 变体 (Variant) — 4种
+
+| 规范类名 | Element Plus 等价 | 视觉表现 | 适用场景 |
+|----------|-------------------|----------|----------|
+| `.btn-solid-*` | 原生（默认） | 实色填充背景，对比度最高 | 页面主操作 / 表单确认 / 正向唯一动作 （**每个页面/弹窗最多1个**） |
+| `.btn-outline-*` | `plain` 属性 | 透明底 + 对应颜色描边，中视觉层级 | 次级操作 / 取消类操作 / 并列多选 |
+| `.btn-text-*` | `text` 属性 | 无边框无背景，仅文字着色 | 表格行内操作 / 辅助性动作 / 「查看更多」|
+| `.btn-link` | `link` 属性 | 下划线文字，像超链接 | 跳转类操作 / 协议链接 / 帮助文档 |
+
+**❌ 常见错误 —— 一屏两个实心按钮**：同一操作区出现两个 `.btn-solid-*` 会让用户困惑。规则：**一个屏幕/弹窗只能有一个 solid 实心按钮**，其余必须降级为 outline、text 或 link。
+
+#### 7.1.3 维度二 · 颜色 (Color) — 6种
+
+| 规范色值 | 映射 CSS 变量 | 语义 | 典型按钮文案 |
+|----------|---------------|------|--------------|
+| `primary` | `var(--el-color-primary)` | 主色 · 系统默认主要操作 | 确定、提交、保存、下一步 |
+| `success` | `var(--el-color-success)` | 成功 · 正向结果确认 | 通过、发布、启用、同意 |
+| `warning` | `var(--el-color-warning)` | 警告 · 需确认的不可逆操作 | 重置、覆盖、停用、导出 |
+| `info` | `var(--el-color-info)` | 信息 · 提示性/查看类动作 | 详情、预览、复制、分享 |
+| `danger` | `var(--el-color-danger)` | 危险 · 删除/销毁/撤销 | 删除、注销、拒绝、强制下线 |
+| `neutral` | `var(--color-secondary)` / `#606266` | 中性 · 取消/关闭/跳过 | 取消、关闭、跳过、暂不 |
+
+> **颜色与变体完全独立**：`outline-warning`（警告描边按钮）、`text-danger`（危险文字按钮）、`solid-neutral`（中性实心按钮）全部合法。
+
+#### 7.1.4 维度三 · 尺寸 (Size) — 3种 + 通栏
+
+| 规范尺寸 | 规格 | 行高 | 内边距 | 适用场景 |
+|----------|------|------|--------|----------|
+| `.btn-sm` | 小号 | 28px | 8px 12px | 表格行内操作 / 标签栏 / 紧凑工具条 |
+| `.btn-md` (默认) | 中号 | 40px | 12px 20px | 常规表单 / 对话框按钮 / 默认 |
+| `.btn-lg` | 大号 | 48px | 16px 28px | 登录按钮 / 重要引导 / 卡片底部主操作 |
+| `.btn-block` | 通栏 | 48px+ | 充满容器宽度 | **移动端最佳实践**，最容易点击，表单提交必用 |
+
+**硬约束**：可点击按钮的最小触控目标不得低于 **44×44px**（含 padding，遵循设计规范 §11.1 移动端触控友好）。
+
+#### 7.1.5 维度四 · 状态 (State) — 6种
+
+| 状态类 / 伪类 | 视觉表现 | 触发时机 | 禁用条件 |
+|---------------|----------|----------|----------|
+| `:default` / 默认 | 对应变体 + 颜色的基础样式 | 初始渲染 | — |
+| `:hover` | 背景色变浅 1 档（`-light-3`）/ 边框色加深 | 鼠标悬停 | 移动端无 hover |
+| `:active` (pressed) | 背景色加深 2 档（`-dark-2`）/ 轻微上移 1px | 鼠标按下 / 触控按下 | `disabled` 不可按下 |
+| `:focus-visible` | 2px 主色描边 + 外发光 (`box-shadow: 0 0 0 2px rgba(#409eff, .2)`) | Tab 键聚焦 / 键盘操作 | — |
+| `.is-disabled` + `:disabled` | 半透明 `opacity: .5` + `cursor: not-allowed` + 禁用所有事件 | 权限不足 / 依赖未满足 / 加载前 | 禁止绑定点击事件 |
+| `.is-loading` | 文字替换为 `<i class="fas fa-spinner fa-spin"></i>` + 保持原尺寸 + 禁用点击 | 请求进行中 | loading 期间必须禁用按钮 |
+
+#### 7.1.6 其他按钮类型
+
+| 类型 | 规范类名 | 用途 |
+|------|----------|------|
+| 图标按钮 | `.btn-icon` + FontAwesome | 工具栏只有图标无文字的小按钮 |
+| 浮动操作按钮 (FAB) | `.btn-fab` | 移动端圆形悬浮「新建」「+」按钮，固定右下 |
+| 按钮组 | `.btn-group` > `.btn-group-item` | 分页 / 排序切换等逻辑互斥或关联的多按钮 |
+
+#### 7.1.7 类名简写映射表（向后兼容原设计规范）
+
+| 原设计规范类名 | Vibe Coding 四维展开 | 是否保留兼容 |
+|----------------|---------------------|--------------|
+| `.btn-primary` | `.btn-solid-primary-md` | ✅ |
+| `.btn-secondary` | `.btn-solid-neutral-md` | ✅ |
+| `.btn-outline` | `.btn-outline-primary-md` | ✅ |
+| `.btn-text` | `.btn-text-info-md` | ✅ |
+| `.btn-success` | `.btn-solid-success-md` | ✅ |
+| `.btn-warning` | `.btn-solid-warning-md` | ✅ |
+| `.btn-error` | `.btn-solid-danger-md` | ✅ |
+| `.btn-sm` | 叠加尺寸修饰 sm | ✅ |
+| `.btn-lg` | 叠加尺寸修饰 lg | ✅ |
+
+按钮使用示例：
+
+```html
+<!-- 强制：四维显式写法 -->
+<button class="btn btn-solid-primary btn-block">提交</button>                <!-- 实心·主色·通栏·默认 -->
+<button class="btn btn-outline-neutral">取消</button>                        <!-- 描边·中性·中号 -->
+<button class="btn btn-text-danger btn-sm">删除</button>                     <!-- 文字·危险·小号 -->
+<button class="btn btn-solid-success btn-lg is-loading">保存中...</button>   <!-- 实心·成功·大号·加载 -->
+<button class="btn-icon btn-outline-info"><i class="fas fa-copy"></i></button><!-- 图标按钮 -->
+
+<!-- 兼容：原类名仍有效 -->
+<button class="btn btn-primary">主要操作</button>
+<button class="btn btn-secondary btn-sm">次要操作</button>
+<button class="btn btn-outline">辅助操作</button>
+```
+
+### 7.2 卡片规范
+
+| 类名 | 样式 | 用途 |
+|------|------|------|
+| `.card` | 基础卡片 | 通用卡片 |
+| `.card-header` | 卡片头部 | 标题区域 |
+| `.card-title` | 卡片标题 | 标题文字 |
+| `.card-subtitle` | 卡片副标题 | 辅助说明 |
+| `.card-body` | 卡片主体 | 内容区域 |
+| `.card-footer` | 卡片底部 | 操作区域 |
+| `.card-shadow` | 增强阴影 | 悬浮效果 |
+| `.card-glass` | 毛玻璃效果 | 特殊卡片 |
+
+卡片使用示例：
+
+```html
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title">卡片标题</h3>
+        <p class="card-subtitle">副标题说明</p>
+    </div>
+    <div class="card-body">
+        <!-- 内容 -->
+    </div>
+    <div class="card-footer">
+        <button class="btn btn-primary">操作</button>
+    </div>
+</div>
+```
+
+### 7.3 表单规范
+
+| 类名 | 样式 | 用途 |
+|------|------|------|
+| `.form-group` | 表单组 | 表单控件包裹 |
+| `.form-label` | 标签 | 表单标签 |
+| `.form-control` | 输入框 | 输入控件 |
+| `.input-group` | 输入组 | 带前后缀的输入框 |
+| `.input-group-prepend` | 前置元素 | 输入框前的附加元素 |
+| `.input-group-append` | 后置元素 | 输入框后的附加元素 |
+| `.input-group-text` | 附加元素文本 | 附加元素的文本样式 |
+
+表单使用示例：
+
+```html
+<div class="form-group">
+    <label class="form-label">用户名</label>
+    <input type="text" class="form-control" placeholder="请输入用户名">
+</div>
+```
+
+### 7.4 状态指示
+
+#### 7.4.1 徽章（Badge）
+
+| 类名 | 样式 | 用途 |
+|------|------|------|
+| `.badge` | 徽章基础 | 状态标签 |
+| `.badge-primary` | 蓝色徽章 | 主状态 |
+| `.badge-success` | 绿色徽章 | 成功状态 |
+| `.badge-warning` | 橙色徽章 | 警告状态 |
+| `.badge-error` | 红色徽章 | 错误状态 |
+
+#### 7.4.2 标签（Tag）
+
+| 类名 | 样式 | 用途 |
+|------|------|------|
+| `.tag` | 标签基础 | 分类标签 |
+| `.tag-primary` | 蓝色标签 | 主分类 |
+| `.tag-blue` | 蓝色标签 | 信息类标签 |
+| `.tag-green` | 绿色标签 | 成功类标签 |
+| `.tag-yellow` | 黄色标签 | 警告类标签 |
+| `.tag-red` | 红色标签 | 危险类标签 |
+| `.tag-purple` | 紫色标签 | 特殊类标签 |
+| `.tag-gray` | 灰色标签 | 普通类标签 |
+| `.tag-cyan` | 青色标签 | 科技类标签 |
+| `.tag-pink` | 粉色标签 | 创意类标签 |
+
+#### 7.4.3 图标背景
+
+| 类名 | 样式 | 用途 |
+|------|------|------|
+| `.icon-bg-primary` | 主色背景 | 主要图标 |
+| `.icon-bg-success` | 绿色背景 | 成功图标 |
+| `.icon-bg-warning` | 橙色背景 | 警告图标 |
+| `.icon-bg-error` | 红色背景 | 错误图标 |
+| `.icon-bg-secondary` | 紫色背景 | 次要图标 |
+| `.icon-bg-gray` | 灰色背景 | 普通图标 |
+
+#### 7.4.4 进度条
+
+| 类名 | 样式 | 用途 |
+|------|------|------|
+| `.progress-bar` | 进度条轨道 | 进度条容器 |
+| `.progress-fill` | 进度条填充 | 进度条内容 |
+| `.progress-fill-primary` | 主色进度条 | 主要进度 |
+| `.progress-fill-success` | 绿色进度条 | 成功进度 |
+| `.progress-fill-warning` | 橙色进度条 | 警告进度 |
+| `.progress-fill-error` | 红色进度条 | 错误进度 |
+| `.progress-fill-secondary` | 紫色进度条 | 次要进度 |
+
+### 7.5 统计卡片
+
+| 类名 | 样式 | 用途 |
+|------|------|------|
+| `.stat-card` | 统计卡片容器 | 数据展示卡片 |
+| `.stat-icon` | 图标容器 | 统计图标 |
+| `.stat-icon.bg-primary` | 主色渐变背景 | 主要统计指标 |
+| `.stat-icon.bg-success` | 成功色渐变背景 | 成功相关指标 |
+| `.stat-icon.bg-warning` | 警告色渐变背景 | 警告相关指标 |
+| `.stat-icon.bg-danger` | 危险色渐变背景 | 危险相关指标 |
+| `.stat-icon.bg-secondary` | 紫色渐变背景 | 次要统计指标 |
+| `.stat-info` | 信息区域 | 统计数值和标签 |
+| `.stat-value` | 数值样式 | 统计数值 |
+| `.stat-label` | 标签样式 | 统计标签 |
+
+统计卡片使用示例：
+
+```html
+<div class="stat-card">
+    <div class="stat-icon bg-primary">
+        <i class="fas fa-users"></i>
+    </div>
+    <div class="stat-info">
+        <div class="stat-value">1,234</div>
+        <div class="stat-label">用户总数</div>
+    </div>
+</div>
+```
+
+### 7.6 图表容器
+
+| 类名 | 样式 | 用途 |
+|------|------|------|
+| `.chart-container` | 图表容器 | 图表包装容器 |
+| `.bar-item` | 柱状图项 | 单个柱状条 |
+| `.bar-label` | 标签 | 柱状条标签 |
+| `.bar-track` | 轨道 | 柱状条背景轨道 |
+| `.bar-fill` | 填充 | 柱状条填充 |
+| `.bar-value` | 数值 | 柱状条数值 |
+
+### 7.7 详情网格
+
+| 类名 | 样式 | 用途 |
+|------|------|------|
+| `.detail-grid` | 网格容器 | 详情信息网格 |
+| `.detail-item` | 网格项 | 单个详情项 |
+| `.detail-label` | 标签 | 详情标签 |
+| `.detail-value` | 数值 | 详情值 |
+
+详情网格使用示例：
+
+```html
+<div class="detail-grid">
+    <div class="detail-item">
+        <span class="detail-label">创建时间</span>
+        <span class="detail-value">2026-07-11</span>
+    </div>
+    <div class="detail-item">
+        <span class="detail-label">状态</span>
+        <span class="detail-value badge badge-success">已完成</span>
+    </div>
+</div>
+```
+
+### 7.8 空状态与加载
+
+| 类名 | 样式 | 用途 |
+|------|------|------|
+| `.empty-state` | 空状态容器 | 无数据展示 |
+| `.loading` | 加载状态 | 加载中展示 |
+
+空状态使用示例：
+
+```html
+<div class="empty-state">
+    <i class="fas fa-inbox"></i>
+    <h3>暂无数据</h3>
+    <p>点击下方按钮添加新内容</p>
+</div>
+```
+
+### 7.9 分段标题
+
+| 类名 | 样式 | 用途 |
+|------|------|------|
+| `.section-title` | 分段标题 | 区块标题 |
+
+### 7.10 导航系统
+
+| 类名 | 样式 | 用途 |
+|------|------|------|
+| `.nav-link` | 导航链接 | 侧边栏导航项 |
+| `.nav-link.active` | 激活状态 | 当前选中的导航项 |
+| `.breadcrumb` | 面包屑导航 | 页面路径指示 |
+| `.breadcrumb-item` | 面包屑项 | 单个路径项 |
+| `.breadcrumb-item.active` | 当前项 | 当前页面 |
+| `.breadcrumb-separator` | 分隔符 | 路径分隔符 |
+
+### 7.11 响应式工具类
+
+#### 7.11.1 显示控制
+
+| 类名 | 样式 | 用途 |
+|------|------|------|
+| `.hidden` | 隐藏 | 始终隐藏 |
+| `.hidden-xs` | 隐藏 | 小于 640px 隐藏 |
+| `.hidden-sm` | 隐藏 | 小于 768px 隐藏 |
+| `.hidden-md` | 隐藏 | 小于 1024px 隐藏 |
+| `.hidden-lg` | 隐藏 | 小于 1280px 隐藏 |
+
+#### 7.11.2 间距工具类
+
+| 类名 | 样式 | 用途 |
+|------|------|------|
+| `.mt-0` ~ `.mt-6` | 上外边距 | 0-24px |
+| `.mb-0` ~ `.mb-6` | 下外边距 | 0-24px |
+| `.p-0` ~ `.p-6` | 内边距 | 0-24px |
+
+#### 7.11.3 圆角工具类
+
+| 类名 | 样式 | 用途 |
+|------|------|------|
+| `.rounded` | 默认圆角 | 4px |
+| `.rounded-sm` | 小圆角 | 2px |
+| `.rounded-lg` | 大圆角 | 8px |
+| `.rounded-xl` | 超大圆角 | 12px |
+| `.rounded-full` | 圆形 | 50% |
+
+#### 7.11.4 阴影工具类
+
+| 类名 | 样式 | 用途 |
+|------|------|------|
+| `.shadow` | 默认阴影 | 标准阴影 |
+| `.shadow-sm` | 小阴影 | 微小阴影 |
+| `.shadow-lg` | 大阴影 | 中等阴影 |
+| `.shadow-xl` | 超大阴影 | 大阴影 |
+| `.shadow-none` | 无阴影 | 移除阴影 |
+
+#### 7.11.5 背景工具类
+
+| 类名 | 样式 | 用途 |
+|------|------|------|
+| `.bg-primary` | 主背景色 | 白色背景 |
+| `.bg-secondary` | 次背景色 | 灰色背景 |
+| `.bg-tertiary` | 三级背景色 | 更深灰色 |
+| `.bg-gradient` | 渐变背景 | 主色渐变 |
+
+#### 7.11.6 文字颜色工具类
+
+| 类名 | 样式 | 用途 |
+|------|------|------|
+| `.text-primary` | 主文字色 | 深色文字 |
+| `.text-secondary` | 次文字色 | 中等文字 |
+| `.text-tertiary` | 三级文字色 | 浅色文字 |
+| `.text-color-primary` | 主色文字 | 蓝色文字 |
+| `.text-success` | 成功色文字 | 绿色文字 |
+| `.text-warning` | 警告色文字 | 橙色文字 |
+| `.text-error` | 错误色文字 | 红色文字 |
+
+### 7.12 网格系统
+
+| 类名 | 样式 | 用途 |
+|------|------|------|
+| `.container` | 容器 | 页面容器 |
+| `.row` | 行 | 水平布局行 |
+| `.col` | 列 | 自适应列 |
+| `.col-sm` | 小屏幕列 | 50% 宽度 |
+| `.col-md` | 中等屏幕列 | 50% 宽度（≥768px） |
+| `.col-lg` | 大屏幕列 | 33.33% 宽度（≥1024px） |
+| `.col-xl` | 超大屏幕列 | 25% 宽度（≥1280px） |
+
+## 8. 模板引入规范
+
+### 8.1 必须引入的 CSS 文件
+
+所有 HTML 模板必须在 `<head>` 中按顺序引入以下文件：
+
+```html
+<!-- 1. 设计系统（必须最先引入） -->
+<link rel="stylesheet" href="/assets/css/mtscos-design-system.css">
+
+<!-- 2. Font Awesome 图标库（本地） -->
+<link rel="stylesheet" href="/assets/font-awesome/css/all.min.css">
+
+<!-- 3. 页面特定样式（可选） -->
+<link rel="stylesheet" href="/assets/css/page_styles/xxx-styles.css">
+```
+
+### 8.2 禁止事项
+
+- 禁止在模板中使用 `<style>` 标签定义全局样式
+- 禁止在模板中使用内联 `style="color:#xxx"` 硬编码颜色
+- 禁止引入外部 CDN 样式（如 Font Awesome CDN）
+
+## 9. 深色主题适配
+
+### 9.1 管理端深色主题变量
+
+```css
+:root {
+    --bg-primary: #1a1a2e;
+    --bg-secondary: #16213e;
+    --text-primary: #f1f5f9;
+    --text-secondary: #94a3b8;
+    --border-color: rgba(255, 255, 255, 0.1);
+}
+```
+
+### 9.2 适配原则
+
+- 使用 CSS 变量定义颜色，自动适配深浅主题
+- 避免使用固定的白色/黑色文字
+- 使用 `var(--text-primary)` 代替 `color: #fff` 或 `color: #000`
+
+## 10. 动画系统
+
+### 10.1 过渡时间
+
+| 变量名 | 值 | 用途 |
+|--------|-----|------|
+| `var(--el-transition-duration-fast)` | 150ms | 快速动画 |
+| `var(--el-transition-duration-base)` | 200ms | 标准动画 |
+| `var(--el-transition-duration-slow)` | 300ms | 慢速动画 |
+
+### 10.2 预设动画类
+
+| 类名 | 动画效果 | 用途 |
+|------|---------|------|
+| `.fade-in` | 淡入 + 上移 | 页面/组件入场 |
+| `.slide-in-left` | 左滑入 | 侧边栏 |
+| `.slide-in-right` | 右滑入 | 弹窗 |
+| `.float` | 浮动 | 悬浮元素 |
+| `.pulse` | 脉冲 | 加载中 |
+
+## 11. 移动端适配
+
+### 11.1 适配原则
+
+| 原则 | 说明 |
+|------|------|
+| 响应式设计 | 使用媒体查询适配不同屏幕尺寸 |
+| 触控友好 | 按钮最小 44x44px，便于手指点击 |
+| 简洁布局 | 移动端使用单列布局，减少信息密度 |
+| 手势支持 | 支持滑动、捏合等常见手势 |
+
+### 11.2 移动端断点
+
+| 断点 | 宽度 | 设备类型 |
+|------|------|---------|
+| xs | < 640px | 手机竖屏 |
+| sm | 640px - 768px | 手机横屏 |
+| md | 768px - 1024px | 平板 |
+| lg | >= 1024px | 桌面端 |
+
+### 11.3 移动端导航
+
+| 类名 | 样式 | 用途 |
+|------|------|------|
+| `.mobile-nav` | 移动端导航栏 | 顶部导航 |
+| `.mobile-menu` | 移动端菜单 | 侧边菜单 |
+| `.mobile-bottom-nav` | 底部导航 | 底部功能导航 |
+| `.hamburger-menu` | 汉堡菜单按钮 | 菜单触发按钮 |
+
+## 12. 图标系统
+
+### 12.1 图标库
+
+项目使用 **Font Awesome 6.x**（本地部署），禁止使用外部 CDN。
+
+### 12.2 图标使用规范
+
+| 规范 | 说明 |
+|------|------|
+| 图标大小 | 使用 `.fa-xs`、`.fa-sm`、`.fa-lg`、`.fa-xl` 控制大小 |
+| 图标颜色 | 使用 CSS 变量控制颜色 |
+| 图标背景 | 使用 `.icon-bg-*` 类添加背景 |
+| 图标间距 | 使用间距工具类控制间距 |
+
+图标使用示例：
+
+```html
+<i class="fas fa-users fa-lg text-primary"></i>
+<i class="fas fa-check-circle fa-sm icon-bg-success"></i>
+```
+
+## 13. 设计巡检规范
+
+### 13.1 巡检驱动的设计规范
+
+| 原则 | 说明 |
+|------|------|
+| **巡检优先** | 所有设计变更必须通过 AI 巡检引擎检查 |
+| **自动修复** | 检测到的设计问题自动触发修复流程 |
+| **法律准则合规** | 所有设计活动必须遵循法律准则文件规定 |
+| **错误上报** | 设计错误自动上报到数据库 |
+| **学习闭环** | 修复经验自动积累到脑库 |
+
+### 13.2 设计巡检检查项
+
+| 检查项 | 说明 | 严重程度 |
+|--------|------|----------|
+| 颜色变量检查 | 是否使用 CSS 变量而不是硬编码颜色值 | 高 |
+| 字体变量检查 | 是否使用字体变量 | 中 |
+| 间距变量检查 | 是否使用间距变量 | 中 |
+| 圆角变量检查 | 是否使用圆角变量 | 低 |
+| 阴影变量检查 | 是否使用阴影变量 | 低 |
+| 按钮类名检查 | 是否使用标准按钮类名 | 高 |
+| 卡片类名检查 | 是否使用标准卡片类名 | 高 |
+| 表单类名检查 | 是否使用标准表单类名 | 高 |
+| 响应式检查 | 是否适配移动端 | 中 |
+| 主题切换检查 | 是否支持深浅主题切换 | 中 |
+| 动画规范检查 | 是否使用预设动画类名 | 低 |
+| 图标规范检查 | 是否使用本地 Font Awesome 资源 | 低 |
+
+### 13.3 设计巡检流程
+
+```text
+1. 设计变更提交
+2. AI 巡检引擎扫描设计文件
+3. 检测设计规范合规性
+4. 发现问题自动记录到数据库
+5. 触发自动修复流程
+6. 修复结果记录到脑库
+7. 生成巡检报告
+```
+
+### 13.4 设计巡检 API
+
+| API | 方法 | 说明 | 权限 |
+|-----|------|------|------|
+| `/api/design/inspect` | POST | 检查设计文件合规性 | designer+ |
+| `/api/design/fix` | POST | 自动修复设计问题 | designer+ |
+| `/api/design/report` | GET | 获取设计巡检报告 | admin+ |
+
+---
+
+## 设计自查清单
+
+开发完成后必须逐条检查：
+
+- [ ] 页面已引入 `mtscos-design-system.css`
+- [ ] 页面已引入本地 `font-awesome`（非 CDN）
+- [ ] 无硬编码颜色值（如 `#3b82f6`、`#8b5cf6` 等）
+- [ ] 所有颜色使用 CSS 变量（`var(--xxx)`）
+- [ ] 按钮使用标准类名（`.btn-primary`、`.btn-secondary` 等）
+- [ ] 卡片使用标准类名（`.card`、`.card-header` 等）
+- [ ] 表单使用标准类名（`.form-group`、`.form-control` 等）
+- [ ] 间距使用 `var(--spacing-*)` 变量
+- [ ] 圆角使用 `var(--border-radius-*)` 变量
+- [ ] 阴影使用 `var(--shadow-*)` 变量
+- [ ] 字体大小使用 `var(--font-size-*)` 变量
+- [ ] 深浅主题切换正常
+- [ ] 响应式布局适配移动端
+- [ ] 动画使用预设类名或标准过渡变量
+- [ ] 无内联样式硬编码颜色
+- [ ] 无 `<style>` 标签定义全局样式
+- [ ] 移动端适配完成（触控友好、布局简洁）
+- [ ] 图标使用本地 Font Awesome 资源
+
+---
+
+## 9. 规则中心面板设计规范
+
+### 9.1 规则中心页面布局
+
+规则中心是5级规则体系和7步审批流程的统一管理入口，采用**三栏+顶部状态**布局：
+
+```text
+┌─────────────────────────────────────────────────────────────┐
+│ 顶部状态栏：规则总览 (IRON/RED_LINE/RED_WALL/CONSTRAINT/WARNING各计数) │
+├──────────────┬────────────────────────────┬─────────────────┤
+│ 左侧导航     │ 中间主内容区 (Tab切换)      │ 右侧磋商面板    │
+│ - 规则库     │                            │ - AI员工5人卡  │
+│ - 审批待办   │ Tab1: 审批待办              │ - 投票进度条   │
+│ - 跳过申请   │ Tab2: 新建提议表单          │ - 裁决Veridct  │
+│ - 宽限窗口   │ Tab3: 规则模拟测试工具      │ - 修复必须     │
+│ - 违例审计   │ Tab4: 规则命中统计          │                 │
+└──────────────┴────────────────────────────┴─────────────────┘
+```
+
+### 9.2 5级规则视觉标识系统
+
+**强制要求**：所有规则在UI中必须通过以下标识区分，确保用户一眼识别层级：
+
+| 规则层级 | 色值变量 | 背景色 | 文字色 | 徽章标签 | 图标 | 视觉优先级 |
+|---------|---------|--------|--------|---------|------|-----------|
+| IRON_RULE L0 | `--rule-iron` | 线性渐变 #1a1a2e→#16213e 深灰蓝 | #f8f9fa 白 | 【铁规】圆角方徽章8px | fa-shield-halved + 金属纹理 | 最高，占20%屏幕醒目区 |
+| RED_LINE L1 | `--rule-red-line` | #dc2626 正红 | #ffffff | 【红线】圆角徽章 | fa-fire-flame-curved | 次高，10%醒目区 |
+| RED_WALL L2 | `--rule-red-wall` | #f97316 橙红 | #1f2937 | 【红墙】圆角徽章 | fa-wall-solid | 中等，正常列表项 |
+| CONSTRAINT L3 | `--rule-constraint` | #eab308 琥珀黄 | #1f2937 | 【制约】圆角徽章 | fa-triangle-exclamation | 低，弱化显示 |
+| WARNING L4 | `--rule-warning` | #3b82f6 蓝 | #ffffff | 【提示】圆角徽章 | fa-circle-info | 最低，灰色弱化 |
+
+```css
+/* 5级规则徽章标准CSS */
+.rule-badge { display: inline-flex; align-items: center; gap: 4px;
+              padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 600; }
+.rule-badge.IRON_RULE { background: linear-gradient(135deg,#1a1a2e,#16213e); color:#fff; border:1px solid #4a5568; }
+.rule-badge.RED_LINE  { background: var(--rule-red-line,#dc2626); color: #fff; }
+.rule-badge.RED_WALL  { background: var(--rule-red-wall,#f97316); color: #1f2937; }
+.rule-badge.CONSTRAINT{ background: var(--rule-constraint,#eab308); color: #1f2937; }
+.rule-badge.WARNING   { background: var(--rule-warning,#3b82f6); color: #fff; }
+```
+
+### 9.3 审批待办Tab (Tab1) 组件规范
+
+审批待办列表每行必须展示以下字段：
+
+| 列 | UI组件 | 交互 |
+|---|--------|------|
+| 规则等级徽章 | .rule-badge + FontAwesome图标 | 悬停显示完整规则说明 |
+| 规则名称 | 中文 + 英文代码 (MT_RL_*) | 点击进入详情Drawer |
+| 命中数/状态 | 数字徽章 + 状态胶囊：待投票/已通过/待EigenFlux/待SA终审/已生效/已撤回 | 悬停显示时间戳 |
+| 申请时间 | 相对时间（2分钟前） | 点击显示精确时间 |
+| 操作 | 按钮组：[详情] [模拟测试] [投票(admin+)] [驳回(admin+)] | 权限控制显示 |
+
+状态胶囊标准色：
+| 状态 | 背景 | 图标 |
+|-----|------|------|
+| 管理员提议 | #f3f4f6 灰 | fa-file-circle-plus |
+| ≥2管理员同意中 | #fef3c7 黄 | fa-users-between-lines |
+| EigenFlux AI磋商中 | #ede9fe 紫 | fa-robot |
+| AI防火墙复审 | #e0f2fe 浅蓝 | fa-shield-virus |
+| SA终审待VIKEY | #fee2e2 浅红 | fa-key-skeleton |
+| 适配期中 | #dcfce7 绿 | fa-hourglass-half |
+| 已生效 | #22c55e 深绿 | fa-circle-check |
+| 保密撤回 | #6b7280 灰 | fa-eye-slash |
+
+### 9.4 新建规则提议表单 (Tab2) 组件规范
+
+表单**必填字段**：
+```text
+┌─ 规则基础信息 ──────────────────────────────────────┐
+│ 规则层级(单选)：IRON_RULE / RED_LINE / RED_WALL /   │
+│                 CONSTRAINT / WARNING  (带色值徽章)   │
+│ 规则代码：自动生成MT_{前缀}_{模块}_{序号}            │
+│ 规则中文名称：text(≤50字)                           │
+│ 规则详细描述：textarea(≤500字)                      │
+├─ 合规与法律 ────────────────────────────────────────┤
+│ 法律/合规依据：textarea (IRON/RED_LINE必填)         │
+├─ 规则引擎配置 ──────────────────────────────────────┤
+│ 是否允许跳过(bypass)：单选 否/是 (RED_LINE禁止选是) │
+│ 默认宽限窗口：0/1h/6h/24h/2d/7d  (CONSTRAINT以上)   │
+│ 违例后果说明：textarea                              │
+├─ EigenFlux AI评审 ─────────────────────────────────┤
+│ 触发EigenFlux阈值：单选 从不 / CONSTRAINT+/ RED_WALL+ / RED_LINE+ / IRON_ONLY │
+│ AI关注重点(多选5项)：架构兼容性 / 合规性 / 安全 / 数据一致性 / 部署回滚 │
+└─ 提交 / 保存草稿 / 立即模拟测试 ────────────────────┘
+```
+
+### 9.5 规则模拟测试工具 (Tab3) 组件规范
+
+模拟测试面板展示**规则链命中路径可视化**，零风险仅返回命中结果不实际阻断：
+
+```text
+┌─ 模拟测试配置 ──────────────────────────────────────┐
+│ 测试规则(多选)：[复选框列表+规则徽章] 或 全选        │
+│ 模拟角色下拉：student / teacher / admin / hardware_admin / system_admin / super_admin │
+│ 模拟请求方法：GET / POST / PUT / DELETE              │
+│ 模拟请求路径：text (例: /api/exams/create)           │
+│ Payload JSON编辑器 (带语法高亮)                       │
+├─ [运行模拟测试] 按钮                                 │
+├─ 模拟结果可视化 ────────────────────────────────────┤
+│ 规则链命中流程图 (从L0到L4，命中高亮红色)            │
+│ ✓未命中 / ✗命中数 / ⚠宽限命中 / ✋bypass放行         │
+│ 详细日志列表：时间戳→规则→处理动作→必须修复          │
+│ 预计EigenFlux投票模拟：5张AI员工卡片预填投票结果     │
+└─ [下载测试报告] / [创建正式审批单]                   │
+```
+
+---
+
+## 10. EigenFlux AI5人磋商面板设计规范
+
+### 10.1 AI员工5人卡片网格 (右侧磋商面板)
+
+EigenFlux异常触发时右侧自动弹出**5张AI员工卡片 + 投票进度**：
+
+```text
+┌─ EigenFlux AI5人磋商中 ╳ ─────────────────────────┐
+│ 进度条：[■■■■■■■■■□□□] 投票3/5 (阈值4/5)           │
+├─ AI员工卡网格 3×2 (1空位置放裁决)                  │
+│ ┌─────┐ ┌─────┐ ┌─────┐                           │
+│ │升级  │ │合规  │ │安全  │                           │
+│ │分析师│ │审计员│ │审计员│  < 5张员工卡头像+角色名  │
+│ │✓赞成│ │✓赞成│ │✗反对│     投票状态徽章            │
+│ └─────┘ └─────┘ └─────┘     悬浮显示裁决详情       │
+│ ┌─────┐ ┌─────┐ ┌─────┐                           │
+│ │DBA  │ │实施  │ │裁决  │                           │
+│ │    │ │工程师│ │     │  < 裁决Veridct醒目显示     │
+│ │?待投│ │✓赞成│ │待定 │     强制修复方案             │
+│ └─────┘ └─────┘ └─────┘                           │
+├─ 磋商日志（时间线） ───────────────────────────────┤
+│ 14:02 合规审计员: 该提议符合合规要求，但必须补充XX │
+│ 14:03 安全审计员: 检测到权限提升风险，必须驳回     │
+│ 14:05 系统: 投票未达4/5阈值，自动触发SA升级        │
+├─ [应用强制修复] [手动驳回] [通知SA终审]             │
+└────────────────────────────────────────────────────┘
+```
+
+### 10.2 AI员工卡片标准设计
+
+每张卡片尺寸：**200×260px**，统一结构：
+```css
+.ai-panel-card {
+  background: linear-gradient(180deg,#ffffff 0%, #f8fafc 100%);
+  border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  padding: 16px; display: flex; flex-direction: column; gap: 8px;
+  border: 2px solid transparent;  /* 投票后彩色 */
+}
+.ai-panel-card.vote-approve { border-color: #22c55e; box-shadow: 0 0 0 4px #dcfce7; }
+.ai-panel-card.vote-reject  { border-color: #ef4444; box-shadow: 0 0 0 4px #fee2e2; }
+.ai-panel-card.vote-pending { border-color: #a3a3a3; animation: pulse 2s infinite; }
+```
+
+卡片内容顺序：
+1. 角色头像 (FontAwesome图标，圆形64px，渐变背景)
+2. 角色中文名称 (16px 粗体)
+3. 英文代码 (12px 灰色 #6b7280)
+4. 投票状态徽章 (approve✓绿 / reject✗红 / pending?灰)
+5. 裁决说明 (12px，最多3行，省略号)
+
+### 10.3 投票阈值进度条设计
+
+进度条必须明确显示**当前票数/阈值要求**：
+
+| 阈值类型 | 要求 | 进度条颜色 | 说明 |
+|---------|------|-----------|------|
+| IRON_RULE磋商 | 必须5/5全票 | 达标后全深灰蓝(#1a1a2e)，未达标红色闪烁 | L0最严，全票通过才能执行修复 |
+| RED_LINE磋商 | ≥4/5通过 | ≥4段绿色(#22c55e)，≤3段红色渐变(ef4444→f97316) | 默认阈值 |
+| RED_WALL磋商 | ≥4/5通过 | 同上 | 可放宽但标准不放宽 |
+| CONSTRAINT告警 | ≥3/5通过 | ≥3段琥珀黄(#eab308)，≤2段蓝色(#3b82f6) | 低层级可简化 |
+
+---
+
+## 11. VIKEY超级管理员认证UI规范
+
+### 11.1 SA登录7要素认证界面
+
+SA(wuchenghao15)登录页必须提供**7要素分步向导式认证**UI：
+
+```text
+┌─ 超级管理员认证 (wuchenghao15) ─────────────────────┐
+│ 步骤进度：[1用户名][2密码][3挑战码][4USB序列号]     │
+│            [5PIN码][6SSL指纹][7硬件绑定] ✓          │
+├─ 当前Step内容区 ─────────────────────────────────────┤
+│ 第4步 插入VIKEY USB加密狗                            │
+│ ┌────────────────────────────────────────┐          │
+│ │ 🔍 正在检测VIKEY硬件插入...             │          │
+│ │ 图标：USB-C转接头 动画脉动              │          │
+│ │ 状态：未检测到 (每3秒轮询api/vikey/hotplug_notify)│
+│ └────────────────────────────────────────┘          │
+│ 错误提示条(红色背景)：VIKEY_REQUIRED - 检测不到加密狗│
+├─ ← 上一步 / 重试检测 / 下一步 →                     │
+└─────────────────────────────────────────────────────┘
+```
+
+### 11.2 SA认证错误提示码视觉
+
+所有VIKEY失败必须用**错误码+中文+操作指引**三段式展示：
+
+| 错误码 | UI视觉 | 操作标准按钮 |
+|-------|--------|------------|
+| VIKEY_REQUIRED | 红色背景卡片 + USB未插图标 | [重试检测] [移动端指纹认证] |
+| VIKEY_PIN_LOCKED | 深红卡片 + 挂锁图标 | [联系SA解锁 wuchenghao15] |
+| PERM_SA_CHALLENGE_FAIL | 橙红卡片 + 挑战码过期图标 | [重新生成挑战码] |
+| SSL_FINGERPRINT_MISMATCH | 紫色卡片 + 证书警告图标 | [重新校验证书] [确认风险继续(不标准)] |
+| HARDWARE_BIND_FAIL | 深灰卡片 + 指纹失效图标 | [重新绑定硬件] |
+
+---
+
+## 设计自查清单 (规则系统UI专项)
+
+### 5级规则标识
+- [ ] 所有规则展示项已使用.rule-badge标准样式
+- [ ] IRON_RULE使用金属深灰渐变，视觉占比≥20%
+- [ ] 红线/红墙/制约/提示色值与CSS变量一致
+- [ ] FontAwesome图标与规则层级一一对应
+
+### 规则中心四Tab
+- [ ] Tab1审批待办：规则徽章/状态胶囊/操作按钮全部正确
+- [ ] Tab2新建提议：必填字段校验完整(IRON/RED_LINE必填合规依据)
+- [ ] Tab3模拟测试：规则链流程图+模拟角色+Payload编辑器可用
+- [ ] Tab4统计：按5级规则+7步状态的ECharts饼图/柱图
+
+### EigenFlux磋商面板
+- [ ] 5张AI员工卡片200×260px一致规格
+- [ ] 投票状态边框色正确(绿/红/脉动灰)
+- [ ] 进度条阈值显示正确(4/5或5/5)
+- [ ] 裁决面板显示强制修复+应用按钮
+
+### VIKEY认证
+- [ ] 7要素分步向导UI清晰显示当前步骤
+- [ ] 每3秒轮询/api/vikey/hotplug_notify，USB未插时动画提示
+- [ ] 6种VIKEY错误码提示卡片样式正确
+- [ ] 移动端提供X-Fingerprint header替代认证入口
+
+---
+
+## 14. Vibe Coding 强制术语体系（IR级铁律 · 来源抖音「敲代码的小虾米」）
+
+> **来源合法性**：内容来自抖音 Vibe Coding 术语课（作者：敲代码的小虾米，视频链接 https://v.douyin.com/930jajV4yGI/ ，发布日期2026-08-06，标题《Vibe Coding术语：按钮 #vibecoding #AI编程 #前端开发》），经超级管理员 wuchenghao15 批准纳入本规范。
+> **效力层级**：IRON_RULE（铁律），优先级高于所有其他组件规范，低于法律准则和用户认证硬约束。AI 巡检引擎发现任何违反都必须强制修复。
+> **适用范围**：MTSCOS AI 项目所有按钮类交互元素，包括 HTML `<button>`、`<a class="btn">`、`<input type="submit">`、Vue/Element Plus `<el-button>` 等。
+
+### 14.1 按钮四维组合模型（核心命题）
+
+任何按钮都必须同时定义以下四个维度，缺少任何一个维度的定义都是违规：
+
+| 序号 | 维度 | 可选值数量 | 允许值 |
+|------|------|-----------:|--------|
+| ① | **变体 Variant** | 4 | `solid`(实心) / `outline`(描边) / `text`(文字) / `link`(链接) |
+| ② | **颜色 Color** | 6 | `primary`(主) / `success`(成功) / `warning`(警告) / `info`(信息) / `danger`(危险) / `neutral`(中性) |
+| ③ | **尺寸 Size** | 4 | `sm`(小) / `md`(中) / `lg`(大) / `block`(通栏) |
+| ④ | **状态 State** | 6 | `default`(默认) / `hover`(悬停) / `pressed`(按下) / `focus`(聚焦) / `disabled`(禁用) / `loading`(加载) |
+
+**4 × 6 × 4 × 6 = 576 种合法组合**。每个维度完全正交：`outline-warning`、`text-danger`、`solid-neutral`、`text-info-sm` 均为合法。
+
+### 14.2 八条强制细则
+
+| 编号 | 规则 | 严重程度 | 巡检检查方式 |
+|------|------|----------|--------------|
+| VC-B1 | 同一屏幕/弹窗/表单底部操作栏，**最多一个 `solid` 实心按钮**；其余操作必须降级为 `outline`/`text`/`link`。 | **CRITICAL** | DOM 扫描同级 `.btn-solid-*` 数量 ≤ 1 |
+| VC-B2 | 颜色含义与语义一一对应，**禁止反语义配色**（例：删除按钮不能用 `success`，发布按钮不能用 `danger`）。 | **CRITICAL** | 按钮文案关键词 vs 颜色语义映射匹配 |
+| VC-B3 | 所有按钮最小触控目标 **≥ 44×44px**（移动端强制，桌面端标准）。 | **HIGH** | 计算 CSS 实际渲染高度 + padding |
+| VC-B4 | `disabled` 禁用态必须同时设置 HTML `disabled` 属性 + CSS `.is-disabled` 类；**禁止只加 CSS 不锁事件**。 | **HIGH** | 检查 `disabled` 属性是否存在 |
+| VC-B5 | `loading` 加载态必须：① 显示 spinner 图标（`fa-spinner fa-spin`）；② 禁用按钮点击；③ 保留原按钮尺寸不跳动。 | **HIGH** | DOM 检查加载期间是否含 `.fa-spinner` + `disabled` |
+| VC-B6 | `:focus-visible` 聚焦态必须有 2px 主色描边或等强视觉提示，**禁止所有按钮移除 outline 无替代方案**（可访问性）。 | **MEDIUM** | 检查 `:focus-visible` 样式是否覆盖 |
+| VC-B7 | 通栏按钮（`.btn-block`）优先用于移动端登录、注册、提交表单等最高频操作，**必须放在页面操作区底部正中**。 | **MEDIUM** | 页面检测移动端断点下 `.btn-block` 使用合理性 |
+| VC-B8 | 「取消/关闭/跳过/返回」等中性操作必须使用 `neutral` 颜色，**禁止使用 `primary` 或 `danger` 造成误导**。 | **HIGH** | 按钮文案关键词「取消/关闭/跳过/暂不」→ 必须匹配 `neutral` |
+
+### 14.3 反语义配色速查表（禁止对照）
+
+| 按钮文案关键词 | 合法颜色 | ❌ 禁止颜色 | 违反规则 |
+|---------------|---------|------------|---------|
+| 确定、提交、保存、下一步 | `primary` | 其他主操作以外的颜色 | VC-B2 |
+| 通过、发布、启用、同意、上线 | `success` | `danger` / `warning` | VC-B2 |
+| 删除、销毁、注销、拒绝、强制下线 | `danger` | `success` / `primary` | VC-B2 |
+| 重置、覆盖、停用、导出、批量操作 | `warning` | `success` / `danger` | VC-B2 |
+| 详情、预览、复制、分享、查看 | `info` | `danger` / `warning` | VC-B2 |
+| 取消、关闭、跳过、暂不、返回 | `neutral` | `primary` / `success` / `danger` | VC-B8 |
+
+### 14.4 按钮状态 CSS 实现参考（必须同步到 theme.css / mtscos-design-system.css）
+
+```css
+/* === Vibe Coding 按钮四维体系：变体 + 颜色 + 尺寸 + 状态 === */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  gap: var(--spacing-2);
+  font-family: inherit; font-weight: var(--el-font-weight-primary);
+  border: 1px solid transparent; border-radius: var(--el-border-radius-base);
+  cursor: pointer; transition: all var(--el-transition-duration-base) ease;
+  user-select: none; text-decoration: none; white-space: nowrap;
+}
+/* === 维度三：尺寸 === */
+.btn.btn-sm    { height: 28px; padding: 0 12px; font-size: var(--el-font-size-xs); }
+.btn.btn-md    { height: 40px; padding: 0 20px; font-size: var(--el-font-size-base); } /* 默认 */
+.btn.btn-lg    { height: 48px; padding: 0 28px; font-size: var(--el-font-size-lg); }
+.btn.btn-block { width: 100%; height: 48px; }
+/* === 维度一×二：变体×颜色（只展开solid-primary，其余颜色同理） === */
+.btn.btn-solid-primary { background: var(--el-color-primary); color: #fff; border-color: var(--el-color-primary); }
+.btn.btn-outline-primary { background: transparent; color: var(--el-color-primary); border-color: var(--el-color-primary); }
+.btn.btn-text-primary { background: transparent; color: var(--el-color-primary); border-color: transparent; }
+.btn.btn-solid-success { background: var(--el-color-success); color: #fff; border-color: var(--el-color-success); }
+.btn.btn-outline-success { background: transparent; color: var(--el-color-success); border-color: var(--el-color-success); }
+.btn.btn-text-success { background: transparent; color: var(--el-color-success); border-color: transparent; }
+.btn.btn-solid-warning { background: var(--el-color-warning); color: #fff; border-color: var(--el-color-warning); }
+.btn.btn-outline-warning { background: transparent; color: var(--el-color-warning); border-color: var(--el-color-warning); }
+.btn.btn-text-warning { background: transparent; color: var(--el-color-warning); border-color: transparent; }
+.btn.btn-solid-info    { background: var(--el-color-info); color: #fff; border-color: var(--el-color-info); }
+.btn.btn-outline-info  { background: transparent; color: var(--el-color-info); border-color: var(--el-color-info); }
+.btn.btn-text-info     { background: transparent; color: var(--el-color-info); border-color: transparent; }
+.btn.btn-solid-danger  { background: var(--el-color-danger); color: #fff; border-color: var(--el-color-danger); }
+.btn.btn-outline-danger{ background: transparent; color: var(--el-color-danger); border-color: var(--el-color-danger); }
+.btn.btn-text-danger   { background: transparent; color: var(--el-color-danger); border-color: transparent; }
+.btn.btn-solid-neutral { background: var(--el-text-color-secondary); color: #fff; border-color: var(--el-text-color-secondary); }
+.btn.btn-outline-neutral{ background: transparent; color: var(--el-text-color-secondary); border-color: var(--el-text-color-secondary); }
+.btn.btn-text-neutral  { background: transparent; color: var(--el-text-color-secondary); border-color: transparent; }
+.btn.btn-link { color: var(--el-color-primary); text-decoration: underline; }
+/* === 维度四：状态 === */
+.btn:hover         { filter: brightness(1.05); transform: translateY(-1px); }  /* hover */
+.btn:active        { filter: brightness(.9);  transform: translateY(0); }    /* pressed */
+.btn:focus-visible { outline: 2px solid var(--el-color-primary); outline-offset: 2px; box-shadow: 0 0 0 4px color-mix(in srgb, var(--el-color-primary) 20%, transparent); }
+.btn.is-disabled, .btn:disabled { opacity: .5; cursor: not-allowed !important; pointer-events: none; transform: none !important; filter: none !important; }
+.btn.is-loading .fa-spinner { animation: spin 1s linear infinite; margin-right: var(--spacing-2); }
+/* === 其他类型 === */
+.btn-icon.btn-sm { width: 28px; height: 28px; padding: 0; }
+.btn-icon.btn-md { width: 40px; height: 40px; padding: 0; }
+.btn-icon.btn-lg { width: 48px; height: 48px; padding: 0; }
+.btn-fab { position: fixed; right: var(--spacing-6); bottom: var(--spacing-10); width: 56px; height: 56px; border-radius: 50%; z-index: 1000; }
+.btn-group { display: inline-flex; }
+.btn-group > .btn-group-item + .btn-group-item { margin-left: -1px; border-top-left-radius: 0; border-bottom-left-radius: 0; }
+.btn-group > .btn-group-item:first-child { border-top-right-radius: 0; border-bottom-right-radius: 0; }
+/* === 向后兼容简写映射 === */
+.btn-primary { background: var(--el-color-primary); color: #fff; } /* → solid-primary-md */
+.btn-secondary { background: var(--el-text-color-secondary); color: #fff; } /* → solid-neutral-md */
+.btn-success { background: var(--el-color-success); color: #fff; }
+.btn-warning { background: var(--el-color-warning); color: #fff; }
+.btn-error   { background: var(--el-color-danger); color: #fff; }
+```
+
+### 14.5 新增 §13 巡检检查项 (Vibe Coding 按钮专项)
+
+| 检查项 | 说明 | 严重程度 | 映射规则 |
+|--------|------|----------|----------|
+| Vibe按钮维度完整性 | 按钮是否同时指定变体/颜色/尺寸（简写类兼容，未显式指定时按默认 md） | 高 | VC-B1, VC-B3 |
+| 一屏两实心检测 | 同级操作区是否有 ≥2 个 solid 实心按钮 | **CRITICAL** | VC-B1 |
+| 反语义配色检测 | 按钮文案关键词与颜色语义是否匹配 | **CRITICAL** | VC-B2, VC-B8 |
+| 禁用属性双保险 | `.is-disabled` 类是否同时具有 `disabled` HTML 属性 | 高 | VC-B4 |
+| 加载态完整检测 | `.is-loading` 是否含 spinner + disabled + 尺寸稳定 | 高 | VC-B5 |
+| 可访问性聚焦环 | 按钮是否具有 `:focus-visible` 样式 | 中 | VC-B6 |
+| 触控目标尺寸 | 按钮点击区域 ≥ 44×44px（移动端） | 高 | VC-B3 |
+
+---
+
+## 15. Vibe Coding 组件术语体系（IR级铁律 · 来源抖音「敲代码的小虾米」）
+
+> **来源合法性**：内容来自抖音 Vibe Coding 术语课系列（作者：敲代码的小虾米，视频合集 https://v.douyin.com/930jajV4yGI/ ，发布日期2026-08-07，标题《Vibe Coding术语：组件体系 #vibecoding #AI编程 #前端开发》），经超级管理员 wuchenghao15 批准纳入本规范。
+> **效力层级**：IRON_RULE（铁律），与 §14 按钮四维体系同级，优先级高于所有其他组件规范（§7.2~§7.10），低于法律准则和用户认证硬约束。AI 巡检引擎发现任何违反都必须强制修复。
+> **适用范围**：MTSCOS AI 项目所有组件类 UI 元素，包括输入框、卡片、模态框、表格、导航、标签/徽章六大类组件。
+
+### 15.1 六大组件四维组合模型总览（核心命题）
+
+每个组件必须同时定义四个维度，维度之间完全正交，可自由组合。缺少任何一个维度的定义都是违规：
+
+| 组件类型 | 维度① | 维度② | 维度③ | 维度④ | 合法组合数 |
+|---------|-------|-------|-------|-------|-----------:|
+| **输入框 Input** | 类型 Type | 状态 State | 尺寸 Size | 验证 Validation | 5×7×3×5 = 525 |
+| **卡片 Card** | 类型 Type | 状态 State | 尺寸 Size | 密度 Density | 5×4×4×3 = 240 |
+| **模态框 Modal** | 类型 Type | 状态 State | 尺寸 Size | 交互 Interaction | 5×3×4×5 = 300 |
+| **表格 Table** | 类型 Type | 状态 State | 尺寸 Size | 密度 Density | 4×4×3×3 = 144 |
+| **导航 Navigation** | 类型 Type | 状态 State | 尺寸 Size | 层级 Level | 6×4×3×4 = 288 |
+| **标签/徽章 Tag/Badge** | 类型 Type | 状态 State | 尺寸 Size | 语义 Semantic | 4×3×3×8 = 288 |
+
+### 15.2 输入框四维体系（Input 4D）
+
+#### 15.2.1 维度总览表
+
+| 序号 | 维度 | 可选值数量 | 允许值 |
+|------|------|-----------:|--------|
+| ① | **类型 Type** | 5 | `text`(文本) / `password`(密码) / `number`(数字) / `textarea`(多行) / `select`(选择) |
+| ② | **状态 State** | 7 | `default`(默认) / `hover`(悬停) / `focus`(聚焦) / `disabled`(禁用) / `readonly`(只读) / `loading`(加载中) / `autofill`(浏览器自动填充) |
+| ③ | **尺寸 Size** | 3 | `sm`(小·高度32px) / `md`(中·高度40px·默认) / `lg`(大·高度48px) |
+| ④ | **验证 Validation** | 5 | `none`(无验证) / `success`(验证通过) / `warning`(警告) / `error`(错误) / `validating`(异步校验中) |
+
+#### 15.2.2 维度详解表格
+
+**维度① · 类型 Type — 5种**
+
+| 规范类名 | Element Plus 等价 | 视觉特征 | 适用场景 |
+|----------|-------------------|----------|----------|
+| `.input-text-*` | `<el-input>` | 单行文本输入框，右侧可带清除/密码眼睛图标 | 用户名、邮箱、搜索关键词 |
+| `.input-password-*` | `<el-input type="password">` | 带「显示/隐藏密码」切换图标，默认小圆点掩码 | 登录密码、支付密码、二次确认 |
+| `.input-number-*` | `<el-input-number>` | 左右加减步进器 + 数字键盘唤起（移动端） | 数量、年龄、金额整数位 |
+| `.input-textarea-*` | `<el-input type="textarea">` | 可拖拽调整高度，右下角字符计数器 | 备注说明、地址、富文本纯文本 |
+| `.input-select-*` | `<el-select>` | 右侧下拉箭头，点击展开选项面板，支持搜索过滤 | 性别、省份、分类下拉选择 |
+
+**维度② · 状态 State — 7种**
+
+| 状态类 / 伪类 | 视觉表现 | 触发时机 | 强制执行标记 |
+|---------------|----------|----------|-------------|
+| `:default` / 默认 | 1px `var(--el-border-color)` 边框 + `var(--el-bg-color)` 背景 | 初始渲染 | ✅ 必须 |
+| `:hover` | 边框色变为 `var(--el-color-primary)` | 鼠标悬停输入框区域 | ✅ 必须 |
+| `:focus` | 2px 主色描边 + 外发光 + 边框色加深 | 点击 / Tab 键聚焦 | ✅ 必须（同§14 VC-B6可访问性） |
+| `.is-disabled` + `:disabled` | 背景变灰 `var(--el-disabled-bg-color)` + 半透明 + 禁止输入 | 权限不足 / 条件未满足 | ✅ 必须双保险（HTML属性+CSS类） |
+| `.is-readonly` + `[readonly]` | 背景浅灰 `var(--el-fill-color-light)` + 无光标 | 字段不可改但需提交 | ✅ 必须双保险 |
+| `.is-loading` | 右侧 spinner 图标 + 禁用输入 | 异步搜索 / 远程校验中 | ✅ 必须 |
+| `input:-webkit-autofill` | 背景覆盖为浅蓝 → 使用 `box-shadow` 强制覆盖回设计色 | Chrome/Safari 自动填充账号密码 | ✅ 必须（防止默认蓝底破坏主题） |
+
+**维度③ · 尺寸 Size — 3种**
+
+| 规范尺寸 | 高度 | 内边距水平 | 字体大小 | 适用场景 |
+|----------|------|-----------|---------|----------|
+| `.input-sm` | 32px | 10px | `var(--el-font-size-xs)` 12px | 表格行内编辑 / 筛选栏紧凑布局 |
+| `.input-md` (默认) | 40px | 15px | `var(--el-font-size-base)` 14px | 常规表单 / 对话框输入 / 默认 |
+| `.input-lg` | 48px | 20px | `var(--el-font-size-lg)` 16px | 登录注册 / 首屏搜索框 / 移动端表单 |
+
+**硬约束**：输入框聚焦态高度（含 border + outline）不得小于对应尺寸的按钮高度，保证视觉节奏对齐。
+
+**维度④ · 验证 Validation — 5种**
+
+| 规范类名 | 边框颜色 | 右侧图标 | 下方提示文字 | 语义场景 |
+|----------|---------|---------|-------------|---------|
+| `.validation-none` | 默认边框色 | 无 | 无 / 占位提示 | 未输入或未触发校验 |
+| `.validation-success` | `var(--el-color-success)` 绿 | `fa-circle-check` | 「格式正确」绿色文字 | 异步校验通过 / 必填已填 |
+| `.validation-warning` | `var(--el-color-warning)` 橙 | `fa-triangle-exclamation` | 「标准修改但可提交」橙色文字 | 弱密码 / 昵称已被占用但允许 |
+| `.validation-error` | `var(--el-color-danger)` 红 | `fa-circle-xmark` | 具体错误原因红色文字 | 必填为空 / 格式不匹配 / 已存在 |
+| `.validation-validating` | `var(--el-color-primary)` 蓝 | `fa-spinner fa-spin` | 「正在校验...」蓝色文字 | 用户名查重 / 邮箱验证码发送中 |
+
+#### 15.2.3 输入框八条强制细则
+
+| 编号 | 规则 | 严重程度 | 巡检检查方式 |
+|------|------|----------|--------------|
+| VC-I1 | 输入框必须带 `placeholder` 占位提示，内容格式为「请输入/请选择 + 字段名」，禁止空占位或仅用「请输入」三个字。 | **HIGH** | 正则扫描 `<input>` / `<textarea>` 的 placeholder 属性 |
+| VC-I2 | 验证状态 `.validation-error` 必须同时满足三个视觉信号：❶红色边框 ❷右侧错误图标 ❸下方一行错误文字，三者缺一不可。 | **CRITICAL** | DOM 检查 error 状态下三元素是否同时存在 |
+| VC-I3 | 必填字段必须在 label 左侧或右侧带红色星号 `*`（`color: var(--el-color-danger)`），禁止只用 placeholder 标注必填。 | **HIGH** | 必填字段检查 `<label>` 内是否含 `.required-star` 元素 |
+| VC-I4 | 密码输入框必须提供「显示/隐藏密码」切换图标（`fa-eye` / `fa-eye-slash`），点击切换明文/密文，移动端必须支持。 | **HIGH** | 密码框检查右侧切换按钮是否存在且绑定事件 |
+| VC-I5 | `disabled` 禁用态必须同时设置 HTML `disabled` 属性 + CSS `.is-disabled` 类，禁止只改样式不锁输入。 | **HIGH** | 检查 `disabled` 属性与 `.is-disabled` 类共存 |
+| VC-I6 | 字符限制输入框（如昵称≤20字）必须在右下角显示「当前/上限」计数器（例：`12/20`），超限后切 error 状态。 | **MEDIUM** | maxlength 属性存在时检查 `.char-counter` 元素 |
+| VC-I7 | 移动端数字输入框（`.input-number-*`）必须唤起数字键盘（`inputmode="numeric"`），禁止唤起全键盘。 | **HIGH** | 移动端断点下检查 `inputmode` 属性值 |
+| VC-I8 | 浏览器自动填充样式（`-webkit-autofill`）必须通过 CSS 覆盖，禁止默认浅蓝色背景破坏设计系统。 | **MEDIUM** | CSS 文件扫描是否包含 autofill 覆盖规则 |
+
+### 15.3 卡片四维体系（Card 4D）
+
+#### 15.3.1 维度总览表
+
+| 序号 | 维度 | 可选值数量 | 允许值 |
+|------|------|-----------:|--------|
+| ① | **类型 Type** | 5 | `basic`(基础) / `stat`(统计) / `media`(媒体) / `interactive`(可交互) / `container`(容器) |
+| ② | **状态 State** | 4 | `default`(默认) / `hover`(悬停) / `active`(激活/选中) / `disabled`(禁用) |
+| ③ | **尺寸 Size** | 4 | `sm`(小·内边距12px) / `md`(中·内边距16px·默认) / `lg`(大·内边距24px) / `xl`(超大·内边距32px) |
+| ④ | **密度 Density** | 3 | `compact`(紧凑) / `normal`(正常) / `spacious`(宽松) |
+
+#### 15.3.2 卡片七条强制细则
+
+| 编号 | 规则 | 严重程度 | 巡检检查方式 |
+|------|------|----------|--------------|
+| VC-C1 | 卡片必须使用标准三段式结构：`.card-header`（可选）+ `.card-body`（必填）+ `.card-footer`（可选），禁止在 `.card` 内直接裸露内容。 | **HIGH** | DOM 扫描 `.card` 直接子节点结构合规性 |
+| VC-C2 | 同一页面的卡片尺寸必须统一（统一 sm/md/lg/xl），禁止混用多种内边距造成视觉节奏混乱。 | **MEDIUM** | 同级兄弟 `.card` 元素的 size 类一致性检查 |
+| VC-C3 | 可交互卡片（`.card-interactive`）悬停态必须有三个层级反馈：❶阴影加深一级 ❷整体上移 2px ❸边框色高亮，三者缺一不可。 | **HIGH** | `:hover` 伪类样式检查三要素 |
+| VC-C4 | 统计卡片（`.card-stat`）的数值必须使用等宽字体（`font-variant-numeric: tabular-nums`），禁止数字跳动宽度不一致。 | **MEDIUM** | CSS 检查 `.stat-value` 是否含 tabular-nums |
+| VC-C5 | 卡片内圆角必须比卡片外圆角小 4px（外圆角12px → 内部图片/按钮圆角8px），形成视觉嵌套层级。 | **MEDIUM** | 计算 `.card` 与其直接子元素 `border-radius` 差值 |
+| VC-C6 | 卡片禁用态（`.is-disabled`）必须整体半透明 `opacity: .5` + 遮罩层覆盖，禁止部分灰部分不灰。 | **HIGH** | `.is-disabled` 下 overlay 遮罩元素检查 |
+| VC-C7 | 卡片之间的间距必须等于该卡片密度对应的 padding 值（紧凑 12px / 正常 16px / 宽松 24px），禁止随机 gap。 | **MEDIUM** | 网格布局中 `.card` 的 gap 与 density 匹配检查 |
+
+### 15.4 模态框四维体系（Modal 4D）
+
+#### 15.4.1 维度总览表
+
+| 序号 | 维度 | 可选值数量 | 允许值 |
+|------|------|-----------:|--------|
+| ① | **类型 Type** | 5 | `confirm`(确认框) / `form`(表单框) / `info`(信息展示) / `drawer`(抽屉) / `fullscreen`(全屏) |
+| ② | **状态 State** | 3 | `opening`(入场动画) / `opened`(完全展开) / `closing`(离场动画) |
+| ③ | **尺寸 Size** | 4 | `sm`(480px) / `md`(640px·默认) / `lg`(800px) / `xl`(960px) |
+| ④ | **交互 Interaction** | 5 | `modal`(遮罩可关闭) / `static`(遮罩不可关闭) / `escapable`(ESC可关) / `persistent`(强制操作) / `draggable`(可拖拽) |
+
+#### 15.4.2 模态框七条强制细则
+
+| 编号 | 规则 | 严重程度 | 巡检检查方式 |
+|------|------|----------|--------------|
+| VC-M1 | 模态框打开时必须锁定背景滚动（`body { overflow: hidden }`），禁止滚动穿透到后层页面。 | **CRITICAL** | 模态框打开状态下检查 body overflow 属性 |
+| VC-M2 | 底部操作区按钮必须遵循§14 VC-B1：最多1个 solid 实心按钮（主操作放右侧），其余降级 outline/text，取消按钮永远放最左。 | **CRITICAL** | `.modal-footer` 内 `.btn-solid-*` 数量 ≤ 1 检查 |
+| VC-M3 | 点击遮罩层关闭（`interaction=modal`）必须有明确场景限制：涉及表单未保存 / 删除确认的场景，强制用 `static`（点遮罩不关闭）。 | **HIGH** | 表单类/删除类模态框检查 interaction 属性 |
+| VC-M4 | 模态框右上角关闭按钮（`fa-xmark`）必须 44×44px 可点击区域（同§14 VC-B3），禁止只有 20px 图标无热区。 | **HIGH** | 计算关闭按钮实际点击热区尺寸 |
+| VC-M5 | 强制操作模态框（`interaction=persistent`）必须去除关闭按钮、ESC禁用、遮罩禁用，只能通过底部操作按钮关闭。 | **HIGH** | persistent 模式下关闭元素和事件全面禁用检查 |
+| VC-M6 | 抽屉（`type=drawer`）必须从屏幕边缘滑入（右→左最常见），宽度最大不超过屏幕 80%，移动端不超过 90%。 | **MEDIUM** | 抽屉 max-width 百分比检查 |
+| VC-M7 | 所有模态框必须提供 `aria-modal="true"` + `role="dialog"` + 焦点管理（打开时 autofocus 第一个输入/按钮），满足可访问性。 | **MEDIUM** | ARIA 属性 + autofocus 检查 |
+
+### 15.5 表格四维体系（Table 4D）
+
+#### 15.5.1 维度总览表
+
+| 序号 | 维度 | 可选值数量 | 允许值 |
+|------|------|-----------:|--------|
+| ① | **类型 Type** | 4 | `basic`(基础) / `bordered`(带边框) / `striped`(斑马纹) / `tree`(树形层级) |
+| ② | **状态 State** | 4 | `default`(默认) / `loading`(加载中) / `empty`(空数据) / `error`(加载失败) |
+| ③ | **尺寸 Size** | 3 | `sm`(行高40px) / `md`(行高48px·默认) / `lg`(行高56px) |
+| ④ | **密度 Density** | 3 | `compact`(紧凑) / `normal`(正常) / `spacious`(宽松) |
+
+#### 15.5.2 表格七条强制细则
+
+| 编号 | 规则 | 严重程度 | 巡检检查方式 |
+|------|------|----------|--------------|
+| VC-T1 | 表头（`<thead>`）必须固定 sticky 不随内容滚动（纵向滚动时），表头背景色必须比行背景色深一档形成视觉区分。 | **HIGH** | CSS 检查 `thead th { position: sticky; top: 0 }` 是否存在 |
+| VC-T2 | 表格状态必须四选一显式声明：`default` / `loading` / `empty` / `error`，禁止 loading 结束后空白无提示。 | **CRITICAL** | 状态管理扫描四种状态是否全覆盖 |
+| VC-T3 | 操作列固定在最右侧（`position: sticky; right: 0`），且行高小于 56px 时操作按钮使用 `.btn-sm`（28px高）防止溢出。 | **HIGH** | 操作列 sticky 定位 + 按钮尺寸自适应检查 |
+| VC-T4 | 斑马纹表格（`type=striped`）偶数行背景色 `var(--el-fill-color-lighter)`，奇数行默认白底，禁止自定义条纹颜色。 | **MEDIUM** | 偶数行 `background-color` 值检查 |
+| VC-T5 | 表格行悬停态（`:hover`）背景必须变化（`var(--el-fill-color-light)`），且行高变化时不得导致整体表格跳动。 | **MEDIUM** | `tr:hover` 背景色检查 + 行高稳定检查 |
+| VC-T6 | 分页组件必须固定在表格底部外侧，与表格之间间距 `var(--spacing-4)` 16px，分页信息展示「当前第X页 / 共Y条」。 | **MEDIUM** | 分页位置 + 间距 + 信息文案检查 |
+| VC-T7 | 空状态（`state=empty`）表格 tbody 区域必须显示居中图标 + 标题 + 引导按钮，禁止只显示文字「暂无数据」。 | **HIGH** | empty 状态下空状态组件三元素（图+文+按钮）检查 |
+
+### 15.6 导航四维体系（Navigation 4D）
+
+#### 15.6.1 维度总览表
+
+| 序号 | 维度 | 可选值数量 | 允许值 |
+|------|------|-----------:|--------|
+| ① | **类型 Type** | 6 | `sidebar`(侧边栏) / `topbar`(顶部栏) / `tabs`(标签页) / `breadcrumb`(面包屑) / `bottom-nav`(底部导航) / `stepper`(步骤条) |
+| ② | **状态 State** | 4 | `default`(默认) / `active`(激活) / `disabled`(禁用) / `pending`(待到达·步骤条) |
+| ③ | **尺寸 Size** | 3 | `sm`(紧凑) / `md`(中·默认) / `lg`(宽松) |
+| ④ | **层级 Level** | 4 | `L1`(一级主导航) / `L2`(二级子导航) / `L3`(三级操作导航) / `L4`(面包屑路径导航) |
+
+#### 15.6.3 导航七条强制细则
+
+| 编号 | 规则 | 严重程度 | 巡检检查方式 |
+|------|------|----------|--------------|
+| VC-N1 | 激活态（`.is-active`）必须同时具备三重视觉信号：❶左侧 3px 主色竖条 ❷文字加粗 ❸主色文字 + 浅主色背景，三者缺一不可。 | **HIGH** | `.is-active` 元素三视觉属性检查 |
+| VC-N2 | 侧边栏一级导航（`level=L1`）必须有图标 + 文字，二级导航（`level=L2`）缩进 24px 无前缀图标（或用小圆点替代）。 | **MEDIUM** | L1 图标存在 + L2 缩进 24px 检查 |
+| VC-N3 | 面包屑导航（`type=breadcrumb`）分隔符使用 `fa-angle-right` 或 `/`，当前页文字加粗且不可点击，禁止省略首页入口。 | **MEDIUM** | 面包屑结构 + 当前页样式检查 |
+| VC-N4 | 底部导航（`type=bottom-nav`）移动端最多 5 个入口，每个入口必须图标 + 文字，激活态图标上移 2px + 文字变色。 | **HIGH** | 入口数量 ≤ 5 + 每项图文检查 |
+| VC-N5 | 步骤条（`type=stepper`）已完成步骤必须显示绿色对勾 `fa-circle-check`，当前步骤主色圆形徽章，未来步骤灰色空心圆。 | **HIGH** | 三种步骤状态的图标和颜色对应检查 |
+| VC-N6 | 导航禁用项（`.is-disabled`）必须半透明 + 禁止跳转（`preventDefault`），悬停时 `cursor: not-allowed`。 | **HIGH** | `.is-disabled` 状态事件阻断 + 样式检查 |
+| VC-N7 | 标签页导航（`type=tabs`）激活项底部必须有 2px 主色下划线（与文字等宽或与 tab 等宽），下划线切换必须带 200ms 过渡动画。 | **MEDIUM** | tab 激活下划线样式 + 过渡动画检查 |
+
+### 15.7 标签/徽章四维体系（Tag/Badge 4D）
+
+#### 15.7.1 维度总览表
+
+| 序号 | 维度 | 可选值数量 | 允许值 |
+|------|------|-----------:|--------|
+| ① | **类型 Type** | 4 | `tag-solid`(实心标签) / `tag-outline`(描边标签) / `tag-soft`(浅色背景标签·默认) / `badge-dot`(圆点徽章) |
+| ② | **状态 State** | 3 | `default`(默认) / `closable`(可关闭·带×) / `pulse`(脉冲动画) |
+| ③ | **尺寸 Size** | 3 | `sm`(高18px·字10px) / `md`(高22px·字12px·默认) / `lg`(高28px·字14px) |
+| ④ | **语义 Semantic** | 8 | `primary`(主) / `success`(成功) / `warning`(警告) / `danger`(危险) / `info`(信息) / `neutral`(中性) / `custom-purple`(紫) / `custom-cyan`(青) |
+
+#### 15.7.2 标签/徽章六条强制细则
+
+| 编号 | 规则 | 严重程度 | 巡检检查方式 |
+|------|------|----------|--------------|
+| VC-Tag1 | 语义颜色必须与§14按钮颜色体系完全一致（`primary=蓝 success=绿 warning=橙 danger=红 info=灰 neutral=灰`），禁止标签/徽章使用独立色板。 | **CRITICAL** | CSS 变量引用一致性检查（必须使用 `var(--el-color-*)`） |
+| VC-Tag2 | 列表项状态必须使用 `tag-soft`（浅色背景标签）作为默认样式，禁止在数据列表中使用高饱和 `tag-solid` 造成视觉噪音。 | **HIGH** | 列表场景扫描 `tag-solid` 使用比例 ≤ 10% |
+| VC-Tag3 | 可关闭标签（`state=closable`）必须带 `fa-xmark` 图标（尺寸比文字小 2px），点击关闭后带淡出动画，禁止直接消失无过渡。 | **MEDIUM** | closable 状态 × 图标存在 + 淡出动画检查 |
+| VC-Tag4 | 圆点徽章（`type=badge-dot`）必须放在文字左侧，直径 6-8px，与文字垂直居中对齐，未读消息场景脉冲动画（`pulse`）必须开启。 | **MEDIUM** | badge-dot 位置 + 尺寸 + 脉冲动画检查 |
+| VC-Tag5 | 同一区域标签尺寸必须统一（统一 sm/md/lg），禁止同一行标签高低不齐（高度差异 > 4px 违规）。 | **MEDIUM** | 同级 `.tag` / `.badge` 元素高度差检查 ≤ 4px |
+| VC-Tag6 | 自定义语义色（`custom-purple` / `custom-cyan`）仅限特殊分类标记使用，核心业务状态必须使用前 6 种标准语义色，禁止滥用自定义色。 | **HIGH** | 核心业务状态（订单/审批/用户状态）禁止使用 custom-* 检查 |
+
+### 15.8 新增 §13 巡检检查项 (Vibe Coding 组件专项)
+
+| 检查项 | 说明 | 严重程度 | 映射规则 |
+|--------|------|----------|----------|
+| 输入框维度完整性 | 输入框是否同时指定类型/状态/尺寸/验证（默认值自动补） | 高 | VC-I1 ~ VC-I8 |
+| 输入框验证三信号 | `.validation-error` 是否同时含红色边框+错误图标+错误文字 | **CRITICAL** | VC-I2 |
+| 必填星号检测 | 必填字段 label 是否含红色星号 `.required-star` | 高 | VC-I3 |
+| 卡片三段式结构 | `.card` 是否含 header/body/footer 规范结构 | 高 | VC-C1 |
+| 可交互卡片悬停反馈 | 悬停态是否含阴影+上移+边框高亮三要素 | 高 | VC-C3 |
+| 模态框滚动锁定 | 模态框打开时 body overflow 是否为 hidden | **CRITICAL** | VC-M1 |
+| 模态框按钮合规 | `.modal-footer` 内 solid 按钮数量 ≤ 1 | **CRITICAL** | VC-M2, §14 VC-B1 |
+| 表格状态覆盖 | 表格四种状态（default/loading/empty/error）是否全覆盖 | **CRITICAL** | VC-T2 |
+| 导航激活三信号 | 导航激活态是否含竖条+加粗+主色三要素 | 高 | VC-N1 |
+| 标签语义色一致性 | 标签/徽章颜色是否与按钮颜色体系统一（CSS变量一致） | **CRITICAL** | VC-Tag1 |
+
+---
+
+## 16. Vibe Coding 页面布局术语体系（IR级铁律 · 来源抖音「敲代码的小虾米」）
+
+> **来源合法性**：内容来自抖音 Vibe Coding 术语课系列（作者：敲代码的小虾米，视频合集 https://v.douyin.com/930jajV4yGI/ ，发布日期2026-08-07，标题《Vibe Coding术语：页面布局体系 #vibecoding #AI编程 #前端开发》），经超级管理员 wuchenghao15 批准纳入本规范。
+> **效力层级**：IRON_RULE（铁律），与 §14/§15 同级，优先级高于 §7.12 网格系统和 §11 移动端适配，低于法律准则和用户认证硬约束。AI 巡检引擎发现任何违反都必须强制修复。
+> **适用范围**：MTSCOS AI 项目所有前端页面的宏观布局结构，包括页面骨架三层、栅格系统、响应式断点、空状态分类、加载状态分类。
+
+### 16.1 核心布局模型总览
+
+Vibe Coding 页面布局体系由 **五大模块** 构成，每个模块内部有严格的术语定义和强制执行规则：
+
+| 模块 | 子项数量 | 核心术语 | 与现有规范关系 |
+|------|---------:|---------|---------------|
+| 页面骨架 3 层 | 3 | Shell(壳) / Layout(布局) / Content(内容) | 升级替换原 §7.12 容器概念 |
+| 栅格系统 | 12列 + 8间距 | 12-column grid, gutter 8 级 | 升级替换原 §7.12 网格系统 |
+| 响应式断点 | 5 | xs / sm / md / lg / xl | 升级替换原 §11.2 移动端断点 |
+| 空状态 4 种 | 4 | 初始空 / 搜索空 / 错误空 / 权限空 | 升级替换原 §7.8 简单空状态 |
+| 加载状态 5 种 | 5 | 骨架屏 / 渐进加载 / 整页加载 / 局部加载 / 懒加载 | 升级替换原 §7.8 简单 loading |
+
+### 16.2 页面骨架三层（Shell → Layout → Content）
+
+#### 16.2.1 三层术语定义表
+
+| 层级 | 术语名 | HTML 类名 | 包含内容 | 背景色规范 | 滚动行为 |
+|------|-------|-----------|---------|-----------|---------|
+| **L1 壳** | **Shell** | `.layout-shell` | 全局外框：顶栏 + 侧边栏占位 + 主容器 | `var(--el-bg-color-page)` #f5f7fa | 永远不滚动（`overflow: hidden`），全屏铺满 |
+| **L2 布局** | **Layout** | `.layout-main` / `.layout-sidebar` / `.layout-header` / `.layout-footer` | Shell 内的分区：侧边栏(可折叠) + 顶部导航 + 主内容区容器 + 底部版权 | `var(--el-bg-color)` #ffffff | 主内容区 `.layout-main` 独立纵向滚动 |
+| **L3 内容** | **Content** | `.content-container` / `.content-header` / `.content-body` / `.content-footer` | Layout 内的页面内容：面包屑 + 页面标题 + 操作栏 + 卡片/表格 + 分页 + 底部操作 | 卡片白底 `var(--el-bg-color)`，页面底 `var(--el-bg-color-page)` | 随 `.layout-main` 一起滚动（不独立滚动） |
+
+#### 16.2.2 三层嵌套结构的标准 DOM 示例
+
+```html
+<!-- L1 Shell：最外层永远100vh不滚动 -->
+<div class="layout-shell">
+  <!-- L2 Header：顶部栏（高度固定 56px / 64px） -->
+  <header class="layout-header">...</header>
+  <!-- L2 水平容器 -->
+  <div class="layout-horizontal">
+    <!-- L2 Sidebar：左侧导航（宽度 220px / 折叠 64px） -->
+    <aside class="layout-sidebar">...</aside>
+    <!-- L2 Main：右侧主内容区（唯一滚动容器） -->
+    <main class="layout-main">
+      <!-- L3 Content 容器 -->
+      <div class="content-container">
+        <div class="content-header">面包屑 + 页面标题 + 操作栏</div>
+        <div class="content-body">卡片 / 表格 / 表单等实际内容</div>
+        <div class="content-footer">分页 / 底部操作栏</div>
+      </div>
+    </main>
+  </div>
+</div>
+```
+
+#### 16.2.3 页面骨架六条强制细则
+
+| 编号 | 规则 | 严重程度 | 巡检检查方式 |
+|------|------|----------|--------------|
+| VC-L1 | 滚动容器唯一原则：整个页面纵向滚动**只能发生在 `.layout-main`**，禁止 body 滚动、禁止 `.content-body` 独立滚动（表格内部横向滚动除外）。 | **CRITICAL** | 多层滚动检测：`body { overflow }` + `.content-body { overflow-y }` 必须为 hidden |
+| VC-L2 | `.layout-shell` 必须铺满全屏且不溢出：`width: 100vw; height: 100vh; overflow: hidden;`，移动端必须 `height: 100dvh`（动态视口高度，避地址栏跳动）。 | **HIGH** | CSS 尺寸 + overflow 属性检查，移动端 `100dvh` 检查 |
+| VC-L3 | 三层嵌套必须严格 Shell → Layout → Content 顺序，禁止越级嵌套（例：Content 直接写在 Shell 下跳过 Layout）。 | **HIGH** | DOM 树结构校验：`.content-container` 父级必须含 `.layout-main` |
+| VC-L4 | 顶栏高度一致性：所有页面 `.layout-header` 高度必须统一（桌面 56px / 移动端 48px），禁止不同页面高度差 > 4px。 | **MEDIUM** | 全站 `.layout-header` computed height 一致性检查 |
+| VC-L5 | 侧边栏可折叠必须支持两档宽度（展开 220px / 折叠 64px），折叠后仅显示图标，动画过渡 300ms `cubic-bezier(.4,0,.2,1)`。 | **MEDIUM** | 折叠状态两档宽度值 + 过渡动画检查 |
+| VC-L6 | 移动端断点 `< 768px` 时，侧边栏 `.layout-sidebar` 必须隐藏为抽屉模式（遮罩+左滑入），禁止挤压主内容区到 < 300px。 | **HIGH** | 移动端断点下 sidebar display / position 属性检查 |
+
+### 16.3 栅格系统（12列 + 8级间距）
+
+#### 16.3.1 栅格核心参数表
+
+| 参数 | 值 | CSS 变量 | 说明 |
+|-----|-----|---------|------|
+| **列数** | 12 列 | — | 12 因数多(1/2/3/4/6/12)，可均分任意组合 |
+| **容器最大宽度** | 1440px (xl) / 1200px (lg) / 960px (md) / 720px (sm) | `--container-max` | 超过最大宽度后两侧留白 |
+| **Gutter 间距（列间距）** | 8 级：4 / 8 / 12 / 16 / 20 / 24 / 32 / 40 px | `--gutter-1` ~ `--gutter-10` | 与 §4 间距系统对齐，默认 16px (gutter-4) |
+| **外边距 Margin** | 桌面 24px / 平板 16px / 移动端 12px | `--page-margin` | 页面容器左右两侧安全边距 |
+| **行间距 Row gap** | 默认 16px，可选 8 / 12 / 24px | `--row-gap` | 栅格行之间垂直间距 |
+
+#### 16.3.2 12列栅格强制组合（常用场景速查）
+
+| 布局场景 | 桌面 (lg ≥ 1024px) | 平板 (md 768~1023px) | 移动端 (sm < 768px) | 总列数校验 |
+|---------|-------------------|---------------------|--------------------|-----------|
+| 管理端数据列表 | 侧边栏 3 列 + 主内容 9 列 | 侧边栏 4 列 + 主内容 8 列 | 侧边栏抽屉 + 主内容 12 列 | 3+9=12 ✓ / 4+8=12 ✓ |
+| 表单两列布局 | 左 6 列 + 右 6 列 | 左 6 列 + 右 6 列 | 单列 12 列（上下堆叠） | 6+6=12 ✓ |
+| 统计卡片四列 | 每个卡 3 列 × 4 个 = 12 | 每个卡 6 列 × 2 个 × 2行 = 12 | 每个卡 12 列 × 4行 = 12 | 3×4=12 ✓ / 6×2=12 ✓ |
+| 详情页主辅 | 主区 8 列 + 辅信息 4 列 | 主区 12 列 + 辅区 12 列（上下） | 单列 12 列 | 8+4=12 ✓ |
+| 三列产品卡片 | 每卡 4 列 × 3 个 = 12 | 每卡 6 列 × 2 × 2行 | 每卡 12 列堆叠 | 4×3=12 ✓ / 6×2=12 ✓ |
+
+#### 16.3.3 栅格系统六条强制细则
+
+| 编号 | 规则 | 严重程度 | 巡检检查方式 |
+|------|------|----------|--------------|
+| VC-G1 | 栅格列数守恒原则：任何一行（`.row`）内的子列 `col-*-*` 数字之和必须等于 12（允许最后一行不足 12 但禁止超过 12）。 | **CRITICAL** | 逐行扫描 `.row` 子列 col-span 累加值检查 |
+| VC-G2 | 禁止硬编码宽度百分比（如 `width: 33.33%`），必须使用 `.col-lg-4` 类或 CSS `grid-column: span 4`，所有栅格尺寸通过类名控制。 | **HIGH** | CSS/内联扫描硬编码百分比宽度 |
+| VC-G3 | 栅格 Gutter 必须用 `gap` 属性或 `--gutter-*` 变量，禁止使用 `margin` 撑开间距导致首末元素外边距溢出。 | **MEDIUM** | 栅格间距实现方式检查（标准 `gap`，禁止 `margin: 0 Npx`） |
+| VC-G4 | 移动端 `< 768px` 单列模式下，栅格必须所有 `.col-*-*` 降级为 `span 12`（全宽），禁止出现两列并排导致每列 < 150px。 | **HIGH** | 移动端断点下 `grid-column` 值检查必须为 `span 12` |
+| VC-G5 | 表单栅格列之间 label + input 组必须垂直对齐（`align-items: start`），禁止中间型基线对齐造成 label 与 input 错位。 | **MEDIUM** | 表单行 `align-items` 属性值检查 |
+| VC-G6 | 栅格容器左右外边距必须响应式：桌面 24px / 平板 16px / 移动端 12px，禁止移动端 24px 导致可视区域过窄。 | **MEDIUM** | 三断点下 `padding-inline` 值一致性检查 |
+
+### 16.4 响应式断点（5级标准断点体系）
+
+#### 16.4.1 断点定义与设备映射表（升级替换原 §11.2）
+
+| 断点代号 | 宽度范围 (px) | 设备类型 | 典型设备示例 | 栅格行为 | 侧边栏行为 |
+|---------|--------------|---------|-------------|---------|-----------|
+| **xs** | 0 ~ 639 | 超小屏（手机竖屏） | iPhone SE / 小米数字系列竖屏 | 单列 12 列 | 抽屉模式，隐藏 |
+| **sm** | 640 ~ 767 | 小屏（手机横屏 / 小平板） | iPhone Max 横屏 / iPad mini | 单列 12 列 或 偶尔 6+6 | 抽屉模式 |
+| **md** | 768 ~ 1023 | 中屏（平板竖屏） | iPad / iPad Air 竖屏 | 6+6 / 4+4+4 多列 | 可折叠侧边栏（默认展开） |
+| **lg** | 1024 ~ 1279 | 大屏（平板横屏 / 笔记本） | iPad Pro 横屏 / MacBook 13" | 标准 12 列布局 | 侧边栏展开固定 |
+| **xl** | 1280 ~ ∞ | 超大屏（桌面显示器） | 27" 显示器 / 4K 屏 | 12 列居中最大 1440px | 侧边栏 220px 展开 |
+
+> **断点关键数字记忆法**：640 / 768 / 1024 / 1280 — 每档递增约 25%，对齐 Tailwind / Element Plus 主流断点。
+
+#### 16.4.2 断点七条强制细则
+
+| 编号 | 规则 | 严重程度 | 巡检检查方式 |
+|------|------|----------|--------------|
+| VC-BP1 | 断点必须采用 `min-width` 媒体查询（移动优先 Mobile First），禁止使用 `max-width` 桌面优先写法，保证小屏默认样式最简。 | **HIGH** | CSS `@media` 查询方向检查：必须是 `@media (min-width: Npx)` |
+| VC-BP2 | 四个断点值必须硬编码一致：640 / 768 / 1024 / 1280，禁止自定义成 600 / 800 / 992 等非标值，必须统一。 | **CRITICAL** | 全项目扫描 @media 断点数字是否只出现标准四值 |
+| VC-BP3 | 字体大小响应式：H1/H2/H3 标题在 xs 断点下必须缩小 2 级（例：桌面 H1 36px → 手机 24px），禁止移动端标题一行放不下两行折行。 | **HIGH** | H1~H3 三断点字号阶梯检查（每档至少小 4px） |
+| VC-BP4 | 表格横向滚动：md 以下断点遇到宽表格必须显示横向滚动条（`overflow-x: auto`）+ 左侧首列 sticky 固定，禁止横向挤扁到文字换行。 | **HIGH** | md 以下断点表格容器 `overflow-x: auto` + 首列 sticky 检查 |
+| VC-BP5 | 间距响应式：桌面间距 `--spacing-6` 24px → 移动端 `--spacing-4` 16px，禁止移动端还留 24px 大间距造成内容显示不足。 | **MEDIUM** | 三断点下 `padding` / `gap` 值阶梯变化检查 |
+| VC-BP6 | 触控目标尺寸：xs/sm 断点下所有可点击元素 ≥ 44×44px（同§14 VC-B3 移动端强制），桌面端标准但放宽到 40px。 | **HIGH** | 移动端断点下按钮/链接/输入框点击区域计算 |
+| VC-BP7 | 断点覆盖完整性：每个页面 CSS 必须覆盖 xs / md / lg 三档核心断点（sm/xl可选），禁止只有桌面样式无移动端适配。 | **CRITICAL** | 页面 CSS @media 数量检查至少 3 个断点存在 |
+
+### 16.5 空状态四种分类（Empty State 4 Types）
+
+#### 16.5.1 四种空状态定义与视觉规范
+
+| 类型 | 术语名 | 触发场景 | 主图标 | 标题文案 | 副标题文案 | 按钮动作（必须） | 背景色 |
+|------|-------|---------|-------|---------|-----------|-----------------|-------|
+| **E1 初始空** | `empty-initial` | 首次进入 / 从未创建过数据 | `fa-inbox`（收件箱） | 「暂无数据」 | 「还没有任何内容，点击下方按钮创建第一条吧」 | [+ 新建 XXX]（solid-primary） | 浅蓝灰渐变背景 |
+| **E2 搜索空** | `empty-search` | 搜索关键词无结果 / 筛选条件无匹配 | `fa-magnifying-glass`（放大镜） | 「未找到匹配结果」 | 「尝试更换关键词、调整筛选条件，或清除筛选后重试」 | [清除筛选条件]（outline-primary）+ [重新搜索]（text-info） | 浅灰背景 |
+| **E3 错误空** | `empty-error` | 接口 500 / 网络错误 / 数据加载失败 | `fa-triangle-exclamation`（警告三角） | 「加载失败，请重试」 | 「网络连接异常或服务器开小差了，请稍后重试」 | [重新加载]（solid-warning）+ [返回首页]（text-neutral） | 浅橙灰背景 |
+| **E4 权限空** | `empty-permission` | 无权限访问该模块 / 该数据被权限控制隐藏 | `fa-lock`（挂锁） | 「暂无访问权限」 | 「当前账号角色无权查看此内容，如需访问请联系管理员开通权限」 | [申请权限]（outline-info）+ [联系管理员]（text-primary） | 浅紫灰背景 |
+
+> **视觉统一要求**：四种空状态图标尺寸统一 96px，标题 18px 加粗，副标题 14px 二级文字，图标与标题间距 24px，标题与副标题间距 12px，整体垂直居中 + 左右边距 ≥ 32px。
+
+#### 16.5.2 空状态六条强制细则
+
+| 编号 | 规则 | 严重程度 | 巡检检查方式 |
+|------|------|----------|--------------|
+| VC-E1 | 空状态必须四选一显式声明类型：`empty-initial` / `empty-search` / `empty-error` / `empty-permission`，禁止所有场景都用同一个「暂无数据」。 | **CRITICAL** | 扫描空状态组件是否区分四种类型 props |
+| VC-E2 | 每种空状态必须同时包含四要素：❶图标 ❷标题 ❸副标题说明 ❹至少一个操作按钮，禁止只有图标+标题两要素。 | **HIGH** | DOM 检查空状态组件四要素全部存在 |
+| VC-E3 | `empty-error` 错误空状态必须显示具体错误码/错误原因（例：「错误码：NETWORK_TIMEOUT」），禁止只说「加载失败」不说明原因。 | **HIGH** | empty-error 下错误码详情元素检查 |
+| VC-E4 | `empty-search` 搜索空状态必须记住用户输入的关键词（在副标题中显示，例：「未找到包含『XXX』的结果」），禁止丢失搜索上下文。 | **MEDIUM** | 副标题文案检查是否拼接了搜索关键词变量 |
+| VC-E5 | 表格内空状态（§15 VC-T7）必须与页面级空状态视觉一致（图标/标题/按钮风格相同），禁止表格单独一套设计。 | **MEDIUM** | 表格 empty 状态样式与全局 `.empty-*-*` CSS 类一致性检查 |
+| VC-E6 | 空状态操作按钮的文案必须**具体到动作**（例：「+ 新建订单」），禁止使用模糊文案「立即开始」「去看看」。 | **MEDIUM** | 空状态按钮文案关键词正则匹配：必须含动作动词 + 名词 |
+
+### 16.6 加载状态五种分类（Loading State 5 Types）
+
+#### 16.6.1 五种加载状态定义与视觉规范
+
+| 类型 | 术语名 | 触发场景 | 视觉表现 | 适用组件 | 显示最小时长 | 遮蔽内容 |
+|------|-------|---------|---------|---------|------------|---------|
+| **L1 骨架屏** | `loading-skeleton` | 首屏进入 / 路由切换加载页面结构 | 灰色占位块（圆角 + 微光闪烁渐变动画） | 列表页 / 详情页 / 卡片组 | ≥ 600ms（避免闪一下） | 完全遮蔽内容 |
+| **L2 渐进加载** | `loading-progressive` | 图片列表 / 瀑布流 / 图文混排 | 骨架 → 低分辨率模糊图 → 高清图 三阶段渐进 | 商品列表 / 相册 / 首页 Banner | 图片加载完成自动结束 | 部分遮蔽（先占位后填充） |
+| **L3 整页加载** | `loading-fullpage` | 全局数据初始化 / 权限校验 / 大型报表计算 | 居中 Logo spinner + 进度条 + 「加载中...」文字 | 登录后进入系统 / 导出报告 / 批量处理 | ≥ 500ms | 全屏遮罩覆盖 |
+| **L4 局部加载** | `loading-spinner` | 单个按钮提交 / 单个卡片刷新 / 表格分页加载 | Spinner 图标替换按钮文字 / 卡片右上角小转圈 | 提交按钮 / 卡片操作 / 表格换页 | 随接口结束 | 局部覆盖（不遮整个页面） |
+| **L5 懒加载** | `loading-lazy` | 滚动到底部加载下一页 / 图片进入视口才加载 | 底部「加载更多...」spinner + 渐入动画 / `loading="lazy"` | 无限滚动列表 / 长图列表 / 富文本图片 | 数据到达后渐入 | 不遮蔽（只在底部追加） |
+
+#### 16.6.2 加载状态七条强制细则
+
+| 编号 | 规则 | 严重程度 | 巡检检查方式 |
+|------|------|----------|--------------|
+| VC-LD1 | 首屏加载必须使用骨架屏 `loading-skeleton`，禁止使用整页 spinner 遮挡（L3 仅用于全局初始化，不用于常规页面首屏）。 | **HIGH** | 首屏加载方式检查：必须 skeleton，非 fullpage spinner |
+| VC-LD2 | 按钮加载使用 L4 局部加载，严格遵循§14 VC-B5：含 spinner + disabled + 尺寸稳定三要素，禁止按钮 loading 时整个页面遮罩。 | **HIGH** | 按钮 loading 三要素检查（§14 VC-B5 一致） |
+| VC-LD3 | 骨架屏必须与实际内容布局**像素级对齐**（卡片圆角、行数、头像位置一一对应），禁止乱占位导致加载前后跳动 > 8px。 | **CRITICAL** | 骨架屏渲染后与真实内容渲染后的 `getBoundingClientRect` 差值 ≤ 8px |
+| VC-LD4 | 所有加载状态必须设置**最小显示时长**（Skeleton ≥ 600ms / Spinner ≥ 300ms），禁止 100ms 闪一下消失造成视觉闪烁（防闪烁 debounce）。 | **HIGH** | 加载组件最小显示时长定时器存在性检查 |
+| VC-LD5 | 长列表必须使用 L5 懒加载（分页或无限滚动），禁止一次性请求 100+ 条数据全量渲染，首屏最多渲染 20 条。 | **HIGH** | 首屏数据量检查 + `loading="lazy"` 属性使用检查 |
+| VC-LD6 | 加载失败时（接口错误），加载状态必须平滑切换到对应空状态（`empty-error`），禁止 spinner 一直转不退出 / 或跳白屏。 | **CRITICAL** | Promise catch 分支是否切换 error 空状态检查 |
+| VC-LD7 | 图片懒加载必须使用浏览器原生 `loading="lazy"` + 占位低分辨率图，禁止无占位直接加载（加载前空白，加载后跳动）。 | **MEDIUM** | `<img>` 标签 `loading="lazy"` + placeholder 背景图检查 |
+
+### 16.7 新增 §13 巡检检查项 (Vibe Coding 页面布局专项)
+
+| 检查项 | 说明 | 严重程度 | 映射规则 |
+|--------|------|----------|----------|
+| 滚动容器唯一性 | 是否只有 `.layout-main` 一个纵向滚动容器，body/content-body 禁止滚动 | **CRITICAL** | VC-L1 |
+| 栅格列数守恒 | 每行 `.row` 子列 span 之和 ≤ 12，禁止超过 | **CRITICAL** | VC-G1 |
+| 断点值标准化 | 所有 `@media` 断点是否只使用 640/768/1024/1280 标准值 | **CRITICAL** | VC-BP2 |
+| 断点覆盖完整性 | 每个页面是否至少覆盖 xs/md/lg 三档断点样式 | **CRITICAL** | VC-BP7 |
+| 空状态四分类区分 | 空状态组件是否区分 initial/search/error/permission 四种类型 | **CRITICAL** | VC-E1 |
+| 空状态四要素完整 | 每种空状态是否含图标+标题+副标题+操作按钮四要素 | 高 | VC-E2 |
+| 首屏使用骨架屏 | 首屏加载是否使用 skeleton（非 fullpage spinner） | 高 | VC-LD1 |
+| 骨架屏像素对齐 | 骨架屏占位与真实内容布局差值 ≤ 8px | **CRITICAL** | VC-LD3 |
+| 加载最小显示时长 | 各加载组件是否设置了最小显示时长防闪烁 | 高 | VC-LD4 |
+| 移动端单列模式 | xs/sm 断点下栅格是否降级为 span 12 单列 | 高 | VC-G4, VC-BP6 |
+
+---
+
+## 17. Vibe Coding 视觉设计铁律（IR级铁律 · 来源抖音「敲代码的小虾米」）
+
+> **来源合法性**：内容来自抖音 Vibe Coding 术语课系列（作者：敲代码的小虾米，视频合集 https://v.douyin.com/930jajV4yGI/ ，发布日期2026-08-08，标题《Vibe Coding术语：视觉设计铁律 #vibecoding #AI编程 #前端开发》），经超级管理员 wuchenghao15 批准纳入本规范。
+> **效力层级**：IRON_RULE（铁律），与 §14/§15/§16 同级，是所有视觉设计的最高原则（不针对单个组件而是全局审美）。AI 巡检引擎发现任何违反都必须强制修复。本章节可通过 CSS lint + 截图像素分析双渠道巡检。
+> **适用范围**：MTSCOS AI 项目所有页面的全局视觉设计。覆盖留白、排版、对比度、一致性四大审美基石。
+
+### 17.1 四大铁律总览
+
+Vibe Coding 视觉设计建立在 **四大不可妥协铁律** 之上，四条铁律完全正交，每条独立巡检：
+
+| 铁律编号 | 铁律名称 | 核心原理 | 可量化指标 | 对应小节 |
+|---------|---------|---------|-----------|---------|
+| **VD1** | **留白黄金比例** | 所有间距基于 8px 基准 + 黄金比例 1.618 衍生，形成和谐节奏 | 相邻间距比 ∈ [1.2, 2.0]，禁止相近值差 < 4px | 17.2 |
+| **VD2** | **排版层次三原则** | 字号/字重/行高三者联动，保证三级标题+正文+辅助五层清晰 | 相邻层级字号差 ≥ 2px 且字重差 ≥ 100 | 17.3 |
+| **VD3** | **对比度 WCAG 标准** | 所有文字/图标对比度必须达到 WCAG 2.1 AA 级门槛 | 普通文字 ≥ 4.5:1，大文字 ≥ 3:1，禁用态 ≥ 3:1 | 17.4 |
+| **VD4** | **一致性铁律** | 相同语义的元素在全站任何页面必须视觉完全一致（类名+色值+尺寸） | 相同组件跨页视觉差异像素 ≤ ±2px | 17.5 |
+
+### 17.2 铁律一：留白黄金比例（Spacing Golden Ratio）
+
+#### 17.2.1 8px 基准 + 黄金比例衍生系统（升级补充 §4 间距系统）
+
+> **数学原理**：基础单位 8px × 黄金比例 1.618（或简化倍数 1.5 / 2）形成间距序列。禁止出现 3px / 5px / 6px / 7px / 9px / 10px / 11px / 14px / 18px 等非标 8 倍数或 4 倍数间距。
+
+| 间距代号 | 精确值 (px) | 黄金比例推导 | 适用场景（与 §4 对齐，补充层级） |
+|---------|------------|-------------|-------------------------------|
+| `--space-1` | 4px | 8 ÷ 2 | 元素内部微间距（图标与文字 gap） |
+| `--space-2` | 8px | 8 × 1 | 紧凑元素间距（标签之间、表单项间距紧凑模式） |
+| `--space-3` | 12px | 8 × 1.5 | 组件内元素间距（卡片内 header 与 body gap） |
+| `--space-4` | 16px | 8 × 2 = 16 ≈ 8×φ÷0.809 | **默认标准间距**（卡片之间 gap） |
+| `--space-5` | 24px | 8 × 3 = 24 ≈ 16×1.5 | 区块之间间距（Section 与 Section） |
+| `--space-6` | 32px | 8 × 4 = 32 ≈ 24×1.33 ≈ 16×φ | 页面级大区块间距（标题区与内容区） |
+| `--space-8` | 48px | 8 × 6 = 48 ≈ 32×1.5 ≈ 24×φ | 页面首屏大标题顶部留白 |
+| `--space-10` | 64px | 8 × 8 = 64 ≈ 48×1.33 ≈ 40×φ | 落地屏 Hero 区上下超大留白 |
+
+> **⚠ 禁止间距黑名单**：以下 px 值严格禁止出现在任何 `margin` / `padding` / `gap` 中：`1,2,3,5,6,7,9,10,11,13,14,15,17,18,19,21,22,23`。只允许 4 的倍数或 8 的倍数（4 / 8 / 12 / 16 / 20 / 24 / 28 / 32 / 36 / 40 / 44 / 48 / 56 / 64）。
+
+#### 17.2.2 留白六条强制细则
+
+| 编号 | 规则 | 严重程度 | 巡检检查方式 |
+|------|------|----------|--------------|
+| VC-VD-S1 | **间距只允许 4 倍数**：所有 `margin` / `padding` / `gap` / `inset` 值必须是 4 的倍数（0, 4, 8, 12, 16, 20, 24, 28, 32, 36, 40, 44, 48, 56, 64 ...），禁止黑名单值。 | **CRITICAL** | CSS + 内联 style 扫描所有 spacing 相关属性，取绝对值对 4 取模必须 = 0 |
+| VC-VD-S2 | **间距层级差 ≥ 4px**：同一容器内的相邻两级间距（如卡片内间距 12px 与卡片间间距 16px）差值必须 ≥ 4px，禁止出现 12px 旁边又来个 14px 视觉无差别。 | **HIGH** | 兄弟元素间距两两比较，|a - b| < 4 即告警 |
+| VC-VD-S3 | **垂直节奏统一**：同级元素垂直间距完全一致（如所有卡片之间统一 16px，不允许有的 12 有的 20）。 | **HIGH** | 同级 `.card` / `.section` 元素 margin-top/bottom 一致性扫描 |
+| VC-VD-S4 | **容器左右内边距响应式**：桌面 `--space-6`(32px) → 平板 `--space-5`(24px) → 移动 `--space-4`(16px)，禁止移动还 32px 浪费空间。 | **MEDIUM** | 三断点容器 padding-inline 值阶梯检查 |
+| VC-VD-S5 | **卡片内四边留白平衡**：`.card-body` 四边内边距必须完全相等（padding: Npx Npx Npx Npx），禁止上 24 下 12 左 16 右 20 四边各不相同。 | **MEDIUM** | `.card-body` padding 四值相等检查 |
+| VC-VD-S6 | **首屏黄金留白比**：首屏顶部留白（页面顶到第一个 H1 标题）与标题下方留白比例约等于 1:1.618（或 1:1.5 简化），禁止标题顶死顶部无呼吸感。 | **MEDIUM** | 首屏 H1 上方留白像素 / 下方留白像素 ∈ [0.5, 0.8] 区间 |
+
+### 17.3 铁律二：排版层次三原则（Typography Hierarchy）
+
+#### 17.3.1 五层文字体系表（严格对齐 §3 字体系统）
+
+> **三原则联动公式**：层级↑ → 字号↑ × 字重↑ × 行高↓（字号越大行高越小，保证标题紧凑；字号越小行高越大，保证正文易读）
+
+| 文字层级 | 术语名 | 字号 (桌面) | 字号 (移动端) | 字重 | 行高 | 颜色 | 典型使用 |
+|---------|-------|------------|--------------|-----|-----|------|---------|
+| **T1 一级标题** | `text-h1` | 32px / 36px | 24px / 28px | 700 (Bold) | 1.2 (紧凑) | `var(--el-text-color-primary)` #303133 | 页面大标题 / 落地页 Hero 标题 |
+| **T2 二级标题** | `text-h2` | 24px / 28px | 20px / 22px | 600 (Semi) | 1.3 | `var(--el-text-color-primary)` | 卡片标题 / 区块标题 / 模态框标题 |
+| **T3 三级标题** | `text-h3` | 18px / 20px | 16px / 18px | 600 (Semi) | 1.4 | `var(--el-text-color-primary)` | 卡片副标题 / 分组标题 / 小节标题 |
+| **T4 正文** | `text-body` | 14px (默认) | 14px | 400 (Regular) | 1.5 ~ 1.6 | `var(--el-text-color-regular)` #606266 | 段落正文 / 表单项 / 模态框内容 |
+| **T5 辅助文字** | `text-caption` | 12px / 13px | 12px | 400 (Regular) | 1.6 | `var(--el-text-color-secondary)` #909399 | 备注说明 / 时间戳 / 辅助信息 / placeholder |
+
+> **层级差检查规则**：相邻两档（如 T2→T3 或 T3→T4）字号差 ≥ 2px（桌面 ≥ 4px），字重差 ≥ 100（T4 是 400，T3 必须 ≥ 500 = 差 100）。
+
+#### 17.3.2 排版七条强制细则
+
+| 编号 | 规则 | 严重程度 | 巡检检查方式 |
+|------|------|----------|--------------|
+| VC-VD-T1 | **禁止字号断层**：同页面文字字号层级必须使用上述五档，禁止出现 15px / 17px / 19px / 22px / 26px 等断层字号（只允许 12/13/14/16/18/20/24/28/32/36）。 | **CRITICAL** | 扫描全页面所有 computed `font-size` 值，非白名单值告警 |
+| VC-VD-T2 | **相邻层级差合规**：标题（T1~T3）与正文（T4）字号差 ≥ 4px 且字重差 ≥ 100；正文（T4）与辅助(T5)字号差 ≥ 1px 且颜色不同（T4 是 regular #606266，T5 是 secondary #909399）。 | **HIGH** | H1~H3 与 P 字号差/字重差计算；T4/T5 颜色类区分 |
+| VC-VD-T3 | **段落行高底线**：正文段落 `.text-body` 行高必须 ≥ 1.5，移动端 ≥ 1.6，禁止正文 14px/16px 文字用 `line-height: 1.2` 导致行与行粘在一起。 | **HIGH** | `.text-body` / `p` 元素 `line-height` 计算值 ≥ 字体大小 × 1.5 |
+| VC-VD-T4 | **单行长度（字符数）限制**：正文段落单行宽度控制在 **45~75 字符**（中文）或 **50~80 字符**（英文）之间，禁止一行 200px 宽或 1200px 宽都极端难读。 | **MEDIUM** | 段落 `max-width` 限制检查 + 平均单行字数估算 |
+| VC-VD-T5 | **标题禁止居中**（除落地页 Hero 外）：管理端 / 列表页 / 详情页所有 H1~H3 标题必须左对齐，禁止全局居中标题造成视觉混乱。 | **HIGH** | 管理端模板 H1~H3 的 `text-align` 必须是 `left`（白名单 Hero 页面除外） |
+| VC-VD-T6 | **数字等宽**：所有展示数字（金额 / 数量 / 统计数值 / 百分比）必须使用 `font-variant-numeric: tabular-nums` + 优先等宽字体列，禁止数字 1 比 8 窄造成表格列跳动对齐。 | **HIGH** | `.stat-value` / `.number` 类 `font-variant-numeric` 属性检查 |
+| VC-VD-T7 | **字重只用四档**：全项目只允许使用 400(Regular) / 500(Medium) / 600(SemiBold) / 700(Bold) 四档字重，禁止使用 300(Light) / 800(ExtraBold) / 900(Black) 极端值。 | **MEDIUM** | `font-weight` 值扫描只允许 400/500/600/700 |
+
+### 17.4 铁律三：对比度 WCAG 标准（WCAG 2.1 AA Contrast Compliance）
+
+#### 17.4.1 WCAG 2.1 AA 级对比度门槛表
+
+> **法律级可访问性要求**：所有面向最终用户的 UI 必须达到 WCAG 2.1 AA 级（中国 GB/T 37668-2019 等同采用），不满足对比度属于可访问性违规。
+
+| 元素类型 | 定义 | AA 级最小对比度 | 特殊说明 |
+|---------|------|---------------:|---------|
+| **普通文字** | 字号 < 18px（或 < 14px 加粗） | **≥ 4.5 : 1** | T4 正文 / T5 辅助文字 必须满足 |
+| **大文字** | 字号 ≥ 18px（或 ≥ 14px 加粗） | **≥ 3 : 1** | T1~T3 标题 必须满足 |
+| **禁用态文字** | `.is-disabled` 下的文字 | **≥ 3 : 1** | 禁用态不强制 4.5:1，允许放宽到 3:1 |
+| **UI 组件非文字** | 输入框边框 / 勾选框 / 单选按钮边框 / 焦点环 | **≥ 3 : 1** | 组件边界识别对比度 |
+| **图标（非装饰性）** | 功能性图标（保存 / 删除 / 编辑） | **≥ 3 : 1** | 装饰性图标（背景点缀）无要求 |
+
+#### 17.4.2 本设计系统色板对比度校验表（必须确保以下实际值达标）
+
+| 前景文字色 | 背景色 | 实际对比度 | 是否达标 4.5:1 | 是否达标 3:1 |
+|-----------|-------|-----------:|:-------------:|:-----------:|
+| `#303133` 一级文字 (primary) | `#ffffff` 卡片背景 | **13.7 : 1** | ✅ ✅ 远超 | ✅ ✅ |
+| `#606266` 二级文字 (regular) | `#ffffff` 卡片背景 | **7.2 : 1** | ✅ 达标 | ✅ ✅ |
+| `#909399` 三级文字 (secondary) | `#ffffff` 卡片背景 | **3.8 : 1** | ❌ 不达标（仅用于 T5 辅助/非关键信息，可接受 3:1） | ✅ 达标 |
+| `#303133` 一级文字 | `#f5f7fa` 页面背景 | **12.8 : 1** | ✅ ✅ | ✅ ✅ |
+| `#606266` 二级文字 | `#f5f7fa` 页面背景 | **6.7 : 1** | ✅ ✅ | ✅ ✅ |
+| `#409eff` 主色文字 | `#ffffff` 背景（实心按钮内） | **4.7 : 1** | ✅ 达标 | ✅ ✅ |
+| `#67c23a` 成功色文字 | `#ffffff` 背景 | **3.5 : 1** | ❌ 普通文字不达标（按钮内算大文字 3:1 达标） | ✅ |
+| `#e6a23c` 警告色文字 | `#ffffff` 背景 | **3.1 : 1** | ❌ 普通文字不达标（按钮内算大文字达标） | ✅ |
+| `#f56c6c` 危险色文字 | `#ffffff` 背景 | **3.2 : 1** | ❌ 普通文字不达标（按钮内算大文字达标） | ✅ |
+| `#ffffff` 白色文字 | `var(--el-color-primary)` #409eff 背景 | **4.7 : 1** | ✅ 达标 | ✅ ✅ |
+
+> **⚠ 重要提示**：Element Plus 成功/警告/危险三色 + 白字 = 对比度约 3.1~3.5:1，刚好满足大文字 AA（3:1），但如果在正文中使用这三色文字（`text-warning` 类）会不满足 4.5:1。**因此正文中禁止直接用 warning/danger/success 色写长文，仅允许用于按钮/标签/徽章（算大文字或组件非文字）**。
+
+#### 17.4.3 对比度六条强制细则
+
+| 编号 | 规则 | 严重程度 | 巡检检查方式 |
+|------|------|----------|--------------|
+| VC-VD-C1 | **正文一级/二级文字对比度 ≥ 4.5:1**：T4 正文（`--el-text-color-regular` #606266）在白底和页面背景下对比度必须 ≥ 4.5:1（表格显示 7.2:1 已达标，禁止自定义更浅颜色）。 | **CRITICAL** | 截图取色 + WCAG 对比度算法自动计算（`(L1+0.05)/(L2+0.05)`） |
+| VC-VD-C2 | **禁止正文用彩色长文字**：正文字段值禁止直接使用 success/warning/danger 颜色写超过 1 行的文字，彩色文字只允许用于按钮内、徽章、标签、关键词高亮（不超过 10 字）。 | **HIGH** | 彩色类（.text-success / .text-warning / .text-danger）作用元素的字数统计 > 10 字告警 |
+| VC-VD-C3 | **占位符对比度下限**：`::placeholder` 颜色对比度必须 ≥ 3:1（禁用态标准），禁止 #ccc 都不到的极浅灰用户看不见。 | **HIGH** | placeholder color 取色对比度计算 ≥ 3:1 |
+| VC-VD-C4 | **图片上文字必须有遮罩**：文字叠加在图片/Banner 上时，文字下方必须有半透明遮罩层（`rgba(0,0,0,.45)` + 渐变），禁止无遮罩直接放字对比度不可控。 | **HIGH** | 图片背景下文字父元素是否有 `background: linear-gradient` 遮罩检查 |
+| VC-VD-C5 | **禁用态文字/图标对比度 ≥ 3:1**：`.is-disabled` 下即使半透明 `opacity: .5`，最终合成色与背景对比度仍 ≥ 3:1，禁止 opacity: .3 导致用户看不清。 | **HIGH** | `.is-disabled` 最终前景色 + 背景色合成对比度计算 |
+| VC-VD-C6 | **焦点环 3:1 + 2px 宽**：`:focus-visible` 焦点环（见 §14 VC-B6）与背景对比度 ≥ 3:1 且宽度 ≥ 2px，禁止 1px 同色系极淡环肉眼看不见。 | **MEDIUM** | `:focus-visible` 样式：宽度检查 + 对比度计算 |
+
+### 17.5 铁律四：一致性铁律（Consistency First）
+
+> **一致性哲学**：用户学一次就能预测全站行为。同一语义的元素，在任何页面、任何模块、任何角色视角下，视觉表现必须完全相同（像素级误差 ≤ ±2px）。一致性是「专业感」的第一来源，比单个页面做得好看重要 10 倍。
+
+#### 17.5.1 一致性覆盖的 8 大维度表
+
+| 维度 | 一致性要求 | 巡检方式 | 允许误差 |
+|------|-----------|---------|---------|
+| **C1 色值一致性** | 相同语义的颜色全站使用同一 CSS 变量（如成功永远 = `var(--el-color-success)` = #67c23a），禁止模块内自定义「相近的绿色」 | 全项目颜色值 grep：相同语义只允许出现同一个 hex | 色值差 ΔE ≤ 3（人眼不可察） |
+| **C2 圆角一致性** | 相同组件圆角必须统一（卡片 12px / 按钮 4px / 徽章 4px / 大模态框 16px），禁止卡片有的 8 有的 12 有的 16 | 组件级 `border-radius` 跨页面一致性扫描 | ≤ ±2px |
+| **C3 阴影一致性** | 相同组件阴影必须统一（卡片用 `--el-shadow` / 弹窗用 `--el-shadow-lg`），禁止有的页面卡片有阴影有的无边框无阴影 | 组件级 `box-shadow` 跨页面一致性扫描 | 阴影参数差 ≤ 10% |
+| **C4 尺寸一致性** | 同类组件高度必须统一（所有主按钮高 40px / 所有输入框高 40px / 所有表格行高 48px），禁止同一行按钮高度差 2px | 同类组件 computed height 跨页面一致性扫描 | ≤ ±2px |
+| **C5 图标一致性** | 相同动作必须用同一 FontAwesome 图标（删除 = `fa-trash` / 编辑 = `fa-pen-to-square` / 搜索 = `fa-magnifying-glass`），禁止删数据有的用 trash 有的用 xmark | 动作关键词→图标映射表一致性扫描 | 零容忍（必须完全相同图标名） |
+| **C6 文案一致性** | 相同操作按钮文案必须统一（「提交」≠「确认」≠「保存」≠「确定」混着用；「取消」≠「返回」≠「关闭」混着用） | 全站按钮文案关键词聚类：同义词合并成统一标准 | 零容忍（动作相同→文案相同） |
+| **C7 位置一致性** | 同类操作按钮位置必须统一（主操作永远在右下角 / 删除永远在操作列最后 / 返回永远在左上角），禁止 A 页主操作左对齐 B 页右对齐 | 组件定位扫描：`.modal-footer` 内 `justify-content`、操作列按钮顺序 | 零容忍（语义相同→位置相同） |
+| **C8 交互一致性** | 同类交互反馈必须统一（成功 Toast 右上角 3s 自动消失 / 删除前必须二次确认 / Ctrl+S 全局保存），禁止有的提示顶部有的居中 | 全局交互事件监听 + Toast 组件参数一致性 | 零容忍（结果相同→反馈相同） |
+
+#### 17.5.2 一致性六条强制细则
+
+| 编号 | 规则 | 严重程度 | 巡检检查方式 |
+|------|------|----------|--------------|
+| VC-VD-K1 | **禁止硬编码覆盖基础类**：禁止在页面样式文件中重写 `.btn` / `.card` / `.input` / `.tag` 等基础类属性（例：页面 CSS 写 `.btn { border-radius: 8px }` 覆盖全局 4px），必须用扩展类 `.btn-custom-8px` 局部应用。 | **CRITICAL** | CSS/内联样式扫描：禁止出现直接选择器命中基础类修改尺寸/圆角/颜色 |
+| VC-VD-K2 | **操作按钮语义文案统一**：全站只允许使用一套标准按钮文案词表（见下表），禁止同义词混用。例如：正向确认统一用「确定」或「提交」二选一（不混用），中性取消统一用「取消」（不用「返回」「关闭」在同一操作位）。 | **HIGH** | 全站 `<button>` 文案聚类对比，标准词表外文案告警 |
+| VC-VD-K3 | **图标-动作映射唯一**：每个动作关键词只允许绑定一个 FontAwesome 图标名，映射表见 §17.5.3。新图标必须先登记映射表再使用，禁止临时随意选择图标。 | **HIGH** | 全站 FontAwesome class 与父级动作文案的映射一致性检查 |
+| VC-VD-K4 | **组件跨页尺寸对齐**：相同组件在不同页面高度 / 圆角 / 内边距误差 ≤ ±2px。例：A 页面 `.card` border-radius 12px，B 页面 12.5px 允许（误差 0.5px），B 页面 16px 不允许（误差 4px）。 | **HIGH** | 多页面同组件 computed 样式差计算 |
+| VC-VD-K5 | **模态框操作栏对齐一致**：所有模态框底部操作栏 `justify-content` 必须是 `flex-end`（右对齐），主操作按钮永远最右。禁止部分模态框右对齐 / 部分居中 / 部分两端对齐。 | **HIGH** | `.modal-footer` CSS `justify-content` 值统一检查（必须 flex-end / space-between 只有最右原则） |
+| VC-VD-K6 | **新增组件先登记后使用**：任何不在上述规范中的新组件样式，必须先在本设计规范中补充术语定义 + CSS 变量 + 类名，**禁止先写在业务页面后补规范**（设计驱动代码，而非代码反向倒逼规范）。 | **CRITICAL** | 新增样式类名必须在 mtscos-design-system.css 或本 .md 中有对应定义，否则属于「幽灵类」违规 |
+
+#### 17.5.3 标准按钮文案词表（强制执行 · VC-VD-K2 依据）
+
+| 动作语义 | 标准文案（首选） | 允许替代（仅限场景不同） | ❌ 禁止混用文案 |
+|---------|----------------|----------------------|--------------|
+| 提交表单数据 | **提交** | 保存（编辑场景）、立即发布、确认下单 | 确定 / 确认 / 好的 / Yes |
+| 弹窗操作正向确认 | **确定** | 我知道了、同意、确认 | 提交 / 保存 / OK / Yes |
+| 取消操作 / 关闭弹窗 | **取消** | 暂不（三步引导） | 关闭 / 返回 / 退出 / Cancel |
+| 删除数据（二次确认后） | **删除** | 确认删除、强制删除 | 移除 / 销毁 / 清掉 |
+| 创建新数据 | **新建** | + 新增、+ 创建、+ 生成订单 | 添加 / 增加 / + New |
+| 查看详情 | **详情** | 查看、预览 | 点我看看 / More / Info |
+| 编辑已有数据 | **编辑** | 修改 | 改一下 / Update / Change |
+| 返回上一页/上级 | **返回** | ← 返回列表、返回首页 | 取消 / 关闭 / Back |
+
+### 17.6 新增 §13 巡检检查项 (Vibe Coding 视觉设计铁律专项)
+
+| 检查项 | 说明 | 严重程度 | 映射规则 |
+|--------|------|----------|----------|
+| 间距 4 倍数合规 | 所有 margin/padding/gap 值对 4 取模 = 0，禁止黑名单 px 值 | **CRITICAL** | VC-VD-S1 |
+| 字号白名单合规 | 所有 font-size 值必须在 12/13/14/16/18/20/24/28/32/36 白名单内 | **CRITICAL** | VC-VD-T1 |
+| 正文对比度 4.5:1 | 一级/二级文字与背景对比度计算 ≥ 4.5:1 | **CRITICAL** | VC-VD-C1 |
+| 禁止硬编码基础类 | CSS/内联 禁止直接改写 .btn/.card/.input 等基础类属性 | **CRITICAL** | VC-VD-K1 |
+| 新增组件先登记 | 新类名必须在设计规范或 design-system.css 中有定义（非幽灵类） | **CRITICAL** | VC-VD-K6 |
+| 相邻层级字重差 ≥ 100 | 标题 vs 正文字重差检查 ≥ 100，字号差 ≥ 4px | 高 | VC-VD-T2 |
+| 正文行高 ≥ 1.5 | 段落行高计算值 = font-size × 1.5 下限 | 高 | VC-VD-T3 |
+| 禁用态对比度 ≥ 3:1 | .is-disabled 状态前景/背景合成对比度 | 高 | VC-VD-C5 |
+| 按钮文案标准词表 | 按钮文案是否在标准词表内，禁止同义词混用 | 高 | VC-VD-K2 |
+| 组件跨页尺寸一致性 | 同类组件跨页高度/圆角/内边距差 ≤ ±2px | 高 | VC-VD-K4 |
+
+---
+
+**规则版本**：v13.0.0 (Vibe Coding 全体系强制版)
+**生效日期**：2026-08-08
+**适用范围**：MTSCOS AI 项目所有前端页面和组件
+**优先级**：本规则优先级高于其他开发规则，设计活动必须优先遵循本规范
+**新增章节**：
+- §15 Vibe Coding 组件术语体系（六大组件四维组合模型 IR级铁律 · 6类组件 × 48条细则）
+- §16 Vibe Coding 页面布局术语体系（骨架/栅格/断点/空状态/加载状态 IR级铁律 · 5大模块 × 33条细则）
+- §17 Vibe Coding 视觉设计铁律（留白/排版/对比度/一致性 IR级铁律 · 4大铁律 × 25条细则）
+**§7.1 重写**：按钮规范从 1 张表格升级为 Vibe Coding 四维组合七小节完整体系（8条细则 + 反语义速查表 + CSS实现参考）
+**§7.2 ~ §7.12 降级**：原第7章组件规范、原§11移动端适配、原§7.8空状态加载作为向后兼容保留，新代码优先使用 §15/§16/§17 Vibe Coding 体系
+**§13.2 扩充**：新增 7 项 Vibe Coding 按钮专项巡检检查项
+
+
+## 15. Vibe Coding组件体系 (VC-C 组件铁律)
+
+> **设计规范 §15 · IR级铁律** · 来源：抖音Vibe Coding带你梭哈系列 + 组件体系专项课
+
+### 15.1 组件设计核心原则
+
+| 原则 | 说明 | 铁律编号 |
+|------|------|----------|
+| **单一职责** | 每个组件只做一件事，高内聚低耦合 | VC-C1 (CRITICAL) |
+| **可复用性** | 组件必须可跨页面/跨项目复用，禁止页面耦合逻辑 | VC-C2 (CRITICAL) |
+| **API一致性** | 同类组件props命名、事件命名、行为必须一致 | VC-C3 (HIGH) |
+| **可测试性** | 组件必须支持单元测试，纯UI+纯逻辑分离 | VC-C4 (HIGH) |
+| **可组合性** | 组件支持嵌套组合，原子→分子→有机体三级结构 | VC-C5 (MEDIUM) |
+
+### 15.2 组件三级分类体系
+
+#### VC-C2.1 原子组件 (Atoms)
+```text
+基础不可再分：Button / Input / Label / Icon / Tag / Badge / Spinner / Checkbox / Radio / Switch
+```
+- 无业务逻辑，仅UI+基础交互
+- Props纯UI控制：size/variant/color/disabled/loading
+- 100% Storybook/VitePress文档覆盖
+
+#### VC-C2.2 分子组件 (Molecules)
+```text
+原子组合而成：SearchBar(Input+Icon+Button) / FormItem(Label+Input+ErrorMsg) / CardHeader(Title+Actions)
+```
+- 含简单交互逻辑，无业务状态
+- Props：UI控制 + 数据回调 + 基础校验
+
+#### VC-C2.3 有机体组件 (Organisms)
+```text
+分子+原子组合：DataTable / Form / Modal / Sidebar / Navbar / Wizard / DashboardCard
+```
+- 含复杂交互和业务状态管理
+- 必须通过Context/Props显式注入业务依赖，禁止隐式耦合
+- 提供受控(Controlled)和非受控(Uncontrolled)双模式
+
+### 15.3 组件API设计规范 (VC-C3)
+
+**Props命名铁律：**
+| 类别 | 命名规则 | 反例(禁止) |
+|------|----------|------------|
+| 布尔值 | is- / has- / can- / should- 前缀 | show, open, disabled(无前缀) |
+| 回调事件 | on- 前缀 + 动词过去式 | click, change, submit |
+| 数据属性 | 名词短语，描述内容而非样式 | titleText, btnStyle |
+
+**Events命名铁律：**
+```
+✅ 正确：onClick / onValueChanged / onFormSubmitted / onItemSelected
+❌ 错误：click / change / submitItem / handleSubmit
+```
+
+### 15.4 组件生命周期铁律 (VC-C4)
+
+| 阶段 | 必须做 | 禁止做 |
+|------|--------|--------|
+| **Mount** | 仅初始化本地状态、注册事件监听 | 发起API请求(移到useEffect/onMounted回调) |
+| **Update** | 依赖声明必须完整，使用Memo缓存 | 无依赖useEffect/无限循环更新 |
+| **Unmount** | 清除所有订阅、定时器、事件监听 | 引用已卸载组件state(内存泄漏) |
+
+### 15.5 组件测试覆盖要求 (VC-C4)
+- 原子组件：快照测试 + 关键交互测试 覆盖率 ≥ 90%
+- 分子组件：快照 + 交互 + 边界条件 覆盖率 ≥ 85%
+- 有机体组件：集成测试 + E2E关键路径 覆盖率 ≥ 70%
+- 所有组件：无障碍(A11y)测试必过，键盘导航全支持
+
+---
+
+## 16. Vibe Coding页面体系 (VC-P 页面铁律)
+
+> **设计规范 §16 · IR级铁律** · 来源：抖音Vibe Coding带你梭哈系列 + 页面体系专项课
+
+### 16.1 页面架构核心原则
+
+| 原则 | 说明 | 铁律编号 |
+|------|------|----------|
+| **路由分层** | 页面/布局/子路由三级结构清晰 | VC-P1 (CRITICAL) |
+| **布局网格** | 8px栅格系统，禁止硬编码像素偏移 | VC-P2 (CRITICAL) |
+| **导航一致** | 全局导航结构全站统一，面包屑必配 | VC-P3 (HIGH) |
+| **响应式** | Mobile-First，3断点(md≥768/lg≥1024/xl≥1280)全覆盖 | VC-P4 (HIGH) |
+| **性能预算** | FCP<2s / LCP<2.5s / TBT<200ms / CLS<0.1 | VC-P5 (HIGH) |
+
+### 16.2 页面标准结构 (VC-P1)
+
+```text
+页面层级：
+├── Layout (布局层：Navbar + Sidebar + Footer)
+│   └── Page Route (页面路由)
+│       ├── PageHeader (标题+面包屑+操作区)
+│       ├── PageContent (主体内容区：Grid布局)
+│       │   ├── Section (功能区块：Card包裹)
+│       │   │   └── Organisms / Molecules / Atoms
+│       └── PageFooter (分页+汇总+操作)
+```
+
+**路由命名铁律 VC-P1.1：**
+```
+✅ 正确：/dashboard/overview  /users/:id/profile  /orders/new
+❌ 错误：/DashboardOverview   /UserProfilePage   /createNewOrderForm
+```
+
+### 16.3 8px栅格系统 (VC-P2)
+- 间距基数：4px (半个单位) / 8px (单位) / 16px (双位) / 24px (三位) / 32px (四位)
+- 断点：sm<768 / md≥768 / lg≥1024 / xl≥1280 / 2xl≥1536
+- 容器最大宽度：1280px (xl) / 内边距：水平24px md / 16px sm
+- **禁止**：margin-left: 13px 这类非8px倍数硬编码
+
+### 16.4 导航体系规范 (VC-P3)
+- 全局导航层级 ≤ 3级，侧边栏最多二级折叠
+- 每个页面必须有面包屑：`首页 > 一级 > 二级 > 当前`
+- 当前页导航项高亮状态必须同时有视觉和aria-current双重标记
+- 移动端底部Tab导航最多5项，中间可突出FAB
+
+### 16.5 响应式设计铁律 (VC-P4)
+| 断点 | 布局策略 | 典型调整 |
+|------|----------|----------|
+| **sm <768** (手机) | 单列垂直堆叠 | Sidebar→Drawer / Table→Card List / 多Tab→Accordion |
+| **md ≥768** (平板) | 1-2列混合 | 侧边栏可折叠展开 / 两栏布局 |
+| **lg ≥1024** (桌面) | 多列网格 | 三栏+ / 固定侧边栏 / DataTable完整列 |
+| **xl ≥1280** (大屏) | 最大宽度居中 | 内容区域1280px居中，两侧留白或增强信息 |
+
+### 16.6 页面性能预算 (VC-P5)
+- **代码分割**：路由级懒加载100%，组件级按需加载
+- **图片优化**：WebP/AVIF格式 + srcset + loading="lazy" + 尺寸声明
+- **首屏CSS**：关键内联，其余异步加载
+- **监控告警**：Core Web Vitals任意指标超预算自动告警
+
+---
+
+## 17. Vibe Coding视觉体系 (VC-V 视觉铁律)
+
+> **设计规范 §17 · IR级铁律** · 来源：抖音Vibe Coding带你梭哈系列 + 视觉体系专项课
+
+### 17.1 视觉设计核心原则
+
+| 原则 | 说明 | 铁律编号 |
+|------|------|----------|
+| **色彩系统** | 主色+语义色+中性色+功能色完整Token体系 | VC-V1 (CRITICAL) |
+| **排版层级** | H1-Body 11级字号+行高+字重完整规范 | VC-V2 (CRITICAL) |
+| **间距系统** | 8px栅格间距统一，垂直韵律一致 | VC-V3 (HIGH) |
+| **动效规范** | 时长/缓动/层级三要素统一，动效服务反馈 | VC-V4 (MEDIUM) |
+| **图标系统** | 统一风格/尺寸/描边/端点风格，语义匹配 | VC-V5 (MEDIUM) |
+| **品牌一致** | Logo/主色/插图风格全站统一，符合品牌手册 | VC-V6 (HIGH) |
+
+### 17.2 完整色彩Token体系 (VC-V1)
+
+**扩展色板（设计规范§2.1-§2.4补充）：**
+```
+--v-grad-primary: linear-gradient(135deg, var(--el-color-primary) 0%, #66b1ff 100%);
+--v-grad-success: linear-gradient(135deg, var(--el-color-success) 0%, #95d475 100%);
+--v-grad-warning: linear-gradient(135deg, var(--el-color-warning) 0%, #f0c78a 100%);
+--v-grad-danger:  linear-gradient(135deg, var(--el-color-danger)  0%, #f89898 100%);
+
+--v-shadow-sm:  0 1px 2px 0 rgb(0 0 0 / .05);
+--v-shadow-md:  0 4px 6px -1px rgb(0 0 0 / .1), 0 2px 4px -2px rgb(0 0 0 / .1);
+--v-shadow-lg:  0 10px 15px -3px rgb(0 0 0 / .1), 0 4px 6px -4px rgb(0 0 0 / .1);
+--v-shadow-xl:  0 20px 25px -5px rgb(0 0 0 / .1), 0 8px 10px -6px rgb(0 0 0 / .1);
+--v-glow-primary: 0 0 0 4px rgba(64,158,255,.18);
+```
+
+**语义映射必须严格遵循VC-B2铁律（扩展至组件/页面/视觉全体系）。**
+
+### 17.3 排版11级系统 (VC-V2)
+
+| 级别 | 字号 | 行高 | 字重 | 用途 |
+|------|------|------|------|------|
+| H1 | 36px | 44px | 700 | 页面主标题（极少用） |
+| H2 | 30px | 38px | 700 | 区块主标题 |
+| H3 | 24px | 32px | 600 | 卡片标题 / 二级标题 |
+| H4 | 20px | 28px | 600 | 三级标题 |
+| H5 | 18px | 26px | 600 | 小组标题 |
+| H6 | 16px | 24px | 600 | 最小标题 |
+| Body-L | 16px | 26px | 400 | 正文大段阅读 |
+| Body-M | 14px | 22px | 400 | 默认正文 / 表格内容 |
+| Body-S | 13px | 20px | 400 | 辅助文字 / 描述 |
+| Caption | 12px | 18px | 400 | 说明文字 / 标签 |
+| Overline | 11px | 16px | 500 | 标签前缀 / 分类标记 (全大写+字间距) |
+
+### 17.4 间距系统 (VC-V3)
+```
+--v-space-1:  4px;   /* 半个单位 */
+--v-space-2:  8px;   /* 基础单位 */
+--v-space-3:  12px;  /* 1.5单位 */
+--v-space-4:  16px;  /* 双位 */
+--v-space-5:  20px;  /* 2.5单位 */
+--v-space-6:  24px;  /* 三位 */
+--v-space-8:  32px;  /* 四位 */
+--v-space-10: 40px;  /* 五位 */
+--v-space-12: 48px;  /* 六位 */
+--v-space-16: 64px;  /* 大间距 */
+```
+- 组件内部间距：`--v-space-2/3/4`
+- 组件之间间距：`--v-space-4/6/8`
+- 区块之间间距：`--v-space-8/10/12`
+- 页面顶/底外边距：`--v-space-12/16`
+
+### 17.5 动效规范 (VC-V4)
+| 类别 | 时长 | 缓动 | 典型场景 |
+|------|------|------|----------|
+| **瞬时反馈** | 100-150ms | ease-out | Hover / Press / Focus / Toggle |
+| **过渡动画** | 200-300ms | ease-in-out | Page transition / Modal / Drawer |
+| **强调动画** | 300-500ms | cubic-bezier(.34,1.56,.64,1) | Success check / Pop-in / Attention |
+| **禁止** | >800ms | - | 让用户等待的装饰性动画 |
+
+### 17.6 图标系统 (VC-V5)
+- 统一使用 **Font Awesome 6 + Element Plus Icons** 双套
+- 尺寸规范：16px (inline) / 20px (sm btn) / 24px (md btn) / 32px (lg btn/card)
+- 风格一致：线性(lr) / 实心(ss) 同一区域不混用
+- 语义正确：删除→trash-can / 编辑→pen-to-square / 搜索→magnifying-glass / 设置→gear
+
+---
+
+
+---
+
+## 🪐 仙女座 UI 自动生成规范（vv1.2.0 新增）
+
+> 本章定义本规则与仙女座引擎（auto_evolution + autosync_andromeda）的强制协作机制。
+> **禁止**仙女座绕过本规则执行任何操作。
+
+
+### A. 仙女座生成 UI 约束
+
+仙女座 auto_evolution 自动生成前端模板时:
+- **必须**使用 Element Plus 设计 Token
+- **不得**硬编码颜色 (必须 var(--mtscos-primary-base))
+- **不得**写裸 Jinja 语法 {{ }} 直接输出
+- 违反 → rule_enforcer 自动拦截 → auto_evolution 跳过 UI 修改阶段
+
+### B. 主题自动适配
+
+仙女座生成组件**必须**支持吴美工 AI 14 套主题:
+- 检测机制: document.documentElement.dataset.theme 切换验证
+- 不兼容 → evolution_log 记录 theme_mismatch → 自动修复
+
+### C. 设计 Token 更新触发
+
+设计规范修改 → **必须**同步触发 mt_andromeda_rule_knowledge ingest
+→ **必须**触发 rule_version._auto_bump_from_events()
+
+
+参考资料
+
+- 原书：《设计规范》
+- 作者：MTSCOS AI 项目规则治理体系
+- 免责声明：本 Skill 基于原书内容提炼，仅供个人学习使用

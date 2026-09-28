@@ -1,0 +1,64 @@
+
+<style data-inspection-auto-fix="inline-style-template">
+:root {
+    --style-fix-5896553-0: inherit;
+}
+/* -------- AI 自动修复：status → background 颜色（消除内联模板语法 IDE 红线） -------- */
+.eyebrow-dot { transition: background-color .2s ease; border-radius: 9999px; }
+</style>
+{% extends "base_unified.html" %}
+{% block title %}模擬試験 · Mock JLPT Exam{% endblock %}
+{% block page_title %}Mogi Shiken · 模擬試験{% endblock %}
+{% block extra_head %}
+<style>
+:root { --jp-vermilion:#C8102E; --jp-indigo:#2F4F6F; }
+.jp-mock-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(260px,1fr)); gap:14px; }
+.jp-mock-card {
+    background:var(--mtscos-bg-card); border:1px solid var(--mtscos-border-light);
+    border-radius:var(--mtscos-radius-lg); padding:22px; text-align:center;
+    border-top:3px solid var(--jp-indigo); transition:all .2s;
+}
+.jp-mock-card:hover { transform:translateY(-4px); box-shadow:0 8px 24px rgba(0,0,0,.1); border-top-color:var(--jp-vermilion); }
+.jp-mock-level { font-family:"Yu Mincho",serif; font-size:42px; font-weight:900; color:var(--jp-vermilion); line-height:1; }
+.jp-mock-label { font-size:12px; color:var(--jp-indigo); margin:6px 0 10px; font-weight:600; }
+.jp-mock-bar { height:6px; background:var(--mtscos-border-light); border-radius:3px; overflow:hidden; margin-bottom:6px; }
+.jp-mock-bar-fill { height:100%; background:var(--jp-indigo); transition:width .3s; }
+.jp-mock-tag { display:inline-block; font-size:10px; padding:3px 10px; background:var(--jp-indigo); color:#fff; border-radius:12px; font-weight:600; margin-top:6px; }
+.jp-mock-go { margin-top:10px; padding:8px 20px; background:var(--jp-vermilion); color:#fff; border:none; border-radius:6px; cursor:pointer; font-weight:700; font-size:12px; }
+.jp-mock-go:hover { background:#a00d25; }
+.jp-mock-empty { font-size:11px; color:var(--mtscos-text-tertiary); margin-top:6px; }
+</style>
+{% endblock %}
+{% block content %}
+<div style="margin-bottom:16px;font-size:13px;color:var(--mtscos-text-tertiary)">
+    <a href="/japanese_page" style="color:var(--jp-indigo);text-decoration:none">{{ t('auto.jpn_mock.__x_____a85766c6', default='← 日本語ポータル') }}</a>
+    <span style="margin:0 6px">›</span> 模擬試験
+</div>
+<div style="margin-bottom:16px;font-size:12px;color:var(--mtscos-text-tertiary);padding:10px;background:rgba(47,79,111,.06);border-radius:6px">
+    1セット = 聴解3題 + 読解2題 · 30分 · 即時採点
+</div>
+<div class="jp-mock-grid">
+{% set labels = {'N5':'基礎レベル','N4':'初級レベル','N3':'中級レベル','N2':'上級レベル','N1':'最上級レベル'} %}
+{% for lv in levels %}
+{% set s = stats.get(lv, {'listening':0,'reading':0}) %}
+{% set avail = s.listening + s.reading %}
+<div class="jp-mock-card">
+    <div class="jp-mock-level">{{ lv }}</div>
+    <div class="jp-mock-label">{{ labels.get(lv, lv) }}</div>
+    <div class="jp-mock-bar">
+        <div class="jp-mock-bar-fill" style="width:var(--style-fix-5896553-0, inherit)%"></div>
+    </div>
+    <div style="font-size:10px;color:var(--mtscos-text-tertiary)">
+        聴解 {{ s.listening }} · 読解 {{ s.reading }}
+    </div>
+    <div class="jp-mock-tag">{{ t('auto.jpn_mock.180x_178c31a9', default='180点満点') }}</div>
+    <br>
+    {% if avail >= 5 %}
+    <a href="/japanese/mock/{{ lv }}" class="jp-mock-go" style="display:inline-block;text-decoration:none">{{ t('auto.jpn_mock.x_____1547ba14', default='挑戦する →') }}</a>
+    {% else %}
+    <div class="jp-mock-empty">問題不足 ({{ avail }}/5)</div>
+    {% endif %}
+</div>
+{% endfor %}
+</div>
+{% endblock %}

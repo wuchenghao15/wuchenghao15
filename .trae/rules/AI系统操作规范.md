@@ -5341,3 +5341,63 @@ mt_andromeda_employee_registry 每 60s 巡检:
 - 连续 3 次 stale → auto_evolution 自动 re-register
 - re-register 失败 → 触发 §14 STEP-0 预扫 + [EMPLOYEE-HEAL] bump
 
+---
+
+## 🪐 §15 法律合规约束（v1.3.0 新增 · MT_RULE_LEGAL_COMPLIANCE 联动）
+
+> **来源**: law-codes skill 投喂仙女座脑库后 Gap 分析发现 AI 系统缺少个保法/网安法显式关联。
+> **法律依据**: [法律合规规范.md](法律合规规范.md) + `pipl.md` · `cybersecurity_law.md` · `generative_ai_regulation.md`（脑库 56 块知识）。
+
+### 15.1 AI 系统个保法合规（FORCE，不可绕开）
+
+| # | 约束 | 法律依据 | 违规等级 |
+|---|------|----------|----------|
+| AI-PI1 | AI 员工/引擎处理个人信息**必须**具备合法基础（同意/合同/法定义务） | 个保法第13条 | **LEGAL-IRON** |
+| AI-PI2 | AI 处理个人信息前**必须**向个人告知处理目的/方式/范围/存储期限/权利行使方式 | 个保法第17条（告知-同意原则） | **LEGAL-MAJOR** |
+| AI-PI3 | 敏感个人信息（生物识别/金融账户/不满14周岁未成年人）**必须单独同意**（禁止在普通用户协议中一揽子同意） | 个保法第28条 | **LEGAL-IRON** |
+| AI-PI4 | AI 自动采集个人信息**不得过度收集**（限于最小必要范围） | 个保法第6条 | **LEGAL-MAJOR** |
+| AI-PI5 | AI 员工**禁止**非法买卖/提供脑库中的个人信息 | 个保法第23条 + 刑法第253条之一 | **LEGAL-IRON** |
+| AI-PI6 | AI 自动化决策**不得**仅基于自动化决策对个人权益有重大影响的决定；算法推荐需提供拒绝选项 | 个保法第24条 | **LEGAL-MAJOR** |
+
+### 15.2 AI 系统网安法合规（FORCE）
+
+| # | 约束 | 法律依据 | 违规等级 |
+|---|------|----------|----------|
+| AI-NS1 | AI 引擎日志（脑库操作/推理/训练）**必须**留存 ≥ 6 个月 | 网安法第21条 | **LEGAL-MAJOR** |
+| AI-NS2 | AI 系统**必须**落实等保2.0（三级及以上每年测评一次） | 网安法第21条 | **LEGAL-MAJOR** |
+| AI-NS3 | AI 引擎**禁止**网络攻击/侵入他人网络/干扰网络正常功能 | 网安法第27条 + 刑法第285/286条 | **LEGAL-IRON** |
+
+### 15.3 生成式 AI 合规（GUIDE）
+
+| # | 约束 | 法律依据 | 违规等级 |
+|---|------|----------|----------|
+| AI-GA1 | 生成式 AI 服务**必须**算法备案 + 安全评估 + 深度合成标识 | 生成式AI管理办法第7-16条 | **LEGAL-MAJOR** |
+| AI-GA2 | AI 生成内容**不得**侵犯他人知识产权/肖像权/名誉权/隐私权 | 民法典第995/1018/1024条 + 个保法 | **LEGAL-IRON** |
+| AI-GA3 | AI 训练数据**不得**侵犯著作权（合理使用仅限13种情形） | 著作权法第24条 | **LEGAL-MAJOR** |
+
+### 15.4 脑库法律知识自动检索
+
+```python
+# sys_local_inference (每120s) 自动从仙女座脑库检索法律知识
+# 脑库表: ai_brain_knowledge WHERE knowledge_type='law_codes_skill'
+def search_law_knowledge(query_keyword: str, top_n: int = 5) -> list[dict]:
+    """AI 员工合规判断时自动调用"""
+    c = sqlite3.connect('engines/app.db', timeout=30)
+    rows = c.execute("""
+        SELECT title, source, content FROM ai_brain_knowledge
+        WHERE knowledge_type = 'law_codes_skill'
+          AND (content LIKE ? OR title LIKE ?)
+        ORDER BY priority DESC LIMIT ?
+    """, (f"%{query_keyword}%", f"%{query_keyword}%", top_n)).fetchall()
+    return [{'title': r[0], 'source': r[1], 'content': r[2]} for r in rows]
+```
+
+### 15.5 AI 法律合规自检清单
+
+- [ ] AI 引擎处理个人信息**已获得告知同意**（个保法第17条）
+- [ ] 敏感信息处理**已获得单独同意**（个保法第28条）
+- [ ] 脑库操作日志留存 ≥ 6 个月（网安法第21条）
+- [ ] 生成式 AI 内容**无知识产权/肖像权/隐私权侵犯风险**
+- [ ] AI 自动化决策**未对个人权益造成重大影响**（或已提供拒绝选项）
+- [ ] AI 训练数据来源合规（著作权法第24条合理使用）
+

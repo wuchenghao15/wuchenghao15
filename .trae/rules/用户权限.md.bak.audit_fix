@@ -1,0 +1,716 @@
+---
+alwaysApply: true
+---
+<!-- RULE_META_START
+RULE_ID: MT_RULE_PERM
+RULE_NAME: 用户权限规范
+RULE_LEVEL: L1 核心
+RULE_VERSION: v1.3.0
+EFFECTIVE_DATE: 2026-08-18
+STATUS: ACTIVE
+VIOLATION_CODE: PERM-RULE-VIOLATION
+INTERCEPT_LAYERS: [pre_commit, before_request, ci_check, git_hook]
+RESPONSIBLE_ROLE: super_admin
+DEPENDS_ON: [MT_IRON_RULE_12STEPS, MT_RULE_GOVERNANCE, MT_RULE_CLASSIFICATION]
+MODIFY_APPROVAL_FLOW: 7_STEP (提议→2管理员同意→EigenFlux 5人磋商≥4/5→SA终审→保密撤回)
+BYPASS_ALLOWED: false
+LAST_CHANGED: 2026-09-17
+RULE_META_END -->
+# MTSCOS AI 项目用户权限规范
+
+> **层级**: L1 核心 | **优先级**: 服从 [§14 IRON_RULE](§14强制开发12步骤独立约束规则.md) (L0) | **索引**: [规则总索引](00-规则总索引.md)
+
+## 1. 角色等级定义
+
+### 1.1 核心角色（基于AI系统操作规范）
+
+| 角色代码 | 角色名称 | 等级 | 说明 |
+|----------|----------|------|------|
+| super_admin | 超级管理员 | 100 | 拥有系统全部权限，可管理所有模块和用户，唯一用户wuchenghao15 |
+| system_admin | 系统管理员 | 90 | 管理系统配置，拥有系统管理权限 |
+| admin | 管理员 | 80 | 管理用户和内容，拥有系统主要管理权限 |
+| hardware_admin | 硬件管理员 | 75 | 硬件设备管理和监控，调试环境访问 |
+| hardware_vikey_admin | 硬件Vikey管理员 | 75 | VIKEY加密狗管理，安全审计，调试环境访问 |
+| designer | 设计师 | 70 | 课程设计和资源管理 |
+| teacher | 教师 | 60 | 教学管理，考试管理，学生管理 |
+| student_vip | VIP学生 | 50 | 高级学习功能，VIP特权 |
+| student | 普通学生 | 40 | 基础学习功能 |
+| user | 普通用户 | 20 | 基本访问权限 |
+| guest | 访客 | 0 | 只读权限，仅能浏览公开内容 |
+
+### 1.2 扩展角色（基于数据库架构）
+
+| 角色代码 | 角色名称 | 等级 | 说明 |
+|----------|----------|------|------|
+| school_admin | 学校管理员 | 75 | 学校级别管理权限 |
+| teacher_admin | 教师管理员 | 65 | 教师团队管理权限 |
+| sysadmin | 系统运维管理员 | 85 | 系统运维和技术支持 |
+| cluster_manager | 集群管理员 | 85 | AI 集群管理和监控 |
+| ai_manager | AI管理员 | 75 | AI模型和引擎管理 |
+| question_manager | 题库管理员 | 65 | 题库管理和维护 |
+| exam_proctor | 监考员 | 55 | 考试监考和监控 |
+| parent | 家长 | 30 | 查看孩子学习情况权限 |
+| parent_vip | VIP家长 | 35 | 高级家长功能 |
+
+### 1.3 权限等级数值表（100点制）
+
+| 等级范围 | 角色类型 | 说明 |
+|----------|----------|------|
+| 100 | 超级管理员 | 系统最高权限，但必须通过唯一用户身份校验 |
+| 90-85 | 系统级管理员 | 系统配置和运维权限 |
+| 80-75 | 高级管理员 | 用户管理和内容管理权限 |
+| 70-65 | 专业管理员 | 特定领域管理权限 |
+| 60-55 | 教师/监考 | 教学和考试管理权限 |
+| 50-40 | 学生 | 学习功能权限 |
+| 35-30 | 家长 | 家校沟通权限 |
+| 20 | 普通用户 | 基础访问权限 |
+| 0 | 访客 | 只读权限 |
+
+### 1.4 6级访问控制体系
+
+| 6级级别 | 100点级别 | 角色 | 说明 |
+|----------|-----------|------|------|
+| 6 | 100 | super_admin | 超级管理员（wuchenghao15唯一），所有权限，绕过所有检查 |
+| 5 | 85-75 | admin, school_admin, teacher_admin, sysadmin, hardware_admin, hardware_vikey_admin, cluster_manager, ai_manager, question_manager, exam_proctor | 专业管理员/运营管理员 |
+| 4 | 70-60 | designer, teacher, proctor, qm, ai_mgr, cluster_mgr | 设计师/教师/专业角色 |
+| 3.5 | 50 | student_vip | 学生VIP，特权功能 |
+| 3 | 40 | student | 学生，学习使用 |
+| 2 | 30 | parent | 家长，查看子女学习 |
+| 1 | 0 | guest, anonymous, visitor | 访客，只读访问 |
+
+### 1.5 16+角色完整列表
+
+| 序号 | 角色代码 | 角色名称 | 6级级别 | 100点级别 |
+|------|----------|----------|----------|-----------|
+| 1 | super_admin | 超级管理员 | 6 | 100 |
+| 2 | system_admin | 系统管理员 | 5 | 90 |
+| 3 | admin | 管理员 | 5 | 80 |
+| 4 | sysadmin | 系统运维管理员 | 5 | 85 |
+| 5 | school_admin | 学校管理员 | 5 | 75 |
+| 6 | teacher_admin | 教师管理员 | 5 | 65 |
+| 7 | hardware_admin | 硬件管理员 | 5 | 75 |
+| 8 | hardware_vikey_admin | 硬件Vikey管理员 | 5 | 75 |
+| 9 | cluster_manager | 集群管理员 | 5 | 85 |
+| 10 | ai_manager | AI管理员 | 5 | 75 |
+| 11 | question_manager | 题库管理员 | 5 | 65 |
+| 12 | exam_proctor | 监考员 | 5 | 55 |
+| 13 | designer | 设计师 | 4 | 70 |
+| 14 | teacher | 教师 | 4 | 60 |
+| 15 | student_vip | VIP学生 | 3.5 | 50 |
+| 16 | student | 普通学生 | 3 | 40 |
+| 17 | parent_vip | VIP家长 | 2.5 | 35 |
+| 18 | parent | 家长 | 2 | 30 |
+| 19 | user | 普通用户 | 1.5 | 20 |
+| 20 | guest | 访客 | 1 | 0 |
+
+## 2. 角色权限矩阵
+
+实际权限检查由 `flask-app/app/utils/permission_manager.py` 执行。规则中的扩展角色必须在该权限映射中有明确权限；未识别角色按 `guest` 处理，不得隐式获得管理员权限。
+
+### 2.1 核心角色权限
+
+| 权限 | super_admin | system_admin | admin | hardware_admin | hardware_vikey_admin | designer | teacher | student_vip | student | user | guest |
+|------|------------|-------------|-------|----------------|---------------------|----------|---------|-------------|---------|------|-------|
+| * (全部) | ✓ | | | | | | | | | | |
+| manage_users | ✓ | ✓ | ✓ | | | | | | | | |
+| manage_exams | ✓ | ✓ | ✓ | | | | ✓ | | | | |
+| manage_courses | ✓ | ✓ | ✓ | | | ✓ | | | | | |
+| manage_settings | ✓ | ✓ | ✓ | | | | | | | | |
+| view_users | ✓ | ✓ | ✓ | | | | | | | | |
+| view_exams | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | | |
+| view_courses | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | | |
+| view_settings | ✓ | ✓ | ✓ | | | | | | | | |
+| view_notifications | ✓ | ✓ | ✓ | | | | ✓ | | | | |
+| view_data_analysis | ✓ | ✓ | ✓ | | | | | | | | |
+| view_ai_center | ✓ | ✓ | ✓ | | | | | | | | |
+| view_resource_manager | ✓ | | ✓ | | | | | | | | |
+| view_monitor | ✓ | | ✓ | ✓ | ✓ | | | | | | |
+| view_health_monitor | ✓ | | ✓ | | | | | | | | |
+| view_profile | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | |
+| view_students | ✓ | ✓ | ✓ | | | | ✓ | | | | |
+| view_ai_tutor | ✓ | ✓ | ✓ | | | | | ✓ | | | |
+| hardware_manage | ✓ | | | ✓ | ✓ | | | | | | |
+| vikey_manage | ✓ | | | | ✓ | | | | | | |
+| sslvpn_access | ✓ | ✓ | ✓ | ✓ | ✓ | | | | | | |
+| ai_manage | ✓ | ✓ | ✓ | | | | | | | | |
+
+### 2.2 扩展角色权限
+
+| 权限 | school_admin | teacher_admin | sysadmin | cluster_manager | ai_manager | question_manager | exam_proctor | parent | parent_vip |
+|------|--------------|---------------|----------|-----------------|------------|------------------|-------------|--------|------------|
+| manage_users | ✓ | ✓ | | | | | | | |
+| manage_exams | | | | | | | ✓ | | |
+| manage_courses | ✓ | | | | | | | | |
+| manage_settings | | | ✓ | | | | | | |
+| view_users | ✓ | ✓ | ✓ | | | | | | |
+| view_exams | ✓ | ✓ | | | | ✓ | ✓ | ✓ | ✓ |
+| view_courses | ✓ | ✓ | | | | | | ✓ | ✓ |
+| view_settings | | | ✓ | | | | | | |
+| view_notifications | ✓ | ✓ | | | | | | | |
+| view_students | ✓ | ✓ | | | | | | ✓ | ✓ |
+| view_data_analysis | ✓ | | ✓ | | | | | | |
+| view_ai_center | | | | | ✓ | | | | |
+| view_monitor | | | ✓ | ✓ | | | | | |
+| view_profile | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| question_bank_manage | | | | | | ✓ | | | |
+| exam_proctor | | | | | | | ✓ | | |
+| parent_communication | | | | | | | | ✓ | ✓ |
+| ai_model_manage | | | | | ✓ | | | | |
+| cluster_manage | | | | ✓ | | | | | |
+
+## 3. 权限维护规则
+
+| 规则代码 | 规则名称 | 默认值 | 说明 |
+|----------|----------|--------|------|
+| PERM_CHECK_INTERVAL | 权限检查间隔 | 3600 | 权限缓存检查间隔(秒) |
+| PERM_CACHE_REFRESH_ENABLED | 权限缓存刷新启用 | 1 | 是否启用权限缓存自动刷新 |
+| PERM_ROLE_HIERARCHY_ENABLED | 角色层级启用 | 1 | 是否启用角色层级继承 |
+| PERM_AUDIT_ENABLED | 权限审计启用 | 1 | 是否启用权限操作审计 |
+| PERM_AUTO_SYNC_ENABLED | 权限自动同步启用 | 1 | 是否启用权限规则自动同步 |
+| PERM_EDUCATION_TYPE_FILTER_ENABLED | 教育类型权限过滤启用 | 1 | 是否启用按教育类型过滤考试权限 |
+| PERM_K12_RESTRICTION_ENABLED | K12权限限制启用 | 1 | 是否启用K12学生考试权限限制 |
+| PERM_HARDWARE_ADMIN_DEBUG_ENABLED | 硬件管理员调试权限启用 | 1 | 是否启用硬件管理员调试环境权限 |
+| PERM_MAX_LOGIN_ATTEMPTS | 最大登录尝试次数 | 5 | 允许的最大登录尝试次数 |
+| PERM_LOCKOUT_DURATION | 账户锁定时长 | 900 | 账户锁定时长(秒) |
+| PERM_PASSWORD_MIN_LENGTH | 密码最小长度 | 8 | 密码最小长度 |
+| PERM_PASSWORD_COMPLEXITY_ENABLED | 密码复杂度启用 | 1 | 是否启用密码复杂度要求 |
+| PERM_SUPER_ADMIN_UNIQUE_USER | 超级管理员唯一用户 | wuchenghao15 | 系统超级管理员唯一用户 |
+
+## 4. VIKEY强制认证规则
+
+### 4.1 VIKEY认证要求
+
+| 角色 | VIKEY认证 | 网络要求 | 说明 |
+|------|-----------|----------|------|
+| super_admin | 强制 | 必须在线 | 超级管理员必须依托VIKEY USB加密狗 |
+| hardware_vikey_admin | 强制 | 必须在线 | 硬件Vikey管理员必须依托VIKEY USB加密狗 |
+| hardware_admin | 标准 | 标准在线 | 硬件管理员标准使用VIKEY认证 |
+| system_admin | 可选 | 可选 | 系统管理员可选VIKEY认证 |
+| admin | 可选 | 可选 | 管理员可选VIKEY认证 |
+| 其他角色 | 不要求 | 不要求 | 普通用户不要求VIKEY认证 |
+
+### 4.2 VIKEY状态检测
+
+| 状态 | 说明 | 处理 |
+|------|------|------|
+| ok | VIKEY正常 | 允许访问 |
+| not_found | 未检测到VIKEY | 拒绝访问（超级管理员） |
+| error | VIKEY状态异常 | 拒绝访问（超级管理员） |
+| offline | 网络离线 | 拒绝访问（超级管理员） |
+
+## 5. 权限检查流程
+
+```text
+1. 用户登录时验证身份
+2. 根据用户角色加载权限列表
+3. 权限列表缓存到session
+4. 访问资源时检查权限缓存
+5. 权限变更时刷新缓存
+6. 记录权限操作审计日志
+7. 超级管理员额外检查VIKEY认证
+```
+
+### 5.1 权限检查函数
+
+```python
+def has_permission(role, permission):
+    """检查角色是否有指定权限"""
+    perms = get_role_permissions(role)
+    if '*' in perms:
+        return True
+    return permission in perms
+
+def can_access(role, required_role):
+    """检查角色是否可以访问需要特定角色的资源"""
+    if role == 'super_admin':
+        return True
+    return get_role_level(role) >= get_role_level(required_role)
+```
+
+## 6. 审计日志系统
+
+### 6.1 审计日志记录
+
+| 操作类型 | 记录内容 |
+|----------|----------|
+| 角色分配 | 用户ID、角色代码、分配人、分配时间 |
+| 角色撤销 | 用户ID、角色代码、撤销人、撤销时间 |
+| 权限变更 | 用户ID、权限代码、变更类型、变更时间 |
+| 权限检查 | 用户ID、角色、访问资源、检查结果 |
+| VIKEY认证 | 用户ID、VIKEY序列号、认证结果 |
+
+### 6.2 审计日志查询
+
+```python
+def audit_log(user_id, action, module, resource, status, details):
+    """记录审计日志"""
+    with self.lock:
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        cursor.execute('''
+            INSERT INTO audit_logs 
+            (user_id, action, module, resource, status, details, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        ''', (user_id, action, module, resource, status, details, datetime.now().isoformat()))
+        conn.commit()
+        conn.close()
+```
+
+## 7. 权限服务API
+
+### 7.1 角色管理
+
+| API | 方法 | 权限要求 | 说明 |
+|-----|------|----------|------|
+| /api/permissions/roles | GET | admin+ | 获取所有角色列表 |
+| /api/permissions/roles/{role_code} | GET | admin+ | 获取角色详情 |
+| /api/permissions/roles | POST | super_admin | 创建角色 |
+| /api/permissions/roles/{role_code} | PUT | super_admin | 更新角色 |
+| /api/permissions/roles/{role_code} | DELETE | super_admin | 删除角色 |
+
+### 7.2 用户角色分配
+
+| API | 方法 | 权限要求 | 说明 |
+|-----|------|----------|------|
+| /api/permissions/users/{user_id}/roles | GET | admin+ | 获取用户角色列表 |
+| /api/permissions/users/{user_id}/roles | POST | admin+ | 分配角色给用户 |
+| /api/permissions/users/{user_id}/roles/{role_code} | DELETE | admin+ | 撤销用户角色 |
+
+### 7.3 权限检查
+
+| API | 方法 | 权限要求 | 说明 |
+|-----|------|----------|------|
+| /api/permissions/check | POST | 登录用户 | 检查当前用户权限 |
+| /api/permissions/users/{user_id}/permissions | GET | admin+ | 获取用户所有权限 |
+
+## 8. 权限数据库模型
+
+### 8.1 permission_roles 表
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| role_id | TEXT | 角色ID |
+| role_name | TEXT | 角色名称 |
+| role_code | TEXT | 角色代码 |
+| description | TEXT | 角色描述 |
+| permissions | TEXT | 权限列表(JSON) |
+| is_system | INTEGER | 是否系统角色 |
+| created_at | TEXT | 创建时间 |
+| updated_at | TEXT | 更新时间 |
+
+### 8.2 user_role_assignments 表
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| id | INTEGER | 记录ID |
+| user_id | TEXT | 用户ID |
+| role_id | TEXT | 角色ID |
+| assigned_by | TEXT | 分配人 |
+| assigned_at | TEXT | 分配时间 |
+| expires_at | TEXT | 过期时间 |
+
+### 8.3 users 表权限字段
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| role | TEXT | 用户角色 |
+| is_active | INTEGER | 是否激活 |
+| super_admin_approved | INTEGER | 超级管理员审批状态 |
+| hardware_admin_approved | INTEGER | 硬件管理员审批状态 |
+
+## 9. 考试准入条件
+
+| 角色 | 可参加的考试科目 | 特殊权限 |
+|------|-----------------|---------|
+| student (K12) | 数学、语文、英语、物理、化学、政治 | 仅能参加K12相关考试 |
+| student_vip (K12) | 数学、语文、英语、物理、化学、政治 | 仅能参加K12相关考试，VIP特权 |
+| student (成人) | 所有科目（含日语、职业资格等） | 无限制 |
+| teacher | 所有科目 | 可查看考试结果 |
+| admin | 所有科目 | 可管理考试 |
+| hardware_admin | 所有科目 | 调试环境访问权限 |
+| hardware_vikey_admin | 所有科目 | 调试环境访问权限 |
+| parent | 无 | 可查看孩子考试成绩 |
+
+## 10. 权限变更审批流程
+
+```text
+1. 用户提交权限变更申请
+2. hardware_admin审批（备案管理员）
+3. super_admin审批（超级管理员）
+4. 更新用户角色和权限
+5. 记录审计日志
+6. 通知用户审批结果
+```
+
+## 11. 规则审批流程权限规范
+
+### 11.1 7步审批流程角色权限矩阵
+
+规则修改必须遵循以下7步审批流程，各步骤角色权限严格分离：
+
+| 审批步骤 | 角色要求 | 权限代码 | 说明 |
+|---------|---------|---------|------|
+| Step 1: 管理员提议 | admin+ | `propose_rule_change` | 任何管理员及以上可发起规则修改提议 |
+| Step 2: ≥2管理员同意 | admin+ (非提议人) | `approve_rule_proposal` | 需≥2名非提议管理员投票同意 |
+| Step 3: EigenFlux AI5人磋商 | AI员工组 | `eigenflux_deliberate` | 升级分析师、合规审计员、安全审计员、DBA、实施工程师 5人投票，≥4/5通过 |
+| Step 4: AI防火墙复审 | system_admin+ | `ai_firewall_review` | AI防火墙自动复审规则冲突和安全风险 |
+| Step 5: 超级管理员终审 | super_admin (wuchenghao15) | `final_approve_rule` | 必须通过VIKEY实时检测，选择「立即适配」或「2个工作日后」 |
+| Step 6: 适配期生效 | 系统自动 | - | 根据终审选择的适配时间自动生效 |
+| Step 7: 保密撤回 (仅SA) | super_admin (wuchenghao15) | `withdraw_rule_proposal` | 内存标记，数据库/日志完全保密，无痕操作 |
+
+### 11.2 规则操作权限矩阵
+
+| 权限操作 | super_admin | system_admin | admin | hardware_admin | designer | teacher | question_manager | 其他角色 |
+|---------|------------|-------------|-------|----------------|----------|---------|-----------------|---------|
+| propose_rule_change (提议规则) | ✓ | ✓ | ✓ | | | | | |
+| approve_rule_proposal (同意提议) | ✓ | ✓ | ✓ | | | | | |
+| eigenflux_deliberate (AI磋商) | ✓ | ✓ | | | | | | |
+| ai_firewall_review (防火墙复审) | ✓ | ✓ | | | | | | |
+| final_approve_rule (终审规则) | ✓ (唯一) | | | | | | | |
+| withdraw_rule_proposal (保密撤回) | ✓ (唯一) | | | | | | | |
+| view_rule_proposals (查看提议) | ✓ | ✓ | ✓ | ✓ | | | | |
+| simulate_rule (规则模拟) | ✓ | ✓ | ✓ | | | | | |
+| bypass_rule_request (申请跳过) | ✓ | ✓ | ✓ | | | ✓ | ✓ | |
+| grant_grace_window (授予宽限) | ✓ | ✓ | | | | | | |
+| audit_rule_violation (审计违例) | ✓ | ✓ | | | | | | |
+
+### 11.3 5级规则体系权限等级对应
+
+| 规则层级 | 等级代码 | 需对应角色等级 | 审批要求 | 违例后果 |
+|---------|---------|--------------|---------|---------|
+| IRON_RULE (铁规) | L0 | super_admin 100级 | SA终审+VIKEY+保密撤回 | 零容忍，立即阻断+审计 |
+| RED_LINE (红线) | L1 | system_admin 90级 | 7步全流程审批 | 强制阻断，记录违例 |
+| RED_WALL (红墙) | L2 | admin 80级 | 5步审批 (跳过SA保密撤回) | 默认阻断，可申请跳过 |
+| CONSTRAINT (制约) | L3 | hardware_admin 75级 | 3步审批 (管理员同意即可) | 强制告警，可继续操作 |
+| WARNING (提示) | L4 | teacher 60级 | AI自动审核 | 仅提示，不阻断 |
+
+### 11.4 EigenFlux AI5人磋商角色定义
+
+规则审批Step 3必须由以下5名AI员工共同磋商，投票≥4/5方可通过：
+
+| AI员工角色 | 职责 | 关注维度 | 否决权 |
+|-----------|------|---------|-------|
+| 升级分析师 | 分析规则对系统升级路径的影响 | 兼容性、迁移成本 | 影响≥3个模块时可否决 |
+| 合规审计员 | 审计规则是否符合法律法规和铁规 | 合规性、法律风险 | 违反IRON_RULE时可否决 |
+| 安全审计员 | 审计规则的安全漏洞和攻击面 | 安全性、权限泄漏 | 引入安全风险时可否决 |
+| DBA (数据库管理员) | 评估规则对数据库和SSOT的影响 | 数据一致性、性能 | 破坏SSOT时可否决 |
+| 实施工程师 | 评估规则落地实施的可行性 | 实施复杂度、回滚方案 | 无可行回滚方案时可否决 |
+
+---
+
+## 12. 规则相关数据库表权限
+
+### 12.1 规则4张核心表访问权限
+
+系统所有规则统一存储在SSOT数据库的4张表中，权限控制如下：
+
+| 表名 | 读权限 | 写权限 | 说明 |
+|-----|-------|-------|------|
+| `legal_red_lines` (法律铁规表) | admin+ | super_admin | 5级规则定义表，SSOT单一权威数据源 |
+| `rule_bypass_requests` (跳过申请表) | admin+ | admin+ | 规则跳过申请审批表 |
+| `rule_grace_windows` (宽限窗口表) | admin+ | system_admin+ | 规则临时宽限配置表 |
+| `rule_violation_audit` (违例审计表) | system_admin+ | system自动 | 规则违例审计日志，仅系统写入 |
+
+### 12.2 SSOT规则读写权限规范
+
+**重要**：所有规则必须通过桥接函数访问，禁止直接操作表：
+
+| 操作 | 授权函数 | 最低权限 |
+|-----|---------|---------|
+| 读取规则 | `_mt_get_config_rule(rule_code)` | 登录用户 (按规则层级过滤) |
+| 写入规则 | `_mt_set_config_rule(rule_code, value)` | super_admin + 7步审批 |
+| 批量读取 | `_mt_get_all_config_rules()` | admin+ |
+| 规则同步 | `_sync_sre_to_legal_redlines()` | super_admin 自动调用 |
+
+---
+
+## 13. 安全架构集成
+
+### 13.1 安全层级
+
+```text
+安全架构
+├── 第1层: 网络层安全
+│   ├── SSL/TLS加密
+│   ├── 防火墙规则
+│   └── DDoS防护
+├── 第2层: 应用层安全
+│   ├── 请求过滤
+│   ├── 输入验证
+│   ├── 安全中间件
+│   └── 白名单控制
+├── 第3层: 数据层安全
+│   ├── 数据加密存储
+│   ├── 敏感数据脱敏
+│   └── 访问日志记录
+├── 第4层: 权限层安全
+│   ├── RBAC权限模型
+│   ├── 16+角色定义
+│   ├── 6级访问控制
+│   └── 审计日志
+└── 第5层: AI安全
+    ├── 漏洞扫描引擎
+    ├── 异常检测引擎
+    ├── 安全防护引擎
+    └── 自动修复引擎
+```
+
+---
+
+### 11.5 SSOT规则表与桥接函数权限矩阵
+
+| 资源/操作 | 读取权限 | 写入权限 | 说明 |
+|---------|---------|---------|------|
+| `unified_settings` (SSOT主表) | admin+ | super_admin | SSOT单一真相源，禁止直接写库 |
+| `sa_rule_overrides` (SA规则覆盖) | super_admin只读 | wuchenghao15唯一 | 带VIKEY实时校验，双写无痕 |
+| `settings_audit_log` (参数审计) | system_admin+ | system自动 | 仅追加(append-only)禁止修改/删除 |
+| `legal_red_lines` (法律铁规表) | admin+ | super_admin | 5级规则定义表，SSOT单一权威数据源 |
+| `rule_bypass_requests` (跳过申请) | teacher+可读自己/admin+读全部 | teacher+创建/admin+审批 | RED_WALL及以上禁止跳过 |
+| `rule_grace_windows` (宽限窗口) | admin+可读全部 | system_admin+签发 | CONSTRAINT以上可授予，最长7天 |
+| `rule_violation_audit` (违例审计) | system_admin+ | system自动 | 12类异常事件码，append-only |
+| `brain_knowledge_*` (脑库表) | admin+读 | AI系统+super_admin | 决策投喂不可直接删改 |
+| `_mt_get_config_rule()`桥接读函数 | public公开 | - | SSOT统一入口，带审计日志 |
+| `_mt_set_config_rule()`桥接写函数 | - | super_admin + 审批流 | 参数变更自动触发7步审批 (按层级简化) |
+
+### 11.6 _super_admin_vikey_check() 7要素认证权限
+
+| 要素编号 | 校验项 | 权限要求 | 失败错误码 | 阻断范围 |
+|---------|-------|---------|-----------|---------|
+| 1. 用户名匹配 | 精确匹配 `wuchenghao15` | public | PERM_SA_USERNAME_MISMATCH | 登录/所有敏感操作 |
+| 2. 密码哈希校验 | bcrypt+salt + SA保留名拦截 | public | PERM_SA_PASSWORD_INVALID | 登录/敏感操作 |
+| 3. 随机挑战码 | 6位动态码一次性有效 | public | PERM_SA_CHALLENGE_FAIL | 敏感操作 |
+| 4. VIKEY USB序列号 | 硬件加密狗序列号白名单 | public (检测) | VIKEY_REQUIRED | 所有SA操作，阻断 |
+| 5. VIKEY PIN码 | 加密狗6位PIN，3次失败锁1h | public (验证) | VIKEY_PIN_LOCKED | 所有SA操作，阻断 |
+| 6. SSL证书指纹 | 当前连接指纹白名单绑定 | public (后端) | SSL_FINGERPRINT_MISMATCH | 标准阻断+警告 |
+| 7. 硬件指纹绑定 | CPU+主板+网卡MAC三绑定 | public (后端) | HARDWARE_BIND_FAIL | 强阻断，SA可特批绕过 |
+
+```python
+def _super_admin_vikey_check(operation_type='sensitive'):
+    """SA VIKEY实时检测，桌面端USB+移动端指纹双路径
+    - 桌面端: 每3秒轮询/api/vikey/hotplug_notify检测硬件插入
+    - 移动端: 校验X-Fingerprint header
+    - 失败: 返回VIKEY_REQUIRED 403错误 + 阻断操作
+    - 通过: AI防火墙复审 + 终审标记 → 可执行SA专属操作
+    """
+    vikey_status = _detect_vikey_usb()  # 序列号白名单
+    x_fp = request.headers.get('X-Fingerprint')
+    if not vikey_status['inserted'] and not x_fp:
+        return jsonify({
+            'code': 403, 'error': 'VIKEY_REQUIRED',
+            'message': 'SA敏感操作需插入VIKEY USB加密狗或移动端指纹认证',
+            'operation_type': operation_type
+        }), 403
+    if x_fp and not _verify_mobile_fingerprint(x_fp):
+        return {'code': 403, 'error': 'FINGERPRINT_INVALID'}, 403
+    _ai_firewall_review_sa_operation(operation_type)  # AI复审
+    return None
+```
+
+---
+
+## 权限管理自查清单 (规则审批专项)
+
+### 7步审批权限
+- [ ] Step1提议权限：admin+角色均可
+- [ ] Step2投票权限：≥2名非提议人admin+独立投票
+- [ ] Step3 EigenFlux权限：AI员工5人组自动触发≥4/5通过
+- [ ] Step5 SA终审权限：仅wuchenghao15 + VIKEY通过
+- [ ] Step7保密撤回权限：仅SA(wuchenghao15)可执行，无痕日志
+
+### 5级规则权限对应
+- [ ] IRON_RULE：仅SA+全票EigenFlux+VIKEY可变更
+- [ ] RED_LINE：完整7步审批，≥4/5 AI磋商
+- [ ] RED_WALL：Step1-2-3-4-5-6跳过保密撤回
+- [ ] CONSTRAINT：Step1-2-6管理员同意即生效
+- [ ] WARNING：AI自动审核即生效
+
+### SSOT与桥接函数
+- [ ] unified_settings禁止直接写库，全部通过_mt_set_config_rule
+- [ ] 桥接函数自动按规则层级触发对应审批步骤
+- [ ] sa_rule_overrides仅SA+VIKEY可读写，其他角色不可见
+- [ ] rule_violation_audit/settings_audit_log双表仅追加不删改
+
+---
+
+## §13 4合1安全防护规范(EigenFlux 16类安全事件矩阵 + 5级防爆破 + 6张安全表)
+
+### §13.1 4大安全威胁模块与核心6张表矩阵
+| 模块 | 威胁类别 | 核心DB表 | 5级规则默认层级 | before_request检查函数 |
+|---|---|---|---|---|
+| 1 | 防黑客(Hacking) | sec_hacking_events + sec_rate_limit_buckets | IRON_RULE(L0) | _security_check_hacking() |
+| 2 | 防暴力破解(BruteForce) | sec_bruteforce_locks + login_attempts | RED_LINE(L1) | _security_check_bruteforce() |
+| 3 | 防撞库(CredentialStuffing) | sec_credential_stuffing_logs + sec_known_weak_password_hashes | RED_LINE(L1) | _security_check_credential_stuffing() |
+| 4 | 防反编译(DecompileProtect) | sec_decompile_watermarks | RED_WALL(L2) | _security_check_decompile_watermark() |
+
+### §13.2 16类安全EigenFlux事件码（AI5人磋商）
+| event_code | 触发场景 | EigenFlux主导AI员工角色 | 典型修复标准 |
+|---|---|---|---|
+| hack_sqlmap_detected | 请求UA含sqlmap/nmap/sqlninja特征 | 安全审计员CISO | IP封禁24h + EigenFlux全票通过+SA VIKEY永久封禁 |
+| hack_xss_payload | 请求参数含`<script>`或`<img onerror=`特征 | 安全审计员CISO | 参数过滤 + 记录攻击 + 封锁1h |
+| hack_path_traversal | 路径含`.././etc/passwd`/`{{7*7}}` | 安全审计员+合规审计员 | 403阻断 + 路径规范化过滤 |
+| hack_ssrf_attempt | 内网IP段192.168/10./172.16访问请求 | 安全审计员CISO | 请求拒绝 + URL白名单 |
+| hack_xff_spoofed | X-Forwarded-For >3跳伪造IP | 合规审计员 | 直接丢弃XFF取remote_addr |
+| brute_1min_5fail | 1分钟内同一IP/用户失败≥5次 | 合规审计员 | LEVEL1 锁定10分钟 |
+| brute_1h_20fail | 1小时失败≥20次 | 合规审计员+SA | LEVEL3 锁定6小时 |
+| brute_perm_ban | 24小时≥100次失败 | CISO+SA VIKEY | LEVEL5 永久锁定+写入永久黑名单 |
+| stuffing_multiaccount_1ip | 10分钟内同IP≥5个账号尝试 | 安全审计员CISO | 记录撞库日志 + IP锁定6小时 |
+| stuffing_weak_password | 密码匹配rockyou/hibp_top10k弱密码库 | 合规审计员 | 拒绝登录 + 强制用户修改 |
+| stuffing_batch_attack | 单批≥50账号同一密码尝试 | CISO+CTO联合 | CIDR /24段封禁 + 升级EigenFlux全员 |
+| decompile_debugger_ua | User-Agent含pycdc/uncompyle6/devtools | 升级分析师CTO | 返回404伪装页面 |
+| decompile_watermark_tamper | _debug_token参数≠真实水印token | 升级分析师+DBA | 篡改计数+1 + 触发VIKEY告警 |
+| decompile_runtime_modify | 运行时内存探测(debug_attached标志) | CTO+CISO | 立即终止进程 + 告警SA |
+| sa_vikey_missing | SA操作缺失VIKEY检测 | 合规审计员+安全审计员 | 立即阻断 + AI5人≥4/5+SA复审 |
+| privilege_escalation_try | 普通用户尝试越权API | 安全审计员+合规 | 会话作废+账号冻结+EigenFlux投票 |
+
+### §13.3 5级惩罚策略(防爆破)
+| 惩罚层级 | 触发阈值 | 锁定时长 | 解锁权限 |
+|---|---|---|---|
+| LEVEL1 轻微 | 1min ≥5 次失败 | 10分钟 | 自动超时解锁 |
+| LEVEL2 中等 | 1小时≥20次失败 | 1小时 | admin+手动解锁 |
+| LEVEL3 严重 | 24h≥50次 | 6小时 | admin+手动解锁 |
+| LEVEL4 高危 | 24h≥80次 或 多账号协同爆破 | 24小时 | system_admin+解锁 |
+| LEVEL5 永久封禁 | 24h≥100次或EigenFlux5/5全票 | 永久(99999999min) | 仅super_admin wuchenghao15 + VIKEY |
+
+### §13.4 安全防护操作权限矩阵
+| 操作 | student | teacher | admin | system_admin | super_admin(wuchenghao15+VIKEY) |
+|---|---|---|---|---|---|
+| 查看攻击/爆破/撞库事件 | ❌ | ❌ | ✅ | ✅ | ✅ |
+| 手动解锁爆破锁定 | ❌ | ❌ | ✅(≤LEVEL3) | ✅(≤LEVEL4) | ✅全部 |
+| IP永久封禁/CIDR封禁 | ❌ | ❌ | ❌ | ❌ | ✅必须VIKEY |
+| 导入HIBP弱密码库 | ❌ | ❌ | ✅ | ✅ | ✅ |
+| 轮换反编译水印token | ❌ | ❌ | ❌ | ❌ | ✅必须VIKEY |
+| 查看审计日志+EigenFlux裁决 | ❌ | ❌ | ✅(部分) | ✅(大部分) | ✅全部 |
+| 触发before_request安全检查 | 自动 | 自动 | 自动 | 自动 | 自动(绕过前需过VIKEY) |
+| 生成PyArmor加固报告 | ❌ | ❌ | ✅ | ✅ | ✅ |
+
+### §13.5 安全防护自查清单
+- [ ] 4合1中间件 _mt_security_shield_before_request 已注册@app.before_request，位置在 _mt_remember_me_auto_login 之后
+- [ ] 6张sec_*表启动时通过 _ensure_security_schema() 创建，与_ensure_automation_schema顺序一致
+- [ ] 16类安全event_code已正确映射EigenFlux上报 _security_report_anomaly() 调用失败静默降级
+- [ ] LEVEL5 永久封禁仅wuchenghao15+VIKEY通过 _security_super_admin_vikey_check() 双校验
+- [ ] 撞库检测覆盖内置top20弱密码+外部HIBP sha256导入校验
+- [ ] 反编译水印token _debug_token 校验错误返回404(非403)，避免暴露防护特征
+- [ ] 所有安全操作写入 automation_console_logs 且 eigenflux_flag=1
+- [ ] EigenFlux AI5人(CTO/CISO/CFO/COO/Legal)安全专属角色分配正确且在前端右侧面板显示
+
+## §14. 权限管理强制执行规范 (v1.2.0 新增)
+
+> 来源: 2026-09-07 针对性升级。盘点发现文档"强制执行"0次、"限流"0次、"会话治理"仅1次提及, 经 EigenFlux 12专家(网络专业+安全+架构)与本地AI联合磋商补齐。§13 管安全防护(防爆破/撞库), 本章节管权限自身的执行闭环 — 二者互补。
+
+### 14.1 五层强制执行拦截体系
+
+| 层 | 拦截点 | 时机 | 失败行为 |
+|----|--------|------|---------|
+| L1 | `@system_container` 装饰器 | 路由进入前 | 4级(guest/login/admin/super_admin)不满足即拒绝 |
+| L2 | before_request 中间件 | 每请求 | 防盗链(非首页Referer+未授权session→重定向/index) + 规则修改拦截(403+落库) |
+| L3 | 服务端权限复检 | 渲染/返回数据前 | 前端导航隐藏不构成权限控制, 后端必须复检 |
+| L4 | 写操作双重复检 | POST/PUT/PATCH/DELETE | 读通过≠写通过, 写操作单独校验权限点 |
+| L5 | 审计闭环 | 拦截后 | 全部落 automation_console_logs(eigenflux_flag=1) |
+
+**硬约束**:
+1. 所有新增路由必须携带 `@system_container`; 深度巡检发现无装饰器路由即记 `PERM-RULE-VIOLATION`
+2. 禁止仅凭前端隐藏(导航裁剪/按钮禁用)实现权限控制
+3. 权限判定代码禁止 trust client 传入的角色/权限字段, 只信 session 或 DB
+4. L2 安全组件故障必须 **fail-closed**(拒绝放行), 禁止 fail-open
+
+### 14.2 越权响应标准矩阵
+
+| 场景 | 响应 | 落库 |
+|------|------|------|
+| 未登录访问受保护资源 | 重定向 /index (防盗链) | audit |
+| 登录但角色不足(页面) | 403 | audit + 计数 |
+| 角色不足(JSON API) | 401 + error_code | audit + 计数 |
+| SA资源无VIKEY | 403 + vikey_required | audit |
+| 反编译水印token错误 | 404 (防暴露防护特征, 延续§13.5) | sec_*表 |
+| 爆破/撞库 | 按§13.3 五级封禁矩阵 | sec_*表 |
+| 限流超限 | 429 + Retry-After | audit + EigenFlux上报 |
+
+同一账号 24h 内越权 403/401 ≥20次 → 自动触发 EigenFlux 异常上报(event: perm_abuse_suspect), 由安全专家定责。
+
+### 14.3 会话治理
+
+| 项 | 约束 |
+|----|------|
+| 会话超时 | 普通角色 8h; super_admin 2h(到期重验证7要素) |
+| 并发登录 | 同账号最多3端; SA 仅1端, 新登录踢旧端并审计 |
+| 会话固定 | 登录成功后必须 regenerate session id |
+| 权限缓存时效 | 权限变更后 ≤60s 全端生效(变更时主动失效相关session缓存) |
+| Remember-me | 30天上限, 与 _mt_remember_me_auto_login 一致; 账号被封禁≥LEVEL3 时立即终止所有 remember-me |
+| 登出 | 必须清空 session + remember-me cookie + 权限缓存三件套 |
+
+### 14.4 API 限流分级
+
+| 角色 | 限流 | 超限行为 |
+|------|------|---------|
+| student | 60 req/min | 429 + Retry-After 60s |
+| teacher | 120 req/min | 429 + Retry-After 30s |
+| admin | 240 req/min | 429 + Retry-After 15s |
+| system_admin | 480 req/min | 429 |
+| super_admin | 不限(VIKEY在线时) | — |
+
+- 连续 3 个窗口超限 → EigenFlux 异常上报(event: rate_limit_abuse), 运维专家主导定责
+- 限流按 IP+账号 双维度计数, 登录/考试提交等敏感端点单独收紧(登录 10 req/min/IP)
+
+### 14.5 权限降级规则
+
+| 触发 | 降级行为 |
+|------|---------|
+| VIKEY 离线 | SA 降级只读: 可查看不可修改, 写操作一律403; USB加密狗/移动端指纹任一在线即恢复 |
+| 规则引擎故障 | 规则修改类请求 fail-closed 一律拒绝; 非规则类请求正常放行 |
+| 权限DB不可达 | 权限判定一律拒绝(deny by default), 禁止放行未知状态 |
+| 限流组件故障 | 降级为日志记录模式(仅记录不拦截), 恢复后回放审计 |
+
+### 14.6 强制执行自查清单
+- [ ] 全部路由 100% 携带 @system_container (深度巡检零缺漏)
+- [ ] 写操作与读操作权限点分离复检
+- [ ] 越权响应符合§14.2矩阵 (403/401/404/429 使用正确)
+- [ ] SA 会话 2h 超时生效, 并发登录仅1端
+- [ ] 权限变更 60s 内全端生效(抽查变更后旧session访问)
+- [ ] 限流分级配置与§14.4一致, 登录端点 10 req/min/IP
+- [ ] VIKEY 离线时 SA 写操作 100% 被拒(抽查)
+- [ ] 所有两层及以上拦截事件落 automation_console_logs 且 eigenflux_flag=1
+
+### 14.7 违反后果
+
+违反本章条款触发 `PERM-RULE-VIOLATION`, 按§13 安全链路处理(拦截→审计→EigenFlux磋商→脑库投喂→SA上报); 无装饰器路由由 sys_deep_inspection 每600s扫描落库。
+
+---
+
+**规则版本**：v1.2.0
+**生效日期**：2026-09-07  
+**适用范围**：MTSCOS AI 项目所有用户权限管理
+**优先级**：本规则优先级高于其他开发规则，权限管理必须优先遵循本规范
+**新增章节**：§11 规则审批流程权限规范 (11.1-11.6) 及规则专项自查清单 §13 4合1安全防护规范(EigenFlux 16类安全事件矩阵 + 5级防爆破 + 6张安全表) §14 权限管理强制执行规范(五层拦截体系+越权响应矩阵+会话治理+API限流分级+权限降级fail-closed)
+**版本说明**：历史尾注版本号(v13.0.0系按章节数计)与 META 权威版本(v1.1.0)不一致, 2026-09-07 按规则治理与一致性规范裁决统一为 META 体系, 本次新增强制条款按 MINOR 升至 v1.2.0
+
+---
+
+## 🪐 仙女座 AI 员工权限矩阵（vv1.3.0 新增）
+
+> 本章定义本规则与仙女座引擎（auto_evolution + autosync_andromeda）的强制协作机制。
+> **禁止**仙女座绕过本规则执行任何操作。
+
+
+### A. AI 员工权限（employee_registry）
+
+| employee 类型 | 最大权限 | 禁止操作 |
+|--------------|---------|---------|
+| EigenFlux 专家 | admin | 改权限表 / VIKEY 绕过 |
+| 仙女座演化 AI | user | 直接 commit / push / 改 VERSION |
+| AI 自动雇佣 | login-only | 写题库 / 写规则 / 改参数 |
+
+违反权限 → mt_permission_audit_detail 落库 → [PERM-FIX] patch bump 检查
+
+### B. VIKEY 加密狗与仙女座
+
+- VIKEY 固件升级 → **强制** [SECURITY] patch bump
+- 仙女座 auto_evolution **必须**感知 VIKEY 在线状态
+- VIKEY 离线 → 跳过 admin 操作 → 记录 evolution_log
+
+### C. 仙女座权限巡检
+
+rule_enforcer daemon 每 300s:
+- 扫描 employee_registry 权限分布
+- 检测越权 (role='admin' 但无 VIKEY) → 强制降级为 user
+- 检测 employee_registry 异常 ≥ 20 名 → [EMPLOYEE-HEAL] bump
+

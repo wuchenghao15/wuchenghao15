@@ -165,6 +165,83 @@ Stage 7 auto_optimize        动态调整阈值
 - 用户管理与主题切换系统
 - 审计日志
 
-[未发布]: https://github.com/wuchenghao15/MTSCOS-AI-Project/compare/v17.22.0...HEAD
+---
+
+## v3.0.0 (2026-09-19) — 仙女座 2.0 世代
+
+### 🎉 重大事件
+- 40 位 AI 员工集结（从 6 人 → 40 人，覆盖八大天团）
+- 演化引擎 2231 → 2828 行（+597 行）
+- EigenFlux 引擎 1796 → 1906 行（+110 行）
+
+### 🔢 坍缩定理 (PRIME_COLLAPSE_THEOREM)
+- 数学定义：质因数分解递归坍缩 → 特征数 7
+- 7 阶段 × 7 分类器 = 49 个硬约束分类器
+- 坍缩反馈闭环：非 7 → 自动补 derived 知识
+- checkpoint ↔ 物理表自动同步 (_sync_checkpoint_from_db)
+- derived 2548 卡壳 31 → 2550 → 坍缩到 7 ✅
+
+### 🌱 演化引擎三层 Phase 切换
+- Phase 1 骨架 (reinforced < 2000): 7 阶段坍缩到 7
+- Phase 2 血肉 (2000 ≤ reinforced < 10000): 84000 法门展开
+- Phase 3 江山 (reinforced ≥ 10000): 完整演化 + 无限制扩张
+
+### 🧘 演化目的检测
+- EVOLUTION_PURPOSE_CHECKER: 8 指标 0-100 评分
+- 钱学森之问 (4 指标): reinforced 增量 / derived 增量 / 创新学习比 / 坍缩通过
+- 霍金熵减 (4 指标): 坍缩终点=7 / 自然 reinforced > 强制对齐 / CTC 零环 / 无矛盾规则
+
+### 🎨 冰山系统 (Iceberg)
+- 三层：赤壁 Peak / 承天寺 Spectrum / 东坡 Basement
+- 极简 Peak 单总分 0-100 (乔布斯)
+- 西施面纱模式：3s / 10s 渐进展开 + 控制面板
+- 王安石拗相公 Tab (篆刻红 · 缺陷雷达)
+- 邓稼先极简 CSS (删 clip-path · 金线 + 墨点 + 粉红)
+
+### 🌐 EigenFlux 民主制
+- 钦定 5 超级节点 → 貂蝉连环计动态选举
+- 袁世凯民主集中制：选举 + 30 天禅让 + 方差 < 0.05 强制打散
+- migrate_strength_to_equal: 所有连接平等 0.5 起步
+- 1070+ 条 CONNECTED 握手
+
+### 👥 新增 34 位 AI 员工
+- 艺术大师 4 人: 吴道子玄笔 · 齐白石金石 · 唐伯虎风流 · 水墨青山
+- 科学巨匠 3 人: 霍金宙光 · 拉马努金数悟 · 爱因斯坦思辨
+- 国之重器 3 人: 钱学森星天 · 邓稼先铸魂 · 黄旭华深潜
+- 唐宋八家 8 人: 韩愈昌黎 · 柳宗元子厚 · 欧阳修永叔 · 苏洵明允 · 苏轼子瞻 · 苏辙子由 · 王安石介甫 · 曾巩子固
+- 科技 3 人: 乔布斯苹果 · 马化腾腾讯 · 雷军小米
+- 帝皇将相 3 人: 袁世凯北洋 · 爱新觉罗玄烨 · 武则天武曌
+- 宗教双圣 2 人: 弘一法师李叔同 · 乔达摩悉达多
+- 美人天团 4 人: 杨玉环贵妃 · 西施 · 貂蝉 · 王昭君
+- 演化引擎 1 人: Andromeda Σ
+
+### 🔒 机密等级加密
+- 三 tier: 极密 AES-256-GCM + VIKEY / 机密 AES-256-GCM + SERVER_MASTER / 秘密 Fernet
+- crypto_engine.py DB 路径修复 + Server Master Key 持久化 (.zshrc + launchd plist)
+- users.email + users.password_hash 双列加密 (_enc)
+
+### 📊 实测数据 (v3.0.0)
+| 指标 | 数值 |
+|------|------|
+| 数据库表 | 347 张 |
+| AI 员工 | 40 人 |
+| EigenFlux 连接 | 1,074 条 (全部 CONNECTED) |
+| EigenFlux 消息 | 244,353 条 |
+| 规则知识块 | 706 条 |
+| 坍缩终点 | 7 ✅ |
+
+### 📚 新增深度文档
+| 文档 | 说明 |
+|------|------|
+| docs/ANDROMEDA_AI_EMPLOYEES.md | 40 人完整介绍 |
+| docs/PRIME_COLLAPSE_THEOREM.md | 坍缩定理白皮书 |
+| docs/ICEBERG_ARCHITECTURE.md | 冰山三层设计 |
+| docs/EVOLUTION_PURPOSE.md | 演化目的检测 |
+| docs/EIGENFLUX_DEMOCRACY.md | EigenFlux 民主制 |
+
+---
+
+[未发布]: https://github.com/wuchenghao15/MTSCOS-AI-Project/compare/v3.0.0...HEAD
+[v3.0.0]: https://github.com/wuchenghao15/MTSCOS-AI-Project/releases/tag/v3.0.0
 [v1.0.0]: https://github.com/wuchenghao15/MTSCOS-AI-Project/releases/tag/v1.0.0
 [v17.22.0]: https://github.com/wuchenghao15/MTSCOS-AI-Project/releases/tag/v17.22.0

@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>仙女座仪表盘 · Andromeda Dashboard</title>
+<link rel="stylesheet" href="https://unpkg.com/element-plus/dist/index.css">
+<script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+<script src="https://unpkg.com/element-plus"></script>
+<script src="https://unpkg.com/echarts@5/dist/echarts.min.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+         background: linear-gradient(135deg, #0c1445 0%, #1a1a2e 50%, #16213e 100%);
+         min-height: 100vh; color: #e0e0e0; }
+  #app { padding: 20px; max-width: 1600px; margin: 0 auto; }
+  
+  /* Header */
+  .header { display: flex; justify-content: space-between; align-items: center;
+             padding: 16px 24px; background: rgba(255,255,255,0.04);
+             border-radius: 12px; backdrop-filter: blur(10px);
+             border: 1px solid rgba(255,255,255,0.08); margin-bottom: 20px; }
+  .header h1 { font-size: 22px; background: linear-gradient(90deg,#6366f1,#a855f7);
+               -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  .header .subtitle { font-size: 12px; color: #8892b0; margin-top: 2px; }
+  
+  /* Stat cards */
+  .stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 20px; }
+  .stat-card { background: rgba(255,255,255,0.04); border-radius: 12px; padding: 18px 20px;
+               border: 1px solid rgba(255,255,255,0.08); position: relative; overflow: hidden; }
+  .stat-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+                        background: linear-gradient(90deg,#6366f1,#a855f7); }
+  .stat-card.warn::before { background: linear-gradient(90deg,#f59e0b,#ef4444); }
+  .stat-card.danger::before { background: linear-gradient(90deg,#ef4444,#dc2626); }
+  .stat-label { font-size: 12px; color: #8892b0; text-transform: uppercase; letter-spacing: 1px; }
+  .stat-value { font-size: 32px; font-weight: 700; margin: 6px 0; color: #fff; }
+  .stat-sub { font-size: 12px; color: #64748b; }
+  
+  /* Charts row */
+  .chart-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+  .chart-card { background: rgba(255,255,255,0.04); border-radius: 12px; padding: 20px;
+                border: 1px solid rgba(255,255,255,0.08); }
+  .chart-card h3 { font-size: 14px; color: #c4b5fd; margin-bottom: 12px; }
+  .chart-box { height: 280px; }
+  
+  /* Daemon category list */
+  .daemon-section { background: rgba(255,255,255,0.04); border-radius: 12px; padding: 20px;
+                    border: 1px solid rgba(255,255,255,0.08); margin-bottom: 20px; }
+  .daemon-section h3 { font-size: 14px; color: #c4b5fd; margin-bottom: 12px; }
+  .cat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px,1fr)); gap: 12px; }
+  .cat-card { background: rgba(255,255,255,0.03); border-radius: 8px; padding: 14px; }
+  .cat-header { display: flex; justify-content: space-between; margin-bottom: 8px; }
+  .cat-name { font-size: 13px; font-weight: 600; color: #cbd5e1; }
+  .cat-rate { font-size: 12px; }
+  .rate-bar { height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; margin-bottom: 10px; overflow: hidden; }
+  .rate-bar > div { height: 100%; border-radius: 3px; transition: width .3s; }
+  .daemon-list { display: flex; flex-wrap: wrap; gap: 6px; }
+  .daemon-tag { font-size: 11px; padding: 3px 8px; border-radius: 4px; cursor: default; }
+  .daemon-tag.live { background: rgba(34,197,94,0.15); color: #4ade80; border: 1px solid rgba(34,197,94,0.3); }
+  .daemon-tag.dead { background: rgba(239,68,68,0.12); color: #f87171; border: 1px solid rgba(239,68,68,0.3); }
+  
+  /* Health checks */
+  .health-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px,1fr)); gap: 10px; }
+  .health-item { display: flex; align-items: center; gap: 10px; padding: 10px 14px;
+                 background: rgba(255,255,255,0.03); border-radius: 8px; font-size: 13px; }
+  .health-item .dot { width: 8px; height: 8px; border-radius: 50%; }
+  .health-item.ok .dot { background: #22c55e; box-shadow: 0 0 8px #22c55e; }
+  .health-item.warn .dot { background: #f59e0b; box-shadow: 0 0 8px #f59e0b; }
+  .health-item.fail .dot { background: #ef4444; box-shadow: 0 0 8px #ef4444; }
+  
+  /* Twin machine */
+  .twin-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+  .twin-card { background: rgba(255,255,255,0.04); border-radius: 12px; padding: 18px;
+               border: 1px solid rgba(255,255,255,0.08); }
+  .twin-card h4 { font-size: 13px; color: #8892b0; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 1px; }
+  .twin-card .big-num { font-size: 36px; font-weight: 700; color: #fff; }
+  
+  /* Auto-refresh badge */
+  .refresh-badge { position: fixed; bottom: 20px; right: 20px; font-size: 11px;
+                   background: rgba(99,102,241,0.2); border: 1px solid rgba(99,102,241,0.4);
+                   padding: 6px 12px; border-radius: 20px; color: #c4b5fd; z-index: 100; }
+  
+  @media (max-width: 900px) {
+    .stat-grid { grid-template-columns: repeat(2, 1fr); }
+    .chart-row { grid-template-columns: 1fr; }
+    .twin-row { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+{% raw %}
+<div id="app">
+
+<!-- Header -->
+<div class="header">
+  <div>
+    <h1>🪐 仙女座仪表盘 · Andromeda Dashboard</h1>
+    <div class="subtitle">v6.2 · 七阶段演化总览 · daemon 活率 · DB 业务增量 · 双机健康</div>
+  </div>
+  <div style="text-align:right">
+    <div style="font-size:11px;color:#64748b">上次刷新</div>
+    <div style="font-size:13px;color:#c4b5fd">{{ lastUpdate }}</div>
+  </div>
+</div>
+
+<!-- Top stat cards -->
+<div class="stat-grid">
+  <div class="stat-card" :class="{warn: daemonRate < 80, danger: daemonRate < 50}">
+    <div class="stat-label">Daemon 活率</div>
+    <div class="stat-value">{{ daemonAlive }}/{{ daemonTotal }}</div>
+    <div class="stat-sub">daemon 守护进程</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">系统健康分</div>
+    <div class="stat-value">{{ healthScore }}<span style="font-size:18px;color:#64748b">/100</span></div>
+    <div class="stat-sub">{{ healthOk }}/{{ healthTotal }} 检查通过</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">DB 业务总量</div>
+    <div class="stat-value">{{ totalRows.toLocaleString() }}</div>
+    <div class="stat-sub">核心表累计行数</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">24h 增量</div>
+    <div class="stat-value">{{ delta24h.toLocaleString() }}</div>
+    <div class="stat-sub">过去 24 小时</div>
+  </div>
+</div>
+
+<!-- Twin machine -->
+<div class="twin-row">
+  <div class="twin-card">
+    <h4>🖥️ 本机 · MacBook Pro</h4>
+    <div class="big-num">{{ daemonAlive }}</div>
+    <div style="font-size:12px;color:#64748b;margin-top:4px">活跃 daemon · Flask 8888 · Ollama</div>
+  </div>
+  <div class="twin-card">
+    <h4>🖥️ Mac mini · HULK-MACMINI</h4>
+    <div class="big-num" v-if="twin.macmini.reachable">{{ twin.macmini.daemon_live || '?' }}</div>
+    <div class="big-num" v-else style="color:#64748b">—</div>
+    <div style="font-size:12px;color:#64748b;margin-top:4px">
+      {{ twin.macmini.reachable ? '双机同步中' : '离线 · 上线后自动握手' }}
+    </div>
+  </div>
+</div>
+
+<!-- Charts -->
+<div class="chart-row">
+  <div class="chart-card">
+    <h3>📊 Daemon 分类活率</h3>
+    <div ref="daemonChart" class="chart-box"></div>
+  </div>
+  <div class="chart-card">
+    <h3>📈 DB 核心表 24h 增量</h3>
+    <div ref="dbChart" class="chart-box"></div>
+  </div>
+</div>
+
+<!-- Health checks -->
+<div class="daemon-section">
+  <h3>❤️ 系统健康检查</h3>
+  <div class="health-grid">
+    <div class="health-item" v-for="c in healthChecks" :key="c.name" :class="c.status.toLowerCase()">
+      <span class="dot"></span>
+      <span style="font-weight:500">{{ c.name }}</span>
+      <span style="margin-left:auto;color:#64748b;font-size:11px;max-width:200px;overflow:hidden;text-overflow:ellipsis">{{ c.detail }}</span>
+    </div>
+  </div>
+</div>
+
+<!-- Daemon categories -->
+<div class="daemon-section">
+  <h3>🧬 Daemon 分类详情 (点击看心跳)</h3>
+  <div class="cat-grid">
+    <div class="cat-card" v-for="cat in daemonCats" :key="cat.category">
+      <div class="cat-header">
+        <span class="cat-name">{{ cat.category }}</span>
+        <span class="cat-rate">{{ cat.alive }}/{{ cat.total }} ({{ cat.rate }}%)</span>
+      </div>
+      <div class="rate-bar">
+        <div :style="{width: cat.rate+'%', background: cat.rate===100?'#22c55e':cat.rate>=60?'#6366f1':'#ef4444'}"></div>
+      </div>
+      <div class="daemon-list">
+        <span v-for="d in cat.daemons" :key="d.name"
+              class="daemon-tag" :class="d.live ? 'live' : 'dead'"
+              :title="d.last_heartbeat || '从未心跳'">
+          {{ d.name.replace('sys_','') }}
+        </span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="refresh-badge">🔄 每 10s 自动刷新</div>
+</div>
+
+<script>
+const { createApp, ref, computed, onMounted, nextTick, watch } = Vue;
+
+createApp({
+  setup() {
+    // Data
+    const daemonAlive = ref(0);
+    const daemonTotal = ref(0);
+    const daemonCats = ref([]);
+    const dbMetrics = ref([]);
+    const healthChecks = ref([]);
+    const healthScore = ref(0);
+    const lastUpdate = ref('—');
+    const twin = ref({ local: {}, macmini: {} });
+
+    // Charts refs
+    const daemonChart = ref(null);
+    const dbChart = ref(null);
+    let daemonChartInst = null;
+    let dbChartInst = null;
+
+    // Computed
+    const daemonRate = computed(() =>
+      daemonTotal.value ? Math.round(daemonAlive.value / daemonTotal.value * 100) : 0);
+    const totalRows = computed(() =>
+      dbMetrics.value.reduce((s, t) => s + (t.total || 0), 0));
+    const delta24h = computed(() =>
+      dbMetrics.value.reduce((s, t) => s + (t.delta_24h || 0), 0));
+    const healthOk = computed(() =>
+      healthChecks.value.filter(c => c.status === 'OK').length);
+    const healthTotal = computed(() => healthChecks.value.length);
+
+    // API helpers
+    async function fetchJSON(url) {
+      try {
+        const r = await fetch(url, { cache: 'no-store' });
+        return await r.json();
+      } catch (e) { return { code: -1 }; }
+    }
+
+    async function refreshAll() {
+      const [dRes, bRes, hRes, tRes] = await Promise.all([
+        fetchJSON('/andromeda/api/daemon_status'),
+        fetchJSON('/andromeda/api/db_metrics'),
+        fetchJSON('/andromeda/api/system_health'),
+        fetchJSON('/andromeda/api/twin_machine'),
+      ]);
+
+      if (dRes.code === 0) {
+        daemonAlive.value = dRes.data.summary.alive;
+        daemonTotal.value = dRes.data.summary.total;
+        daemonCats.value = dRes.data.categories;
+      }
+      if (bRes.code === 0) dbMetrics.value = bRes.data.tables;
+      if (hRes.code === 0) {
+        healthChecks.value = hRes.data.checks;
+        healthScore.value = Math.round(hRes.data.score);
+      }
+      if (tRes.code === 0) twin.value = tRes.data;
+
+      lastUpdate.value = new Date().toLocaleTimeString('zh-CN');
+
+      await nextTick();
+      renderDaemonChart();
+      renderDbChart();
+    }
+
+    // Charts
+    function renderDaemonChart() {
+      if (!daemonChart.value) return;
+      if (!daemonChartInst) daemonChartInst = echarts.init(daemonChart.value);
+      const data = daemonCats.value.map(c => ({
+        name: c.category,
+        value: c.alive,
+        total: c.total,
+      }));
+      daemonChartInst.setOption({
+        tooltip: { trigger: 'item',
+          formatter: p => `${p.name}<br/>活跃: ${p.value}/${p.data.total} (${Math.round(p.value/p.data.total*100)}%)` },
+        series: [{
+          type: 'pie',
+          radius: ['45%', '75%'],
+          avoidLabelOverlap: true,
+          itemStyle: { borderRadius: 6, borderColor: '#0c1445', borderWidth: 2 },
+          label: { color: '#8892b0', fontSize: 11 },
+          data: data.map(d => ({
+            name: d.name, value: d.value, total: d.total,
+            itemStyle: { color: d.value/d.total >= 0.6 ? '#6366f1' : '#ef4444' }
+          })),
+        }]
+      });
+    }
+
+    function renderDbChart() {
+      if (!dbChart.value) return;
+      if (!dbChartInst) dbChartInst = echarts.init(dbChart.value);
+      dbChartInst.setOption({
+        tooltip: { trigger: 'axis' },
+        grid: { top: 20, bottom: 40, left: 100, right: 20 },
+        xAxis: { type: 'value', axisLabel: { color: '#8892b0' } },
+        yAxis: { type: 'category',
+          data: dbMetrics.value.map(t => t.label),
+          axisLabel: { color: '#cbd5e1', fontSize: 11 } },
+        series: [{
+          type: 'bar',
+          data: dbMetrics.value.map(t => t.delta_24h),
+          itemStyle: {
+            color: p => p.value > 0 ?
+              new echarts.graphic.LinearGradient(0,0,1,0,[
+                {offset:0,color:'#6366f1'},{offset:1,color:'#a855f7'}
+              ]) : '#334155',
+            borderRadius: [0, 4, 4, 0],
+          },
+          label: { show: true, position: 'right', color: '#c4b5fd', fontSize: 11 },
+        }]
+      });
+    }
+
+    onMounted(() => {
+      refreshAll();
+      setInterval(refreshAll, 10000);
+      window.addEventListener('resize', () => {
+        daemonChartInst?.resize();
+        dbChartInst?.resize();
+      });
+    });
+
+    return {
+      daemonAlive, daemonTotal, daemonRate, daemonCats,
+      dbMetrics, healthChecks, healthScore, healthOk, healthTotal,
+      totalRows, delta24h, lastUpdate, twin,
+      daemonChart, dbChart,
+    };
+  }
+}).mount('#app');
+</script>
+{% endraw %}
+</body>
+</html>

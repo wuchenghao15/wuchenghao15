@@ -1,0 +1,601 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="csrf-token" content="{{ csrf_token or '' }}">
+<title>{{ t('auto.settings.x___mtscos_40f2a1a4') }} · MTSCOS') }}</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
+<style>
+  body{background:#f5f7fb;font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Segoe UI",Roboto,sans-serif;color:#2d3142}
+  .wrap{max-width:960px;margin:0 auto;padding:24px 16px 64px}
+  .breadcrumb{margin-bottom:16px}
+  .tag-ver{font-size:12px}
+  .hero-card{background:linear-gradient(135deg,#4a6cf7 0%,#5a7ffc 100%);color:#fff;border-radius:12px;padding:24px 28px;box-shadow:0 6px 20px rgba(74,108,247,.25)}
+  .hero-card .title,.hero-card .subtitle{color:#fff}
+  .hero-card code{background:rgba(255,255,255,.18);color:#fff;border-radius:4px;padding:2px 8px;font-size:13px}
+  .section-card{background:#fff;border-radius:12px;padding:20px 24px;box-shadow:0 2px 10px rgba(0,0,0,.04);margin-top:18px}
+  .section-card .section-title{display:flex;align-items:center;gap:8px;font-weight:600;font-size:16px;color:#4a6cf7;margin-bottom:16px;padding-bottom:10px;border-bottom:1px solid #eef0f5}
+  .field-row{display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px dashed #eef0f5}
+  .field-row:last-child{border-bottom:0}
+  .field-row .label{flex:0 0 120px;color:#6b7280;font-size:13px}
+  .field-row .control{flex:1}
+  .field-row input.input{border:1px solid #e1e4eb;border-radius:6px;font-size:14px;height:36px}
+  .field-row input.input:focus{border-color:#4a6cf7;box-shadow:0 0 0 2px rgba(74,108,247,.15)}
+  .field-row input.is-static{background:#f9fafc;border-color:transparent;color:#2d3142}
+  .btn-save{background:#4a6cf7;color:#fff;border:0;border-radius:6px;padding:8px 24px;font-size:14px;cursor:pointer;transition:all .15s}
+  .btn-save:hover{background:#3a5cf2;box-shadow:0 4px 12px rgba(74,108,247,.3)}
+  .btn-save:disabled{background:#c5ccdb;cursor:not-allowed;box-shadow:none}
+  .btn-outlined{background:#fff;color:#4a6cf7;border:1px solid #4a6cf7;border-radius:6px;padding:8px 18px;font-size:14px;cursor:pointer;text-decoration:none;display:inline-block}
+  .btn-outlined:hover{background:#eef3ff}
+  .edu-pill{display:inline-block;background:#eef3ff;color:#4a6cf7;border-radius:16px;padding:4px 14px;font-size:12px;font-weight:500;margin-right:6px}
+  .alert{border-radius:8px;padding:12px 16px;margin:14px 0;font-size:13px}
+  .alert-success{background:#e8f9ee;color:#1c7e3a;border:1px solid #b7e4c0}
+  .alert-danger{background:#fdecec;color:#c0392b;border:1px solid #f5b7b1}
+  .alert-info{background:#eef5ff;color:#1d4fb4;border:1px solid #c5d8fc}
+  .modal-card{max-width:480px;margin:auto}
+  .badge-sa{background:linear-gradient(135deg,#ffd700,#ffb300);color:#5a3b00;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:700;margin-left:8px}
+  .badge-admin{background:#eef3ff;color:#4a6cf7;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600;margin-left:8px}
+  .toast{position:fixed;top:24px;right:24px;z-index:9999;border-radius:8px;padding:14px 20px;box-shadow:0 8px 24px rgba(0,0,0,.15);font-size:14px;color:#fff;opacity:0;transition:opacity .2s}
+  .toast.show{opacity:1}
+  .toast.ok{background:#1c7e3a}
+  .toast.err{background:#c0392b}
+  .role-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:18px}
+  @media(max-width:768px){
+    .field-row{flex-direction:column;align-items:flex-start;gap:4px}
+    .field-row .label{flex:0 0 auto}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <nav class="breadcrumb" aria-label="breadcrumbs">
+    <ul>
+      <li><a href="/">{{ t('auto.settings.x_db1c89e0', default='首页') }}</a></li>
+      <li class="is-active"><a href="/settings" aria-current="page">个人设置</a></li>
+    </ul>
+  </nav>
+
+  {# ========== 顶部 Hero 卡片 ========== #}
+  <div class="hero-card">
+    <p class="title is-4 mb-2">
+      个人设置
+      {% if user.role == 'super_admin' %}<span class="badge-sa">SA</span>
+      {% elif user.role in ('admin','teacher_admin','sadmin') %}<span class="badge-admin">{{ user.role }}</span>{% endif %}
+    </p>
+    <p class="subtitle is-6 mb-3">
+      <strong style="color:#fff">{{ user.username or '未知' }}</strong>
+      &nbsp;· 角色：<strong style="color:#fff">{{ user.role or '-' }}</strong>
+      &nbsp;· ID：<code>{{ user.id or '-' }}</code>
+    </p>
+    <div>
+      <span class="edu-pill" style="background:rgba(255,255,255,.18);color:#fff">版本 {{ version or 'v22.0.0' }}</span>
+      {% if version_info and version_info.__class__.__name__ == 'dict' %}
+      <span class="edu-pill" style="background:rgba(255,255,255,.18);color:#fff">{{ version_info.get('system_version','MTSCOS v22.0.0') }}</span>
+      {% endif %}
+    </div>
+  </div>
+
+  {# ========== 通知区域 ========== #}
+  <div id="toast" class="toast"></div>
+  <div id="alert-area"></div>
+
+  {# ========== 账户信息（可编辑） ========== #}
+  <div class="section-card">
+    <div class="section-title">{{ t('auto.settings.__x_9be5cf56', default='👤 账户信息') }}</div>
+
+    <div class="field-row">
+      <div class="label">{{ t('auto.settings.x_819767ad', default='用户名') }}</div>
+      <div class="control">
+        <input class="input is-static" id="f-username" readonly value="{{ user.username or '' }}">
+      </div>
+    </div>
+
+    <div class="field-row">
+      <div class="label">{{ t('auto.settings.x_540ee7ad', default='实际角色') }}</div>
+      <div class="control">
+        <input class="input is-static" id="f-role-actual" readonly value="{{ user.role or '' }}">
+        <p class="is-size-7 has-text-grey" style="margin-top:4px">{{ t('auto.settings.x_x_185a9e9a', default='由管理员设置，不可自助修改') }}</p>
+      </div>
+    </div>
+
+    <div class="field-row">
+      <div class="label">{{ t('auto.settings.x_f8e8cf81', default='推断角色') }}</div>
+      <div class="control">
+        <div class="select">
+          <select id="f-role" disabled>
+            <option value="">{{ '- 参考 -' if not user.role else '' }}</option>
+            <option value="{{ t('auto.settings.x_35d9969d', default='学生') }}">学生</option>
+            <option value="{{ t('auto.settings.x_1ca9d263', default='大学生') }}">大学生</option>
+            <option value="{{ t('auto.settings.x_951b26a4', default='研究生') }}">研究生</option>
+            <option value="{{ t('auto.settings.x_d432fd85', default='成人学生') }}">成人学生</option>
+            <option value="{{ t('auto.settings.x_ec12f4b9') }}生') }}">文科生</option>
+            <option value="teacher">{{ t('auto.settings.x_d57b6f2f', default='教师') }}</option>
+            <option value="parent">{{ t('auto.settings.x_c8ff744f', default='家长') }}</option>
+          </select>
+        </div>
+        <p class="is-size-7 has-text-grey" style="margin-top:4px">{{ t('auto.settings.x_x_x_63e52982') }}/{{ t('auto.settings.x_2f56725e', default='年级') }}自动推断，仅供参考') }}</p>
+      </div>
+    </div>
+
+    <div class="field-row">
+      <div class="label">{{ t('auto.settings.x_3bc5e602', default='邮箱') }}</div>
+      <div class="control">
+        <input class="input" id="f-email" type="email" value="{{ user.email or '' }}" placeholder="{{ t('auto.settings.x_906ad18b') }}') }}" maxlength="120">
+      </div>
+    </div>
+
+    <div class="field-row">
+      <div class="label">{{ t('auto.settings.x_8098e2b4', default='手机号') }}</div>
+      <div class="control">
+        <input class="input" id="f-phone" type="tel" value="{{ user.phone or '' }}" placeholder="未绑定" maxlength="20">
+      </div>
+    </div>
+
+    <div class="field-row">
+      <div class="label">{{ t('auto.settings.x_762dbdc5', default='教育组别') }}</div>
+      <div class="control">
+        <input class="input is-static" id="f-education_type" readonly value="{{ user.education_type or 'K12' }}">
+        <p class="is-size-7 has-text-grey" style="margin-top:4px">
+          教育组别由管理员审批后变更，不可直接修改。
+          <a href="#" id="btn-edu-apply">{{ t('auto.settings.x___e7b34f81') }} →') }}</a>
+        </p>
+      </div>
+    </div>
+
+    <div class="field-row">
+      <div class="label">教育阶段</div>
+      <div class="control">
+        <div class="select">
+          <select id="f-education_stage" onchange="onEduStageChange()">
+            <option value="K12"  {{ 'selected' if user.education_type in ('K12','k12') else '' }}>{{ t('auto.settings.k12_x_39372b6e') }}') }}</option>
+            <option value="{{ t('auto.settings.x_66f04025') }}') }}"  {{ 'selected' if user.education_type == 'higher' else '' }}>高等教育</option>
+            <option value="{{ t('auto.settings.x_3e4bc439') }}') }}"  {{ 'selected' if user.education_type == 'adult' else '' }}>成人教育</option>
+          </select>
+        </div>
+        <p class="is-size-7 has-text-grey" style="margin-top:4px">{{ t('auto.settings.x_c7b04927', default='选择组别后自动联动年级可选项') }}</p>
+      </div>
+    </div>
+
+    <div class="field-row">
+      <div class="label">年级</div>
+      <div class="control">
+        <div class="select">
+          <select id="f-grade" onchange="onGradeChange()">
+            {# 根据当前教育组别渲染对应年级 #}
+          </select>
+        </div>
+        <p class="is-size-7 has-text-grey" style="margin-top:4px">{{ t('auto.settings.x_c7be97f3', default='年级随教育阶段自动联动') }}</p>
+      </div>
+    </div>
+
+    <div class="field-row">
+      <div class="label">{{ t('auto.settings.x_bffb1c05', default='个性签名') }}</div>
+      <div class="control">
+        <input class="input" id="f-signature" type="text" value="{{ user.signature or '' }}" placeholder="{{ t('auto.settings.x_9e26b605', default='写一句个性签名') }}" maxlength="200">
+      </div>
+    </div>
+
+    {# 教育字段一致性实时校验提示 #}
+    <div id="edu-consistency-alert"></div>
+
+    <div class="field-row">
+      <div class="label">{{ t('auto.settings.x_9f68a807', default='积分') }}</div>
+      <div class="control">
+        <input class="input is-static" readonly value="{{ user.score or 0 }}">
+      </div>
+    </div>
+
+    <div style="margin-top:18px;text-align:right">
+      <button class="btn-save" id="btn-save-profile">{{ t('auto.settings.__x_d9d03345', default='💾 保存账户信息') }}</button>
+    </div>
+  </div>
+
+  {# ========== 系统信息 ========== #}
+  <div class="section-card">
+    <div class="section-title">{{ t('auto.settings.___x_7adee5f7', default='⚙️ 系统信息') }}</div>
+    <div class="field-row">
+      <div class="label">{{ t('auto.settings.x_1857e702', default='系统版本') }}</div>
+      <div class="control">
+        <code style="font-size:13px">{{ version or 'v22.0.0' }}</code>
+      </div>
+    </div>
+    {% if version_info and version_info.__class__.__name__ == 'dict' %}
+    <div class="field-row">
+      <div class="label">{{ t('auto.settings.x_5ee4c457', default='构建详情') }}</div>
+      <div class="control" style="font-size:13px;color:#6b7280">
+        {% for k, v in version_info.items() if k not in ('system_version',) %}
+        <code style="font-size:12px">{{ k }}</code>=<code style="font-size:12px">{{ v }}</code>{% if not loop.last %} &nbsp;{% endif %}
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+    <div class="field-row">
+      <div class="label">{{ t('auto.settings.x_x__8f6c1fb0', default='用户名(小写)') }}</div>
+      <div class="control">
+        <code style="font-size:13px">{{ (user.username or '')|lower }}</code>
+      </div>
+    </div>
+    <div class="field-row">
+      <div class="label">{{ t('auto.settings.ssl_x_0fd7b831', default='SSL 绑定状态') }}</div>
+      <div class="control">
+        <code style="font-size:13px">{{ user.ssl_binding_status or 'unbound' }}</code>
+        <span class="is-size-7 has-text-grey">(绑定 {{ user.ssl_binding_count or 0 }} 次{% if user.ssl_grace_period_until %}, 宽限期至 {{ user.ssl_grace_period_until }}{% endif %})</span>
+      </div>
+    </div>
+  </div>
+
+  {# ========== 安全操作 ========== #}
+  <div class="section-card">
+    <div class="section-title">{{ t('auto.settings.__x_6981c3d6', default='🔒 安全操作') }}</div>
+    <div class="field-row">
+      <div class="label">{{ t('auto.settings.x_a8105204', default='密码') }}</div>
+      <div class="control">
+        <code style="font-size:13px">•••••••</code>
+        &nbsp;<a href="#" id="btn-change-password">{{ t('auto.settings.x_7fc88aee') }}') }}</a>
+      </div>
+    </div>
+    <div class="field-row">
+      <div class="label">{{ t('auto.settings.x_a7df2af0', default='指纹登录') }}</div>
+      <div class="control">
+        <code style="font-size:13px">{{ t('auto.settings.___if_user_f_68b5c4b9', default='{% if user.fingerprint_enabled %}已启用{% else %}未启用{% endif %}') }}</code>
+      </div>
+    </div>
+  </div>
+
+  {# ========== 角色感知操作按钮 ========== #}
+  <div class="role-actions">
+    {% set role_lc = (user.role or '')|lower %}
+    {% if role_lc == 'super_admin' %}
+      <a class="btn-outlined" href="/smart_dashboard">{{ t('auto.settings.__x_d1740ea6') }}') }}') }}</a>
+      <a class="btn-outlined" href="/admin_app/dashboard_unified">{{ t('auto.settings.___x_f0bcabdc') }}') }}</a>
+    {% elif role_lc in ('admin','sadmin','school_admin','sysadmin','teacher_admin','ai_manager','cluster_manager','question_manager','exam_proctor','hardware_admin') %}
+      <a class="btn-outlined" href="/admin_app/dashboard_unified">🛠️ 管理后台</a>
+      <a class="btn-outlined" href="/smart_dashboard">📊 系统总览</a>
+    {% else %}
+      <a class="btn-outlined" href="/student_portal">{{ t('auto.settings.__x_312a7900', default='🎒 我的门户') }}</a>
+      <a class="btn-outlined" href="/smart_dashboard">📊 系统总览</a>
+    {% endif %}
+    <a class="btn-outlined" href="/" style="border-color:#6b7280;color:#6b7280">{{ t('auto.settings.__x_301e5754', default='🏠 返回首页') }}</a>
+  </div>
+
+</div>
+
+{# ========== 教育组别变更 Modal ========== #}
+<div class="modal" id="modal-edu">
+  <div class="modal-background" id="edu-modal-bg"></div>
+  <div class="modal-card">
+    <header class="modal-card-head">
+      <p class="modal-card-title">申请变更教育组别</p>
+      <button class="delete" id="edu-modal-close" aria-label="close"></button>
+    </header>
+    <section class="modal-card-body">
+      <p class="is-size-7 has-text-grey mb-3" style="line-height:1.6">
+        教育组别变更需通过年龄校验 + 管理员审批。请选择您要申请的新组别：
+      </p>
+      <div class="field">
+        <label class="label">{{ t('auto.settings.x_401ea1f9', default='新教育组别') }}</label>
+        <div class="control">
+          <div class="select">
+            <select id="f-edu-new">
+              <option value="K12">K12 基础教育</option>
+              <option value="gaokao">{{ t('auto.settings.x_4e3edae5', default='高考冲刺') }}</option>
+              <option value="higher">高等教育</option>
+              <option value="adult">成人教育</option>
+              <option value="arts">文科</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div id="edu-result" style="margin-top:12px"></div>
+    </section>
+    <footer class="modal-card-foot">
+      <button class="btn-save" id="btn-edu-submit">{{ t('auto.settings.x_0830b48d', default='提交申请') }}</button>
+      <button class="btn-outlined" id="btn-edu-cancel" style="border-color:#6b7280;color:#6b7280">{{ t('auto.settings.x_625fb26b') }}') }}</button>
+    </footer>
+  </div>
+</div>
+
+{# ========== 修改密码 Modal ========== #}
+<div class="modal" id="modal-pwd">
+  <div class="modal-background" id="pwd-modal-bg"></div>
+  <div class="modal-card">
+    <header class="modal-card-head">
+      <p class="modal-card-title">修改密码</p>
+      <button class="delete" id="pwd-modal-close" aria-label="close"></button>
+    </header>
+    <section class="modal-card-body">
+      <div class="field">
+        <label class="label">{{ t('auto.settings.x_a806ce95', default='当前密码') }}</label>
+        <div class="control"><input class="input" id="pwd-old" type="password" placeholder="{{ t('auto.settings.x_f3cbe4bf', default='输入当前密码') }}"></div>
+      </div>
+      <div class="field">
+        <label class="label">{{ t('auto.settings.x_bf7da0bf', default='新密码') }}</label>
+        <div class="control"><input class="input" id="pwd-new" type="password" placeholder="{{ t('auto.settings._8x_x_x_83af698a', default='≥8位 含字母+数字') }}"></div>
+      </div>
+      <div class="field">
+        <label class="label">{{ t('auto.settings.x_670d631e', default='确认新密码') }}</label>
+        <div class="control"><input class="input" id="pwd-confirm" type="password" placeholder="{{ t('auto.settings.x_ec7b7324', default='再次输入新密码') }}"></div>
+      </div>
+      <div id="pwd-result" style="margin-top:8px"></div>
+    </section>
+    <footer class="modal-card-foot">
+      <button class="btn-save" id="btn-pwd-submit">{{ t('auto.settings.x_49e56c7b', default='确认修改') }}</button>
+      <button class="btn-outlined" id="btn-pwd-cancel" style="border-color:#6b7280;color:#6b7280">取消</button>
+    </footer>
+  </div>
+</div>
+
+<script>
+// ---- Toast 通知 ----
+function toast(msg, type) {
+  var el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'toast ' + (type === 'ok' ? 'ok' : (type === 'err' ? 'err' : ''));
+  el.classList.add('show');
+  setTimeout(function(){ el.classList.remove('show'); }, 3500);
+}
+
+// ---- CSRF token 取自 meta / cookie（路由已下发）----
+function getCsrf() {
+  // 1. meta 标签
+  var m = document.querySelector('meta[name="csrf-token"]');
+  if (m) return m.getAttribute('content');
+  // 2. cookie
+  var c = document.cookie.match(/csrf[_-]?token=([^;]+)/i);
+  if (c) return decodeURIComponent(c[1]);
+  // 3. sessionStorage（部分页面会注入）
+  try { return sessionStorage.getItem('csrf_token') || ''; } catch(e) { return ''; }
+}
+
+// ---- 教育组别3档 ↔ 年级 联动 ----
+// 组别 → 对应年级选项
+var TIER_GRADES = {
+  'K12':      ['一年级','二年级','三年级','四年级','五年级','六年级','初一','初二','初三','高一','高二','高三'],
+  'higher':   ['大一','大二','大三','大四','研一','研二','研三'],
+  'adult':    ['第一年','第二年','第三年','第四年'],
+};
+// 年级 → 对应组别（反向推断）
+var GRADE_TIER = {};
+TIER_GRADES['K12'].forEach(function(g){ GRADE_TIER[g] = 'K12'; });
+TIER_GRADES['higher'].forEach(function(g){ GRADE_TIER[g] = 'higher'; });
+TIER_GRADES['adult'].forEach(function(g){ GRADE_TIER[g] = 'adult'; });
+// 组别中文名映射
+var TIER_CN = {'K12':'K12 基础教育','higher':'高等教育','adult':'成人教育'};
+// 组别 ↔ 教育阶段select值 映射
+var TIER_STAGE = {'K12':'K12','higher':'高等教育','adult':'成人教育'};
+var STAGE_TIER = {'K12':'K12','高等教育':'higher','成人教育':'adult'};
+
+// 教育阶段变化 → 重填年级可选项
+function onEduStageChange() {
+  var stage = document.getElementById('f-education_stage').value;
+  var tier = STAGE_TIER[stage] || stage;
+  var gradeSel = document.getElementById('f-grade');
+  var grades = TIER_GRADES[tier] || TIER_GRADES['K12'];
+  var prev = gradeSel.value;
+  gradeSel.innerHTML = '';
+  grades.forEach(function(g){
+    var opt = document.createElement('option'); opt.value=g; opt.textContent=g;
+    if (g === prev) opt.selected = true;
+    gradeSel.appendChild(opt);
+  });
+  if (grades.indexOf(prev) === -1) { gradeSel.value = grades[0]; }
+  renderEduAlert();
+  updateInferredRole();
+}
+// 年级变化 → 自动联动教育阶段
+function onGradeChange() {
+  var grade = document.getElementById('f-grade').value;
+  var tier = GRADE_TIER[grade];
+  if (tier) {
+    var stageSel = document.getElementById('f-education_stage');
+    var expectedStage = TIER_STAGE[tier];
+    if (stageSel.value !== expectedStage) {
+      stageSel.value = expectedStage;
+    }
+  }
+  renderEduAlert();
+  updateInferredRole();
+}
+// 页面加载时根据当前组别初始化年级选项
+function initGradeOptions() {
+  var eduType = (document.getElementById('f-education_type').value || 'K12').trim();
+  var tier = eduType.toLowerCase() === 'k12' ? 'K12' : eduType;
+  var gradeSel = document.getElementById('f-grade');
+  var curGrade = gradeSel.value || '{{ user.grade or "" }}';
+  var grades = TIER_GRADES[tier] || TIER_GRADES['K12'];
+  gradeSel.innerHTML = '';
+  grades.forEach(function(g){
+    var opt = document.createElement('option'); opt.value=g; opt.textContent=g;
+    if (g === curGrade) opt.selected = true;
+    gradeSel.appendChild(opt);
+  });
+  if (grades.indexOf(curGrade) === -1 && curGrade) {
+    var opt = document.createElement('option'); opt.value=curGrade; opt.textContent=curGrade+' (当前)'; opt.selected=true;
+    gradeSel.insertBefore(opt, gradeSel.firstChild);
+  }
+  // 同步教育阶段select
+  var stageSel = document.getElementById('f-education_stage');
+  var expectedStage = TIER_STAGE[tier] || 'K12';
+  if (stageSel.value !== expectedStage) stageSel.value = expectedStage;
+}
+
+// ---- 教育字段一致性校验 ----
+// 3档: K12 / higher / adult
+function checkEducationConsistency() {
+  var grade = (document.getElementById('f-grade').value || '').trim();
+  var eduType = (document.getElementById('f-education_type').value || 'K12').trim();
+  var issues = [];
+  var tier = eduType.toLowerCase() === 'k12' ? 'K12' : eduType;
+  var expectedGrades = TIER_GRADES[tier] || [];
+  if (grade && expectedGrades.indexOf(grade) === -1) {
+    issues.push('年级"' + grade + '"不属于' + TIER_CN[tier] + '组别，当前组别可选：' + expectedGrades.join('、'));
+  }
+  return issues;
+}
+function renderEduAlert() {
+  var issues = checkEducationConsistency();
+  var el = document.getElementById('edu-consistency-alert');
+  if (!el) return;
+  if (issues.length === 0) {
+    el.innerHTML = '<div class="alert alert-success" style="margin:8px 0">{{ t('auto.settings.__x_7330a6e2', default='✅ 教育字段一致性校验通过') }}</div>';
+  } else {
+    el.innerHTML = '<div class="alert alert-danger" style="margin:8px 0">⚠️ ' + issues.join('<br>⚠️ ') + '<br><span style="font-size:11px;color:#6b7280">{{ t('auto.settings.x_x__155079cd', default='教育组别需审批变更，当前年级请调整到对应组别范围内。') }}</span></div>';
+  }
+}
+
+// ---- 推断角色联动（根据组别 + 年级自动推断）----
+function inferRoleFromEdu(tier, grade) {
+  tier = (tier || '').toLowerCase() === 'k12' ? 'K12' : (tier || '');
+  if (grade) {
+    if (/研[一二三]/.test(grade)) return '研究生';
+    if (/大[一二三四五]/.test(grade)) return '大学生';
+    if (/第[一二三四]年/.test(grade)) return '成人学生';
+    if (/高[一二三]/.test(grade)) return '高中生';
+    if (/初[一二三]/.test(grade)) return '初中生';
+    if (/小[一二三四五六]/.test(grade)) return '小学生';
+  }
+  if (tier === 'K12') return 'K12学生';
+  if (tier === 'higher') return '大学生';
+  if (tier === 'adult') return '成人学生';
+  return '';
+}
+function updateInferredRole() {
+  var eduType = (document.getElementById('f-education_type').value || 'K12').trim();
+  var tier = eduType.toLowerCase() === 'k12' ? 'K12' : eduType;
+  var grade = document.getElementById('f-grade').value;
+  var inferred = inferRoleFromEdu(tier, grade);
+  var roleSel = document.getElementById('f-role');
+  if (roleSel) {
+    var found = false;
+    for (var i = 0; i < roleSel.options.length; i++) {
+      if (roleSel.options[i].value === inferred || roleSel.options[i].text === inferred) {
+        roleSel.selectedIndex = i; found = true; break;
+      }
+    }
+    if (!found && inferred) {
+      var opt = document.createElement('option');
+      opt.value = inferred; opt.textContent = inferred + ' (推断)';
+      roleSel.appendChild(opt);
+      roleSel.value = inferred;
+    }
+  }
+}
+
+// 页面加载
+document.addEventListener('DOMContentLoaded', function(){
+  initGradeOptions();
+  renderEduAlert();
+  updateInferredRole();
+});
+['f-grade','f-education_stage'].forEach(function(id){
+  var el = document.getElementById(id);
+  if (el) el.addEventListener('change', function(){ renderEduAlert(); updateInferredRole(); });
+});
+
+// ---- 保存账户信息（不含education_type，组别锁定走审批）----
+document.getElementById('btn-save-profile').addEventListener('click', function() {
+  var btn = this; btn.disabled = true; btn.textContent = '⏳ 保存中...';
+  var issues = checkEducationConsistency();
+  if (issues.length > 0) {
+    toast('❌ ' + issues[0], 'err');
+    renderEduAlert();
+    btn.disabled = false; btn.textContent = '💾 保存账户信息';
+    return;
+  }
+  var payload = {
+    email: document.getElementById('f-email').value.trim(),
+    phone: document.getElementById('f-phone').value.trim(),
+    grade: document.getElementById('f-grade').value.trim(),
+    education_stage: document.getElementById('f-education_stage').value.trim(),
+    signature: document.getElementById('f-signature').value.trim()
+  };
+  fetch('/api/student/save_profile', {
+    method: 'POST', credentials: 'same-origin',
+    headers: {'Content-Type':'application/json','X-CSRFToken':getCsrf(),'X-Requested-With':'XMLHttpRequest'},
+    body: JSON.stringify(payload)
+  })
+  .then(function(r){ return r.json().then(function(d){ return {ok:r.ok, data:d}; }); })
+  .then(function(r){
+    if (r.data && r.data.success) {
+      toast('✅ 账户信息已保存', 'ok');
+      updateInferredRole();
+      renderEduAlert();
+    } else {
+      toast('❌ ' + (r.data && (r.data.message || r.data.error)) || '保存失败', 'err');
+    }
+  })
+  .catch(function(e){ toast('网络错误：' + e, 'err'); })
+  .finally(function(){ btn.disabled = false; btn.textContent = '💾 保存账户信息'; });
+});
+
+// ---- 教育组别申请 Modal ----
+var modalEdu = document.getElementById('modal-edu');
+function openEduModal(){ modalEdu.classList.add('is-active'); document.getElementById('edu-result').innerHTML=''; }
+function closeEduModal(){ modalEdu.classList.remove('is-active'); }
+document.getElementById('btn-edu-apply').addEventListener('click', function(e){ e.preventDefault(); openEduModal(); });
+document.getElementById('edu-modal-close').addEventListener('click', closeEduModal);
+document.getElementById('edu-modal-bg').addEventListener('click', closeEduModal);
+document.getElementById('btn-edu-cancel').addEventListener('click', closeEduModal);
+document.getElementById('btn-edu-submit').addEventListener('click', function() {
+  var newEdu = document.getElementById('f-edu-new').value;
+  var btn = this; btn.disabled = true; btn.textContent = '⏳ 提交中...';
+  fetch('/api/student/apply_education_type', {
+    method: 'POST', credentials: 'same-origin',
+    headers: {'Content-Type':'application/json','X-CSRFToken':getCsrf(),'X-Requested-With':'XMLHttpRequest'},
+    body: JSON.stringify({new_education_type: newEdu, reason: document.getElementById('f-edu-reason').value || ''})
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(d){
+    var el = document.getElementById('edu-result');
+    if (d.success) {
+      el.innerHTML = '<div class="alert alert-success">{{ t('auto.settings.__x_x______d_e3c5c554') }}</div>';
+      toast('✅ 教育组别申请已提交', 'ok');
+    } else {
+      el.innerHTML = '<div class="alert alert-danger">{{ t('auto.settings._______d_mes_5d0c50dd') }}</div>';
+    }
+  })
+  .catch(function(e){ toast('网络错误：' + e, 'err'); })
+  .finally(function(){ btn.disabled = false; btn.textContent = '提交申请'; });
+});
+
+// ---- 修改密码 Modal ----
+var modalPwd = document.getElementById('modal-pwd');
+function openPwdModal(){ modalPwd.classList.add('is-active'); document.getElementById('pwd-result').innerHTML=''; }
+function closePwdModal(){ modalPwd.classList.remove('is-active'); }
+document.getElementById('btn-change-password').addEventListener('click', function(e){ e.preventDefault(); openPwdModal(); });
+document.getElementById('pwd-modal-close').addEventListener('click', closePwdModal);
+document.getElementById('pwd-modal-bg').addEventListener('click', closePwdModal);
+document.getElementById('btn-pwd-cancel').addEventListener('click', closePwdModal);
+document.getElementById('btn-pwd-submit').addEventListener('click', function() {
+  var old = document.getElementById('pwd-old').value;
+  var ne1 = document.getElementById('pwd-new').value;
+  var ne2 = document.getElementById('pwd-confirm').value;
+  var el = document.getElementById('pwd-result');
+  if (!old || !ne1) { el.innerHTML = '<div class="alert alert-danger">{{ t('auto.settings.x_9e26a70f', default='请填写当前密码和新密码') }}</div>'; return; }
+  if (ne1 !== ne2) { el.innerHTML = '<div class="alert alert-danger">{{ t('auto.settings.x_b8573f93', default='两次新密码不一致') }}</div>'; return; }
+  if (ne1.length < 8) { el.innerHTML = '<div class="alert alert-danger">{{ t('auto.settings.x_8_x_ac806d9b', default='新密码至少 8 位') }}</div>'; return; }
+  el.innerHTML = '<div class="alert alert-info">{{ t('auto.settings.___x____d76432a4', default='ℹ️ 当前密码校验中...') }}</div>';
+  // 步骤1：用 /auth/check_password 校验当前密码
+  fetch('/auth/check_password', {
+    method: 'POST', credentials: 'same-origin',
+    headers: {'Content-Type':'application/json','X-CSRFToken':getCsrf(),'X-Requested-With':'XMLHttpRequest'},
+    body: JSON.stringify({username: document.getElementById('f-username').value, password: old})
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(d){
+    if (!d.matches) {
+      el.innerHTML = '<div class="alert alert-danger">{{ t('auto.settings.__x_8a37b5d1', default='❌ 当前密码错误') }}</div>';
+      return;
+    }
+    el.innerHTML = '<div class="alert alert-info">{{ t('auto.settings.___x_x__auth_4e27dd72', default='ℹ️ 校验通过，请联系管理员或访问 /auth/forgot_password 完成密码重置。') }}<br>{{ t('auto.settings.x_x__x_f09d09d4', default='系统暂未开放在线自助改密（防滥用），如需自助请前往') }} <a href="/auth/forgot_password">{{ t('auto.settings.x_0974fb72', default='忘记密码') }}</a> {{ t('auto.settings.x__1762dd65', default='流程。') }}</div>';
+  })
+  .catch(function(e){ el.innerHTML = '<div class="alert alert-danger">{{ t('auto.settings.x_____e_____959ccfc1') }}</div>'; });
+});
+
+// 暴露全局版本号（兼容旧脚本）
+window.__ver = "{{ version or '' }}";
+</script>
+</body>
+</html>

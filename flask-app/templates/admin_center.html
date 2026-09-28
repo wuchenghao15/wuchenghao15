@@ -1,0 +1,162 @@
+{% extends "admin_app/base.html" %}
+
+{% block title %}管理中心 · SA{% endblock %}
+
+{% block extra_head %}
+<style>
+  .admin-center-wrap { max-width: 1280px; margin: 0 auto; padding: 24px; }
+  .admin-center-wrap h1.page-title {
+    text-align: center; margin: 0 0 28px; font-size: 28px; font-weight: 800;
+    color: var(--el-text-color-primary, #f8fafc); letter-spacing: 1px;
+  }
+  .stats-bar { display: flex; gap: 16px; margin-bottom: 28px; flex-wrap: wrap; }
+  .stat-item {
+    flex: 1; min-width: 140px; background: var(--el-bg-color, #fff);
+    border: 1px solid var(--el-border-color, #e4e7ed);
+    border-radius: 14px; padding: 20px; text-align: center;
+    box-shadow: 0 4px 16px -8px rgba(0,0,0,.3); transition: transform .2s;
+  }
+  .stat-item:hover { transform: translateY(-3px); }
+  .stat-item .number {
+    font-size: 30px; font-weight: 800; line-height: 1.2;
+    background: linear-gradient(135deg, var(--el-color-primary, #409eff), var(--el-color-primary-light-3, #79bbff));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  }
+  .stat-item .label { font-size: 12px; color: var(--el-text-color-secondary, #909399); margin-top: 6px; }
+  .admin-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 18px;
+  }
+  .admin-card {
+    background: var(--el-bg-color, #fff); border: 1px solid var(--el-border-color, #e4e7ed);
+    border-radius: 14px; padding: 22px; box-shadow: 0 4px 16px -8px rgba(0,0,0,.3);
+    transition: transform .2s, box-shadow .2s; display: flex; flex-direction: column;
+  }
+  .admin-card:hover { transform: translateY(-4px); box-shadow: 0 10px 28px -10px rgba(0,0,0,.45); }
+  .admin-card .icon { font-size: 36px; margin-bottom: 12px; }
+  .admin-card h3 { color: var(--el-text-color-primary, #303133); margin: 0 0 8px; font-size: 16px; font-weight: 700; }
+  .admin-card p { color: var(--el-text-color-secondary, #909399); font-size: 13px; margin: 0 0 16px; line-height: 1.5; }
+  .admin-card .btn-group { display: flex; gap: 8px; flex-wrap: wrap; margin-top: auto; }
+  .btn {
+    display: inline-block; padding: 8px 16px; font-size: 12px; font-weight: 600;
+    border-radius: 8px; text-decoration: none; color: #fff; border: none; cursor: pointer;
+    transition: opacity .2s, transform .1s;
+  }
+  .btn:hover { opacity: .9; }
+  .btn:active { transform: scale(.97); }
+  .btn-primary { background: linear-gradient(135deg, var(--el-color-primary, #409eff), var(--el-color-primary-light-1, #66b1ff)); }
+  .btn-success { background: linear-gradient(135deg, var(--el-color-success, #67c23a), var(--el-color-success-light-1, #85ce61)); }
+  .btn-warning { background: linear-gradient(135deg, var(--el-color-warning, #e6a23c), var(--el-color-warning-light-1, #ebb563)); }
+  .btn-info { background: linear-gradient(135deg, var(--el-color-info, #909399), var(--el-color-info-light-1, #a6a9ad)); }
+  .back-link { display: block; text-align: center; margin-top: 28px; color: var(--el-text-color-secondary, #909399); font-size: 13px; text-decoration: none; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="admin-center-wrap">
+    <h1 class="page-title">{{ t('auto.admin_center.__x_48b5a4c6', default='🏢 管理中心') }}</h1>
+
+    <div class="stats-bar">
+        <div class="stat-item">
+            <div class="number">{{ total_users }}</div>
+            <div class="label">{{ t('auto.admin_center.x_1149274c', default='用户总数') }}</div>
+        </div>
+        <div class="stat-item">
+            <div class="number">{{ total_categories }}</div>
+            <div class="label">{{ t('auto.admin_center.x_53dbe9f3', default='题目分类') }}</div>
+        </div>
+        <div class="stat-item">
+            <div class="number">{{ total_exams }}</div>
+            <div class="label">{{ t('auto.admin_center.x_9ee8811c', default='考试数量') }}</div>
+        </div>
+        <div class="stat-item">
+            <div class="number">{{ total_courses }}</div>
+            <div class="label">{{ t('auto.admin_center.x_3ceeed7f', default='课程数量') }}</div>
+        </div>
+    </div>
+
+    <div class="admin-grid">
+        <div class="admin-card">
+            <div class="icon">👥</div>
+            <h3>{{ t('auto.admin_center.x_7d94de1c', default='用户管理') }}</h3>
+            <p>{{ t('auto.admin_center.x_x_9f0d4be1', default='管理系统用户、角色和权限') }}</p>
+            <div class="btn-group">
+                <a href="/admin_app/users" class="btn btn-primary">{{ t('auto.admin_center.x_9519f420', default='查看用户') }}</a>
+                <a href="/admin_app/user_auth" class="btn btn-info">{{ t('auto.admin_center.x_23bbdd59', default='权限管理') }}</a>
+            </div>
+        </div>
+
+        <div class="admin-card">
+            <div class="icon">📝</div>
+            <h3>{{ t('auto.admin_center.x_0b90a077', default='考试管理') }}</h3>
+            <p>{{ t('auto.admin_center.x_x_f3838be6', default='创建、编辑和管理考试') }}</p>
+            <div class="btn-group">
+                <a href="/admin_app/exams" class="btn btn-primary">{{ t('auto.admin_center.x_c15365f0', default='考试列表') }}</a>
+                <a href="/exam_system" class="btn btn-success">{{ t('auto.admin_center.x_7f21e009', default='在线考试') }}</a>
+            </div>
+        </div>
+
+        <div class="admin-card">
+            <div class="icon">📚</div>
+            <h3>{{ t('auto.admin_center.x_6e598bc7', default='课程管理') }}</h3>
+            <p>{{ t('auto.admin_center.x_d5493c99') }}') }}</p>
+            <div class="btn-group">
+                <a href="/admin_app/courses" class="btn btn-primary">{{ t('auto.admin_center.x_38c9af3a', default='课程列表') }}</a>
+                <a href="/admin_app/learning_paths" class="btn btn-info">学习路径</a>
+            </div>
+        </div>
+
+        <div class="admin-card">
+            <div class="icon">📊</div>
+            <h3>{{ t('auto.admin_center.x_6450d843') }}') }}</h3>
+            <p>{{ t('auto.admin_center.x_6f451c9e', default='查看系统数据统计和分析') }}</p>
+            <div class="btn-group">
+                <a href="/admin_app/data_analysis" class="btn btn-primary">数据分析</a>
+                <a href="/admin_app/student_analytics" class="btn btn-success">{{ t('auto.admin_center.x_b3e19f0d', default='学生分析') }}</a>
+            </div>
+        </div>
+
+        <div class="admin-card">
+            <div class="icon">🔔</div>
+            <h3>{{ t('auto.admin_center.x_f1c9a81f', default='通知管理') }}</h3>
+            <p>{{ t('auto.admin_center.x_020347a5', default='发送系统通知和公告') }}</p>
+            <div class="btn-group">
+                <a href="/admin_app/notifications" class="btn btn-primary">{{ t('auto.admin_center.x_3a955e29', default='通知中心') }}</a>
+                <a href="/admin_app/settings" class="btn btn-warning">{{ t('auto.admin_center.x_14097695') }}') }}</a>
+            </div>
+        </div>
+
+        <div class="admin-card">
+            <div class="icon">💾</div>
+            <h3>{{ t('auto.admin_center.x_6478fcbd') }}') }}</h3>
+            <p>{{ t('auto.admin_center.x_b0e60c24', default='管理系统资源和文件') }}</p>
+            <div class="btn-group">
+                <a href="/admin_app/resource_manager" class="btn btn-primary">资源管理</a>
+                <a href="/admin_app/monitor" class="btn btn-info">{{ t('auto.admin_center.x_c8462788', default='系统监控') }}</a>
+            </div>
+        </div>
+
+        <div class="admin-card">
+            <div class="icon">🤖</div>
+            <h3>{{ t('auto.admin_center.aix_9f4e1103', default='AI功能') }}</h3>
+            <p>{{ t('auto.admin_center.xaix_f9ed5548', default='管理AI智能功能') }}</p>
+            <div class="btn-group">
+                <a href="/admin_app/ai_intelligent_center" class="btn btn-primary">{{ t('auto.admin_center.aix_35e1fbb7', default='AI中心') }}</a>
+                <a href="/ai-chat" class="btn btn-success">{{ t('auto.admin_center.aix_44c4cf6b', default='AI聊天') }}</a>
+            </div>
+        </div>
+
+        <div class="admin-card">
+            <div class="icon">🔧</div>
+            <h3>{{ t('auto.admin_center.x_e58e3369', default='系统维护') }}</h3>
+            <p>{{ t('auto.admin_center.x_ce2917e8', default='系统设置和维护') }}</p>
+            <div class="btn-group">
+                <a href="/admin_app/settings" class="btn btn-primary">系统设置</a>
+                <a href="/admin_app/health_monitor" class="btn btn-warning">{{ t('auto.admin_center.x_0d77cf1f', default='健康监控') }}</a>
+            </div>
+        </div>
+    </div>
+
+    <a href="/" class="back-link">{{ t('auto.admin_center.__x_bfa6f584', default='← 返回首页') }}</a>
+</div>
+{% endblock %}

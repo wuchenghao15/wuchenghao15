@@ -1,0 +1,284 @@
+---
+alwaysApply: true
+---
+<!-- RULE_META_START
+RULE_ID: MT_RULE_VERSION
+RULE_NAME: 版本升级规则
+RULE_LEVEL: L1 核心
+RULE_VERSION: v1.1.0
+EFFECTIVE_DATE: 2026-08-22
+STATUS: ACTIVE
+VIOLATION_CODE: VERSION-RULE-VIOLATION
+INTERCEPT_LAYERS: [pre_commit, before_request, ci_check, git_hook]
+RESPONSIBLE_ROLE: super_admin
+DEPENDS_ON: [MT_IRON_RULE_12STEPS, MT_RULE_GOVERNANCE]
+MODIFY_APPROVAL_FLOW: 7_STEP (提议→2管理员同意→EigenFlux 5人磋商≥4/5→SA终审→保密撤回)
+BYPASS_ALLOWED: false
+LAST_CHANGED: 2026-09-17
+RULE_META_END -->
+<!-- WEAK_CONSTRAINT_CLEAR: 0处 | TRIGGER_BLOCK_DEFINED: 10处 -->
+# 项目版本升级机制规则文档
+
+## 版本号规则定义
+
+当前运行时权威格式为 `MAJOR.MINOR.PATCH`，由 `flask-app/VERSION` 和
+`flask-app/core/version_source.py` 提供。本文早期的日期型四段版本示例仅保留作历史记录，
+不得用于新版本或修改 `VERSION` 文件。
+
+### 一级版本号 (Major)
+- **规则**: 手动增加
+- **示例**: 1.x.x.x → 2.x.x.x
+- **使用场景**: 重大架构变更、破坏性 API 变更、核心功能重构
+
+### 二级版本号 (Minor)
+- **规则**: 向后兼容的新功能
+- **示例**: 22.2.0 → 22.3.0
+- **使用场景**: 新增功能或兼容性扩展
+
+### 三级版本号 (Patch)
+- **规则**: 向后兼容的错误修复和小幅优化
+- **示例**: 22.2.0 → 22.2.1
+- **使用场景**: Bug 修复和不改变 API 契约的优化
+
+### 构建标识
+- **规则**: 构建时间和流水线编号记录在发布元数据中，不拼接到运行时版本号
+- **示例**: `build_number=20260906a`
+- **使用场景**: 区分同一 SemVer 下的构建产物
+
+## 版本升级触发条件
+
+| 升级类型 | 触发条件 | 版本号变化 |
+|---------|---------|----------|
+| 自动升级 | 检测到代码变更 | 根据变更规模自动判断 |
+| 功能升级 | 新增向后兼容功能 | 增加二级版本号 |
+| 修复升级 | 错误修复或兼容优化 | 增加三级版本号 |
+| 构建标识 | 生成新的构建产物 | 只更新构建元数据 |
+| 手动升级 | 开发者操作 | 增加一级版本号 |
+
+## 版本号格式
+
+```
+major.minor.patch
+```
+
+- **major**: 一级版本号 (手动增加)
+- **minor**: 向后兼容的新功能
+- **patch**: 向后兼容的修复和优化
+- **build**: 仅作为发布元数据，不进入 SemVer 字符串
+
+## 示例版本号（以三段 SemVer 为准，旧四段格式已废弃）
+
+| 场景 | 版本号 | 说明 |
+|------|--------|------|
+| 初始版本 | 1.0.0 | 三段 SemVer 起点 |
+| 日常开发 | 22.3.0 → 22.3.1 | patch bump |
+| 新增功能 | 22.3.1 → 22.4.0 | minor bump |
+| 架构重构 | 22.4.0 → 23.0.0 | major bump |
+| 紧急安全修复 | 22.4.0 → 22.4.1 | patch bump + `[SECURITY]` 标签 |
+
+> ⚠️ 旧文档中的四段格式（`1.20260118.0.xxxxx`）已由 RULE_META v1.0.0 声明废弃，
+> 任何代码修改或文档更新**不得**再引用旧格式。违反按 `VERSION-RULE-VIOLATION` 落库。
+
+## §3 强制约束条款（v1.1.0 新增，仙女座联动）
+
+### 3.1 版本号语义铁律（FORCE，不可绕过）
+
+| # | 约束 | 违反判定 | 仙女座联动 |
+|---|------|---------|-----------|
+| V-01 | **必须**使用三段 `MAJOR.MINOR.PATCH`，**不得**用四段日期型 | 版本号包含 `YYYYMMDD` 或 `build_number` 进入 SemVer 字符串 | rule_knowledge 扫描到 → 自动触发 evolution_log `version_format_error` |
+| V-02 | MAJOR bump **必须**附带 EigenFlux 5人磋商记录 + mt_rule_changelog approved_by_7step=1 | 无磋商 / changelog 缺失就 bump major | 仙女座 auto_evolution 跳过此阶段，等待人工补录 |
+| V-03 | **禁止**用同一 patch 版本号发布不同代码 | Git tag 相同 commit 不同 → reject push | 仙女座 rule_knowledge 标记旧版本为 STALE |
+| V-04 | 升级**必须**写 mt_rule_changelog 记录 | 变更但 changelog 缺失 → 拦截 before_request | evolution_log 触发 `version_missing_changelog` |
+| V-05 | **不得**在 git tag 之外的地方存储运行时版本号 | 除 `flask-app/VERSION` + `VERSION` git tag 外 | — |
+| V-06 | 降级（版本号减小）**必须** SA VIKEY 实时检测 | 降级请求无 VIKEY 绑定 → 自动 fail-closed | evolution_log 记录为安全事件 |
+| V-07 | 仙女座 auto_evolution 连续 3 次失败 → **强制** patch bump + `[EVOLUTION-FIX]` 标签 | 连续失败不 bump → daemon 心跳中断 | smart_mount_engine 触发 fail_repair + patch bump |
+| V-08 | mt_andromeda_rule_knowledge 更新 ≥ 50 条规则分块 → **强制** minor bump + `[RULE-REFRESH]` 标签 | rule_knowledge 显著更新不 bump | — |
+| V-09 | VIKEY 加密狗固件升级 → **强制** patch bump + `[SECURITY]` 标签 | 固件升级无版本 bump | — |
+| V-10 | 任何含 `major=1` / `breaking_change=1` 的 PR → **强制** major bump | breaking PR 只 bump minor | EigenFlux auto_consult 自动追加磋商任务 |
+
+### 3.2 自动触发版本 bump 的事件清单（仙女座 → 规则引擎闭环）
+
+| 触发源 | 条件 | 最小 bump | 标签 | 拦截层 |
+|--------|------|-----------|------|--------|
+| mt_ai_self_evolution_log | evolution_error_count ≥ 3 / 24h | patch | `[EVOLUTION-FIX]` | pre_commit + daemon heartbeat |
+| mt_andromeda_rule_knowledge | chunk 新增 ≥ 50 条 / 7d | minor | `[RULE-REFRESH]` | before_request |
+| mt_eigenflux_comm_messages | 安全告警消息 ≥ 10 / 24h | patch | `[SECURITY]` | ci_check |
+| git commit | commit message 含 `BREAKING CHANGE:` | major | — | git_hook pre-push |
+| mt_permission_audit_detail | 新增越权案例 ≥ 5 条 / 7d | patch | `[PERM-FIX]` | before_request |
+| 仙女座 employee_registry | status 异常 ≥ 20 名 | patch | `[EMPLOYEE-HEAL]` | daemon heartbeat |
+
+> 闭环代码位置: `ai_engines/rules_engine/rule_version.py` — `_auto_bump_from_events()` 函数，
+> 每 300s 由 sys_rule_enforcer daemon 调用一次。
+
+### 3.3 仙女座版本感知（v1.1.0 新增）
+
+仙女座自演化引擎**必须**感知当前系统版本：
+- `engines/andromeda_auto_evolution.py` 启动时读取 `VERSION` + `rule_knowledge` 表
+- 版本 < 规则要求的 minimum_version → evolution_log 标记 `version_too_old`，跳过演化阶段
+- 版本 bump 后 15 分钟内，rule_knowledge 分块**必须**被重新 ingest（触发 `trigger_type='version_bump'`）
+- 双向同步守护（autosync_andromeda.py）**禁止**在两端版本差 ≥ major 时执行 rsync（避免 schema 不兼容）
+
+违反 → 按 `VERSION-RULE-VIOLATION` 落库 + EigenFlux 告警。
+
+## §4 规则治理闭环（仙女座 ↔ 规则引擎）
+
+```
+仙女座 evolution_log  (错误 spike / 慢响应 / employee 异常)
+        │
+        ▼
+rule_version.py _auto_bump_from_events()  (每 300s)
+        │
+        ├── mt_rule_changelog  INSERT (自动记录 bump 原因)
+        ├── mt_andromeda_rule_knowledge  重新 ingest (规则新版本分块)
+        └── before_request  版本检查中间件  (强制 bump 生效)
+        │
+        ▼
+规则引擎 rule_enforcer daemon  (每 300s)
+        │
+        └── mt_rule_integrity_scan  自检报告  (覆盖率 + 弱约束词清零)
+                │
+                ▼
+        EigenFlux 5人 AI 专家磋商  (如需 major bump)
+```
+
+**强制**：此闭环**不得**被禁用。禁用等于关闭规则保护，触发 §14 IRON_RULE fail-closed 分支。
+
+## 版本管理功能
+
+### 1. 代码变更检测
+- 自动扫描项目文件
+- 检测文件修改时间
+- 计算修改文件数量
+- 统计修改代码行数
+- 记录修改次数
+
+### 2. 版本升级逻辑
+- **自动升级**: 根据代码变更自动判断升级类型
+- **每日升级**: 检测日期变更自动更新二级版本号
+- **批量升级**: 文件数>15 或行数>500 时增加三级版本号
+- **实时升级**: 每次修改自动更新四级版本号
+- **手动升级**: 支持手动触发各级版本升级
+
+### 3. 版本文件更新
+- 更新 package.json 版本号
+- 记录版本升级历史
+- 生成版本变更日志
+- 支持数据库存储版本信息
+
+## 使用方法
+
+### 自动升级
+```javascript
+const { getVersionManager } = require('./src/core/version/version-manager');
+const versionManager = getVersionManager();
+
+// 自动检测并升级版本
+const upgradedVersion = await versionManager.upgradeVersion('auto');
+console.log('新版本:', upgradedVersion.versionString);
+```
+
+### 手动升级
+```javascript
+// 升级一级版本
+await versionManager.upgradeVersion('major');
+
+// 升级二级版本（当日时间）
+await versionManager.upgradeVersion('minor');
+
+// 升级三级版本
+await versionManager.upgradeVersion('patch');
+
+// 只更新四级版本
+await versionManager.upgradeVersion('build');
+```
+
+### 检查版本信息
+```javascript
+const versionInfo = await versionManager.getVersionInfo();
+console.log('当前版本:', versionInfo.currentVersion.versionString);
+console.log('版本历史:', versionInfo.versionHistory);
+```
+
+### 检查升级需求
+```javascript
+const requirements = versionManager.checkUpgradeRequirements();
+console.log('是否需要升级:', requirements.shouldUpgrade);
+console.log('升级类型:', requirements.upgradeType);
+console.log('升级原因:', requirements.reasons);
+```
+
+## 技术实现
+
+### 核心组件
+- **VersionManager**: 版本管理核心类
+- **代码变更检测**: 扫描文件系统检测修改
+- **版本号计算**: 根据规则计算新版本号
+- **版本文件更新**: 更新项目版本文件
+- **版本历史记录**: 记录版本升级历史
+
+### 依赖项
+- Node.js
+- fs (文件系统)
+- path (路径处理)
+- winston (日志记录)
+- sqlite3 (数据库存储，可选)
+
+## 配置项
+
+### 配置文件
+```javascript
+{
+    packageJsonFile: path.join(__dirname, '../../package.json'),
+    logDir: path.join(__dirname, '../../Logs'),
+    srcDir: path.join(__dirname, '../../')
+}
+```
+
+### 环境变量
+- 无特殊环境变量需求，使用默认配置即可
+
+## 故障处理
+
+### 数据库不可用
+- 自动切换到文件系统存储
+- 版本信息仍可正常更新
+- 升级功能不受影响
+
+### 文件系统错误
+- 记录错误日志
+- 尝试备选路径
+- 保持版本管理功能可用
+
+### 版本冲突
+- 自动检测版本冲突
+- 保留最新版本
+- 记录冲突历史
+
+## 性能优化
+
+### 扫描优化
+- 跳过不需要检查的目录 (node_modules, .git 等)
+- 只检查代码文件
+- 缓存扫描结果
+
+### 计算优化
+- 增量计算修改次数
+- 缓存版本信息
+- 异步处理文件操作
+
+### 存储优化
+- 压缩版本历史
+- 限制日志文件大小
+- 定期清理旧版本记录
+
+## 总结
+
+本版本升级机制实现了以下功能：
+- ✅ 符合要求的四级版本号规则
+- ✅ 自动代码变更检测
+- ✅ 智能版本升级判断
+- ✅ 完整的版本管理功能
+- ✅ 健壮的错误处理
+- ✅ 良好的性能优化
+
+系统能够根据代码变更自动判断版本升级类型，确保版本号准确反映项目的变更状态，同时提供了灵活的手动升级选项，满足不同场景的需求。

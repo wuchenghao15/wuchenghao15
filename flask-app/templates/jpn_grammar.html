@@ -1,0 +1,160 @@
+{% extends "base_unified.html" %}
+{% block title %}文法ツリー · Grammar · 日本語{% endblock %}
+{% block page_title %}Bunpō Tsūri · Grammar{% endblock %}
+
+{% block extra_head %}
+<style>
+:root { --jp-vermilion:#C8102E; --jp-vermilion-soft:rgba(200,16,46,.10);
+       --jp-indigo:#2F4F6F; --jp-indigo-soft:rgba(47,79,111,.10); --jp-sumi:#2C2C2C; }
+.jp-toolbar { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:16px; align-items:center; }
+.jp-toolbar-label { font-size:11px; color:var(--mtscos-text-tertiary); margin-right:4px; letter-spacing:1px; }
+.jp-filter-btn { padding:5px 14px; border-radius:20px; border:1px solid var(--mtscos-border-light);
+    background:var(--mtscos-bg-card); font-size:12px; cursor:pointer; color:var(--mtscos-text-secondary); font-weight:500; text-decoration:none; }
+.jp-filter-btn.active { background:var(--jp-indigo); color:#fff; border-color:var(--jp-indigo); }
+.jp-filter-btn:hover { border-color:var(--jp-indigo); color:var(--jp-indigo); }
+.jp-cat-btn.active { background:var(--jp-vermilion); color:#fff; border-color:var(--jp-vermilion); }
+.jp-progress-chip { margin-left:auto; font-size:12px; color:var(--mtscos-text-tertiary);
+    padding:5px 14px; background:var(--jp-vermilion-soft); border-radius:20px; color:var(--jp-vermilion); font-weight:600; }
+.jp-gram-list { display:flex; flex-direction:column; gap:10px; }
+.jp-gram-item {
+    background:var(--mtscos-bg-card); border:1px solid var(--mtscos-border-light);
+    border-radius:var(--mtscos-radius-lg); padding:18px 22px; transition:all .15s;
+    border-left:3px solid var(--jp-indigo);
+}
+.jp-gram-item:hover { box-shadow:0 4px 16px rgba(0,0,0,.06); border-left-color:var(--jp-vermilion); }
+.jp-gram-item.mastered { border-left-color:#2a9d3f; background:linear-gradient(90deg, rgba(42,157,63,.05), var(--mtscos-bg-card)); }
+.jp-gram-item.mastered::after { content:"★ 已掌握"; float:right; color:#2a9d3f; font-size:11px; font-weight:700; margin-top:-24px; }
+.jp-gram-item.just-studied { animation:jp-pop .4s ease; }
+@keyframes jp-pop { 0%{transform:scale(1)} 40%{transform:scale(1.01);border-color:#2a9d3f} 100%{transform:scale(1)} }
+.jp-gram-head { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px; }
+.jp-gram-pattern { font-family:"Yu Mincho","Noto Serif JP",serif; font-size:20px; font-weight:700; color:var(--jp-sumi); }
+.jp-gram-meta { display:flex; gap:6px; flex-shrink:0; }
+.jp-gram-tag { font-size:10px; padding:2px 10px; border-radius:12px; font-weight:600; letter-spacing:.5px; }
+.jp-gram-tag.level { background:var(--jp-vermilion); color:#fff; }
+.jp-gram-tag.cat { background:var(--jp-indigo-soft); color:var(--jp-indigo); }
+.jp-gram-title { font-size:13px; color:var(--mtscos-text-primary); margin-bottom:4px; }
+.jp-gram-meaning { font-size:12px; color:var(--mtscos-text-secondary); margin-bottom:6px; line-height:1.5; }
+.jp-gram-ex { font-size:12px; color:var(--jp-indigo); padding:8px 12px; background:var(--jp-indigo-soft); border-radius:6px; font-family:"Yu Mincho",serif; }
+.jp-gram-ex-cn { font-size:11px; color:var(--mtscos-text-tertiary); margin-top:3px; font-style:italic; }
+.jp-gram-foot { display:flex; gap:8px; margin-top:12px; align-items:center; }
+.jp-gram-btn { padding:7px 14px; border-radius:6px; border:1px solid var(--mtscos-border-light);
+    background:#fff; font-size:12px; cursor:pointer; transition:all .15s; font-weight:600; }
+.jp-gram-btn.ok { color:#2a9d3f; border-color:#2a9d3f; }
+.jp-gram-btn.ok:hover { background:#2a9d3f; color:#fff; }
+.jp-gram-btn.need { color:var(--jp-vermilion); border-color:var(--jp-vermilion); }
+.jp-gram-btn.need:hover { background:var(--jp-vermilion); color:#fff; }
+.jp-gram-btn:disabled { opacity:.5; cursor:not-allowed; }
+.jp-gram-stat { font-size:10px; color:var(--mtscos-text-tertiary); margin-left:auto; }
+.jp-toast { position:fixed; top:20px; right:20px; padding:12px 20px; border-radius:8px;
+    color:#fff; font-size:13px; font-weight:600; z-index:9999; box-shadow:0 8px 24px rgba(0,0,0,.18);
+    transform:translateX(120%); transition:transform .3s ease; max-width:320px; }
+.jp-toast.show { transform:translateX(0); }
+.jp-toast.ok { background:#2a9d3f; }
+.jp-toast.err { background:var(--jp-vermilion); }
+.jp-toast.info { background:var(--jp-indigo); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div style="margin-bottom:20px;font-size:13px;color:var(--mtscos-text-tertiary)">
+    <a href="/japanese_page" style="color:var(--jp-indigo);text-decoration:none">{{ t('auto.jpn_grammar.__x_____a85766c6', default='← 日本語ポータル') }}</a>
+    <span style="margin:0 6px">›</span> 文法ツリー
+</div>
+
+<div class="jp-toolbar">
+    <span class="jp-toolbar-label">JLPT</span>
+    <a href="/japanese/grammar" class="jp-filter-btn {% if not level %}active{% endif %}">ALL</a>
+    {% for lv in levels %}
+    <a href="/japanese/grammar?level={{ lv }}{% if cat %}&cat={{ cat }}{% endif %}" class="jp-filter-btn {% if level==lv %}active{% endif %}">{{ lv }}</a>
+    {% endfor %}
+    <span class="jp-toolbar-label" style="margin-left:12px">{{ t('auto.jpn_grammar.x_e740046d', default='分類') }}</span>
+    <a href="/japanese/grammar{% if level %}?level={{ level }}{% endif %}" class="jp-filter-btn jp-cat-btn {% if not cat %}active{% endif %}">ALL</a>
+    {% for c in cats %}
+    <a href="/japanese/grammar?cat={{ c }}{% if level %}&level={{ level }}{% endif %}" class="jp-filter-btn jp-cat-btn {% if cat==c %}active{% endif %}">{{ cat_labels.get(c, c) }}</a>
+    {% endfor %}
+    <span class="jp-progress-chip" id="mastered-chip">{{ mastered }} 文法定着</span>
+</div>
+
+{% if grammars %}
+<div class="jp-gram-list">
+    {% for g in grammars %}
+    <div class="jp-gram-item" data-grammar-id="{{ g.grammar_id }}" data-level="{{ g.level }}">
+        <div class="jp-gram-head">
+            <div class="jp-gram-pattern">{{ g.pattern }}</div>
+            <div class="jp-gram-meta">
+                <span class="jp-gram-tag level">{{ g.level }}</span>
+                <span class="jp-gram-tag cat">{{ cat_labels.get(g.grammar_type or '', g.grammar_type or '') }}</span>
+            </div>
+        </div>
+        <div class="jp-gram-title">{{ g.title or '' }}</div>
+        <div class="jp-gram-meaning">{{ g.meaning_cn or '' }}</div>
+        {% if g.example_jp %}
+        <div class="jp-gram-ex">{{ g.example_jp }}</div>
+        {% if g.example_cn %}<div class="jp-gram-ex-cn">{{ g.example_cn }}</div>{% endif %}
+        {% endif %}
+        {% if g.explanation %}
+        <details style="margin-top:6px;font-size:11px;color:var(--mtscos-text-tertiary)"><summary style="cursor:pointer">{{ t('auto.jpn_grammar.x_adbf0dea', default='詳解') }}</summary>{{ g.explanation }}</details>
+        {% endif %}
+        <div class="jp-gram-foot">
+            <button class="jp-gram-btn ok" onclick="studyGrammar('{{ g.grammar_id }}','{{ g.level }}',1,this)">{{ t('auto.jpn_grammar.__x___247c0dfa', default='✅ 覚えた') }}</button>
+            <button class="jp-gram-btn need" onclick="studyGrammar('{{ g.grammar_id }}','{{ g.level }}',0,this)">❌ まだ</button>
+            <span class="jp-gram-stat" id="gstat-{{ g.grammar_id }}">{{ t('auto.jpn_grammar.x_7f404286', default='未学習') }}</span>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div style="text-align:center;padding:60px;color:var(--mtscos-text-tertiary)">{{ t('auto.jpn_grammar.x_x__x_______9fcea585', default='条件に一致する文法がありません') }}</div>
+{% endif %}
+
+<script>
+let _toastTimer = null;
+function jpToast(msg, kind='info') {
+    let t = document.getElementById('__jp_toast__');
+    if (!t) { t = document.createElement('div'); t.id='__jp_toast__'; t.className='jp-toast'; document.body.appendChild(t); }
+    t.className = 'jp-toast ' + kind + ' show';
+    t.innerText = msg;
+    clearTimeout(_toastTimer);
+    _toastTimer = setTimeout(()=> t.classList.remove('show'), 2400);
+}
+
+function studyGrammar(grammarId, level, isCorrect, btn) {
+    const item = btn.closest('.jp-gram-item');
+    const sibling = btn.parentElement.querySelector('.jp-gram-btn:not([disabled])');
+    btn.disabled = true;
+    if (sibling) sibling.disabled = true;
+
+    fetch('/api/japanese/grammar/study', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': '{{ csrf_token }}' },
+        body: JSON.stringify({ grammar_id: grammarId, level: level, is_correct: isCorrect })
+    })
+    .then(r => r.json())
+    .then(d => {
+        if (d.success) {
+            const m = d.data.mastered;
+            if (m && !item.classList.contains('mastered')) {
+                item.classList.add('mastered');
+                const chip = document.getElementById('mastered-chip');
+                if (chip) chip.innerText = (parseInt(chip.innerText)||0) + 1 + ' 文法定着';
+            }
+            item.classList.add('just-studied');
+            setTimeout(()=> item.classList.remove('just-studied'), 500);
+            const stat = document.getElementById('gstat-' + grammarId);
+            if (stat) stat.innerText = m ? '★ マスター済' : (isCorrect ? '学習中 · 繰り返す' : '再学習が必要');
+            jpToast((isCorrect ? '覚えた！' : 'まだ ') + (m ? ' · マスター済 ★' : ''), m ? 'ok' : (isCorrect ? 'info' : 'err'));
+        } else {
+            jpToast(d.error || '学習失敗', 'err');
+            btn.disabled = false;
+            if (sibling) sibling.disabled = false;
+        }
+    })
+    .catch(err => {
+        jpToast('网络错误: ' + err.message, 'err');
+        btn.disabled = false;
+        if (sibling) sibling.disabled = false;
+    });
+}
+</script>
+{% endblock %}

@@ -1174,3 +1174,152 @@ def forgot_password_page():
 def register_page():
     """注册 — redirect 到 auth 路由"""
     return redirect('/auth/register')
+
+
+# ============================================================================
+# 统一听力练习路由 — 英语 + 日语双语种
+# ============================================================================
+
+def _get_listening_db():
+    """获取 DB 路径"""
+    import os as _os
+    return _os.path.join(_os.path.dirname(__file__), '..', 'database', 'app.db')
+
+def _listening_table(lang: str) -> str:
+    """根据语种返回表名"""
+    return 'en_listening' if lang == 'en' else 'jp_listening'
+
+def _listening_accent_options(lang: str) -> list:
+    """口音筛选选项"""
+    if lang == 'en':
+        return [('ALL', '全部'), ('AM', '美式 🇺🇸'), ('BM', '英式 🇬🇧'), ('AU', '澳式 🇦🇺'), ('IN', '印度 🇮🇳')]
+    else:
+        return [('ALL', '全部'), ('KANTO', '关东腔 🇯🇵'), ('KANSAI', '关西腔 🇯🇵')]
+
+def _listening_level_options(lang: str) -> list:
+    """难度等级选项"""
+    return [('ALL', '全部'), ('beginner', '初级'), ('intermediate', '中级'), ('advanced', '高级')]
+
+@bp.route('/listening', methods=['GET'])
+@system_container(require_auth='guest')
+def unified_listening_list():
+    """统一听力列表 — ?lang=en|ja + accent + level + gender 筛选"""
+    import sqlite3 as _sq3, json as _json
+    from flask import session as _sess, request
+    
+    lang = request.args.get('lang', 'ja')  # 默认日语
+    accent = request.args.get('accent', 'ALL')
+    level = request.args.get('level', 'ALL')
+    gender = request.args.get('gender', 'ALL')
+    page = int(request.args.get('page', '1'))
+    page_size = 12
+    
+    table = _listening_table(lang)
+    db = _get_listening_db()
+    conn = _sq3.connect(db); conn.row_factory = _sq3.Row
+    
+    # 构建 WHERE
+    conditions = []; params = []
+    if accent != 'ALL':
+        conditions.append("accent = ?"); params.append(accent)
+    if level != 'ALL':
+        conditions.append("level = ?"); params.append(level)
+    if gender != 'ALL':
+        conditions.append("speaker_gender = ?"); params.append(gender)
+    
+    where_sql = ("WHERE " + " AND ".join(conditions)) if conditions else ""
+    
+    # 总数
+    total = conn.execute(f"SELECT COUNT(*) FROM {table} {where_sql}", params).fetchone()[0]
+    
+    # 分页
+    offset = (page - 1) * page_size
+    rows = conn.execute(
+        f"SELECT * FROM {table} {where_sql} ORDER BY accent, difficulty, created_at LIMIT ? OFFSET ?",
+        params + [page_size, offset]
+    ).fetchall()
+    
+    items = []
+    for r in rows:
+        d = dict(r)
+        # 统一 transcript 字段名 (en_listening 用 transcript, jp_listening 也有 transcript + transcript_jp)
+        if lang == 'ja' and d.get('transcript_jp'):
+            d['display_transcript'] = d['transcript_jp']
+        else:
+            d['display_transcript'] = d.get('transcript', '')
+        # 解析 questions
+        try:
+            qj = d.get('questions_json') or '[]'
+            d['questions'] = _json.loads(qj) if isinstance(qj, str) else qj
+        except Exception:
+            d['questions'] = []
+        items.append(d)
+    
+    # 统计信息
+    stats = {
+        'total': total,
+        'accent_count': {},
+    }
+    for r in conn.execute(f"SELECT accent, COUNT(*) FROM {table} GROUP BY accent").fetchall():
+        stats['accent_count'][r[0]] = r[1]
+    
+    # 用户进度
+    username = _sess.get('username') or 'guest'
+    user_role = _sess.get('role') or 'guest'
+    
+    conn.close()
+    
+    # 分页计算
+    total_pages = max(1, (total + page_size - 1) // page_size)
+    
+    return render_template('listening.html',
+        lang=lang, lang_label='英语' if lang == 'en' else '日本語',
+        items=items, total=total, page=page, total_pages=total_pages,
+        accent_options=_listening_accent_options(lang),
+        level_options=_listening_level_options(lang),
+        current_accent=accent, current_level=level, current_gender=gender,
+        stats=stats, version='v22.42.0',
+        user={'username': username, 'role': user_role})
+
+
+@bp.route('/listening/<listening_id>', methods=['GET'])
+@system_container(require_auth='guest')
+def unified_listening_detail(listening_id):
+    """统一听力详情 — 播放 .m4a + 答题"""
+    import sqlite3 as _sq3, json as _json
+    from flask import request
+    
+    lang = request.args.get('lang', 'ja')
+    table = _listening_table(lang)
+    db = _get_listening_db()
+    conn = _sq3.connect(db); conn.row_factory = _sq3.Row
+    
+    row = conn.execute(f"SELECT * FROM {table} WHERE listening_id = ?", (listening_id,)).fetchone()
+    if not row:
+        conn.close()
+        return "听力内容不存在", 404
+    
+    d = dict(row)
+    
+    # 统一 transcript
+    if lang == 'ja' and d.get('transcript_jp'):
+        d['display_transcript'] = d['transcript_jp']
+    else:
+        d['display_transcript'] = d.get('transcript', '')
+    
+    # questions_json → questions list
+    try:
+        qj = d.get('questions_json') or '[]'
+        d['questions'] = _json.loads(qj) if isinstance(qj, str) else qj
+    except Exception:
+        d['questions'] = []
+    
+    # audio_path → audio_url (兼容)
+    if not d.get('audio_url') and d.get('audio_path'):
+        d['audio_url'] = d['audio_path']
+    
+    conn.close()
+    
+    return render_template('listening_detail.html',
+        lang=lang, lang_label='英语' if lang == 'en' else '日本語',
+        item=d, version='v22.42.0')
