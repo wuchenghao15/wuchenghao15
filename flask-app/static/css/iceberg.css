@@ -1,0 +1,686 @@
+/* ======================================================================
+ * 冰山系统 (Iceberg System) · CSS v3.0 (仙女座美化)
+ * ======================================================================
+ * v3.0 新增:
+ *   🎨 双主题系统 (default 黛青 + dark 暗黑 Matrix) — data-theme 切换
+ *   🧊 SVG 图标组件 (内联, 零依赖, 5 模块 + 12 天团 + 顾问团)
+ *   📊 IOL 实时面板 (mt_iceberg_optimization_log 深度绑定状态)
+ *   🛡️ 守护进程状态条 (PID + Ollama + daemon registry)
+ *   🔄 主题切换按钮 (右上角 toggle)
+ *
+ * v2.0 基础: 水墨青山 + 金线分隔 + 云飘 + 印章 + 面纱渐进
+ * ====================================================================== */
+
+/* ═══════════════════════════════════════════════════════════════════
+ * 主题系统: default (黛青) + dark (暗黑 Matrix)
+ * ═══════════════════════════════════════════════════════════════════ */
+:root, [data-theme="default"] {
+  /* ── 主色 · 黛青 ── */
+  --ice-primary:        #2C5F7C;
+  --ice-primary-dark:   #1E4A63;
+  --ice-primary-light:  #4A7FA0;
+  --ice-secondary:      #1A3A4E;
+  --ice-secondary-dark: #0F2836;
+  --ice-accent:         #C0392B;
+  --ice-divider-gold:   #D4A574;
+  --ice-snow-white:     #F8F9FA;
+  --ice-snow-ice:       #E8F0F2;
+  --ice-ink-pink:       #F5B7B1;
+  --ice-ink:            #2C3E50;
+  --ice-ink-soft:       #566573;
+  --ice-ink-muted:      #85929E;
+  --ice-ink-line:       #D5D8DC;
+  --ice-bg-page:        #E8F0F2;
+  --ice-bg-card:        #FFFFFF;
+  --ice-shadow:         rgba(30,74,99,0.12);
+  --ice-shadow-strong:  rgba(30,74,99,0.20);
+  --ice-glow-gold:      rgba(212,165,116,0.4);
+  --ice-glow-accent:    rgba(192,57,43,0.4);
+
+  /* ── 间距 · 字体 ── */
+  --ice-space-peak:      16px;
+  --ice-space-spectrum:  12px;
+  --ice-space-basement:   8px;
+  --ice-space-section:  24px;
+  --ice-space-page:      32px;
+  --ice-space-inner:     16px;
+  --ice-radius-sm:        4px;
+  --ice-radius-md:        8px;
+  --ice-radius-lg:       12px;
+  --ice-font-cn:  "Source Han Serif SC","思源宋体","Noto Serif SC","Songti SC",serif;
+  --ice-font-en:  "Inter",-apple-system,BlinkMacSystemFont,sans-serif;
+  --ice-font-mono:"JetBrains Mono","SF Mono",Menlo,Consolas,monospace;
+  --ice-font-brush:"Ma Shan Zheng","STXingkai","KaiTi",cursive;
+  --ice-cloud-duration: 30s;
+}
+
+[file_append_skipped]
+
+
+
+/* ═══════════════════════════════════════════════════════════════════
+ * 冰山三层外壳 (2:3:5 Grid · 邓稼先极简版)
+ * ═══════════════════════════════════════════════════════════════════ */
+.iceberg-root {
+  display: grid;
+  grid-template-rows: 20% 30% 50%;
+  min-height: 100vh;
+  background: var(--ice-secondary-dark);
+}
+
+
+/* ── 🔺 Peak 雪峰 ── */
+.iceberg-peak {
+  background:
+    radial-gradient(circle at 20% 30%, rgba(0,0,0,0.04) 1px, transparent 2px),
+    radial-gradient(circle at 70% 60%, rgba(0,0,0,0.03) 1px, transparent 2px),
+    linear-gradient(180deg, var(--ice-snow-white), var(--ice-snow-ice));
+  background-size: 80px 80px, 120px 120px, 100% 100%;
+  padding: var(--ice-space-page);
+  position: relative;
+  color: var(--ice-ink);
+  min-height: 180px;
+
+  /* 云飘 */
+  .ice-cloud.cloud-1 { top: 25%; animation-duration: 15s; }
+  .ice-cloud.cloud-2 { top: 50%; animation-duration: 45s; animation-delay: -15s; }
+}
+
+/* ── 金线分隔 (雪峰↓光影) ── */
+.iceberg-peak::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg,
+    transparent 0%, var(--ice-divider-gold) 15%,
+    var(--ice-divider-gold) 85%, transparent 100%);
+}
+
+/* ── 🔸 Spectrum 光影 ── */
+.iceberg-spectrum {
+  background: linear-gradient(180deg, var(--ice-primary), var(--ice-primary-dark));
+  padding: var(--ice-space-page);
+  position: relative;
+  color: var(--ice-snow-white);
+  min-height: 260px;
+}
+
+/* ── 金线分隔 (光影↓渊底) ── */
+.iceberg-spectrum::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg,
+    transparent 0%, var(--ice-divider-gold) 15%,
+    var(--ice-divider-gold) 85%, transparent 100%);
+}
+
+/* ── 齐白石墨点飞溅 (光影层) ── */
+.iceberg-spectrum::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 15% 40%, rgba(20,30,40,0.12) 1px, transparent 2px),
+    radial-gradient(circle at 85% 70%, rgba(20,30,40,0.10) 1px, transparent 2px),
+    radial-gradient(circle at 45% 20%, rgba(20,30,40,0.08) 1px, transparent 2px);
+  background-size: 120px 120px, 150px 150px, 100px 100px;
+  opacity: 0.6;
+}
+
+/* ── 🔻 Basement 渊底 ── */
+.iceberg-basement {
+  background: linear-gradient(180deg, var(--ice-secondary), var(--ice-secondary-dark));
+  padding: var(--ice-space-page);
+  position: relative;
+  color: var(--ice-snow-white);
+
+  &.collapsed {
+    max-height: 0; overflow: hidden;
+    padding-top: 0; padding-bottom: 0;
+    transition: max-height 0.4s ease, padding 0.4s ease;
+  }
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════
+ * 云飘动画 (钱学森保留)
+ * ═══════════════════════════════════════════════════════════════════ */
+.ice-cloud {
+  position: absolute;
+  left: 0; right: 0;
+  height: 8px;
+  background: linear-gradient(90deg,
+    transparent, rgba(255,255,255,0.6) 20%,
+    rgba(255,255,255,0.6) 80%, transparent);
+  opacity: 0.15;
+  pointer-events: none;
+  animation: ice-cloud-drift var(--ice-cloud-duration, 30s) linear infinite;
+}
+.ice-cloud.cloud-3 { top: 70%; animation-duration: 60s; animation-delay: -30s; }
+
+@keyframes ice-cloud-drift {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════
+ * 雪峰层 KPI 卡片
+ * ═══════════════════════════════════════════════════════════════════ */
+.iceberg-peak .ice-card {
+  background: rgba(255,255,255,0.7);
+  backdrop-filter: blur(8px);
+  border: 1px solid var(--ice-ink-line);
+  border-radius: var(--ice-radius-md);
+  padding: var(--ice-space-inner);
+  margin-bottom: var(--ice-space-peak);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  transition: border-color 0.2s;
+}
+/* 唐伯虎: 冰下有火 — hover 时边框微透粉红 */
+.iceberg-peak .ice-card:hover {
+  border-color: color-mix(in srgb, var(--ice-ink-pink) 10%, var(--ice-ink-line));
+  box-shadow: 0 2px 8px rgba(245,183,177,0.18);
+}
+.iceberg-peak .ice-kpi-value {
+  font-family: var(--ice-font-mono);
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--ice-primary-dark);
+  line-height: 1.2;
+}
+.iceberg-peak .ice-kpi-label {
+  font-size: 12px;
+  color: var(--ice-ink-muted);
+  letter-spacing: 0.5px;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════
+ * 层级标题 + 金线分隔 (标题下的金线)
+ * ═══════════════════════════════════════════════════════════════════ */
+.ice-layer-title {
+  font-family: var(--ice-font-cn);
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  display: inline-block;
+  padding-bottom: 8px;
+  margin-bottom: var(--ice-space-section);
+  position: relative;
+}
+.ice-layer-title::after {
+  content: '';
+  position: absolute;
+  left: 0; bottom: 0;
+  width: 60%; height: 1px;
+  background: var(--ice-divider-gold);
+}
+.ice-layer-subtitle {
+  font-size: 12px;
+  opacity: 0.7;
+  margin-left: 12px;
+  vertical-align: middle;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════
+ * 篆刻印章 (齐白石)
+ * ═══════════════════════════════════════════════════════════════════ */
+.ice-seal {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px; height: 28px;
+  background: var(--ice-accent);
+  color: #fff;
+  font-family: var(--ice-font-cn);
+  font-size: 11px;
+  font-weight: 900;
+  border-radius: 2px;
+  transform: rotate(-3deg);
+  box-shadow: 1px 1px 0 rgba(0,0,0,0.15);
+  line-height: 1;
+}
+.ice-seal.corner {
+  position: absolute;
+  bottom: 16px; right: 16px;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════
+ * 光影层 · 力导向图
+ * ═══════════════════════════════════════════════════════════════════ */
+.iceberg-spectrum .ice-graph {
+  width: 100%; height: 100%; min-height: 240px;
+  .ice-node circle { transition: r 0.2s; }
+  .ice-node:hover circle {
+    r: 12px;
+    filter: drop-shadow(0 0 6px var(--ice-divider-gold));
+  }
+  .ice-link { stroke: var(--ice-divider-gold); stroke-opacity: 0.4; }
+  .ice-node-label {
+    fill: var(--ice-snow-white);
+    font-family: var(--ice-font-cn);
+    font-size: 11px;
+    text-anchor: middle;
+    pointer-events: none;
+  }
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════
+ * 渊底层 · Tab 折叠 (邓稼先: 默认隐藏 fetch)
+ * ═══════════════════════════════════════════════════════════════════ */
+.iceberg-basement .ice-tabs {
+  display: flex;
+  gap: 2px;
+  border-bottom: 1px solid rgba(255,255,255,0.15);
+  margin-bottom: var(--ice-space-inner);
+}
+.iceberg-basement .ice-tab {
+  padding: 8px 16px;
+  font-size: 13px;
+  font-family: var(--ice-font-cn);
+  background: transparent;
+  border: none;
+  color: var(--ice-snow-white);
+  opacity: 0.6;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s;
+}
+.iceberg-basement .ice-tab:hover { opacity: 0.9; }
+.iceberg-basement .ice-tab.active {
+  opacity: 1;
+  border-bottom-color: var(--ice-divider-gold);
+}
+.iceberg-basement .ice-tab-content {
+  display: none;
+  padding-top: var(--ice-space-inner);
+}
+.iceberg-basement .ice-tab-content.active { display: block; }
+
+/* ── 王安石 拗相公 Tab (缺陷收集) ── */
+.iceberg-basement .ice-tab.aoxiang {
+  color: var(--ice-accent-light);  /* 篆刻红，区分普通 Tab */
+  border-bottom-color: var(--ice-accent) !important;
+}
+.iceberg-basement .ice-tab.aoxiang:hover { opacity: 1; color: var(--ice-accent-light); }
+.iceberg-basement .aoxiang-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 16px; margin-bottom: 8px;
+  border-left: 3px solid var(--ice-accent);
+  background: rgba(192,57,43,0.08);
+  border-radius: 0 4px 4px 0;
+}
+.iceberg-basement .aoxiang-item .aoxiang-type {
+  font-size: 11px; padding: 2px 8px; border-radius: 2px;
+  background: var(--ice-accent); color: #fff; font-family: var(--ice-font-mono);
+}
+.iceberg-basement .aoxiang-item .aoxiang-desc { flex: 1; font-size: 13px; }
+.iceberg-basement .aoxiang-item .aoxiang-severity {
+  font-size: 11px; font-family: var(--ice-font-mono);
+}
+
+.iceberg-basement table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.iceberg-basement th {
+  text-align: left;
+  padding: 8px 12px;
+  font-family: var(--ice-font-cn);
+  font-weight: 500;
+  background: rgba(255,255,255,0.05);
+  color: var(--ice-divider-gold);
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+.iceberg-basement td {
+  padding: var(--ice-space-basement) 12px;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  font-family: var(--ice-font-mono);
+  font-size: 12px;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════
+ * 响应式 (768px 以下退化为纵向堆叠)
+ * ═══════════════════════════════════════════════════════════════════ */
+@media (max-width: 768px) {
+  .iceberg-root { grid-template-rows: auto auto auto; }
+  .ice-cloud { display: none; }
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════
+ * 辅助类
+ * ═══════════════════════════════════════════════════════════════════ */
+.ice-gap-peak     { gap: var(--ice-space-peak); }
+.ice-gap-spectrum { gap: var(--ice-space-spectrum); }
+.ice-gap-basement { gap: var(--ice-space-basement); }
+.ice-float-seal   { position: absolute; bottom: 16px; right: 16px; }
+.ice-collapsible-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  user-select: none;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════
+ * 乔布斯极简 Peak 单总分 · Think Different
+ * ═══════════════════════════════════════════════════════════════════ */
+.iceberg-peak-score {
+  text-align: center;
+  padding: var(--ice-space-section) var(--ice-space-page);
+  max-width: 420px;
+  margin: 0 auto var(--ice-space-section);
+}
+.ice-score-wrap {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  line-height: 1;
+}
+.ice-score-value {
+  font-family: var(--ice-font-mono);
+  font-size: 120px;
+  font-weight: 900;
+  color: var(--ice-primary-dark);
+  letter-spacing: -4px;
+}
+.ice-score-unit {
+  font-family: var(--ice-font-mono);
+  font-size: 20px;
+  font-weight: 400;
+  color: var(--ice-ink-muted);
+}
+.ice-score-label {
+  font-family: var(--ice-font-brush);
+  font-size: 24px;
+  color: var(--ice-accent);
+  margin-top: 4px;
+}
+.ice-score-subtitle {
+  font-size: 12px;
+  color: var(--ice-ink-muted);
+  letter-spacing: 2px;
+  margin-top: 2px;
+  opacity: 0.7;
+}
+.ice-score-bar-wrap {
+  width: 100%;
+  height: 4px;
+  background: var(--ice-ink-line);
+  border-radius: 2px;
+  margin: var(--ice-space-peak) 0 8px;
+  overflow: hidden;
+}
+.ice-score-bar {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.4s ease, background 0.4s ease;
+}
+.ice-score-meta {
+  display: flex;
+  justify-content: center;
+  gap: 24px;
+  font-size: 11px;
+  font-family: var(--ice-font-mono);
+  color: var(--ice-ink-muted);
+  margin-top: 12px;
+}
+.ice-score-meta span { opacity: 0.75; }
+
+
+/* ═══════════════════════════════════════════════════════════════════
+ * 西施面纱模式 · 鼠标停留渐进展开
+ * 弘一法师戒定慧三全: 戒(白石折叠) + 定(武则天隐藏) + 慧(西施渐进)
+ * ═══════════════════════════════════════════════════════════════════ */
+
+/* 面纱层基础 */
+.iceberg-veil .ice-layer-spectrum,
+.iceberg-veil .ice-layer-basement {
+  opacity: 0;
+  max-height: 0;
+  overflow: hidden;
+  transition: opacity 0.6s ease, max-height 0.8s ease;
+}
+
+/* 面纱层 1: 默认只露 Peak (乔布斯极简 + 武则天隐藏) */
+.iceberg-veil:not(.veil-reveal-spectrum):not(.veil-reveal-basement) .ice-layer-spectrum,
+.iceberg-veil:not(.veil-reveal-spectrum):not(.veil-reveal-basement) .ice-layer-basement {
+  opacity: 0;
+  max-height: 0;
+}
+
+/* 面纱层 2: 停留 3 秒 → 展 Spectrum (西施渐进) */
+.iceberg-veil.veil-reveal-spectrum .ice-layer-spectrum {
+  opacity: 1;
+  max-height: 600px;
+}
+
+/* 面纱层 3: 停留 10 秒 → 展 Basement (点击永久展开) */
+.iceberg-veil.veil-reveal-basement .ice-layer-basement {
+  opacity: 1;
+  max-height: none;
+}
+
+/* 面纱 JS 控制条 (底部浮动按钮) */
+.ice-veil-controls {
+  position: fixed;
+  bottom: 16px;
+  right: 16px;
+  display: flex;
+  gap: 8px;
+  z-index: 9999;
+  font-family: var(--ice-font-mono);
+  font-size: 11px;
+}
+
+.ice-veil-btn {
+  padding: 6px 12px;
+  border: 1px solid var(--ice-accent);
+  background: rgba(255,255,255,0.9);
+  color: var(--ice-primary-dark);
+  cursor: pointer;
+  border-radius: 4px;
+  opacity: 0.7;
+  transition: opacity 0.3s;
+}
+
+.ice-veil-btn:hover { opacity: 1; }
+.ice-veil-btn.active { background: var(--ice-accent); color: white; opacity: 1; }
+
+/* 面纱定时器提示 (右上角小字) */
+.ice-veil-timer {
+  position: fixed;
+  top: 12px;
+  right: 16px;
+  font-family: var(--ice-font-mono);
+  font-size: 10px;
+  color: var(--ice-ink-muted);
+  z-index: 9998;
+  opacity: 0.6;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+ * 暗黑主题 (Matrix 风格 · data-theme="dark")
+ * ═══════════════════════════════════════════════════════════════════ */
+[data-theme="dark"] {
+  --ice-primary:        #00d4aa;
+  --ice-primary-dark:   #00a886;
+  --ice-primary-light:  #33e6bf;
+  --ice-secondary:      #0a1628;
+  --ice-secondary-dark: #050d18;
+  --ice-accent:         #ff3b3b;
+  --ice-divider-gold:   #ffd700;
+  --ice-snow-white:     #1a2332;
+  --ice-snow-ice:       #0f1a28;
+  --ice-ink-pink:       #ff6b9d;
+  --ice-ink:            #e0e8f0;
+  --ice-ink-soft:       #a0b0c0;
+  --ice-ink-muted:      #607080;
+  --ice-ink-line:       #1e2d3d;
+  --ice-bg-page:        #050d18;
+  --ice-bg-card:        #0f1a28;
+  --ice-shadow:         rgba(0,212,170,0.08);
+  --ice-shadow-strong:  rgba(0,212,170,0.16);
+  --ice-glow-gold:      rgba(255,215,0,0.3);
+  --ice-glow-accent:    rgba(255,59,59,0.3);
+}
+[data-theme="dark"] body { background: var(--ice-bg-page); }
+[data-theme="dark"] .dyn-title { color: var(--ice-primary-light); text-shadow: 0 0 20px var(--ice-glow-gold); }
+[data-theme="dark"] .card { background: var(--ice-bg-card); border-left-color: var(--ice-primary); box-shadow: 0 0 20px var(--ice-shadow); }
+[data-theme="dark"] .card-hd { color: var(--ice-primary-light); }
+[data-theme="dark"] .domain-name { color: var(--ice-ink); }
+[data-theme="dark"] .domain-bar-wrap { background: var(--ice-ink-line); }
+[data-theme="dark"] .nav-item { background: var(--ice-bg-card); border-color: var(--ice-ink-line); }
+[data-theme="dark"] .nav-item:hover { border-color: var(--ice-primary); box-shadow: 0 0 16px var(--ice-shadow-strong); }
+[data-theme="dark"] .iceberg-peak { background: linear-gradient(180deg, #0f1a28, #1a2332); }
+[data-theme="dark"] .iceberg-peak .ice-kpi-value { color: var(--ice-primary); text-shadow: 0 0 10px var(--ice-glow-gold); }
+
+/* ═══════════════════════════════════════════════════════════════════
+ * 🛡️ 守护进程状态条 (仙女座核心心跳)
+ * ═══════════════════════════════════════════════════════════════════ */
+.andromeda-status-bar {
+  display: flex; align-items: center; gap: 20px;
+  padding: 10px 20px;
+  background: linear-gradient(90deg, var(--ice-secondary-dark), var(--ice-secondary));
+  border-bottom: 2px solid var(--ice-primary);
+  font-family: var(--ice-font-mono);
+  font-size: 12px;
+  color: var(--ice-snow-white);
+  position: sticky; top: 0; z-index: 100;
+  box-shadow: 0 2px 8px var(--ice-shadow);
+}
+.asb-pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 4px 10px; border-radius: 999px;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.15);
+}
+.asb-pill .asb-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ice-ink-muted); }
+.asb-pill.online .asb-dot { background: var(--ice-primary); box-shadow: 0 0 6px var(--ice-primary); animation: asb-pulse 2s infinite; }
+.asb-pill.warn .asb-dot { background: #e6a23c; box-shadow: 0 0 6px #e6a23c; }
+.asb-pill.offline .asb-dot { background: var(--ice-accent); }
+.asb-pill.iol .asb-dot { background: var(--ice-divider-gold); box-shadow: 0 0 6px var(--ice-divider-gold); }
+@keyframes asb-pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.5;transform:scale(.85)} }
+.asb-pill strong { color: var(--ice-divider-gold); font-weight: 600; }
+
+/* 主题切换按钮 */
+.asb-theme-toggle {
+  margin-left: auto;
+  padding: 4px 12px; border-radius: 999px;
+  background: rgba(255,255,255,0.1);
+  border: 1px solid var(--ice-divider-gold);
+  color: var(--ice-divider-gold);
+  cursor: pointer; font-family: var(--ice-font-mono); font-size: 11px;
+  transition: all 0.2s;
+}
+.asb-theme-toggle:hover { background: var(--ice-divider-gold); color: var(--ice-secondary-dark); }
+
+/* ═══════════════════════════════════════════════════════════════════
+ * 📊 IOL 实时面板 (仙女座↔冰山 深度绑定状态)
+ * ═══════════════════════════════════════════════════════════════════ */
+.iol-panel {
+  background: var(--ice-bg-card);
+  border-radius: var(--ice-radius-md);
+  padding: 18px 22px;
+  border-left: 3px solid var(--ice-divider-gold);
+  box-shadow: 0 2px 12px var(--ice-shadow);
+}
+.iol-hd {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 14px;
+}
+.iol-hd h3 {
+  font-family: var(--ice-font-cn); font-size: 15px; font-weight: 700;
+  color: var(--ice-primary-dark); letter-spacing: 2px;
+}
+.iol-hd h3::before { content: '⛰️'; margin-right: 6px; }
+[data-theme="dark"] .iol-hd h3 { color: var(--ice-primary-light); }
+
+.iol-stats { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; margin-bottom: 14px; }
+.iol-stat {
+  text-align: center; padding: 10px 6px;
+  border-radius: var(--ice-radius-sm);
+  background: rgba(0,0,0,0.03);
+  border: 1px solid rgba(0,0,0,0.06);
+}
+.iol-stat .n { font-family: var(--ice-font-mono); font-size: 22px; font-weight: 700; }
+.iol-stat .l { font-size: 10px; letter-spacing: 1px; opacity: 0.7; margin-top: 2px; }
+.iol-stat.apPLIED .n { color: #27ae60; }
+.iol-stat.pENDING  .n { color: var(--ice-primary-dark); }
+.iol-stat.fAILED   .n { color: var(--ice-accent); }
+.iol-stat.sKIPPED  .n { color: var(--ice-ink-muted); }
+[data-theme="dark"] .iol-stat { background: rgba(255,255,255,0.04); border-color: rgba(255,255,255,0.08); }
+[data-theme="dark"] .iol-stat.apPLIED .n { color: #00d4aa; }
+[data-theme="dark"] .iol-stat.fAILED .n { color: #ff3b3b; }
+
+.iol-list { max-height: 200px; overflow-y: auto; }
+.iol-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 4px; border-bottom: 1px dashed rgba(0,0,0,0.06);
+  font-family: var(--ice-font-mono); font-size: 11px;
+}
+.iol-row:last-child { border-bottom: none; }
+.iol-row .iol-func { flex: 1; color: var(--ice-ink); }
+.iol-row .iol-cat { font-size: 10px; padding: 1px 6px; border-radius: 2px; background: rgba(0,0,0,0.06); }
+.iol-row .iol-att { font-size: 10px; color: var(--ice-ink-muted); width: 40px; text-align: right; }
+.iol-row .iol-status { font-size: 10px; font-weight: 700; width: 60px; text-align: right; }
+.iol-row .iol-status.APPLIED { color: #27ae60; }
+.iol-row .iol-status.FAILED  { color: var(--ice-accent); }
+.iol-row .iol-status.PENDING { color: var(--ice-primary-dark); }
+.iol-row .iol-status.SKIPPED { color: var(--ice-ink-muted); }
+[data-theme="dark"] .iol-row { border-color: rgba(255,255,255,0.06); }
+
+/* ═══════════════════════════════════════════════════════════════════
+ * 🧊 SVG 图标组件 (内联零依赖)
+ * ═══════════════════════════════════════════════════════════════════ */
+.ice-svg-icon {
+  width: 24px; height: 24px;
+  display: inline-flex; align-items: center; justify-content: center;
+  color: currentColor;
+  transition: transform 0.2s, filter 0.2s;
+}
+.ice-svg-icon:hover { transform: scale(1.15); filter: drop-shadow(0 0 4px var(--ice-glow-gold)); }
+.ice-svg-icon svg { width: 100%; height: 100%; fill: currentColor; }
+
+/* 导航卡片图标容器 */
+.nav-icon-svg {
+  width: 40px; height: 40px; flex-shrink: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: var(--ice-radius-md);
+  background: linear-gradient(135deg, var(--ice-primary), var(--ice-primary-dark));
+  color: var(--ice-snow-white);
+  box-shadow: 0 2px 8px var(--ice-shadow);
+}
+.nav-icon-svg svg { width: 22px; height: 22px; }
+
+/* 天团徽章 (IOL 面板里) */
+.council-badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 2px 8px; border-radius: 999px;
+  font-family: var(--ice-font-mono); font-size: 10px;
+  background: linear-gradient(90deg, var(--ice-secondary), var(--ice-secondary-dark));
+  color: var(--ice-divider-gold);
+  border: 1px solid var(--ice-divider-gold);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+ * 滚动条美化 (全页)
+ * ═══════════════════════════════════════════════════════════════════ */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--ice-ink-line); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: var(--ice-primary-light); }
