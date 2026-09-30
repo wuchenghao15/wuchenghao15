@@ -3430,46 +3430,90 @@ class HardwareKeyProvider(ABC):
 class DarwinHardwareKeyProvider(HardwareKeyProvider):
     """macOS 硬件密钥检测器
 
-    VIKEY: system_profiler SPUSBDataType -json + VID/PID 匹配
+    VIKEY: 双路检测 — (1) ioreg 精确 VID/PID/产品名 (2) system_profiler 兼容
     SZU100: 委托 core/services/szu100_driver.detect_szu100()（多维校验 + CD-ROM 伪造检测）
 
-    修复 CODE_STUDY_NOTES.md D4.1: 不再仅靠卷标关键字，使用 szu100_driver 的
-    VID/PID + 制造商 + CD-ROM + 容量 + 认证文件 6 维校验
+    v24.2 fix (2026-09-30 LIVE):
+      - subprocess 加完整 PATH (macOS /usr/sbin/system_profiler + ioreg)
+      - VIKEY VID/PID 真实值: VID=0x1987 PID=0x0331 Manufacturer=LiViKey Product=ViKeyPRO
+      - 新增产品名/制造商模糊匹配作为 fallback (兼容不同批次)
     """
+
+    # macOS 完整系统 PATH (关键: /usr/sbin /sbin 包含 system_profiler + ioreg + diskutil)
+    _MACOS_SYSTEM_PATH = "/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin"
 
     def detect_vikey(self) -> bool:
         try:
-            import subprocess as _sp
-            result = _sp.run(
-                ["system_profiler", "SPUSBDataType", "-json"],
-                capture_output=True, text=True, timeout=10,
-            )
-            if result.returncode != 0:
-                return False
-            data = json.loads(result.stdout)
-            return self._search_usb_tree(data)
+            import subprocess as _sp, os as _os
+            env = {**_os.environ, "PATH": self._MACOS_SYSTEM_PATH}
+            # 双路检测: ioreg (最快最准) + system_profiler (兼容)
+            return self._detect_vikey_via_ioreg(env) or self._detect_vikey_via_sprof(env)
         except Exception as e:
             logger.warning(f"[DarwinProvider] VIKEY 检测失败: {e}")
             return False
 
+    def _detect_vikey_via_ioreg(self, env) -> bool:
+        """ioreg 扫描 — 最快最准, 直接匹配 USB Product Name / Manufacturer / VID/PID"""
+        import subprocess as _sp, re
+        try:
+            result = _sp.run(
+                ["ioreg", "-r", "-c", "IOUSBHostDevice", "-l"],
+                capture_output=True, text=True, timeout=8, env=env,
+            )
+            if result.returncode != 0:
+                return False
+            raw = result.stdout.lower()
+            # 精确匹配 ViKeyPRO 产品名 + LiViKey 制造商
+            if '"usb product name" = "vikeypro"' in raw and '"manufacturer" = "livikey"' in raw:
+                return True
+            # fallback: VID/PID (真实值 0x1987 / 0x0331)
+            if 'idvendor" = 6535' in raw and 'idproduct" = 817' in raw:
+                return True
+            return False
+        except Exception as e:
+            logger.info(f"[DarwinProvider] ioreg VikeyPRO 扫描跳过: {e}")
+            return False
+
+    def _detect_vikey_via_sprof(self, env) -> bool:
+        """system_profiler 兼容路径 (ioreg 找不到时)"""
+        import subprocess as _sp, json as _json
+        try:
+            result = _sp.run(
+                ["system_profiler", "SPUSBDataType", "-json"],
+                capture_output=True, text=True, timeout=10, env=env,
+            )
+            if result.returncode != 0:
+                return False
+            data = _json.loads(result.stdout)
+            return self._search_usb_tree(data)
+        except Exception:
+            return False
+
     def _search_usb_tree(self, data: Dict, depth: int = 0) -> bool:
-        """递归搜索 USB 树中的 VIKEY 设备（VID/PID 匹配）"""
+        """递归搜索 USB 树中的 VIKEY 设备 — 支持 VID/PID/产品名 三种匹配"""
         if depth > 10:
             return False
         items = data.get("_items", []) if isinstance(data, dict) else []
-        # 获取 VIKEY VID/PID 白名单
+        # 真实 VID/PID + 产品名/制造商 (v24.2 fix)
         try:
             from services.vikey_detector import VIKEY_VID_PID
-            target_vid = VIKEY_VID_PID["vid"]
-            target_pid = VIKEY_VID_PID["pid"]
+            target_vid = VIKEY_VID_PID["vid"].lower()
+            target_pid = VIKEY_VID_PID["pid"].lower()
+            target_product = (VIKEY_VID_PID.get("product") or "vikeypro").lower()
+            target_mfr = (VIKEY_VID_PID.get("manufacturer") or "livikey").lower()
         except ImportError:
-            target_vid = "0x1234"
-            target_pid = "0x5678"
+            target_vid, target_pid = "0x1987", "0x0331"
+            target_product, target_mfr = "vikeypro", "livikey"
 
         for item in items:
             vid = str(item.get("vendor_id", "")).lower()
             pid = str(item.get("product_id", "")).lower()
-            if target_vid in vid and target_pid in pid:
+            pname = str(item.get("_name", item.get("product_name", ""))).lower()
+            mfr = str(item.get("manufacturer", "")).lower()
+            # 三重匹配: VID/PID 精确 或 产品名+制造商 模糊
+            if (target_vid in vid and target_pid in pid) or \
+               (target_product in pname and target_mfr in mfr) or \
+               (target_product in pname):
                 return True
             child = self._search_usb_tree(item, depth + 1)
             if child:

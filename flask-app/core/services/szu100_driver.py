@@ -51,20 +51,28 @@ _SZU100_MAX_SIZE_MB = 8192
 _detect_cache = {'ts': 0, 'data': None}
 _CACHE_TTL = 3.0
 
+# v24.2 fix (2026-09-30 LIVE): macOS 完整系统 PATH
+# subprocess 默认 PATH 可能缺 /usr/sbin (system_profiler/ioreg/mount/diskutil 全在那)
+_MACOS_SYSTEM_PATH = "/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+
 
 def _run_cmd(cmd, timeout=5):
-    """安全执行命令"""
+    """安全执行命令 — v24.2: 强制完整 PATH"""
     try:
-        r = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
+        import os as _os
+        env = {**_os.environ, "PATH": _MACOS_SYSTEM_PATH}
+        r = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout, env=env)
         return r.stdout.strip() if r.returncode == 0 else ''
     except Exception:
         return ''
 
 
 def _run_cmd_bytes(cmd, timeout=5):
-    """安全执行命令（返回bytes，用于ioreg含非UTF8字符的情况）"""
+    """安全执行命令（返回bytes，用于ioreg含非UTF8字符的情况）— v24.2: 强制完整 PATH"""
     try:
-        r = subprocess.run(cmd, capture_output=True, timeout=timeout)
+        import os as _os
+        env = {**_os.environ, "PATH": _MACOS_SYSTEM_PATH}
+        r = subprocess.run(cmd, capture_output=True, timeout=timeout, env=env)
         return r.stdout.decode('utf-8', errors='ignore') if r.returncode == 0 else ''
     except Exception:
         return ''
