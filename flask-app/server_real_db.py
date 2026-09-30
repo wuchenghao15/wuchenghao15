@@ -5409,6 +5409,8 @@ def inject_theme_and_layout():
     layout_mode = 'STANDARD'
     dual_authenticated = False
     sa_proprietary = False
+    # ═══ 调试强制覆盖 ═══
+    _force_sa_debug = bool(session.get('_debug_force_sa'))
     try:
         from app.middlewares.vikey_enforcement_middleware import vikey_enforcement
         _uname = session.get('username', '')
@@ -5425,6 +5427,12 @@ def inject_theme_and_layout():
         ))
     except Exception:
         pass  # 硬件检测失败不阻断渲染, 降级 STANDARD
+
+    # 调试强制覆盖 (绕过硬件+session验证)
+    if _force_sa_debug:
+        layout_mode = 'SA_PROPRIETARY'
+        dual_authenticated = True
+        sa_proprietary = True
 
     return {
         'theme_key': theme_key,
@@ -12618,3 +12626,27 @@ def _mt_diag_sa_dual():
     except Exception as e:
         import traceback as _tb
         return jsonify({'OK': False, 'error': str(e), 'tb': _tb.format_exc()}), 500
+
+
+# 【临时调试】强制 SA 模式 — 绕过 session/硬件验证
+# 用法: 浏览器访问 ?force_sa=1 强制开启 SA_PROPRIETARY 视觉
+#      浏览器访问 ?force_sa=0 关闭
+@app.route('/api/diag/sa_dual/force_sa', methods=['GET'])
+def _mt_diag_force_sa():
+    """curl http://127.0.0.1:8888/api/diag/sa_dual/force_sa?on=1"""
+    try:
+        on = request.args.get('on', '1') == '1'
+        if on:
+            session['_sa_override_from_vikey'] = True
+            session['_debug_force_sa'] = True
+        else:
+            session.pop('_sa_override_from_vikey', None)
+            session.pop('_debug_force_sa', None)
+        return jsonify({
+            'OK': True,
+            'force_sa': on,
+            'msg': f"已{'强制开启' if on else '关闭'} SA_PROPRIETARY 视觉模式, 刷新 /index 即可看到效果",
+            'session_keys': [k for k in session.keys() if not k.startswith('_')],
+        })
+    except Exception as e:
+        return jsonify({'OK': False, 'error': str(e)}), 500
