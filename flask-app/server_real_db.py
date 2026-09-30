@@ -7691,6 +7691,66 @@ def _get_homepage_stats():
     stats['total_exams'] = stats['exams_count']
     stats['total_questions'] = stats['questions_count']
     stats['ai_employees_online'] = stats['ai_employees_count']
+
+    # v24.3.4: 新增 5 个首页卡片数据（修复冰山/EigenFlux/Daemon/开发流程/握手全是横线 — 的问题）
+    # —— 冰山文案矩阵 = 规则治理表覆盖的规则总数 + 规则告警 + 违反 + 变更
+    try:
+        with _get_conn(APP_DB) as c2:
+            # 冰山矩阵 = 规则治理 + 违反 + 告警三张表总行数（规则治理覆盖度）
+            ice_total = 0
+            for (_t, _tbl) in [('mt_rule_changelog','mt_rule_changelog'),
+                              ('mt_rule_violation_alert','mt_rule_violation_alert'),
+                              ('mt_iron_rule_violations','mt_iron_rule_violations'),
+                              ('mt_rule_integrity_scan','mt_rule_integrity_scan')]:
+                try:
+                    _r = c2.execute(f'SELECT COUNT(*) FROM "{_tbl}"').fetchone()
+                    if _r: ice_total += _r[0] or 0
+                except Exception:
+                    pass
+            stats['ice_matrix_count'] = ice_total
+            # 冰山分层细分（铁律违反 / 规则告警 / 规则变更）
+            try:
+                _rv = c2.execute('SELECT COUNT(*) FROM mt_iron_rule_violations').fetchone()
+                stats['iron_violations'] = (_rv[0] if _rv else 0) or 0
+            except Exception:
+                stats['iron_violations'] = 0
+            try:
+                _ra = c2.execute('SELECT COUNT(*) FROM mt_rule_violation_alert').fetchone()
+                stats['rule_alerts'] = (_ra[0] if _ra else 0) or 0
+            except Exception:
+                stats['rule_alerts'] = 0
+            try:
+                _rc = c2.execute('SELECT COUNT(*) FROM mt_rule_changelog').fetchone()
+                stats['rule_changes'] = (_rc[0] if _rc else 0) or 0
+            except Exception:
+                stats['rule_changes'] = 0
+            # EigenFlux 专家 = eigenflux_registrations 表里总数（含 AI + 人类专家）
+            try:
+                _ef = c2.execute('SELECT COUNT(*) FROM eigenflux_registrations').fetchone()
+                stats['eigenflux_expert_count'] = (_ef[0] if _ef else 0) or 0
+            except Exception:
+                stats['eigenflux_expert_count'] = 0
+            # Daemon 运行 = mt_daemon_registry WHERE status='RUNNING'
+            try:
+                _dr = c2.execute("SELECT COUNT(*) FROM mt_daemon_registry WHERE status='RUNNING'").fetchone()
+                _dt = c2.execute('SELECT COUNT(*) FROM mt_daemon_registry').fetchone()
+                stats['daemon_running'] = (_dr[0] if _dr else 0) or 0
+                stats['daemon_total'] = (_dt[0] if _dt else 0) or 0
+            except Exception:
+                stats['daemon_running'] = 0
+                stats['daemon_total'] = 0
+            # 握手状态 = mt_ai_eigenflux_connections 活跃连接数（近 1h）
+            try:
+                _hs = c2.execute(
+                    "SELECT COUNT(*) FROM mt_ai_eigenflux_connections "
+                    "WHERE last_heartbeat > datetime('now','-3600 seconds')"
+                ).fetchone()
+                stats['handshake_active'] = (_hs[0] if _hs else 0) or 0
+            except Exception:
+                stats['handshake_active'] = 0
+    except Exception:
+        pass
+
     return stats
 
 
