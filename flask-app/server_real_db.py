@@ -1980,7 +1980,7 @@ def _validate_enum(v, whitelist, field_name='参数'):
 #        → STEP_12_TEST1000 → (测试完重复步1-11) → FINAL_DONE
 # ============================================================
 
-_MT_DEV_FLOW_VERSION = 'v3.1.0-mandatory-flow-ext2'
+_MT_DEV_FLOW_VERSION = 'v24.0.0-iceberg-unified'
 _MT_DEV_FLOW_STEPS = (
     'STEP_1_PROPOSAL',              # 1. 提案
     'STEP_2A_ROUND',                # 2. A轮讨论
@@ -2778,8 +2778,36 @@ except Exception as _ie_import:
     inject_i18n_into_app = None
     _i18n_get_conn = None
 
-# 1) 注入 t() / t_kw() —— 必须在 import 成功后立即执行, 不受 seed 影响
-if inject_i18n_into_app is not None:
+# 🆕 v22.41.0: 冰山多维向量文案矩阵（后端优先于 i18n_engine 旧表）
+try:
+    from engines.iceberg_content_matrix import (
+        bootstrap as _icm_bootstrap,
+        iceberg_inject_i18n_into_app as _icm_inject,
+        matrix_stats as _icm_stats,
+    )
+    _icm_bootstrap()  # 确保新表存在 + 旧数据迁移
+    _icm_inject(app)
+    _s = _icm_stats()
+    print(f'[ICEBERG-CM] ✅ 文案矩阵 {_s["total_rows"]} 行 / {_s["unique_keys"]} 键 / {_s["total_tokens"]:,} tokens / 4 语言')
+except Exception as _icm_err:
+    print(f'[ICEBERG-CM] ⚠️ 冰山矩阵加载失败（降级 i18n_engine）: {_icm_err}')
+
+# 🆕 v22.44.0: Mac mini 握手 + 同步 + 圆桌 + 报告 API
+try:
+    from engines.iceberg_handshake import create_handshake_blueprint as _hs_bp
+    from engines.iceberg_handshake import get_handshake_engine as _hs_get
+    app.register_blueprint(_hs_bp())
+    print('[🤝 Handshake] ✅ /api/handshake/* Blueprint 已注册 (status/report/reports/ping)')
+    # 启动握手守护线程 (心跳 + 自动检测 Mac mini + 触发完整链路)
+    import threading as _hs_t
+    _hs_eng = _hs_get()
+    _hs_t.Thread(target=_hs_eng.run_handshake_loop, daemon=True).start()
+    print('[🤝 Handshake] 🚀 守护线程已启动 — 心跳检测 Mac mini, 一旦握手成功自动触发双向同步 + 圆桌 + 完整报告')
+except Exception as _hs_err:
+    print(f'[🤝 Handshake] ⚠️ 握手模块加载失败: {_hs_err}')
+
+# 1) 注入 t() / t_kw() —— 冰山引擎已注入时跳过（避免覆盖）
+if inject_i18n_into_app is not None and 't' not in app.jinja_env.globals:
     try:
         inject_i18n_into_app(app)
         print('[I18N] ✅ inject t()/t_kw() into Jinja2 globals')
@@ -2920,9 +2948,9 @@ import hmac as _hmac  # noqa: E402
 import random as _rd  # noqa: E402
 
 # ---------- 容器常量 ----------
-_MT_SYS_CONTAINER_VERSION = '4.0.0-mtscos'
+_MT_SYS_CONTAINER_VERSION = 'v24.0.0-iceberg-unified'
 # 系统版本号（MINOR bump → v22.7.0：巡检缺口发现引擎5维架构优化 - auto_dev_team_engine.py 15硬伤+3运行BUG全修复(算法:_py_index 5维扫描复用↓80%+CompletionVerifier缓存验证↓99.5%+派发按weight降序 / 权重:GapPrioritizer唯一入口5维加权SEV*0.45+TYPE*0.25+OCCUR*0.12+FRESH*0.1+TEAM*0.08+建议池priority=ceil(w/10)链路一致+单return单审计日志 / 架构:DevPipelineRunner 4阶段Pipeline+ENGINE_REGISTRY生命周期注册+warmup_system统一入口 / 逻辑:IR14单事务批量transition+flow_id污染defrag↓93.8%+Implementer 4分支决策树confidence / 框架:连接池容量3+扫描mtime指纹缓存TTL900+GapEngineError 8错误码枚举) + §14强制12步骤自动执行100%STEP_7 + 总耗时↓94% 17.44s跑完81gaps）
-SYSTEM_VERSION = 'v22.7.0'
+SYSTEM_VERSION = 'v24.0.0-iceberg-unified'
 _MT_SYS_CONTAINER_SECRET = hashlib.sha256(b'MTSCOS-SYSTEM-CONTAINER-SECRET-v3').digest()
 _MT_GUEST_ROLE = 'guest'
 _MT_ADMIN_ROLES = {'admin', 'super_admin', 'teacher_admin', 'school_admin', 'sysadmin',
@@ -3707,7 +3735,6 @@ _MT_HOTLINK_WHITELIST_PREFIXES = (
     '/static/', '/assets/', '/auth/', '/_ui/', '/api/auth/',
     '/api/health', '/api/system_version', '/api/system_logo',
     '/api/neuralhub/employee_distribution',
-    '/andromeda/',
     '/api/neuralhub/daemon_tick',
     '/api/neuralhub/edu_reform_check',
     '/api/neuralhub/knowledge_inventory',
@@ -3857,7 +3884,8 @@ def _mt_vikey_lock_check():
     try:
         path = request.path or ''
         bypass_paths = {
-            '/', '/auth/login', '/auth/logout', '/auth/session_health',
+            '/', '/auth/login', '/auth/logout', '/auth/register', '/register',
+            '/auth/session_health', '/auth/forgot_password', '/forgot_password',
             '/api/vikey/detect', '/api/vikey/lock_state', '/api/vikey/unlock',
             '/api/vikey/set_timeout', '/api/vikey/snapshot/save',
             '/api/vikey/snapshot/restore', '/api/vikey/snapshot/release',
@@ -4922,7 +4950,7 @@ _ROLE_CN = {
 # ==========================================================
 #  协议文档（注册时必须勾选）+ 身份组别体系
 # ==========================================================
-_LEGAL_TERMS_VERSION = '1.0.0'
+_LEGAL_TERMS_VERSION = 'v24.0.0-iceberg-unified'
 _LEGAL_TERMS_UPDATED_AT = '2026-08-05'
 
 _LEGAL_DOCUMENTS = {

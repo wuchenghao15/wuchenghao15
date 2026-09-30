@@ -1,228 +1,708 @@
 {% extends "base.html" %}
 
-{% block title %}{{ t('auto.register.x_e804a9a2', default='用户注册') }}{% endblock %}
+{% block title %}用户注册 · MTSCOS AI 仙女座{% endblock %}
 
 {% block head %}
 <style>
+    /* ═══════════════════════════════════════════════════════════════
+       🌌 仙女座主题注册页 v3.0
+       ═══════════════════════════════════════════════════════════════ */
+    .reg-page {
+        min-height: 100vh;
+        background: linear-gradient(135deg, #0B1F3A 0%, #1a0a2e 40%, #0d1b2a 100%);
+        position: relative; overflow: hidden;
+        display: flex; align-items: center; justify-content: center;
+        padding: 40px 20px;
+    }
+    /* 星空背景 */
+    .reg-page::before {
+        content: ''; position: absolute; inset: 0;
+        background-image:
+            radial-gradient(1px 1px at 10% 20%, #fff 50%, transparent),
+            radial-gradient(1px 1px at 30% 60%, #fff 50%, transparent),
+            radial-gradient(1.5px 1.5px at 55% 30%, #a78bfa 50%, transparent),
+            radial-gradient(1px 1px at 70% 80%, #fff 50%, transparent),
+            radial-gradient(1px 1px at 85% 15%, #9B59B6 50%, transparent),
+            radial-gradient(1.5px 1.5px at 92% 55%, #fff 50%, transparent),
+            radial-gradient(1px 1px at 15% 85%, #fff 50%, transparent),
+            radial-gradient(1px 1px at 45% 10%, #fff 50%, transparent);
+        background-size: 100% 100%; opacity: .45;
+        animation: starTwinkle 4s ease-in-out infinite alternate;
+    }
+    @keyframes starTwinkle { from { opacity: .3 } to { opacity: .6 } }
+
+    /* 仙女座星云光晕 */
+    .reg-page::after {
+        content: ''; position: absolute; top: -20%; right: -15%;
+        width: 600px; height: 600px; border-radius: 50%;
+        background: radial-gradient(circle, rgba(155,89,182,.25) 0%, rgba(107,33,168,.08) 40%, transparent 70%);
+        pointer-events: none;
+    }
+
     .register-container {
-        max-width: 520px; margin: 40px auto;
-        background: var(--mtscos-bg-card, #fff);
-        border: 1px solid var(--mtscos-border-light, rgba(91,143,185,.16));
-        border-radius: 16px; padding: 36px;
-        box-shadow: 0 20px 60px -12px rgba(31,45,61,.18);
+        position: relative; z-index: 2;
+        max-width: 540px; width: 100%;
+        background: rgba(255,255,255,.04);
+        backdrop-filter: blur(24px) saturate(1.4);
+        -webkit-backdrop-filter: blur(24px) saturate(1.4);
+        border: 1px solid rgba(255,255,255,.12);
+        border-radius: 24px; padding: 40px 36px 32px;
+        box-shadow:
+            0 25px 80px -15px rgba(0,0,0,.6),
+            0 0 0 1px rgba(155,89,182,.15) inset,
+            0 8px 40px -8px rgba(155,89,182,.2);
     }
-    .register-container h1 { text-align: center; color: var(--mtscos-text-primary, #333); margin-bottom: 6px; font-size: 26px; }
-    .register-sub { text-align: center; color: var(--mtscos-text-secondary, #7a8aa0); font-size: 13px; margin-bottom: 24px; }
-    .form-group { margin-bottom: 18px; }
-    .form-group label { display: block; color: var(--mtscos-text-secondary, #555); margin-bottom: 7px; font-weight: 600; font-size: 14px; }
+
+    /* 头部 */
+    .reg-header { text-align: center; margin-bottom: 28px; }
+    .reg-logo {
+        width: 56px; height: 56px; margin: 0 auto 14px;
+        background: linear-gradient(135deg, #9B59B6, #2E86DE);
+        border-radius: 16px; display: flex; align-items: center; justify-content: center;
+        color: #fff; font-size: 24px;
+        box-shadow: 0 8px 24px -4px rgba(155,89,182,.5);
+    }
+    .reg-title {
+        font-size: 24px; font-weight: 800; letter-spacing: .5px;
+        color: #fff; margin-bottom: 6px;
+    }
+    .reg-title span { background: linear-gradient(135deg, #9B59B6, #2E86DE); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .reg-sub { font-size: 13px; color: rgba(255,255,255,.5); }
+
+    /* 表单 */
+    .form-group { margin-bottom: 16px; position: relative; }
+    .form-group label {
+        display: block; color: rgba(255,255,255,.7); font-size: 12.5px; font-weight: 600;
+        margin-bottom: 7px; letter-spacing: .3px; text-transform: uppercase;
+    }
     .form-group input {
-        width: 100%; padding: 12px 16px;
-        border: 2px solid var(--mtscos-border-base, #e0e0e0);
-        border-radius: 8px; font-size: 14px;
-        color: var(--mtscos-text-primary);
-        background: var(--mtscos-bg-page, #f6f8fa);
-        transition: border-color .3s;
+        width: 100%; padding: 12px 16px; font-size: 14px;
+        border: 1px solid rgba(255,255,255,.15); border-radius: 10px;
+        background: rgba(255,255,255,.06); color: #fff;
+        transition: all .2s; box-sizing: border-box;
     }
-    .form-group input:focus { outline: none; border-color: var(--mtscos-primary-base, #5B8FB9); background: #fff; }
+    .form-group input::placeholder { color: rgba(255,255,255,.35); }
+    .form-group input:focus {
+        outline: none; border-color: #9B59B6;
+        background: rgba(255,255,255,.09);
+        box-shadow: 0 0 0 3px rgba(155,89,182,.25);
+    }
+    .form-group input.valid { border-color: #22c55e; }
+    .form-group input.invalid { border-color: #ef4444; }
+    .form-group select {
+        width: 100%; padding: 12px 16px; font-size: 14px;
+        border: 1px solid rgba(255,255,255,.15); border-radius: 10px;
+        background: rgba(255,255,255,.06); color: #fff;
+        transition: all .2s; box-sizing: border-box;
+        appearance: none; -webkit-appearance: none;
+        background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' fill='white' viewBox='0 0 24 24'><path d='M7 10l5 5 5-5z'/></svg>");
+        background-repeat: no-repeat; background-position: right 12px center;
+    }
+    .form-group select:focus { outline: none; border-color: #9B59B6; box-shadow: 0 0 0 3px rgba(155,89,182,.25); }
+    .form-group select option { background: #1a1a2e; color: #fff; }
+    .form-row { display: flex; gap: 12px; }
+    .form-col { flex: 1; }
+    .optional { color: rgba(255,255,255,.35); font-size: 10.5px; font-weight: 400; text-transform: none; letter-spacing: 0; margin-left: 2px; font-style: normal; }
+
+    /* 分割线 */
+    .reg-form-divider {
+        display: flex; align-items: center; margin: 16px 0 14px; gap: 10px;
+    }
+    .reg-form-divider::before, .reg-form-divider::after {
+        content: ''; flex: 1; height: 1px; background: rgba(255,255,255,.1);
+    }
+    .divider-text {
+        font-size: 11.5px; font-weight: 700; color: rgba(255,255,255,.55);
+        letter-spacing: 1px; text-transform: uppercase;
+    }
+    .divider-text em { font-style: normal; font-weight: 400; font-size: 9.5px; color: #c4b5fd; letter-spacing: .5px; margin-left: 6px; text-transform: none; }
+
+    /* 监护人 gate */
+    .guardian-gate {
+        background: linear-gradient(135deg, rgba(234,179,8,.12), rgba(155,89,182,.12));
+        border: 1px solid rgba(234,179,8,.3); border-radius: 12px;
+        padding: 14px; margin-bottom: 14px; animation: guardianFade .3s ease;
+    }
+    @keyframes guardianFade { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+    .guardian-alert { display: flex; gap: 12px; align-items: flex-start; margin-bottom: 10px; }
+    .guardian-alert i { font-size: 20px; color: #eab308; margin-top: 2px; }
+    .guardian-alert b { display: block; font-size: 13px; color: #fde68a; margin-bottom: 4px; }
+    .guardian-alert p { font-size: 12px; color: rgba(255,255,255,.75); margin: 0; line-height: 1.55; }
+    .guardian-check { display: flex; align-items: flex-start; gap: 8px; font-size: 12px; color: rgba(255,255,255,.85); cursor: pointer; padding-top: 2px; }
+    .guardian-check input { width: 16px; height: 16px; margin-top: 2px; accent-color: #9B59B6; cursor: pointer; flex-shrink: 0; }
+
+    /* 自动学习组别显示 */
+    .birthdate-row {
+        display: flex; gap: 8px; align-items: center;
+    }
+    .birthdate-row select {
+        flex: 1; min-width: 0; padding: 11px 10px; font-size: 13px;
+        border: 1px solid rgba(255,255,255,.15); border-radius: 10px;
+        background: rgba(255,255,255,.06); color: #fff;
+        transition: all .2s; box-sizing: border-box;
+        appearance: none; -webkit-appearance: none;
+        background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' fill='white' viewBox='0 0 24 24'><path d='M7 10l5 5 5-5z'/></svg>");
+        background-repeat: no-repeat; background-position: right 8px center;
+        background-size: 16px; padding-right: 24px;
+    }
+    .birthdate-row select:focus { outline: none; border-color: #9B59B6; box-shadow: 0 0 0 3px rgba(155,89,182,.25); }
+    .birthdate-row select option { background: #1a1a2e; color: #fff; }
+    .age-calc-preview {
+        flex: 0 0 auto; padding: 8px 12px; font-size: 11px; font-weight: 700;
+        color: #c4b5fd; background: rgba(155,89,182,.12); border-radius: 8px;
+        border: 1px solid rgba(155,89,182,.2); white-space: nowrap; line-height: 1.4;
+    }
+    /* 隐藏的 edu-group-display 仍可能被 JS 引用 */
+    .edu-group-display { display: none; }
+
+    /* 密码强度条 */
+    .pwd-strength { height: 4px; margin-top: 6px; border-radius: 2px; background: rgba(255,255,255,.1); overflow: hidden; }
+    .pwd-strength-bar { height: 100%; width: 0; border-radius: 2px; transition: width .3s, background .3s; }
+    .pwd-label { font-size: 11px; margin-top: 3px; color: rgba(255,255,255,.4); }
+
+    /* 错误/成功提示 */
+    .alert { padding: 12px 16px; border-radius: 10px; margin-bottom: 16px; font-size: 13px; display: none; }
+    .alert-error { background: rgba(239,68,68,.15); color: #fca5a5; border: 1px solid rgba(239,68,68,.3); }
+    .alert-success { background: rgba(34,197,94,.15); color: #86efac; border: 1px solid rgba(34,197,94,.3); }
+
+    /* 注册按钮 */
     .btn-register {
-        width: 100%; padding: 14px;
-        background: linear-gradient(135deg, var(--mtscos-primary-base, #5B8FB9), var(--mtscos-secondary-base, #6FA88B));
-        color: #fff; border: none; border-radius: 8px;
-        font-size: 16px; font-weight: 600; cursor: pointer; transition: all .3s;
+        width: 100%; padding: 14px; margin-top: 12px;
+        background: linear-gradient(135deg, #9B59B6, #2E86DE);
+        color: #fff; border: none; border-radius: 12px;
+        font-size: 15px; font-weight: 700; letter-spacing: 1px;
+        cursor: pointer; transition: all .25s;
+        box-shadow: 0 6px 20px -4px rgba(155,89,182,.5);
     }
-    .btn-register:hover { transform: translateY(-2px); box-shadow: 0 8px 20px -4px rgba(91,143,185,.4); }
-    .btn-register:disabled { opacity: .6; cursor: not-allowed; transform: none; }
-    .login-link { text-align: center; margin-top: 18px; color: var(--mtscos-text-secondary); font-size: 14px; }
-    .login-link a { color: var(--mtscos-primary-base); text-decoration: none; font-weight: 600; }
-    .alert { padding: 12px 16px; border-radius: 8px; margin-bottom: 18px; font-size: 14px; display: none; }
-    .alert-error { background: var(--mtscos-danger-soft, rgba(209,91,91,.1)); color: var(--mtscos-danger-base, #c33); border: 1px solid var(--mtscos-danger-soft, rgba(209,91,91,.2)); }
-    .alert-success { background: var(--mtscos-success-soft, rgba(92,154,111,.1)); color: var(--mtscos-success-base, #363); border: 1px solid var(--mtscos-success-soft, rgba(92,154,111,.2)); }
+    .btn-register:hover { transform: translateY(-2px); box-shadow: 0 12px 28px -4px rgba(155,89,182,.6); }
+    .btn-register:active { transform: translateY(0); }
+    .btn-register:disabled { opacity: .55; cursor: not-allowed; transform: none; }
+    .btn-register .spin { display: none; width: 14px; height: 14px; border: 2px solid rgba(255,255,255,.4); border-top-color: #fff; border-radius: 50%; animation: nh-spin .7s linear infinite; margin-right: 8px; vertical-align: middle; }
+    .btn-register.loading .spin { display: inline-block; }
+    @keyframes nh-spin { to { transform: rotate(360deg); } }
 
-    /* ============ 协议 / 规则告知 / {{ t('auto.register.x_a457e978') }}说明') }}') }} ============ */
+    /* 底部链接 */
+    .reg-footer { text-align: center; margin-top: 18px; font-size: 13px; color: rgba(255,255,255,.5); }
+    .reg-footer a { color: #9B59B6; text-decoration: none; font-weight: 600; }
+    .reg-footer a:hover { text-decoration: underline; }
+
+    /* 协议区 */
     .agreement-section {
-        margin: 20px 0; padding: 16px;
-        background: var(--mtscos-bg-page, #f6f8fa);
-        border: 1px solid var(--mtscos-border-light, rgba(91,143,185,.12));
-        border-radius: 10px;
+        margin: 22px 0 14px; padding: 14px;
+        background: rgba(255,255,255,.04);
+        border: 1px solid rgba(255,255,255,.1); border-radius: 12px;
     }
-    .agreement-tabs { display: flex; gap: 4px; margin-bottom: 12px; flex-wrap: wrap; }
+    .agreement-tabs { display: flex; gap: 3px; margin-bottom: 12px; flex-wrap: wrap; }
     .agreement-tab {
-        padding: 7px 14px; border-radius: 8px; font-size: 13px; font-weight: 600;
+        padding: 6px 12px; border-radius: 7px; font-size: 12px; font-weight: 600;
         cursor: pointer; border: 1px solid transparent; transition: all .15s;
-        background: transparent; color: var(--mtscos-text-secondary);
+        background: transparent; color: rgba(255,255,255,.55);
     }
-    .agreement-tab.active { background: var(--mtscos-primary-soft, rgba(91,143,185,.12)); color: var(--mtscos-primary-base, #457295); border-color: var(--mtscos-border-light, rgba(91,143,185,.2)); }
-    .agreement-tab:hover:not(.active) { background: var(--mtscos-bg-card, #fff); }
-    .agreement-panel { display: none; max-height: 180px; overflow-y: auto; font-size: 13px; line-height: 1.7; color: var(--mtscos-text-secondary, #555); padding-right: 8px; }
+    .agreement-tab.active {
+        background: rgba(155,89,182,.25); color: #d8b4fe; border-color: rgba(155,89,182,.4);
+    }
+    .agreement-tab:hover:not(.active) { color: rgba(255,255,255,.85); }
+    .agreement-ver {
+        display:inline-block; margin-left:4px; padding:0 5px;
+        font-size:9px; font-weight:700; border-radius:4px;
+        background: rgba(155,89,182,.2); color: #c4b5fd;
+    }
+    .agreement-panel {
+        display: none; max-height: 280px; overflow-y: auto;
+        font-size: 12.5px; line-height: 1.7; color: rgba(255,255,255,.7); padding-right: 8px;
+    }
     .agreement-panel.active { display: block; }
-    .agreement-panel h4 { font-size: 14px; font-weight: 700; color: var(--mtscos-text-primary); margin: 0 0 8px; }
-    .agreement-panel p { margin-bottom: 6px; }
-    .agreement-panel ul { margin: 4px 0 8px 18px; }
-    .agreement-panel ul li { margin-bottom: 3px; }
+    .agreement-meta { display:flex; align-items:baseline; gap:10px; margin-bottom:10px; padding-bottom:8px; border-bottom:1px solid rgba(255,255,255,.08); }
+    .agreement-meta h4 { font-size: 14px; font-weight: 700; color: #fff; margin: 0; }
+    .agreement-meta span { font-size: 11px; color: rgba(255,255,255,.45); }
+    .agreement-panel h5 { font-size: 12.5px; font-weight: 700; color: rgba(255,255,255,.85); margin: 10px 0 4px; }
+    .agreement-panel ul { margin: 0 0 6px 16px; padding: 0; }
+    .agreement-panel ul li { margin-bottom: 2.5px; }
 
-    .agree-check { display: flex; align-items: flex-start; gap: 10px; margin: 16px 0; font-size: 13px; color: var(--mtscos-text-secondary); cursor: pointer; }
-    .agree-check input { width: 18px; height: 18px; margin-top: 1px; cursor: pointer; accent-color: var(--mtscos-primary-base, #5B8FB9); }
-    .agree-check a { color: var(--mtscos-primary-base); font-weight: 600; }
+    /* 同意勾选 */
+    .agree-check {
+        display: flex; align-items: flex-start; gap: 10px; margin: 14px 0 4px;
+        font-size: 12.5px; color: rgba(255,255,255,.6); cursor: pointer; line-height: 1.5;
+    }
+    .agree-check input { width: 16px; height: 16px; margin-top: 2px; cursor: pointer; accent-color: #9B59B6; }
+    .agree-check a { color: #9B59B6; font-weight: 600; }
 </style>
 {% endblock %}
 
 {% block content %}
+<div class="reg-page">
 <div class="register-container">
-    <h1>用户注册</h1>
-    <div class="register-sub">{{ t('auto.register.x_mtscos_ai__d213979c', default='创建您的 MTSCOS AI 平台账号') }}</div>
+    <div class="reg-header">
+            <div class="reg-logo"><i class="fas fa-mountain"></i></div>
+            <div class="reg-title">{{ t('register.logo','欢迎加入') }} <span>{{ t('register.brand','《冰山》') }}</span></div>
+            <div class="reg-sub">{{ t('register.subtitle','MTSCOS AI · 后端大数据模型智能综合体') }}</div>
+        </div>
 
     <div class="alert alert-error" id="errorAlert"></div>
     <div class="alert alert-success" id="successAlert"></div>
 
     <form id="registerForm" onsubmit="return handleRegister(event)">
         <div class="form-group">
-            <label for="username">{{ t('auto.register.x_819767ad', default='用户名') }}</label>
-            <input type="text" id="username" name="username" required placeholder="{{ t('auto.register.x_08b1fa13', default='请输入用户名') }}" minlength="3" maxlength="20">
+            <label>{{ t('register.username','用户名') }}</label>
+            <input type="text" id="username" name="username" required placeholder="{{ t('register.username_placeholder','3-20 字符，字母/数字/下划线') }}" minlength="3" maxlength="20" autocomplete="username">
         </div>
         <div class="form-group">
-            <label for="password">{{ t('auto.register.x_a8105204', default='密码') }}</label>
-            <input type="password" id="password" name="password" required placeholder="{{ t('auto.register.x_e39ffe99', default='请输入密码') }}" minlength="6">
+            <label>{{ t('register.password','密码') }}</label>
+            <input type="password" id="password" name="password" required placeholder="{{ t('register.password_placeholder','至少 8 位，建议大小写+数字+符号') }}" minlength="8" autocomplete="new-password">
+            <div class="pwd-strength"><div class="pwd-strength-bar" id="pwdBar"></div></div>
+            <div class="pwd-label" id="pwdLabel">—</div>
         </div>
         <div class="form-group">
-            <label for="confirmPassword">{{ t('auto.register.x_3fbdde13', default='确认密码') }}</label>
-            <input type="password" id="confirmPassword" name="confirmPassword" required placeholder="{{ t('auto.register.x_a24ab09b', default='请再次输入密码') }}">
+            <label>{{ t('register.confirm_password','确认密码') }}</label>
+            <input type="password" id="confirmPassword" name="confirmPassword" required placeholder="{{ t('register.confirm_password_placeholder','请再次输入密码') }}" autocomplete="new-password">
         </div>
 
-        <!-- ============ 协议 / 规则告知 / {{ t('auto.register.x_07311cb0') }}') }}') }} / 数据使用说明 ============ -->
+        <div class="reg-form-divider">
+            <span class="divider-text">{{ t('register.email','邮箱') }} <em>{{ t('register.email_optional','（可选，用于密码找回和登录告警）') }}</em></span>
+        </div>
+        <div class="form-group">
+            <label>{{ t('register.email','邮箱') }} <em class="optional">{{ t('register.email_optional','（可选，用于密码找回和登录告警）') }}</em></label>
+            <input type="email" id="email" name="email" placeholder="{{ t('register.email_placeholder','your@email.com') }}" autocomplete="email">
+        </div>
+        <div class="form-group">
+            <label>{{ t('register.birthdate','出生年月日') }} <em class="optional">{{ t('register.birthdate_reason','（决定学习组别 + 监护人 gate）') }}</em></label>
+            <div class="birthdate-row">
+                <select id="birthYear"  onchange="onBirthChange()">
+                    <option value="">{{ t('register.birth_year','年') }}</option>
+                </select>
+                <select id="birthMonth" onchange="onBirthChange()">
+                    <option value="">{{ t('register.birth_month','月') }}</option>
+                </select>
+                <select id="birthDay"   onchange="onBirthChange()">
+                    <option value="">{{ t('register.birth_day','日') }}</option>
+                </select>
+                <span class="age-calc-preview" id="ageCalcPreview">{{ t('register.age_unknown','年龄 — · 组别 —') }}</span>
+            </div>
+        </div>
+
+        <!-- 🆕 学习组别自选（默认年龄推荐 · 排他性范围约束） -->
+        <div class="form-group" id="learningGroupWrap" style="display:none">
+            <label>{{ t('register.learning_group_title','选择学习组别') }} <em class="optional">{{ t('register.learning_group_optional','（可选 · 留空用年龄自动推荐）') }}</em></label>
+            <select id="learningGroup" onchange="onGroupManualSelect()">
+                <option value="">{{ t('register.group_auto','— 按年龄自动推荐 —') }}</option>
+                <optgroup label="{{ t('register.group_age_hint','允许的年龄范围（后端将校验）') }}">
+                    <option value="普通组别">{{ t('register.group_default','普通组别') }}</option>
+                    <option value="K12">{{ t('register.group_k12','🎒 K12 学生（6-18 岁）') }}</option>
+                    <option value="高等教育">{{ t('register.group_tertiary','🎓 高等教育（17-30 岁）') }}</option>
+                    <option value="成人教育">{{ t('register.group_adult','💼 成人教育（18-65 岁）') }}</option>
+                    <option value="老年大学">{{ t('register.group_senior','🌅 老年大学（55-100 岁）') }}</option>
+                </optgroup>
+            </select>
+            <span class="group-hint" id="groupHint" style="font-size:11px;color:rgba(255,255,255,.4);margin-top:4px;display:block"></span>
+        </div>
+
+        <!-- 🆕 语言/专业组别（可多选共存 · 与教育组互不妨碍） -->
+        <div class="form-group" id="langGroupWrap" style="display:none">
+            <label>{{ t('register.lang_group_title','语言 / 兴趣组别') }} <em class="optional">{{ t('register.lang_group_optional','（可多选 · 与教育组并存）') }}</em></label>
+            <div class="lang-group-box" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:6px">
+                <label class="lang-chip" style="display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border:1px solid rgba(155,89,182,.4);border-radius:14px;font-size:12px;cursor:pointer">
+                    <input type="checkbox" name="lang_group" value="商务英语" style="accent-color:#9B59B6">
+                    🌐 {{ t('register.lang_business_english','商务英语') }}
+                </label>
+                <label class="lang-chip" style="display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border:1px solid rgba(155,89,182,.4);border-radius:14px;font-size:12px;cursor:pointer">
+                    <input type="checkbox" name="lang_group" value="日语" style="accent-color:#9B59B6">
+                    🇯🇵 {{ t('register.lang_japanese','日语') }}
+                </label>
+                <label class="lang-chip" style="display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border:1px solid rgba(155,89,182,.4);border-radius:14px;font-size:12px;cursor:pointer">
+                    <input type="checkbox" name="lang_group" value="韩语" style="accent-color:#9B59B6">
+                    🇰🇷 {{ t('register.lang_korean','韩语') }}
+                </label>
+                <label class="lang-chip" style="display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border:1px solid rgba(155,89,182,.4);border-radius:14px;font-size:12px;cursor:pointer">
+                    <input type="checkbox" name="lang_group" value="法语" style="accent-color:#9B59B6">
+                    🇫🇷 {{ t('register.lang_french','法语') }}
+                </label>
+                <label class="lang-chip" style="display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border:1px solid rgba(155,89,182,.4);border-radius:14px;font-size:12px;cursor:pointer">
+                    <input type="checkbox" name="lang_group" value="Python" style="accent-color:#9B59B6">
+                    🐍 {{ t('register.lang_python','Python 编程') }}
+                </label>
+            </div>
+            <span class="group-hint" style="font-size:11px;color:rgba(255,255,255,.35);margin-top:4px;display:block">
+                {{ t('register.lang_group_hint','语言/兴趣组可与教育组共存，且彼此不排他（例：K12 学生可同时选 商务英语 + 日语）') }}
+            </span>
+        </div>
+
+        <!-- <14 岁监护人同意 gate -->
+        <div class="guardian-gate" id="guardianGate" style="display:none">
+            <div class="guardian-alert">
+                <i class="fas fa-shield-halved"></i>
+                <div>
+                    <b>{{ t('register.guardian_title','监护人同意提示') }}</b>
+                    <p>{{ t('register.guardian_msg','根据《个人信息保护法》和《未成年人保护法》，未满 14 周岁注册须由监护人陪同进行，并勾选下方同意项。') }}</p>
+                </div>
+            </div>
+            <label class="guardian-check">
+                <input type="checkbox" id="guardian_consent">
+                <span>{{ t('register.guardian_check','我是该未成年人的监护人，同意其注册并使用 MTSCOS AI 平台') }}</span>
+            </label>
+        </div>
+
+        <!-- 协议区 (后端 _LEGAL_DOCUMENTS 驱动) -->
         <div class="agreement-section">
             <div class="agreement-tabs">
-                <span class="agreement-tab active" data-panel="p0">{{ t('auto.register.x_c96e43e9') }}') }}</span>
-                <span class="agreement-tab" data-panel="p1">{{ t('auto.register.x_86891a9c') }}') }}') }}</span>
-                <span class="agreement-tab" data-panel="p2">注册通告</span>
-                <span class="agreement-tab" data-panel="p3">数据使用说明</span>
+                {% set ns = namespace(first=true) %}
+                {% for slug in required_terms %}
+                    {% if legal_docs.get(slug) %}
+                        {% set doc = legal_docs[slug] %}
+                        <span class="agreement-tab{% if ns.first %} active{% endif %}" data-panel="p_{{ slug }}">
+                            {{ doc.get('title', slug) }}
+                            <span class="agreement-ver">v{{ doc.get('version', '1.0.0') }}</span>
+                        </span>
+                        {% set ns.first = false %}
+                    {% endif %}
+                {% endfor %}
             </div>
 
-            <div class="agreement-panel active" id="p0">
-                <h4>{{ t('auto.register.mtscos_ai_x_b3df3077', default='MTSCOS AI 用户服务协议') }}</h4>
-                <p>{{ t('auto.register.x_mtscos_ai__17544186', default='欢迎您使用 MTSCOS AI 智能学习与自动化托管平台。注册即表示您同意以下条款：') }}</p>
-                <ul>
-                    <li>{{ t('auto.register.x_ai_x_x_x_x_9634da28', default='本平台提供 AI 自动化托管、在线考试、多语种学习等服务，用户须合法使用。') }}</li>
-                    <li>{{ t('auto.register.x_x_x__c495a18c', default='用户账号仅限本人使用，禁止转让、出借或共享给第三方。') }}</li>
-                    <li>{{ t('auto.register.x_x_x__a09b15cc', default='用户发布的内容须遵守法律法规，禁止发布违法、侵权或不当内容。') }}</li>
-                    <li>{{ t('auto.register.x_x_x__a000d138', default='平台有权对违规行为进行处置，包括但不限于限制功能、封禁账号。') }}</li>
-                    <li>{{ t('auto.register.x_sa_x_x__14_9e235c34', default='超级管理员（SA）拥有最高权限，受 §14 IRON_RULE 和 VIKEY 双因子强认证保护。') }}</li>
-                </ul>
-            </div>
-
-            <div class="agreement-panel" id="p1">
-                <h4>系统规则告知</h4>
-                <p>{{ t('auto.register.x__14_iron_r_55ba7474', default='本平台遵循 §14 IRON_RULE 强制开发 12 步骤流程，所有开发活动不可绕开。') }}</p>
-                <ul>
-                    <li><b>{{ t('auto.register.x_23bbdd59', default='权限管理') }}</b>{{ t('auto.register._11_x_x__sys_397f1fc4', default='：11 级角色体系，所有路由经 @system_container 装饰器鉴权。') }}</li>
-                    <li><b>{{ t('auto.register.x_1d3ba50c') }}') }}</b>{{ t('auto.register._x_x_x_sqlit_2eee4cf4', default='：数据库为唯一数据源，禁止假数据；所有自动化进程数据落库 SQLite。') }}</li>
-                    <li><b>{{ t('auto.register.x_63cfe941', default='本地推理') }}</b>{{ t('auto.register._x_ai_x_x_to_b0415dc7', default='：优先本地 AI 推理（零 token 消耗），API 调用为辅助手段。') }}</li>
-                    <li><b>{{ t('auto.register.x_a07b823a', default='规则执行') }}</b>{{ t('auto.register._9_x_x_4_x_g_df702bbd', default='：9 篇规则自动学习+严格执行，4 层拦截（Git Hook + Flask + CI + pre-push）。') }}</li>
-                    <li><b>{{ t('auto.register.x_d68b09ca', default='巡检驱动') }}</b>{{ t('auto.register._ai_x___x_x__9a06e02e', default='：AI 巡检闭环 + 自动修复，异常事件自动投喂 EigenFlux 与 AI 脑库。') }}</li>
-                    <li><b>{{ t('auto.register.x_6b7625dd', default='公祭日锁定') }}</b>{{ t('auto.register._x_x__7ec4e91f', default='：公祭日期间主题自动切换为灰度模式，不可手动更改。') }}</li>
-                </ul>
-            </div>
-
-            <div class="agreement-panel" id="p2">
-                <h4>注册通告</h4>
-                <p>{{ t('auto.register.x__1be161da', default='请您仔细阅读以下注册须知：') }}</p>
-                <ul>
-                    <li>{{ t('auto.register.x_3_20_x_x_x_35dbb94b', default='用户名长度 3-20 字符，仅支持字母、数字、下划线。') }}</li>
-                    <li>{{ t('auto.register.x_6_x_x_x_x__1eab6260', default='密码长度不少于 6 位，建议使用大小写字母+数字+符号组合。') }}</li>
-                    <li>{{ t('auto.register.x_x_a81998d6', default='注册成功后，默认角色为') }} <b>guest</b>{{ t('auto.register._x__x__93004664', default='（访客），可浏览公开页面。') }}</li>
-                    <li>{{ t('auto.register.x_login_admi_18387ec5', default='如需提升权限（login/admin/super_admin），须联系超级管理员审批。') }}</li>
-                    <li>{{ t('auto.register.x_x_x_x_x___a51986b4', default='首次登录后请前往「个人设置」完善个人信息（组别/权限申请等）。') }}</li>
-                    <li>{{ t('auto.register.x_webauthn_x_67fd37b4', default='本平台支持 WebAuthn 指纹登录，建议在「完整登录」页绑定设备。') }}</li>
-                </ul>
-            </div>
-
-            <div class="agreement-panel" id="p3">
-                <h4>{{ t('auto.register.x_3a1c6c41', default='用户数据使用说明') }}</h4>
-                <p>{{ t('auto.register.x_x__df86a34a', default='关于您的个人数据，我们承诺：') }}</p>
-                <ul>
-                    <li><b>{{ t('auto.register.x_08058dcc', default='数据采集') }}</b>{{ t('auto.register._x_x_x__x__0617f94f', default='：仅采集注册所需的用户名、密码（加密存储），不采集身份证明信息。') }}</li>
-                    <li><b>{{ t('auto.register.x_1209e34a', default='数据存储') }}</b>{{ t('auto.register._x_sqlite_x__51abe1a2', default='：所有数据存储于本地 SQLite 数据库，不传输至第三方服务器。') }}</li>
-                    <li><b>数据使用</b>{{ t('auto.register._x_x_x__6b4a02b8', default='：用于身份验证、权限管理、学习记录与考试数据关联。') }}</li>
-                    <li><b>{{ t('auto.register.ai_x_32dc54d7', default='AI 数据') }}</b>{{ t('auto.register._ai_x_eigenf_214647d6', default='：AI 员工/EigenFlux 专家交互数据自动落库，用于系统优化与知识积累。') }}</li>
-                    <li><b>数据安全</b>{{ t('auto.register._vikey_x_sa__d980c61a', default='：VIKEY 加密狗保护 SA 账号；用户密码使用哈希加密存储。') }}</li>
-                    <li><b>{{ t('auto.register.x_463e770e', default='数据删除') }}</b>{{ t('auto.register._x_x__f0a0bf07', default='：您有权要求删除账号及相关数据，请联系管理员处理。') }}</li>
-                </ul>
-            </div>
+            {% set ns2 = namespace(first=true) %}
+            {% for slug in required_terms %}
+                {% if legal_docs.get(slug) %}
+                    {% set doc = legal_docs[slug] %}
+                    <div class="agreement-panel{% if ns2.first %} active{% endif %}" id="p_{{ slug }}">
+                        <div class="agreement-meta">
+                            <h4>{{ doc.get('title', slug) }}</h4>
+                            <span>{{ t_kw('register.version_info','版本 v{version} · 更新于 {date}', version=doc.get('version','1.0.0'), date=doc.get('updated_at','—')) }}</span>
+                        </div>
+                        {% for sec_title, items in doc.get('body', []) %}
+                            <h5>{{ sec_title }}</h5>
+                            <ul>{% for item in items %}<li>{{ item }}</li>{% endfor %}</ul>
+                        {% endfor %}
+                    </div>
+                    {% set ns2.first = false %}
+                {% endif %}
+            {% endfor %}
         </div>
 
-        <!-- 同意勾选（必须勾选才能注册）-->
         <label class="agree-check">
             <input type="checkbox" id="agreeCheck" required>
-            <span>{{ t('auto.register.x_ee1dfef6', default='我已阅读并同意') }} <a href="javascript:void(0)" onclick="document.querySelector('.agreement-tab[data-panel=p0]').click();document.querySelector('.agreement-section').scrollIntoView({behavior:'smooth'})">用户协议</a>、
-            <a href="javascript:void(0)" onclick="document.querySelector('.agreement-tab[data-panel=p1]').click()">系统规则告知</a>、
-            <a href="javascript:void(0)" onclick="document.querySelector('.agreement-tab[data-panel=p2]').click()">注册通告</a> 及
-            <a href="javascript:void(0)" onclick="document.querySelector('.agreement-tab[data-panel=p3]').click()">数据使用说明</a></span>
+            <span>{{ t('register.agree_4terms','我已阅读并同意') }}
+                {% set ns3 = namespace(first=true) %}
+                {% for slug in required_terms %}
+                    {% if legal_docs.get(slug) %}
+                        {% set doc = legal_docs[slug] %}
+                        {% if not ns3.first %}、{% endif %}
+                        <a href="javascript:void(0)" onclick="switchTab('p_{{ slug }}')">{{ doc.get('title', slug) }}</a>
+                        {% set ns3.first = false %}
+                    {% endif %}
+                {% endfor %}
+            </span>
         </label>
 
-        <button type="submit" class="btn-register" id="regBtn">{{ t('auto.register.x_x_495d84e6', default='注 册') }}</button>
+        <button type="submit" class="btn-register" id="regBtn">
+            <span class="spin"></span><span class="btn-text">{{ t('register.create_btn','创 建 账 号') }}</span>
+        </button>
     </form>
 
-    <div class="login-link">
-        已有账号？<a href="/auth/login">{{ t('auto.register.x_ed2ff81f', default='立即登录') }}</a>
-    </div>
+    <div class="reg-footer">{{ t('register.footer_login','已有账号？立即登录 →') }}<a href="/auth/login">{{ t('register.footer_login_link','立即登录 →') }}</a></div>
+</div>
 </div>
 
 <script>
-// Tab 切换
+/* ═══ 注册页 i18n 字典（Jinja2 渲染，与 mt_i18n_keys 表对齐） ═══ */
+window.I18N_REG = {
+    year:        '{{ t("register.birth_year","年") }}',
+    month:       '{{ t("register.birth_month","月") }}',
+    day:         '{{ t("register.birth_day","日") }}',
+    age_unknown: '{{ t("register.age_unknown","年龄 — · 组别 —") }}',
+    age_too_young_notice: '{{ t("register.age_too_young","需 ≥6 岁") }}',
+    edu: {
+        '':      '{{ t("register.edu.default","普通组别") }}',
+        'K12':   '{{ t("register.edu.k12","K12 学生") }}',
+        '高等教育': '{{ t("register.edu.tertiary","高等教育") }}',
+        '成人教育': '{{ t("register.edu.adult","成人教育") }}',
+        '老年大学': '{{ t("register.edu.senior","老年大学") }}',
+    },
+    err_need_agree:     '{{ t("register.fail_agree","请先阅读并同意 4 份协议") }}',
+    err_pwd_short:      '{{ t("register.fail_pwd_short","密码至少 8 位") }}',
+    err_pwd_mismatch:   '{{ t("register.fail_pwd_mismatch","两次输入的密码不一致") }}',
+    err_need_birthdate: '{{ t("register.fail_need_birthdate","请选择出生年月日") }}',
+    err_age_young:      '{{ t("register.fail_age_young","年龄须 ≥ 6 岁") }}',
+    err_age_old:        '{{ t("register.fail_age_old","年龄须 ≤ 100 岁") }}',
+    guardian_warn_html: '{{ t("register.guardian_warn","⚠️ 根据《个人信息保护法》，未满 14 周岁注册须监护人同意。<br>请在下方勾选监护人同意项。") }}',
+    btn_registering:    '{{ t("register.btn_loading","注册中...") }}',
+    btn_create:         '{{ t("register.create_btn","创 建 账 号") }}',
+    success_html:       '{{ t("register.success","🎉 注册成功！即将自动登录并跳转工作台...") }}',
+    icons: { 'K12':'🎒','高等教育':'🎓','成人教育':'💼','老年大学':'🌅','':'🏛️' },
+};
+
+/* ═══ 注册页 v4.0 脚本（i18n-ready） ═══ */
+
+// 1. 协议 Tab 切换
+window.switchTab = function(id) {
+    document.querySelectorAll('.agreement-tab').forEach(function(t) { t.classList.remove('active'); });
+    document.querySelectorAll('.agreement-panel').forEach(function(p) { p.classList.remove('active'); });
+    var tab = document.querySelector('.agreement-tab[data-panel="' + id + '"]');
+    var panel = document.getElementById(id);
+    if (tab) tab.classList.add('active');
+    if (panel) panel.classList.add('active');
+    // 滚动到协议区
+    document.querySelector('.agreement-section').scrollIntoView({behavior: 'smooth', block: 'center'});
+};
 document.querySelectorAll('.agreement-tab').forEach(function(tab) {
-    tab.addEventListener('click', function() {
-        document.querySelectorAll('.agreement-tab').forEach(function(t) { t.classList.remove('active'); });
-        document.querySelectorAll('.agreement-panel').forEach(function(p) { p.classList.remove('active'); });
-        tab.classList.add('active');
-        document.getElementById(tab.getAttribute('data-panel')).classList.add('active');
-    });
+    tab.addEventListener('click', function() { switchTab(tab.getAttribute('data-panel')); });
 });
 
+// 2. 出生年月日初始化 + 年龄自动计算
+(function initBirthdate() {
+    var now = new Date();
+    var maxYear = now.getFullYear();
+    var minYear = maxYear - 100;  // 最大 100 岁
+    var ySel = document.getElementById('birthYear');
+    var mSel = document.getElementById('birthMonth');
+    var dSel = document.getElementById('birthDay');
+    if (!ySel || !mSel || !dSel) return;
+
+    for (var y = maxYear; y >= minYear; y--) {
+        var o = document.createElement('option'); o.value = y; o.textContent = y + '年'; ySel.appendChild(o);
+    }
+    for (var m = 1; m <= 12; m++) {
+        var o = document.createElement('option'); o.value = m; o.textContent = m + '月'; mSel.appendChild(o);
+    }
+    // 日期动态更新（根据年月调整天数）
+    function refreshDays() {
+        var y = parseInt(ySel.value, 10);
+        var m = parseInt(mSel.value, 10);
+        var curDay = parseInt(dSel.value, 10);
+        var maxDay = (!isNaN(y) && !isNaN(m)) ? new Date(y, m, 0).getDate() : 31;
+        dSel.innerHTML = '<option value="">日</option>';
+        for (var d = 1; d <= maxDay; d++) {
+            var oo = document.createElement('option'); oo.value = d; oo.textContent = d + '日'; dSel.appendChild(oo);
+        }
+        if (curDay && curDay <= maxDay) dSel.value = curDay;
+    }
+    ySel.addEventListener('change', refreshDays);
+    mSel.addEventListener('change', refreshDays);
+})();
+
+// 2.5 从出生年月日计算周岁（考虑今年生日是否已过）
+window.calcAgeFromBirth = function(y, m, d) {
+    if (!y || !m || !d) return null;
+    var today = new Date();
+    var age = today.getFullYear() - y;
+    var mDiff = today.getMonth() + 1 - m;
+    if (mDiff < 0 || (mDiff === 0 && today.getDate() < d)) age--;
+    return age;
+};
+
+// 2.6 年龄 → 学习组别映射
+window.mapAgeToGroup = function(age) {
+    if (age === null || age === undefined || age < 6) return { key: '', name: '普通组别', icon: '🏛️', rule: '（未填生日 · 后端自动判定）' };
+    if (age <= 18) return { key: 'K12',       name: 'K12 学生',     icon: '🎒' };
+    if (age <= 25) return { key: '高等教育', name: '高等教育',     icon: '🎓' };
+    if (age <= 60) return { key: '成人教育', name: '成人教育',     icon: '💼' };
+    return { key: '老年大学', name: '老年大学',     icon: '🌅' };
+};
+
+// 🆕 组别排他表（前端提示用，后端权威校验）
+window.GROUP_AGE_RANGE = {
+    '普通组别': [6, 999],
+    'K12':      [6, 18],
+    '高等教育': [17, 30],
+    '成人教育': [18, 65],
+    '老年大学': [55, 100],
+};
+
+// 2.7 年月日变化 → 同时更新年龄预览 + 监护人 gate + 组别下拉可选性
+window.onBirthChange = function() {
+    var y = parseInt(document.getElementById('birthYear').value, 10);
+    var m = parseInt(document.getElementById('birthMonth').value, 10);
+    var d = parseInt(document.getElementById('birthDay').value, 10);
+    var age = window.calcAgeFromBirth(y, m, d);
+    var preview = document.getElementById('ageCalcPreview');
+    var gate = document.getElementById('guardianGate');
+    var consent = document.getElementById('guardian_consent');
+    var g = window.mapAgeToGroup(age);
+
+    if (age === null) {
+        preview.textContent = '年龄 — · 组别 —';
+    } else if (age < 6) {
+        preview.textContent = '年龄 ' + age + ' · ' + g.icon + ' 需 ≥6 岁';
+    } else {
+        preview.textContent = '年龄 ' + age + ' · ' + g.icon + ' ' + g.name;
+    }
+
+    // 🆕 组别下拉框：年龄合法才显示 + 灰掉越界选项
+    var wrap = document.getElementById('learningGroupWrap');
+    var langWrap = document.getElementById('langGroupWrap');
+    var sel = document.getElementById('learningGroup');
+    if (age !== null && age >= 6 && age <= 100 && sel) {
+        wrap.style.display = 'block';
+        if (langWrap) langWrap.style.display = 'block';  // 🆕 语言组同步显示
+        sel.value = '';
+        var opts = sel.querySelectorAll('option');
+        opts.forEach(function(opt) {
+            if (!opt.value) { opt.disabled = false; return; }
+            var r = window.GROUP_AGE_RANGE[opt.value];
+            if (r) opt.disabled = !(r[0] <= age && age <= r[1]);
+        });
+    } else {
+        if (wrap) wrap.style.display = 'none';
+        if (langWrap) langWrap.style.display = 'none';  // 🆕 同步隐藏
+    }
+
+    // 监护人 gate（<14 岁强制同意）
+    if (age !== null && age > 0 && age < 14) {
+        gate.style.display = 'block';
+        if (consent) consent.setAttribute('required', 'required');
+    } else {
+        gate.style.display = 'none';
+        if (consent) { consent.removeAttribute('required'); consent.checked = false; }
+    }
+};
+
+// 🆕 用户手动改组别 → 显示提示
+window.onGroupManualSelect = function() {
+    var sel = document.getElementById('learningGroup');
+    var hint = document.getElementById('groupHint');
+    if (!sel || !hint) return;
+    var v = sel.value;
+    if (!v) { hint.textContent = ''; hint.style.color = 'rgba(255,255,255,.4)'; return; }
+    var r = window.GROUP_AGE_RANGE[v];
+    if (r) {
+        hint.textContent = '已选择「' + v + '」（年龄范围 ' + r[0] + '-' + r[1] + ' 岁，后端将校验）';
+        hint.style.color = 'rgba(34,197,94,.7)';  // 绿
+    }
+};
+
+// 3. 密码强度检测
+(function() {
+    var pwd = document.getElementById('password');
+    var bar = document.getElementById('pwdBar');
+    var label = document.getElementById('pwdLabel');
+    if (!pwd || !bar) return;
+    pwd.addEventListener('input', function() {
+        var v = pwd.value, score = 0;
+        if (v.length >= 6) score++;
+        if (v.length >= 10) score++;
+        if (/[a-z]/.test(v) && /[A-Z]/.test(v)) score++;
+        if (/\d/.test(v)) score++;
+        if (/[^a-zA-Z0-9]/.test(v)) score++;
+        var pct = (score / 5) * 100;
+        var colors = ['#ef4444','#f97316','#eab308','#22c55e','#22c55e'];
+        var labels = ['太弱','弱','中等','较强','强'];
+        bar.style.width = pct + '%';
+        bar.style.background = colors[Math.min(score, 4)];
+        label.textContent = v ? ('强度：' + labels[Math.min(score, 4)]) : '—';
+    });
+})();
+
+// 3. 实时密码匹配
+(function() {
+    var p = document.getElementById('password');
+    var c = document.getElementById('confirmPassword');
+    if (!p || !c) return;
+    c.addEventListener('input', function() {
+        if (!c.value) { c.classList.remove('valid','invalid'); return; }
+        if (c.value === p.value) c.classList.add('valid'), c.classList.remove('invalid');
+        else c.classList.add('invalid'), c.classList.remove('valid');
+    });
+    p.addEventListener('input', function() {
+        if (c.value) c.dispatchEvent(new Event('input'));
+    });
+})();
+
+// 4. 注册提交
 function handleRegister(event) {
     event.preventDefault();
-    var username = document.getElementById('username').value;
+    var username = document.getElementById('username').value.trim();
     var password = document.getElementById('password').value;
-    var confirmPassword = document.getElementById('confirmPassword').value;
+    var confirm = document.getElementById('confirmPassword').value;
     var agree = document.getElementById('agreeCheck').checked;
-    var errorAlert = document.getElementById('errorAlert');
-    var successAlert = document.getElementById('successAlert');
-    var regBtn = document.getElementById('regBtn');
+    var email = (document.getElementById('email').value || '').trim();
+    // 从年月日下拉框读取 + 自动计算周岁
+    var bY = parseInt(document.getElementById('birthYear').value, 10);
+    var bM = parseInt(document.getElementById('birthMonth').value, 10);
+    var bD = parseInt(document.getElementById('birthDay').value, 10);
+    var birthDateStr = (bY && bM && bD) ? (bY + '-' + String(bM).padStart(2,'0') + '-' + String(bD).padStart(2,'0')) : '';
+    var age = window.calcAgeFromBirth(bY, bM, bD);
+    var learningGroupSel = document.getElementById('learningGroup');
+    var learningGroup = learningGroupSel ? learningGroupSel.value : '';  // 🆕 用户自选（空=自动推荐）
+    // 🆕 语言组 checkbox 多选
+    var langChecked = document.querySelectorAll('input[name="lang_group"]:checked');
+    var languageGroups = Array.from(langChecked).map(function(c){ return c.value; });
+    var eduGroup = window.mapAgeToGroup(age).key;
+    var guardianConsentEl = document.getElementById('guardian_consent');
+    var guardianConsent = guardianConsentEl ? guardianConsentEl.checked : false;
+    var err = document.getElementById('errorAlert');
+    var suc = document.getElementById('successAlert');
+    var btn = document.getElementById('regBtn');
 
-    errorAlert.style.display = 'none';
-    successAlert.style.display = 'none';
+    err.style.display = 'none'; suc.style.display = 'none';
 
-    if (!agree) {
-        errorAlert.textContent = '请先阅读并勾选同意用户协议、规则告知、注册通告及数据使用说明';
-        errorAlert.style.display = 'block';
+    // 前端校验
+    if (!agree) { err.textContent = '请先阅读并勾选同意 4 份协议'; err.style.display = 'block'; return false; }
+    if (password !== confirm) { err.textContent = '两次输入的密码不一致'; err.style.display = 'block'; return false; }
+    if (password.length < 8) { err.textContent = '密码至少 8 位（安全协议推荐 8-64 位）'; err.style.display = 'block'; return false; }
+
+    // 出生年月日完整校验
+    if (!birthDateStr) { err.textContent = '请选择出生年月日'; err.style.display = 'block'; return false; }
+    if (age < 6) { err.textContent = '年龄须 ≥ 6 岁（K12 至老年大学学习阶段）'; err.style.display = 'block'; return false; }
+    if (age > 100) { err.textContent = '年龄须 ≤ 100 岁'; err.style.display = 'block'; return false; }
+
+    // 监护人同意前端 gate (PIPL §31)
+    if (age > 0 && age < 14 && !guardianConsent) {
+        err.innerHTML = '⚠️ 根据《个人信息保护法》，未满 14 周岁注册须监护人同意。<br>请在下方勾选监护人同意项。';
+        err.style.display = 'block';
+        document.getElementById('guardianGate').scrollIntoView({ behavior: 'smooth', block: 'center' });
         return false;
     }
-    if (password !== confirmPassword) {
-        errorAlert.textContent = '两次输入的密码不一致';
-        errorAlert.style.display = 'block';
-        return false;
-    }
 
-    regBtn.disabled = true; regBtn.textContent = '注册中...';
+    btn.disabled = true; btn.classList.add('loading'); btn.querySelector('.btn-text').textContent = '注册中...';
     var _csrf = '{{ csrf_token if csrf_token else "" }}';
     fetch('/auth/register', {
-        method: 'POST', headers: _csrf ? { 'Content-Type': 'application/json', 'X-CSRF-Token': _csrf } : { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: username, password: password, agreed: true })
+        method: 'POST',
+        headers: _csrf
+            ? { 'Content-Type': 'application/json', 'X-CSRF-Token': _csrf }
+            : { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            username: username, password: password, agreed: true,
+            email: email, birth_date: birthDateStr,
+            guardian_consent: guardianConsent,
+            learning_group: learningGroup,          // 教育组单选
+            language_groups: languageGroups,         // 🆕 语言组多选数组
+        })
     })
     .then(function(res) { return res.json(); })
     .then(function(data) {
         if (data.success) {
-            successAlert.textContent = '注册成功！即将跳转到登录页...';
-            successAlert.style.display = 'block';
-            setTimeout(function() { window.location.href = '/auth/login'; }, 2000);
+            var lg = data.learning_group || {};
+            var lgs = (data.language_groups || []).map(function(x){ return x.group_label || x.group_key; });
+            var auto_tag = lg.is_auto ? '（年龄自动推荐）' : '（用户自选）';
+            var hint = lg.hint ? ' · ⚠️ ' + lg.hint : '';
+            var lg_line = '📚 教育组：' + (lg.group_label || lg.group_key || '—') + ' ' + auto_tag + hint;
+            var lang_line = lgs.length ? ' · 🌐 语言/兴趣：' + lgs.join(' + ') : '';
+            suc.textContent = '🎉 注册成功！' + lg_line + lang_line + ' · 即将自动登录...';
+            suc.style.display = 'block';
+            // 自动登录
+            fetch('/auth/login', {
+                method: 'POST',
+                headers: _csrf
+                    ? { 'Content-Type': 'application/json', 'X-CSRF-Token': _csrf }
+                    : { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username: username, password: password, remember_me: false })
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(loginData) {
+                setTimeout(function() {
+                    window.location.href = loginData && loginData.success ? '/student_portal' : '/auth/login';
+                }, 1200);
+            })
+            .catch(function() {
+                setTimeout(function() { window.location.href = '/auth/login'; }, 1200);
+            });
         } else {
-            errorAlert.textContent = data.message || '注册失败';
-            errorAlert.style.display = 'block';
-            regBtn.disabled = false; regBtn.textContent = '注 册';
+            err.textContent = data.message || '注册失败，请稍后重试';
+            err.style.display = 'block';
+            btn.disabled = false; btn.classList.remove('loading'); btn.querySelector('.btn-text').textContent = '创 建 账 号';
         }
     })
-    .catch(function(err) {
-        errorAlert.textContent = '网络错误，请稍后重试';
-        errorAlert.style.display = 'block';
-        regBtn.disabled = false; regBtn.textContent = '注 册';
+    .catch(function() {
+        err.textContent = '网络错误，请检查网络后重试';
+        err.style.display = 'block';
+        btn.disabled = false; btn.classList.remove('loading'); btn.querySelector('.btn-text').textContent = '创 建 账 号';
     });
     return false;
 }

@@ -102,12 +102,8 @@ SYNC_BATCH_SIZE = 5000        # 每批 5000 行 POST
 SYNC_RESUME_GRACE_SEC = 3600  # checkpoint 超过 1h 视为过期 (daemon 新轮次)
 
 # ============ 网络发现配置 ============
-# 🆕 反向隧道优先: mini 反连到开发机 localhost:2222 → 映射到 mini:22
-# 优先级: 隧道 > 固定 IP > mDNS > 公网 IP 回退
-TUNNEL_LOCAL_PORT = 2222   # mini 反连后开发机的本地回连端口
 MINI_MDNS_NAMES = ["Mac-mini.local", "macmini.local", "andromeda.local"]
 MINI_FIXED_IPS = ["192.168.31.9"]
-MINI_PUBLIC_FALLBACKS = []  # 留空, mini 离线后如果有公网 IP 可追加
 SSH_USER = "wuchenghao"
 
 # ============ 同步配置 ============
@@ -235,31 +231,11 @@ def _upsert_helper(conn, table, cols, rows, pk_type=None):
 _RUNTIME = {
     "last_sync_ts": 0,
     "last_sync_host": None,
-    "last_sync_source": None,
     "known_host": None,
     "total_synced": 0,
     "sync_errors": [],
     "status": "idle",   # idle / discovering / syncing / offline
-    "tunnel_status": "unknown",  # 🆕 connected / offline / unknown
-    "tunnel_hostname": None,
-    "_prev_mini_online": False,
 }
-
-def _write_event(event_type, detail=""):
-    """mini 上/下线等关键事件写入 DB (Flask 页面可见)"""
-    try:
-        _c = sqlite3.connect(PROJECT_DB, timeout=3)
-        _c.execute(
-            "INSERT INTO mt_daemon_registry "
-            "(process_name, status, last_heartbeat, config_json, updated_at) "
-            "VALUES (?, 'EVENT', datetime('now','localtime'), ?, datetime('now','localtime'))",
-            (f"sys_andromeda_autosync_{event_type}", json.dumps({"event": event_type, "detail": detail})),
-        )
-        _c.commit()
-        _c.close()
-    except Exception:
-        # 可能 mt_daemon_registry 没这列, 忽略
-        pass
 
 # ============ 日志 ============
 import datetime as _dt
@@ -275,28 +251,16 @@ def log_and_print(level, msg):
     log(level, msg)
     print(f"[autosync] {level}: {msg}")
 
-# ============ SSH 帮助 (带端口解析) ============
-def _parse_host_port(host):
-    """从 host 字符串解析 (host, port), 支持 'host:port' 格式"""
-    if ":" in host:
-        h, p = host.rsplit(":", 1)
-        if p.isdigit():
-            return h, int(p)
-    return host, None
-
+# ============ SSH 帮助 ============
 def _ssh(host, cmd, timeout=10):
-    """执行 SSH 命令, 返回 (returncode, stdout, stderr)
-    host 可以是 '192.168.1.1' 或 'localhost:2222' (反向隧道)"""
+    """执行 SSH 命令, 返回 (returncode, stdout, stderr)"""
     try:
-        h, port = _parse_host_port(host)
-        args = [
-            "ssh", "-o", "BatchMode=yes", "-o", "ConnectTimeout=5",
-            "-o", "StrictHostKeyChecking=accept-new",
-        ]
-        if port:
-            args += ["-p", str(port)]
-        args += [f"{SSH_USER}@{h}", cmd]
-        r = subprocess.run(args, capture_output=True, text=True, timeout=timeout)
+        r = subprocess.run(
+            ["ssh", "-o", "BatchMode=yes", "-o", "ConnectTimeout=5",
+             "-o", "StrictHostKeyChecking=accept-new",
+             f"{SSH_USER}@{host}", cmd],
+            capture_output=True, text=True, timeout=timeout,
+        )
         return r.returncode, r.stdout, r.stderr
     except Exception as e:
         return -1, "", str(e)
@@ -304,37 +268,9 @@ def _ssh(host, cmd, timeout=10):
 def _expand(p):
     return os.path.expanduser(p)
 
-# ============ 自动发现 (含反向隧道优先) ============
+# ============ 自动发现 ============
 def discover_mini():
-    """
-    发现 Mac mini, 返回 (host, source) 或 (None, None).
-    
-    优先级:
-      ① 反向隧道 (localhost:$TUNNEL_LOCAL_PORT 有监听 + SSH OK)
-      ② 固定 IP (局域网)
-      ③ mDNS (广播域)
-      ④ 公网回退 (如果配置了)
-    """
-    # 🆕 ① 反向隧道检测
-    try:
-        result = subprocess.run(
-            ["nc", "-z", "-G", "2", "localhost", str(TUNNEL_LOCAL_PORT)],
-            capture_output=True, timeout=4,
-        )
-        if result.returncode == 0:
-            # 端口通了! 再 SSH 确认 mini 活着
-            rc, out, _ = _ssh(f"localhost:{TUNNEL_LOCAL_PORT}", "hostname")
-            if rc == 0 and out.strip():
-                mini_name = out.strip()
-                _RUNTIME["tunnel_status"] = "connected"
-                _RUNTIME["tunnel_hostname"] = mini_name
-                return f"localhost:{TUNNEL_LOCAL_PORT}", f"tunnel:{mini_name}"
-    except Exception:
-        pass
-
-    _RUNTIME["tunnel_status"] = "offline"
-
-    # ② 固定 IP
+    """尝试发现 Mac mini, 返回 (host, source) 或 (None, None)"""
     for ip in MINI_FIXED_IPS:
         try:
             r = subprocess.run(["ping", "-c1", "-W1000", ip], capture_output=True, timeout=4)
@@ -343,7 +279,6 @@ def discover_mini():
         except Exception:
             pass
 
-    # ③ mDNS
     for name in MINI_MDNS_NAMES:
         try:
             r = subprocess.run(["dscacheutil", "-q", "host", "-a", "name", name],
@@ -361,16 +296,6 @@ def discover_mini():
                 return ip, f"socket:{name}"
         except Exception:
             pass
-
-    # ④ 公网回退
-    for ip in MINI_PUBLIC_FALLBACKS:
-        try:
-            r = subprocess.run(["ping", "-c1", "-W1000", ip], capture_output=True, timeout=4)
-            if r.returncode == 0:
-                return ip, f"public:{ip}"
-        except Exception:
-            pass
-
     return None, None
 
 def ssh_ok(host):
@@ -848,32 +773,6 @@ def main_loop():
 
     while True:
         try:
-            # 🩷 每轮写 heartbeat 到 mt_daemon_registry (离线时也刷, 表示线程活着)
-            try:
-                _c = sqlite3.connect(PROJECT_DB, timeout=3)
-                # 🆕 runtime_status 里加 tunnel_status / mini_online / last_sync_host
-                _config_json = json.dumps({
-                    "tunnel_status": _RUNTIME.get("tunnel_status", "unknown"),
-                    "mini_online": known_host is not None,
-                    "last_sync_host": _RUNTIME.get("last_sync_host"),
-                    "last_sync_source": _RUNTIME.get("last_sync_source"),
-                    "total_synced": _RUNTIME.get("total_synced", 0),
-                    "discovered_ts": time.strftime("%Y-%m-%d %H:%M:%S"),
-                })
-                _c.execute(
-                    "UPDATE mt_daemon_registry SET status='RUNNING', "
-                    "last_heartbeat=datetime('now','localtime'), "
-                    "updated_at=datetime('now','localtime'), "
-                    "config_json=?, "
-                    "restart_count=coalesce(restart_count,0) "
-                    "WHERE process_name='sys_andromeda_autosync'",
-                    (_config_json,),
-                )
-                _c.commit()
-                _c.close()
-            except Exception:
-                pass
-
             now = time.time()
             _RUNTIME["status"] = "discovering"
 
@@ -884,25 +783,14 @@ def main_loop():
                 host, source = discover_mini()
                 if host:
                     known_host = host
-                    # 🆕 mini 刚上线 → 写事件
-                    if not _RUNTIME.get("_prev_mini_online"):
-                        log_and_print("info", f"🎉 mini 上线! {host} ({source})")
-                        _write_event("mini_online", f"host={host} source={source}")
-                    _RUNTIME["last_sync_source"] = source
 
             if not host:
                 _RUNTIME["status"] = "offline"
                 if known_host:
                     log("info", f"Mini {known_host} 离线, 清缓存")
-                    # 🆕 mini 刚离线 → 写事件
-                    if _RUNTIME.get("_prev_mini_online"):
-                        _write_event("mini_offline", f"last_host={known_host}")
                     known_host = None
                 time.sleep(DISCOVER_INTERVAL)
-                _RUNTIME["_prev_mini_online"] = False
                 continue
-
-            _RUNTIME["_prev_mini_online"] = True
 
             if not ssh_ok(host):
                 log("warn", f"发现 {host} 但 SSH 不通")

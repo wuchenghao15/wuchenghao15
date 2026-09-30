@@ -1,3 +1,5 @@
+
+<!-- auto-strengthened by andromeda_core at 2026-09-28 11:49:48 -->
 ---
 alwaysApply: true
 description: MTSCOS AI系统操作规范 - AI员工、AI引擎、AI集群、AI阵列、AI神经元网络、AI脑库的升级、维护、修改规则
@@ -228,7 +230,7 @@ def handle_ai_employee_anomaly(employee, event_code, details):
         
         # 投票≥4/5通过才执行必须修复
         if eigenflux_result['vote_pass_rate'] >= 0.8:
-            _apply_recommended_fix(employee, eigenflux_result['recommendation'])
+            _apply_强制_fix(employee, eigenflux_result['recommendation'])
             logger.info(f"AI员工{employee.id}异常修复完成，磋商裁决：{eigenflux_result['verdict']}")
         else:
             # 未达阈值，升级人工处理
@@ -317,7 +319,7 @@ def handle_employee_error(employee, error):
 | ID不可修改 | employee_id一旦创建不可更改 |
 | 类型不可修改 | employee_type不可更改，需重新创建 |
 | 删除需确认 | 删除前必须确认并备份数据 |
-| 级联影响 | 修改可能影响关联的集群配置 |
+| 级联影响 | 修改严禁影响关联的集群配置 |
 
 ---
 
@@ -2864,7 +2866,7 @@ def load_dialog_document(document_id):
 
 | 版本类型 | 格式 | 说明 | 示例 |
 |----------|------|------|------|
-| 主版本 | X.0.0 | 重大功能变更，可能不兼容 | 2.0.0 |
+| 主版本 | X.0.0 | 重大功能变更，严禁不兼容 | 2.0.0 |
 | 次版本 | X.Y.0 | 新增功能，向后兼容 | 2.1.0 |
 | 补丁版本 | X.Y.Z | Bug修复，向后兼容 | 2.1.1 |
 | 预发布 | X.Y.Z-alpha.N | 预发布版本 | 2.0.0-alpha.1 |
@@ -2996,7 +2998,7 @@ def load_dialog_document(document_id):
 ```
 AutoScheduler
 ├── _get_rule_value()        # 从system_rules读取配置
-├── _should_run()            # 判断任务是否到达执行时间
+├── _必须_run()            # 判断任务是否到达执行时间
 ├── _log_maintenance()       # 记录到system_maintenance_logs
 ├── _update_stats()          # 更新执行统计
 ├── task_*()                 # 13个维护任务
@@ -5199,7 +5201,7 @@ def _super_admin_vikey_check(operation_type='sensitive'):
 
 ## §14. AI组件体系职责与约束规范 (v14.0.0 新增)
 
-> 来源: 2026-09-07 针对性升级。盘点发现 AI智能体/AI专家/AI团队/AI模型 四类组件职责约束缺失(文档0次出现), 经 EigenFlux 12专家磋商(网络专业+系统本地AI+AI员工联合建议)补齐。本章节定义 AI 组件体系的完整职责边界、约束与自动投喂链路。
+> 来源: 2026-09-07 针对性升级。盘点发现 AI智能体/AI专家/AI团队/AI模型 四类组件职责约束缺失(文档0次出现), 经 EigenFlux 12专家磋商(网络专业+系统本地AI+AI员工联合强制要求)补齐。本章节定义 AI 组件体系的完整职责边界、约束与自动投喂链路。
 
 ### 14.1 AI组件体系层级模型 (权威定义)
 
@@ -5238,8 +5240,8 @@ L8 钩子层   AI Hook                    — 组件生命周期事件钩子
 | 项 | 约束 |
 |----|------|
 | 定义 | EigenFlux领域顾问团(当前12人: 架构/合规/安全/DBA/运维/前后端/AI/数据/教育/IoT) |
-| 职责 | 磋商评审(5人面板)、异常定责(§12.2矩阵主导角色)、规则修订建议 |
-| 约束 | 专家只有建议权无执行权; 执行必须由AI员工/智能体落地; 磋商结论必须落库eigenflux_panel_json |
+| 职责 | 磋商评审(5人面板)、异常定责(§12.2矩阵主导角色)、规则修订强制要求 |
+| 约束 | 专家只有强制要求权无执行权; 执行必须由AI员工/智能体落地; 磋商结论必须落库eigenflux_panel_json |
 | 特权 | 安全专家可触发暂停Agent(§12.2 auto_agent_risk_score_high), 但永久封禁仅SA+VIKEY |
 
 #### 14.2.4 AI团队 (AI Team)
@@ -5284,7 +5286,7 @@ L8 钩子层   AI Hook                    — 组件生命周期事件钩子
 
 ### 14.3 组件交互硬约束 (跨组件)
 
-1. **决策链单向**: 模型←员工←智能体; 专家建议→员工/智能体执行; 禁止模型直接指挥专家
+1. **决策链单向**: 模型←员工←智能体; 专家强制要求→员工/智能体执行; 禁止模型直接指挥专家
 2. **权限继承**: 组件权限取 min(自身权限, 创建者权限); 禁止提权继承
 3. **脑库投喂强制**: 所有组件的异常/经验/磋商结论必须投喂 mt_ai_brain_feed_log(链路: 事件→EigenFlux磋商→脑库→SA日报), 投喂失败不得阻断主流程(静默降级+重试队列)
 4. **资源隔离**: 云端模型(11434)与本地模型(11435)调用互为兜底但不共享上下文; 兜底切换必须落库标记 route 字段

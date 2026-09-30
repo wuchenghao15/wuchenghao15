@@ -289,7 +289,8 @@ def _check_user_container_6fields(require_auth, allowed_roles, allowed_groups):
 
 
 def system_container(require_auth=PERM_LOGIN, allowed_roles=None,
-                     allowed_groups=None, flow_id=None, audit=True):
+                     allowed_groups=None, flow_id=None, audit=True,
+                     **kwargs):
     """
     @system_container 权限装饰器 (4级 + 6字段用户容器验证)
 
@@ -299,6 +300,7 @@ def system_container(require_auth=PERM_LOGIN, allowed_roles=None,
       allowed_groups  - 用户组别白名单(可选)
       flow_id         - §14流程ID(关联审计)
       audit           - 是否落库 mt_permission_audit_detail
+      **kwargs        - 吸收过时参数(page_name等)，向后兼容旧 Blueprint
 
     用法:
       @system_container(require_auth='login')
