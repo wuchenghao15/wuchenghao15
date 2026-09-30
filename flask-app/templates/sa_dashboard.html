@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="MTSCOS AI · SA 专用控制台 (v24.3.1 双密钥预认证先跳转)">
+    <meta name="description" content="MTSCOS AI · SA 专用控制台 (v24.3.2 双密钥预认证+会话锁定退出)">
     <title>SA 专用控制台 · {{ (footer_info.brand_name if footer_info else None) or 'MTSCOS 冰山' }}{% if auth_stage == 'full_auth' %} · v{{ version }}{% endif %}</title>
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%230B0A1E'/%3E%3Ccircle cx='50' cy='50' r='30' fill='%23d4a017'/%3E%3C/svg%3E">
     <link rel="stylesheet" href="/assets/css/mtscos-design-system.css">
@@ -139,17 +139,97 @@
         .sa-login-msg.info { color:var(--sa-green); }
         .sa-lock-hint { text-align:center; margin-top:16px; font-size:11.5px; color:var(--sa-text-dim); line-height:1.7; }
         .sa-lock-hint a { color:var(--sa-gold); text-decoration:none; }
-        /* 锁定占位面板 */
-        .sa-panel.locked { opacity:.75; }
-        .sa-lock-placeholder {
-            display:flex; flex-direction:column; align-items:center; justify-content:center;
-            gap:10px; padding:34px 0; color:var(--sa-text-dim);
+        /* 锁定用户名（SA 账号唯一 wuchenghao15，禁止修改） */
+        .sa-login-form input[readonly] {
+            opacity:.72; cursor:not-allowed;
+            border-style:dashed; letter-spacing:.5px;
         }
-        .sa-lock-placeholder i { font-size:26px; color:var(--sa-gold); }
-        .sa-lock-placeholder .t { font-size:12.5px; letter-spacing:1px; }
+        /* ═══ v24.3.3 切入/登出动画 ═══ */
+        /* 切入：整体 fade-in + 微上滑 */
+        .sa-enter {
+            animation: saEnter 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+        }
+        @keyframes saEnter {
+            0%   { opacity: 0; transform: translateY(24px) scale(0.985); filter: blur(4px); }
+            60%  { opacity: 1; transform: translateY(-2px) scale(1.002); filter: blur(0); }
+            100% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+        }
+        /* 面板级延迟级联（full_auth 4 面板依次亮起） */
+        .sa-panel { animation: saPanelIn 0.5s ease-out both; }
+        .sa-panel:nth-child(1) { animation-delay: 0.05s; }
+        .sa-panel:nth-child(2) { animation-delay: 0.12s; }
+        .sa-panel:nth-child(3) { animation-delay: 0.19s; }
+        .sa-panel:nth-child(4) { animation-delay: 0.26s; }
+        @keyframes saPanelIn {
+            0%   { opacity: 0; transform: translateY(16px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+        /* 登出：整体 fade-out + 微下沉缩小（播放完再跳页） */
+        .sa-exit {
+            animation: saExit 0.65s cubic-bezier(0.4, 0, 0.2, 1) both;
+        }
+        @keyframes saExit {
+            0%   { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+            100% { opacity: 0; transform: translateY(18px) scale(0.96); filter: blur(6px); }
+        }
+        /* 登出遮罩层（sa_proprietary.js setLocked 生成的 #sa-lock-overlay） */
+        #sa-lock-overlay {
+            position: fixed; inset: 0; z-index: 9999;
+            background: radial-gradient(ellipse at center, rgba(11,10,30,0.94) 0%, rgba(0,0,0,0.98) 100%);
+            display:flex; align-items:center; justify-content:center;
+            animation: saLockOverlayIn 0.35s ease-out both;
+        }
+        #sa-lock-overlay .card {
+            text-align:center; padding:28px 44px; border-radius:22px;
+            border:1px solid var(--sa-line);
+            background: linear-gradient(160deg, rgba(40,30,60,0.96), rgba(11,10,30,0.98));
+            box-shadow: 0 24px 80px -20px rgba(212,160,23,0.4);
+            animation: saLockCardIn 0.45s cubic-bezier(0.22,1,0.36,1) 0.08s both;
+        }
+        #sa-lock-overlay .title {
+            font-size:22px; font-weight:800; color:var(--sa-gold);
+            letter-spacing:1.5px; margin-bottom:10px;
+            display:flex; align-items:center; justify-content:center; gap:12px;
+        }
+        #sa-lock-overlay .title .pulse {
+            display:inline-block; width:14px; height:14px; border-radius:50%;
+            background:var(--sa-gold);
+            animation: saLockPulse 1.4s ease-in-out infinite;
+        }
+        #sa-lock-overlay .sub { font-size:13px; color:var(--sa-text-dim); line-height:1.7; max-width:320px; }
+        @keyframes saLockOverlayIn {
+            0%   { opacity: 0; }
+            100% { opacity: 1; }
+        }
+        @keyframes saLockCardIn {
+            0%   { opacity: 0; transform: translateY(12px) scale(0.94); }
+            100% { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        @keyframes saLockPulse {
+            0%, 100% { transform: scale(1); opacity: 1; box-shadow: 0 0 0 0 rgba(212,160,23,0.6); }
+            50%      { transform: scale(1.3); opacity: 0.8; box-shadow: 0 0 0 12px rgba(212,160,23,0); }
+        }
+        /* 登录成功 → full_auth 解锁闪光（body 加 .sa-unlock-flash 触发） */
+        .sa-unlock-flash::after {
+            content:''; position:fixed; inset:0; z-index:9998;
+            background: radial-gradient(circle at 50% 40%, rgba(212,160,23,0.55) 0%, rgba(212,160,23,0.12) 40%, transparent 70%);
+            pointer-events:none;
+            animation: saUnlockFlash 0.7s ease-out forwards;
+        }
+        @keyframes saUnlockFlash {
+            0%   { opacity: 0; transform: scale(0.6); }
+            30%  { opacity: 1; transform: scale(1.05); }
+            100% { opacity: 0; transform: scale(1.6); }
+        }
+        /* 顶栏徽章淡入（切入动画结束后补一个） */
+        .sa-topbar .badge { animation: saBadgeGlow 2.4s ease-in-out infinite 0.6s; }
+        @keyframes saBadgeGlow {
+            0%, 100% { box-shadow: 0 2px 12px -3px var(--sa-gold); }
+            50%      { box-shadow: 0 2px 22px -2px var(--sa-gold), 0 0 30px rgba(212,160,23,0.4); }
+        }
     </style>
 </head>
-<body class="layout-mode-SA_PROPRIETARY sa-proprietary auth-stage-{{ auth_stage }}"
+<body class="layout-mode-SA_PROPRIETARY sa-proprietary auth-stage-{{ auth_stage }} sa-enter"
       data-layout-mode="SA_PROPRIETARY"
       data-auth-stage="{{ auth_stage }}"
       data-sa-flow="{{ flow_id }}">
@@ -319,9 +399,9 @@
         <!-- 页内登录表单：复用 POST /auth/login JSON 协议，next 白名单回跳本页 -->
         <form class="sa-login-form" id="saPreauthLoginForm" onsubmit="return false;" autocomplete="off">
             <div class="fld">
-                <label for="saLoginUsername">超级管理员账号</label>
+                <label for="saLoginUsername">超级管理员账号（唯一，锁定不可修改）</label>
                 <input type="text" id="saLoginUsername" name="username" autocomplete="username"
-                       value="wuchenghao15" required>
+                       value="wuchenghao15" readonly tabindex="-1" required>
             </div>
             <div class="fld">
                 <label for="saLoginPassword">登录密码</label>
@@ -339,14 +419,6 @@
             <a href="/"><i class="fa-solid fa-house"></i> 返回标准首页</a>
         </div>
     </div>
-</div>
-
-<!-- 4 个数据面板：锁定占位，无任何真实数据 -->
-<div class="sa-grid">
-    <div class="sa-panel locked"><div class="sa-lock-placeholder"><i class="fa-solid fa-lock"></i><div class="t">双密钥详情 · 登录后解锁</div></div></div>
-    <div class="sa-panel locked"><div class="sa-lock-placeholder"><i class="fa-solid fa-lock"></i><div class="t">终端与会话 · 登录后解锁</div></div></div>
-    <div class="sa-panel locked"><div class="sa-lock-placeholder"><i class="fa-solid fa-lock"></i><div class="t">系统监控 · 登录后解锁</div></div></div>
-    <div class="sa-panel locked"><div class="sa-lock-placeholder"><i class="fa-solid fa-lock"></i><div class="t">SA 专属操作 · 登录后解锁</div></div></div>
 </div>
 
 <script>
@@ -377,8 +449,10 @@
         }).then(function(data){
             if (data.success) {
                 setMsg('登录成功，正在解锁…', 'info');
-                // 登录成功 → 服务端已按 next 白名单返回 /sa/dashboard，整页 GET 拉取完整面板
-                window.location.replace(data.redirect || nextUrl);
+                // 解锁闪光：body 加 .sa-unlock-flash，动画播完（0.7s）再跳 /sa/dashboard 拉 full_auth
+                document.body.classList.add('sa-unlock-flash');
+                btn.disabled = true;
+                setTimeout(function(){ window.location.replace(data.redirect || nextUrl); }, 750);
             } else {
                 setMsg(data.message || '登录失败，请重试', 'error');
                 btn.disabled = false;
@@ -395,13 +469,9 @@
 {% endif %}
 
 <div class="sa-footer">
-    MTSCOS 冰山 · SA 专用控制台 · v24.3.1 (双密钥预认证先跳转)
-    · flow_id: {{ flow_id }}
-    · 仅供 wuchenghao15 + 双密钥 + 127.0.0.1 loopback 访问
+    MTSCOS 冰山 · SA 专用控制台
 </div>
 
-{% if auth_stage == 'full_auth' %}
-<script src="/static/js/sa_proprietary.js"></script>
-{% endif %}
+<script src="/static/js/sa_proprietary.js?v=24.3.3"></script>
 </body>
 </html>

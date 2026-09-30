@@ -493,29 +493,6 @@
 <body class="layout-mode-{{ layout_mode or 'STANDARD' }}{% if sa_proprietary %} sa-proprietary{% endif %}"
       data-layout-mode="{{ layout_mode or 'STANDARD' }}"
       data-dual-authenticated="{{ 'true' if dual_authenticated else 'false' }}">
-    {# v24.2 SA 双密钥: 绝对不可忽略的测试 banner — 如果出现就是 SA 模式生效了! #}
-    <div id="mt-sa-debug-banner"
-         style="display:{% if sa_proprietary %}flex{% else %}none{% endif %};
-                position:fixed;top:0;left:0;right:0;z-index:99999;
-                background:linear-gradient(90deg,#dc2626,#9333ea);
-                color:#fff;font-size:16px;font-weight:700;
-                padding:14px 20px;gap:12px;align-items:center;justify-content:center;
-                letter-spacing:1px;box-shadow:0 4px 20px rgba(220,38,38,.5);
-                font-family:-apple-system,'PingFang SC','Microsoft YaHei',sans-serif;">
-        <span style="font-size:24px;">🔐</span>
-        <span>SA PROPRIETARY MODE ACTIVE · 双密钥已认证</span>
-        <span style="opacity:.7;font-size:12px;">(v24.2 · force={{ session.get('_debug_force_sa','0') }})</span>
-    </div>
-    {# 客户端动态切换 banner (轮询 fetch 到 SA_PROPRIETARY 时显示) #}
-    <script>
-    (function(){
-        var _banner = document.getElementById('mt-sa-debug-banner');
-        window.__mtShowSaBanner = function(){ if(_banner) _banner.style.display='flex'; };
-        window.__mtHideSaBanner = function(){ if(_banner) _banner.style.display='none'; };
-        // 轮询 JS 里 applyLayout 会调用这个
-    })();
-    </script>
-
 <!-- ═══════════════ LEFT SIDEBAR ═══════════════ -->
 <!-- ═══════════════ LEFT SIDEBAR (仙女座公共侧栏) ═══════════════ -->
 {% include '_partials/andromeda_sidebar.html' %}
@@ -901,85 +878,5 @@
     {% if sa_proprietary %}
     <script src="{{ url_for('static', filename='js/sa_proprietary.js') }}"></script>
     {% endif %}
-    {# v24.2 SA 双密钥: 客户端 JS — 实时轮询 /api/diag/sa_dual, 动态切换 body layout #}
-    <script>
-    (function(){
-        // ⚠️ 关键: Flask app.static_url_path = /static (不是 /assets!)
-        // sa_proprietary.css/js 在 flask-app/static/css|js/ 里
-        var SA_CSS_URL = "{{ url_for('static', filename='css/sa_proprietary.css') }}";
-        var SA_JS_URL  = "{{ url_for('static', filename='js/sa_proprietary.js') }}";
-        var SA_CSS_ID  = "mt-sa-prop-css";
-        var SA_JS_ID   = "mt-sa-prop-js";
-        var POLL_MS    = 3000;
-        var _lastMode  = null;
-
-        function applyLayout(mode, saProp){
-            var body = document.body;
-            if(!body) return;
-            body.className = body.className.replace(/layout-mode-\w+/g, '');
-            body.className += (' layout-mode-' + mode);
-            body.classList.toggle('sa-proprietary', !!saProp);
-            body.setAttribute('data-layout-mode', mode);
-            body.setAttribute('data-dual-authenticated', saProp ? 'true' : 'false');
-
-            // 🚨 调试 banner (绝对不可忽略!)
-            if(saProp){
-                if(window.__mtShowSaBanner) window.__mtShowSaBanner();
-            } else {
-                if(window.__mtHideSaBanner) window.__mtHideSaBanner();
-            }
-
-            // 动态注入/移除 SA CSS/JS
-            if(saProp){
-                if(!document.getElementById(SA_CSS_ID)){
-                    var l = document.createElement('link');
-                    l.id = SA_CSS_ID; l.rel='stylesheet'; l.href=SA_CSS_URL;
-                    document.head.appendChild(l);
-                    console.log('[SA-DUAL] injected', SA_CSS_URL);
-                }
-                if(!document.getElementById(SA_JS_ID)){
-                    var s = document.createElement('script');
-                    s.id = SA_JS_ID; s.src = SA_JS_URL; s.defer = true;
-                    document.body.appendChild(s);
-                    console.log('[SA-DUAL] injected', SA_JS_URL);
-                }
-            } else {
-                document.getElementById(SA_CSS_ID)?.remove();
-                document.getElementById(SA_JS_ID)?.remove();
-            }
-
-            if(_lastMode !== mode){
-                console.log('[SA-DUAL] layout → ' + mode + '  sa_proprietary=' + !!saProp);
-                _lastMode = mode;
-            }
-        }
-
-        function pollOnce(){
-            fetch('/api/diag/sa_dual', {
-                credentials:'same-origin',
-                headers:{'Referer': location.origin + '/'}
-            }).then(function(r){ return r.json(); }).then(function(d){
-                if(d && d.OK && d.ctx_computed){
-                    applyLayout(d.ctx_computed.layout_mode || 'STANDARD', !!d.ctx_computed.sa_proprietary);
-                } else {
-                    console.warn('[SA-DUAL] diag endpoint returned non-OK:', d);
-                }
-            }).catch(function(e){
-                // 轮询失败不打 warn (避免 console 刷屏)
-            });
-        }
-
-        console.log('[SA-DUAL] v24.2 轮询启动, interval=' + POLL_MS + 'ms');
-        console.log('[SA-DUAL] CSS=' + SA_CSS_URL);
-        console.log('[SA-DUAL] JS=' + SA_JS_URL);
-
-        // 首次 + 定时轮询
-        pollOnce();
-        setInterval(pollOnce, POLL_MS);
-
-        // 窗口 focus 时也立刻检查
-        window.addEventListener('focus', pollOnce);
-    })();
-    </script>
 </body>
 </html>

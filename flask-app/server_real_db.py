@@ -9577,9 +9577,9 @@ def sa_dashboard():
             reason=f"{_sa_check.get('reason', 'unknown')}|stage={_sa_check.get('auth_stage', 'pre_auth')}",
         )
         if not _sa_check['should_redirect']:
-            # 条件不满足，拒绝直接访问 SA 专用页面
-            return render_template('index.html',
-                                   **_sa_dashboard_fallback_context()), 403
+            # v24.3.3: 密钥缺失/非 loopback → 直接 302 跳回普通首页
+            # （不再渲染任何 SA 专属锁定卡/403，用户否决了 locked_nokeys 页面）
+            return redirect('/index?from=sa_no_keys')
     except Exception as _sa_dash_err:
         try:
             import logging as _lg_dash
@@ -9587,8 +9587,7 @@ def sa_dashboard():
                 "[sa_dashboard] 访问检测异常: %s", _sa_dash_err)
         except Exception:
             pass
-        return render_template('index.html',
-                               **_sa_dashboard_fallback_context()), 403
+        return redirect('/index?from=sa_check_error')
 
     # guest 也需要 csrf token（登录表单 X-CSRF-Token，与首页一致）
     page_csrf_token = session.get('csrf_token', '')
@@ -9655,24 +9654,6 @@ def sa_dashboard():
         '_s': stats,
     })
     return render_template('sa_dashboard.html', **base_ctx)
-
-
-def _sa_dashboard_fallback_context():
-    """SA 专用页面访问被拒时的 fallback 上下文（渲染 STANDARD 首页用）。"""
-    version, info, latest = get_version_info()
-    stats = _get_homepage_stats()
-    footer_info = _get_footer_info()
-    return {
-        'version': version, 'version_info': info, 'latest_version': latest,
-        'homepage_stats': stats, '_s': stats, 'footer_info': footer_info,
-        'particle_config': _get_particle_frontend_config(),
-        'cognitive_profile': {}, 'ai_eco': {'employees': 0, 'experts': 0},
-        'sa_rules': {'integrity_failed': 0, 'weak_words': 0, 'last_scan': ''},
-        'theme_schemes': [{'scheme_id': 'default', 'name': '极光蓝',
-                           'preset_key': 'aurora', 'is_memorial': False}],
-        'page_csrf_token': session.get('csrf_token', ''),
-        'layout_mode': 'STANDARD', 'sa_proprietary': False,
-    }
 
 
 # ─── Arduino events/poll/ack + session/bind/redirect_target + arduino_ide_page + arduino_admin_setup_page 由 routes/arduino_session_routes.py blueprint 注册 (唯一).
@@ -10519,6 +10500,32 @@ def api_hardware_dual_status():
         from app.middlewares.vikey_enforcement_middleware import vikey_enforcement as _mt_dual
         username = session.get('username', '') or ''
         if not username:
+            # v24.3.2: guest + loopback + hardware_only=1 → 仅返回硬件在位布尔
+            # （供 /sa/dashboard 锁定页/登录页前端心跳判断"密钥是否拔出/就绪"，
+            #   不含序列号/卷名等敏感字段；非 loopback 一律 401 fail-closed）
+            if (request.args.get('hardware_only') == '1'
+                    and request.remote_addr in ('127.0.0.1', '::1')):
+                try:
+                    _hw = _mt_dual.get_dual_hardware_status(
+                        username='wuchenghao15', role='super_admin',
+                        ip=request.remote_addr,
+                        ua=request.headers.get('User-Agent', '')[:300])
+                    _vp = bool(_hw.get('vikey', {}).get('present'))
+                    _sp = bool(_hw.get('szu100', {}).get('present'))
+                    return jsonify({
+                        'success': True,
+                        'hardware_only': True,
+                        'vikey_present': _vp,
+                        'szu100_present': _sp,
+                        'both_present': _vp and _sp,
+                        'layout_mode': 'SA_PROPRIETARY',
+                    })
+                except Exception:
+                    return jsonify({
+                        'success': False, 'hardware_only': True,
+                        'vikey_present': False, 'szu100_present': False,
+                        'both_present': False, 'layout_mode': 'STANDARD',
+                    })
             # 会话缺省无用户名 → 视为未登录。401 不重定向(防盗链保持原状)
             return jsonify({
                 'success': False,
