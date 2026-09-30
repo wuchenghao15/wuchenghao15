@@ -710,23 +710,32 @@ class HandshakeEngine:
                     rows = mydb.execute(f"SELECT * FROM {tbl} WHERE {pk} IN ({ph})", list(push_pks)).fetchall()
                     self._ssh_push_rows(ssh_dest, remote_db_path, tbl, col_names, rows, stats)
                 if pull_pks:
-                    # SSH 拉远端缺失行
+                    # 🆕 v24.3.6: 用 base64+json 拉远端缺失行 → 彻底绕开 pipe 分隔 bug
+                    import base64 as _b64
                     escaped_pks = [p.replace("'", "''") for p in pull_pks]
                     ph2 = ','.join([f"'{ep}'" for ep in escaped_pks])
-                    r_pull = subprocess.run(
-                        ["ssh", "-o", "StrictHostKeyChecking=no", ssh_dest,
-                         f"sqlite3 {remote_db_path} \"SELECT * FROM {tbl} WHERE {pk} IN ({ph2});\""],
-                        capture_output=True, text=True, timeout=15)
-                    # sqlite3 输出是 pipe 分隔, 需要列名
+                    pull_py = (
+                        "import sqlite3,json,base64\n"
+                        f"db=sqlite3.connect('{remote_db_path}')\n"
+                        f"rows=db.execute(\"SELECT * FROM {tbl} WHERE {pk} IN ({ph2})\").fetchall()\n"
+                        "print(base64.b64encode(json.dumps(rows,default=str).encode()).decode())\n"
+                        "db.close()\n"
+                    )
+                    b64_script = _b64.b64encode(pull_py.encode()).decode()
+                    pull_cmd = f"echo {b64_script} | base64 -d | python3"
+                    r_pull = subprocess.run(["ssh", "-o", "StrictHostKeyChecking=no", ssh_dest, pull_cmd],
+                                            capture_output=True, text=True, timeout=30)
                     pulled = []
-                    for line in (r_pull.stdout or "").strip().split('\n'):
-                        if line:
-                            pulled.append(tuple(line.split('|')))
+                    if r_pull.returncode == 0 and r_pull.stdout.strip():
+                        try:
+                            pulled = json.loads(_b64.b64decode(r_pull.stdout.strip()))
+                        except Exception as _je:
+                            print(f"  ⚠️ {tbl}: PULL json 解析失败 {_je}")
                     if pulled:
                         sql = f"INSERT OR IGNORE INTO {tbl} ({','.join(col_names)}) VALUES ({','.join(['?']*len(col_names))})"
                         mydb.executemany(sql, pulled)
                         mydb.commit()
-                        print(f"  ↑ {tbl:35s} PULL {len(pulled):4d} rows")
+                        print(f"  ↑ {tbl:35s} PULL {len(pulled):4d} rows (base64 json)")
                         if not push_pks:
                             stats[tbl] = {"direction": "pull", "rows": len(pulled)}
 
