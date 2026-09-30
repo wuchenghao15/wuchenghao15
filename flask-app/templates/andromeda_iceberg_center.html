@@ -1,150 +1,414 @@
-<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>冰山控制中心 · Iceberg Control Center</title>
+{% extends "base_unified.html" %}
+
+{% block title %}
+{{ t('andromeda.冰山控制中心___Ice_38a000', default='冰山控制中心 · Iceberg Control Center') }}
+{% endblock %}
+
+{% block extra_head %}
+
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@300;400;500;700;900&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@300;400;500;700;900&family=Playfair+Display:ital,wght@0,40{{ t('andromeda.仙女座守护_6879db', default='仙女座守护') }};1,400&family=JetBrains+Mono:wght@400;500;700&display=swap');
+
+  /* ═══════════════════════════════════════════════════
+     📐 仙女座冰山 · 统一设计 Token (v22.4.0 美院院士规范)
+    {{ t('andromeda.0_模型_2ba3e3', default='0 模型') }}══════════════════════════════════════════════ */
   :root {
-    --ink-deep:#0F2836; --ink-mid:#1E4A63; --ink-light:#2C5F7C;
-    --snow:#E8F0F2; --snow-bright:#F8F9FA;
-    --seal-red:#C0392B; --gold:#D4A574;
-    --ink-text:#2C3E50; --ink-soft:#566573; --ink-muted:#85929E;
-    --shadow:rgba(30,74,99,0.15);
+    /* 墨 · 主色系 (水墨渐变) */
+    --ink-deep:#0A2342;
+    --ink-mid:#1E4A63;
+    --ink-light:#2C5F7C;
+    --ink-wash:#5B8AA8;
+    /* 雪 · 背景 */
+    --snow:#E8F0F2;
+    -{{ t('andromeda.IOL_深度绑定_7c2d8e', default='IOL 深度绑定') }}ht:#F8FBFC;
+    --paper:#FFFFFF;
+    /* 金 · 点缀 */
+    --gold:#C9{{ t('andromeda.🌙_暗黑_Matrix_6d5493', default='🌙 暗黑 Matrix') }}old-bright:#E8C98A;
+    --gold-deep:#8B6F3F;
+    /* 印 · 朱红 */
+    --seal-red:#B83A2F;
+    /* 文字 */
+    --text-primary:#1A2E3D;
+    --text-secondary:#4A6572;
+    --text-muted:#8EA4B3;
+    /* 阴影 */
+    --shadow-sm:0 1px 3p{{ t('andromeda.冰_山_控_制_中_心_93d35c', default='冰 山 控 制 中 心') }}66,0.08);
+    --shadow-md:0 4px 16px rgba(10,35,66,0.12);{{ t('andromeda.赤壁_·_承天寺_·_东坡_d9664e', default='赤壁 · 承天寺 · 东坡') }}g:0 12px 32px rgba(10,35,66,0.16);
+    --shadow-i{{ t('andromeda.加载中..._26b5bd', default='加载中...') }}et 0 1px 3px rgba(10,35,66,0.06);
+    /* 圆角 */
+    --radius-sm:6px;
+    --radius-md:10px;
+    --radius-lg:16px;
+    --radius-xl:24px;
+    /* 间距 */
+    --space-xs:4px;
+    --space-sm:8px;
+    --space-md:16px;
+    --space-lg:24px;
+    --space-xl:40px;
+    /* 过渡 */
+    --ease-out:cubic-bezier(0.22,1,0.36,1);
   }
+
+  /* ═══════════ Reset ═══════════ */
   * { margin:0; padding:0; box-sizing:border-box; }
+  html { scroll-behavior:smooth; }
   body {
-    font-family:'Noto Serif SC','Playfair Display',serif;
-    background:var(--snow); color:var(--ink-text); min-height:100vh;
+    font-family:'Noto Serif SC',-apple-system,BlinkMacSystemFont,serif;
+    background:var(--snow);
     background-image:
-      radial-gradient(ellipse 800px 400px at 15% 20%, rgba(44,95,124,0.06), transparent),
-      radial-gradient(ellipse 600px 300px at 85% 70%, rgba(30,74,99,0.05), transparent);
+      radial-gradient(ellipse 900px 500px at 10% 15%, rgba(44,95,124,0.07), transparent 60%),
+      radial-gradient(ellipse 700px 400px at 90% 85%, rgba(30,74,99,0.0{{ t('andromeda.东坡_29a86c', default='东坡') }}transparent 60%),
+      radial-gradient(ellipse 500px 300px at 50% 50%, rgba(201,169,110,0.03), transparent 70%);
+    color:var(--text-primary);
+    min-height:100vh;
+    line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+    font-feature-settings:"kern", "palt";
+  }
+  a { text-decoration:none; color:inherit; transition:color 0.2s var(--ease-out); }
+  a:hover { color:var(--ink-light); }
+
+  /* ═══════════ 布局容器 ═══════════ */
+  .container { max-width:1360px; margin:0 auto; padding:40px 48px 80px; }
+
+  /* ═══════════ 题头{{ t('andromeda.承天寺_65f371', default='承天寺') }} ═══════════ */
+  .header {
+    text-align:center;
+    margin-bottom:var(--space-xl);
+    padding:var(--space-xl) var(--space-lg);
+    background:linear-gradient(180deg, rgba(255,255,255,0.6) 0%, transparent 100%);
+    border-radius:var(--radius-lg);
     position:relative;
   }
-  .container { max-width:1300px; margin:0 auto; padding:50px 40px; }
+  .dyn-sub {
+    font-family:'Playfair Display',serif;
+    font-style:italic;
+    color:var(--text-muted);
+    letter-spacing:6px;
+    font-size:0.82rem;
+    text-transform:uppercase;
+  }
+  .dyn-title {
+    font-size:clamp(1.8rem, 4vw, 3.2rem);
+    font-weight:900;
+    letter-spacing:0.25em;
+    color:var(--ink-deep);
+    margin:{{ t('andromeda.赤壁_f9df4e', default='赤壁') }} 0;
+    position:relative;
+    display:inline-block;
+  }
+  .dyn-title::before,
+  .dyn-title::after {
+    content:'◆';
+    color:var(--gold);
+    font-size:0.5em;
+    margin:0 12px;
+    vertical-align:middle;
+  }
+  .seal {
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    background:linear-gradient(135deg, var(--seal-red), #9A2E24);
+    color:white;
+    font-weight:700;
+    padding:6px 16px;
+    border-radius:var(--radius-sm);
+    font-size:0.72rem;
+    letter-spacing:2px;
+    box-shadow:var(--shadow-sm);
+    border:2px solid rgba(255,255,255,0.15);
+  }
 
-  /* ===== 题头 ===== */
-  .header { text-align:center; margin-bottom:50px; }
-  .dyn-sub { font-family:'Playfair Display',serif; font-style:italic; color:var(--ink-muted); letter-spacing:4px; font-size:0.9rem; }
-  .dyn-title { font-size:3rem; font-weight:900; letter-spacing:0.3em; color:var(--ink-deep); margin:8px 0; }
-  .seal { display:inline-block; background:var(--seal-red); color:white; font-weight:700; padding:6px 12px; border-radius:3px; transform:rotate(-3deg); font-size:0.75rem; }
-  .stat-row { display:flex; gap:30px; justify-content:center; margin-top:30px; flex-wrap:wrap; }
-  .stat-item { text-align:center; }
-  .stat-num { font-family:'Playfair Display',serif; font-size:2rem; font-weight:700; color:var(--ink-deep); }
-  .stat-label { font-size:0.7rem; color:var(--ink-muted); letter-spacing:2px; text-transform:uppercase; }
+  /* 顶部统计条 */
+  .stat-row {
+    display:grid;
+    grid-template-columns:repeat(auto-fit, minmax(120px, 1fr));
+    gap:var(--space-lg);
+    m{{ t('andromeda.冰山_e8edb9', default='冰山') }}n-top:var(--space-lg);
+    max-width:720px;
+    margin-left:auto;
+    margin-right:auto;
+  }
+  .stat-item {
+    text-align:center;
+    padding:var(--space-md) var(--space-sm);
+    background:rgba{{ t('andromeda.🧊_三层厚度_(动态)_817350', default='🧊 三层厚度 (动态)') }}0.7);
+    border-radius:var(--radius-md);
+    border:1px solid rgba(44,95,124,0.08);
+    transition:transform 0.2s var(--ease-out), box-shadow 0.2s var(--ease-out);
+  }
+  .stat-item:hover {
+    transform:translateY(-2px);
+    box-shadow:var(--shadow-md);
+  }
+  .stat-num { font-family:
+    font-size:clamp(1.4rem, 2.5vw, 2.2rem);
+    font-weight:700;
+    color:var(--ink-deep);
+    line-height:1.1;
+    letter-spacing:-0.02em;
+  }
+  .stat-label{{ t('andromeda.🗺️_仙女座导航中心_ac988b', default='🗺️ 仙女座导航中心') }}size:0.68rem;
+    color:var(--text-muted);
+    letter-spacing:2px;
+    text-transform:uppercase;
+    margin-top:4px;
+  }
 
-  /* ===== 主区 两栏 ===== */
-  .main-grid { display:grid; grid-template-columns:520px 1fr; gap:50px; }
+  /* ═══════════ 主区 双栏 ═══════════ */
+  .main-grid {
+    displa{{ t('andromeda.仪表盘_3fa8b3', default='仪表盘') }}d;
+    grid-template-columns:minmax(380px, 480px) 1fr;
+    gap:var(--space-xl);
+    align-items:start;
+  }
 
-  /* ===== SVG 冰山动态 ===== */
-  .iceberg-wrap { position:relative; height:560px; }
-  .iceberg-svg { width:100%; height:100%; }
-  .iceberg-layer { transition:fill 0.6s ease; cursor:pointer; }
-  .iceberg-layer:hover { filter:brightness(1.1); }
-  .knowledge-node { cursor:pointer; transition:transform 0.2s; }
+  /* ═══════════ 左栏 SVG 冰山 ═══════════ */
+  .iceberg-wrap {
+    position:sticky;
+    top:24px;
+    heig{{ t('andromeda.冰山演化_8db19b', default='冰山演化') }}px;
+    background:rgba(2{{ t('andromeda.Timeline_11阶段_e75f39', default='Timeline 11阶段') }};
+    border-radius:var(--radius-lg);
+    border:1px solid rgba(44,95,124,0.08);
+    box-shadow:var(--shadow-md);
+    padding:var(--space-md);
+    overflow:hidden;
+  }
+  .ic{{ t('andromeda.知识脑库_8052af', default='知识脑库') }}svg { width:100%; height:{{ t('andromeda.88_条_·_14_人格_0e0941', default='88 条 · 14 人格') }}block; }
+  .iceberg-layer { transition:all 0.5s var(--ease-out); cursor:pointer; }
+  .iceberg-layer:hover { filter:brightness(1.12) drop-shadow(0 2px 8px rgba(10,35,66,0.2)); }
+  .{{ t('andromeda.冰山结构_4fbc75', default='冰山结构') }}dge-node { cursor:pointer{{ t('andromeda.API_原始数据_20c904', default='API 原始数据') }}on:transform 0.2s var(--ease-out); }
   .knowledge-node:hover { transform:scale(1.4); }
   .node-tooltip {
-    position:absolute; background:var(--ink-deep); color:white;
-    padding:8px 12px; border-radius:6px; font-size:0.72rem;
-    pointer-events:none; opacity:0; transition:opacity 0.2s;
-    max-width:220px; line-height:1.5; z-index:10;
+    position:absolute;
+    background:linea{{ t('andromeda.冰山主页_50e59b', default='冰山主页') }}ient(135deg, var(--ink-de{{ t('andromeda.Home_·_极简_0ce48e', default='Home · 极简') }}1);
+    color:white;
+    padding:10px 14px;
+    border-radius:var(--radius-md);
+    font-size:0.72rem;
+    pointer-events:none;
+    opacity:0;
+    transition:{{ t('andromeda.登录_402d19', default='登录') }}ity 0.2s var(--ease-out);{{ t('andromeda.Auth_·_SA双密钥_44cabf', default='Auth · SA双密钥') }}:220px;
+    line-height:1.6;
+    z-index:10;
     border:1px solid var(--gold);
-  }
-
-  /* ===== 右侧信息 ===== */
-  .right-col { display:flex; flex-direction:column; gap:24px; }
+    box-shadow:0 8px 24px rgba(10,35,66,0.4);{{ t('andromeda.深度绑定_IOL_b9ceaa', default='深度绑定 IOL') }} ═══════════ 右栏卡片 ═══════════ */
+  .right-col { display:flex; flex-direction:column; gap:var(--space-lg); }
   .card {
-    background:white; border-radius:10px; padding:22px 26px;
-    border-left:3px solid var(--ink-light); box-shadow:0 2px 12px var(--shadow);
-  }
+    background:var(--paper);
+    border-radius:var(--radius-lg);
+  {{ t('andromeda.已修复_ddfcb2', default='已修复') }}ding:22px 26px;
+    border:1px solid rgba(44,95,124,0.08);
+    border-top:3px solid var(--ink-light);
+  {{ t('andromeda.待消费_065a91', default='待消费') }}-shadow:var(--shadow-md);
+    transition:box-shadow 0.25s var(--ease-out), transform 0.25s var(--ease-{{ t('andromeda.失败重试_37cd80', default='失败重试') }}  }
+  .card:hover { box-shadow:var(--shadow-lg); }
   .card-hd {
-    font-weight:700; font-size:1rem; color:var(--ink-deep);
-    margin-bottom:14px; display:flex; justify-content:space-between; align-items:center;
+    font-weight:700;
+    font-size:0.95r{{ t('andromeda.已跳过_4a0854', default='已跳过') }}   color:var(--ink-deep);
+    margin-bottom:var(--space-md);
+    disp{{ t('andromeda.加载_IOL_数据中..._a60ae5', default='加载 IOL 数据中...') }}ustify-content:space-between;
+    align-items:center;
+    padding-bottom:12px;
+    border-bottom:1px solid rgba(44,95,124,0.08);
   }
   .card-tag {
-    font-size:0.7rem; padding:2px 8px; border-radius:3px; letter-spacing:1px;
+    font-size:0.65rem;
+    padding:3px 10px;
+    border-radius:20px;
+    letter-spacing:1px;
+    font-weight:600;
   }
-  .layer-peakt     { color:var(--ink-light); border-color:var(--ink-light); background:rgba(44,95,124,0.06); border:1px solid; }
-  .layer-spectrum  { color:var(--ink-mid);  border-color:var(--ink-mid);  background:rgba(30,74,99,0.06);  border:1px solid; }
-  .layer-basement  { color:var(--ink-deep); border-color:var(--ink-deep); background:rgba(15,40,54,0.08); border:1px solid; }
+  .layer-peakt    { color:var(--ink-light); background:rgba(44,95,124,0.08); }
+  .layer-spectrum { color:var(--ink-mid);  background:rgba(30,74,99,0.08);  }
+  .layer-basement { color:var(--ink-deep); background:rgba(15,40,54,0.08); }
 
+  /* 领域列表 */
   .domain-row {
-    display:flex; align-items:center; gap:10px; padding:8px 0;
-    border-bottom:1px dashed rgba(44,95,124,0.1);
+    display:flex;
+    align-items:center;
+    gap:10px;
+    padding:10px 0;
+    border-bottom:1px dashed rgba(44,95,124,0.08);
+    font-size:0;
   }
   .domain-row:last-child { border-bottom:none; }
-  .domain-name { flex:1; font-size:0.85rem; color:var(--ink-text); }
-  .domain-bar-wrap { width:100px; height:6px; background:rgba(44,95,124,0.08); border-radius:3px; overflow:hidden; }
-  .domain-bar { height:100%; border-radius:3px; transition:width 0.8s ease; }
-  .domain-count { font-family:'Playfair Display',serif; font-weight:700; font-size:0.85rem; color:var(--ink-deep); width:30px; text-align:right; }
-  .domain-plays { font-size:0.65rem; color:var(--ink-muted); width:60px; text-align:right; }
+  .domain-name {
+    flex:1;
+    font-size:0.82rem;
+    color:var(--text-primary);
+    font-weight:500;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+  .domain-bar-wrap {
+    width:100px;
+    height:6px;
+    background:rgba(44,95,124,0.08);
+    border-radius:3px;
+    overflow:hidden;
+    flex-shrink:0;
+  }
+  .domain-bar {
+    height:100%;
+    border-radius:3px;
+    transition:width 0.8s var(--ease-out);
+    background:linear-gradient(90deg, var(--ink-light), var(--gold));
+  }
+  .domain-count {
+    font-family:'JetBrains Mono',monospace;
+    font-weight:700;
+    font-size:0.82rem;
+    color:var(--ink-deep);
+    width:38px;
+    text-align:right;
+    flex-shrink:0;
+  }
+  .domain-plays {
+    font-size:0.62rem;
+    color:var(--text-muted);
+    width:56px;
+    text-align:right;
+    flex-shrink:0;
+  }
 
-  /* ===== 导航入口 ===== */
-  .nav-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:12px; }
+  /* ═══════════ 导航入口 ═══════════ */
+  .nav-grid {
+    display:grid;
+    grid-template-columns:repeat(2,1fr);
+    gap:10px;
+  }
   .nav-item {
-    display:flex; align-items:center; gap:12px;
-    padding:16px; background:linear-gradient(135deg, white, #FAFAFA);
-    border-radius:10px; border:1px solid rgba(44,95,124,0.1);
-    text-decoration:none; color:var(--ink-text);
-    transition:all 0.2s;
+    display:flex;
+    align-items:center;
+    gap:12px;
+    padding:14px;
+    background:linear-gradient(135deg, var(--paper), #FAFAFA);
+    border-radius:var(--radius-md);
+    border:1px solid rgba(44,95,124,0.1);
+    text-decoration:none;
+    color:var(--text-primary);
+    transition:all 0.2s var(--ease-out);
+    min-height:56px;
   }
   .nav-item:hover {
-    border-color:var(--ink-light); transform:translateY(-2px);
-    box-shadow:0 4px 16px var(--shadow);
+    border-color:var(--ink-light);
+    transform:translateY(-2px);
+    box-shadow:var(--shadow-md);
+    background:linear-gradient(135deg, var(--paper), rgba(44,95,124,0.03));
   }
-  .nav-icon { font-size:1.6rem; }
-  .nav-label { font-size:0.85rem; font-weight:600; }
-  .nav-sub { font-size:0.68rem; color:var(--ink-muted); letter-spacing:1px; }
+  .nav-icon { font-size:1.4rem; flex-shrink:0; }
+  .nav-label { font-size:0.8rem; font-weight:600; color:var(--text-primary); line-height:1.2; }
+  .nav-sub { font-size:0.62rem; color:var(--text-muted); letter-spacing:0.5px; margin-top:2px; }
 
-  /* ===== 底部 ===== */
-  .footer { margin-top:60px; padding:30px; text-align:center; border-top:1px solid rgba(44,95,124,0.1); }
-  .footer-cite { font-family:'Playfair Display',serif; font-style:italic; color:var(--ink-muted); font-size:0.8rem; letter-spacing:3px; }
+  /* ═══════════ IOL 深度绑定面板 ═══════════ */
+  .iol-panel {
+    background:linear-gradient(135deg, rgba(201,169,110,0.08), rgba(201,169,110,0.02));
+    border-radius:var(--radius-lg);
+    padding:20px 24px;
+    border:1px solid rgba(201,169,110,0.2);
+  }
+  .iol-hd {
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:var(--space-md);
+  }
+  .iol-hd h3 { font-size:0.95rem; color:var(--ink-deep); }
+  .council-badge {
+    font-size:0.68rem;
+    padding:3px 10px;
+    background:var(--gold);
+    color:var(--ink-deep);
+    border-radius:20px;
+    font-weight:700;
+  }
+  .iol-stats {
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:10px;
+  }
+  .iol-stat {
+    text-align:center;
+    padding:12px 6px;
+    border-radius:var(--radius-md);
+    background:rgba(255,255,255,0.6);
+    border:1px solid rgba(44,95,124,0.06);
+  }
+  .iol-stat .n { font-family:'JetBrains Mono',monospace; font-size:1.1rem; font-weight:700; }
+  .iol-stat .l { font-size:0.6rem; color:var(--text-muted); letter-spacing:1px; margin-top:2px; }
+  .iol-stat.aPLIED .n { color:#166534; } .iol-stat.aPLIED { border-color:rgba(22,101,52,0.15); }
+  .iol-stat.pENDING .n { color:#B45309; } .iol-stat.pENDING { border-color:rgba(180,83,9,0.15); }
+  .iol-stat.fAILED  .n { color:#991B1B; } .iol-stat.fAILED  { border-color:rgba(153,27,27,0.15); }
+  .iol-stat.sKIPPED .n { color:#4B5563; } .iol-stat.sKIPPED { border-color:rgba(75,85,99,0.12); }
+  .iol-list { font-size:0.75rem; color:var(--text-secondary); margin-top:var(--space-md); max-height:200px; overflow-y:auto; }
 
-  @media (max-width:1000px) {
-    .main-grid { grid-template-columns:1fr; }
-    .iceberg-wrap { height:400px; }
-    .dyn-title { font-size:2.2rem; }
+  /* ═══════════ 底部 Footer ═══════════ */
+  .footer {
+    margin-top:var(--space-xl);
+    padding:40px var(--space-lg) 20px;
+    text-align:center;
+    border-top:1px solid rgba(44,95,124,0.08);
+  }
+  .footer-cite {
+    font-family:'Playfair Display',serif;
+    font-style:italic;
+    color:var(--text-muted);
+    font-size:0.8rem;
+    letter-spacing:3px;
+  }
+
+  /* ═══════════ 响应式 ═══════════ */
+  @media (max-width: 1100px) {
+    .main-grid { grid-template-columns:1fr; gap:var(--space-lg); }
+    .iceberg-wrap { position:relative; top:auto; height:420px; }
+    .stat-row { grid-template-columns:repeat(4,1fr); }
+    .container { padding:24px 20px 80px; }
+  }
+  @media (max-width: 720px) {
+    .nav-grid { grid-template-columns:1fr; }
+    .iol-stats { grid-template-columns:repeat(2,1fr); }
+    .dyn-title { font-size:1.8rem; letter-spacing:0.15em; }
+    .stat-row { grid-template-columns:repeat(2,1fr); gap:10px; }
   }
 </style>
-</head>
-<body>
 
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{{ t('andromeda.冰山控制中心___Ice_38a000', default='冰山控制中心 · Iceberg Control Center') }}</title>
+
+{% endblock %}
+
+{% block page_title %}
+    冰山控制中心 · Iceberg Control Center
+{% endblock %}
+
+{% block content %}
 <!-- 🛡️ 仙女座守护进程状态条 + 主题切换 (v3.0 新增) -->
 <div class="andromeda-status-bar" id="statusBar">
-  <div class="asb-pill" id="asbDaemon"><span class="asb-dot"></span><span>仙女座守护</span> <strong id="asbDaemonPid">PID=—</strong></div>
-  <div class="asb-pill" id="asbOllama"><span class="asb-dot"></span><span>Ollama</span> <strong id="asbOllamaMod">0 模型</strong></div>
+  <div class="asb-pill" id="asbDaemon"><span class="asb-dot"></span><span>{{ t('andromeda.仙女座守护_6879db', default='仙女座守护') }}</span> <strong id="asbDaemonPid">PID=—</strong></div>
+  <div class="asb-pill" id="asbOllama"><span class="asb-dot"></span><span>Ollama</span> <strong id="asbOllamaMod">{{ t('andromeda.0_模型_2ba3e3', default='0 模型') }}</strong></div>
   <div class="asb-pill" id="asbRegistry"><span class="asb-dot"></span><span>Daemon</span> <strong id="asbRegCount">0/0</strong></div>
-  <div class="asb-pill iol" id="asbIol"><span class="asb-dot"></span><span>IOL 深度绑定</span></div>
-  <button class="asb-theme-toggle" id="themeToggle">🌙 暗黑 Matrix</button>
+  <div class="asb-pill iol" id="asbIol"><span class="asb-dot"></span><span>{{ t('andromeda.IOL_深度绑定_7c2d8e', default='IOL 深度绑定') }}</span></div>
+  <button class="asb-theme-toggle" id="themeToggle">{{ t('andromeda.暗黑_Matrix_6d5493', default='🌙 暗黑 Matrix') }}</button>
 </div>
 
 <!-- 🪐 仙女座统一导航组件 -->
 <link rel="stylesheet" href="/static/css/andromeda_nav.css">
-<script>
-(function(){
-var NI=[["🏠 入口",[{id:"home",label:"冰山主页",href:"/index",icon:"🏔️"},{id:"center",label:"控制中心",href:"/andromeda/iceberg_center",icon:"🧊"},{id:"dashboard",label:"仪表盘",href:"/andromeda/dashboard",icon:"🎛️"}]],["🧊 冰山",[{id:"evolution",label:"演化时间线",href:"/andromeda/iceberg_evolution",icon:"📜"},{id:"collapse",label:"坍缩定理",href:"/andromeda/collapse_theorem",icon:"⚓"}]],["🧠 知识",[{id:"brain",label:"知识脑库",href:"/andromeda/knowledge_brain",icon:"🧠"},{id:"graph",label:"知识图谱",href:"/andromeda/knowledge_graph",icon:"🕸️"},{id:"chat",label:"AI 人格聊天室",href:"/andromeda/persona_chat",icon:"💬"}]],["👥 天团",[{id:"eigenflux",label:"EigenFlux 矩阵",href:"/andromeda/eigenflux_council",icon:"👥"}]],["🛡️ 系统",[{id:"health",label:"健康度仪表盘",href:"/andromeda/health_board",icon:"🩺"},{id:"upgrade",label:"升级报告",href:"/andromeda/upgrade_board",icon:"📊"}]]];
-var CP=location.pathname,FA=null,BL=0;
-NI.forEach(g=>g.items.forEach(it=>{if(CP.startsWith(it.href)&&it.href.length>BL){FA=it;BL=it.href.length}}));
-if(!FA&&(CP==="/iceberg"||CP==="/andromeda"))FA=NI[0].items[1];
-var side=document.createElement("aside");side.className="andromeda-sidebar";
-side.innerHTML='<div class="as-header"><div class="as-logo">🪐</div><div class="as-title">仙女座</div><div class="as-sub">Andromeda v22.1</div></div>'+NI.map(g=>'<div class="as-group"><div class="as-group-title">'+g.group+'</div>'+g.items.map(it=>'<a class="as-item '+(FA&&FA.id===it.id?"active":"")+'" href="'+it.href+'"><span class="as-icon">'+it.icon+'</span><span class="as-label">'+it.label+'</span></a>').join("")+"</div>").join("")+'<div class="as-footer"><div class="as-status"><span class="as-dot"></span><span>Flask 8888</span></div><a class="as-link" href="/api/sync/health" target="_blank">Sync 状态</a></div>';
-var crumb=document.createElement("nav");crumb.className="andromeda-crumb";
-crumb.innerHTML='<a href="/andromeda/iceberg_center">🧊 仙女座</a>'+(FA?' › <span>'+FA.label+'</span>':"")+'<a href="/index" class="crumb-home">🏠 回主页</a>';
-var bot=document.createElement("nav");bot.className="andromeda-bottom";
-bot.innerHTML=NI.flatMap(g=>g.items).map(it=>'<a href="'+it.href+'" class="'+(FA&&FA.id===it.id?"active":"")+'"><span>'+it.icon+'</span><b>'+it.label+'</b></a>').join("");
-if(document.body){document.body.insertBefore(side,document.body.firstChild);document.body.insertBefore(crumb,document.body.children[1]||document.body.firstChild);document.body.appendChild(bot);document.body.classList.add("andromeda-has-nav")}
-})();
-</script>
+
 
 <div class="container">
 
   <!-- 题头 -->
   <div class="header">
     <div class="dyn-sub">MTSCOS · Iceberg Control Center</div>
-    <h1 class="dyn-title">冰 山 控 制 中 心</h1>
-    <div style="margin-top:12px;"><span class="seal">赤壁 · 承天寺 · 东坡</span></div>
-    <div class="stat-row" id="stats">加载中...</div>
+    <h1 class="dyn-title">{{ t('andromeda.冰_山_控_制_中_心_93d35c', default='冰 山 控 制 中 心') }}</h1>
+    <div style="margin-top:12px;"><span class="seal">{{ t('andromeda.赤壁___承天寺___东_d9664e', default='赤壁 · 承天寺 · 东坡') }}</span></div>
+    <div class="stat-row" id="stats">{{ t('andromeda.加载中_26b5bd', default='加载中...') }}</div>
   </div>
 
   <div class="main-grid">
@@ -161,7 +425,7 @@ if(document.body){document.body.insertBefore(side,document.body.firstChild);docu
                  points="70,445 370,445 310,260 130,260"
                  fill="var(--ink-deep)"
                  data-layer="basement"/>
-        <text x="220" y="415" text-anchor="middle" fill="#D4A574" font-weight="700" font-family="Noto Serif SC" font-size="16">东坡</text>
+        <text x="220" y="415" text-anchor="middle" fill="#D4A574" font-weight="700" font-family="Noto Serif SC" font-size="16">{{ t('andromeda.东坡_29a86c', default='东坡') }}</text>
         <text x="220" y="435" text-anchor="middle" fill="rgba(212,165,116,0.6)" font-family="Playfair Display" font-style="italic" font-size="10" letter-spacing="1">Basement · 50%</text>
 
         <!-- 🔸 承天寺 Spectrum (中层, 动态) -->
@@ -169,7 +433,7 @@ if(document.body){document.body.insertBefore(side,document.body.firstChild);docu
                  points="130,260 310,260 270,150 170,150"
                  fill="var(--ink-mid)"
                  data-layer="spectrum"/>
-        <text x="220" y="235" text-anchor="middle" fill="#D4A574" font-weight="700" font-family="Noto Serif SC" font-size="16">承天寺</text>
+        <text x="220" y="235" text-anchor="middle" fill="#D4A574" font-weight="700" font-family="Noto Serif SC" font-size="16">{{ t('andromeda.承天寺_65f371', default='承天寺') }}</text>
         <text x="220" y="255" text-anchor="middle" fill="rgba(212,165,116,0.6)" font-family="Playfair Display" font-style="italic" font-size="10" letter-spacing="1">Spectrum · 30%</text>
 
         <!-- 🔺 赤壁 Peak (顶层, 动态) -->
@@ -179,7 +443,7 @@ if(document.body){document.body.insertBefore(side,document.body.firstChild);docu
                  data-layer="peak"/>
         <!-- 雪峰顶 -->
         <polygon points="200,50 240,50 228,25 212,25" fill="var(--snow-bright)"/>
-        <text x="220" y="130" text-anchor="middle" fill="white" font-weight="700" font-family="Noto Serif SC" font-size="16">赤壁</text>
+        <text x="220" y="130" text-anchor="middle" fill="white" font-weight="700" font-family="Noto Serif SC" font-size="16">{{ t('andromeda.赤壁_f9df4e', default='赤壁') }}</text>
         <text x="220" y="148" text-anchor="middle" fill="rgba(255,255,255,0.7)" font-family="Playfair Display" font-style="italic" font-size="10" letter-spacing="1">Peak · 20%</text>
 
         <!-- 金线分隔 -->
@@ -189,7 +453,7 @@ if(document.body){document.body.insertBefore(side,document.body.firstChild);docu
         <!-- 篆刻印章 -->
         <rect x="360" y="40" width="36" height="36" fill="var(--seal-red)" rx="3"/>
         <text x="378" y="62" text-anchor="middle" fill="white" font-size="11" font-weight="700" font-family="Noto Serif SC">MTS</text>
-        <text x="378" y="73" text-anchor="middle" fill="white" font-size="9" font-family="Noto Serif SC">冰山</text>
+        <text x="378" y="73" text-anchor="middle" fill="white" font-size="9" font-family="Noto Serif SC">{{ t('andromeda.冰山_e8edb9', default='冰山') }}</text>
       </svg>
       <div class="node-tooltip" id="tooltip"></div>
     </div>
@@ -200,72 +464,91 @@ if(document.body){document.body.insertBefore(side,document.body.firstChild);docu
       <!-- 三层厚度 -->
       <div class="card">
         <div class="card-hd">
-          <span>🧊 三层厚度 (动态)</span>
+          <span>{{ t('andromeda.三层厚度__动态_817350', default='🧊 三层厚度 (动态)') }}</span>
           <span id="totalKw" style="font-family:'Playfair Display';font-size:0.8rem;color:var(--ink-muted);"></span>
         </div>
-        <div id="layerStats">加载中...</div>
+        <div id="layerStats">{{ t('andromeda.加载中_26b5bd', default='加载中...') }}</div>
       </div>
 
       <!-- 领域 Top -->
       <div class="card">
         <div class="card-hd">
-          <span>📊 领域分布 Top</span>
-          <span class="card-tag layer-basement">Basement 层</span>
+          <span>{{ t('andromeda.领域分布_Top_99f1a6', default='📊 领域分布 Top') }}</span>
+          <span class="card-tag layer-basement">{{ t('andromeda.Basement_层_8d23a9', default='Basement 层') }}</span>
         </div>
-        <div id="domainList">加载中...</div>
+        <div id="domainList">{{ t('andromeda.加载中_26b5bd', default='加载中...') }}</div>
       </div>
 
       <!-- 导航 -->
       <div class="card">
-        <div class="card-hd"><span>🗺️ 仙女座导航中心</span></div>
+        <div class="card-hd"><span>{{ t('andromeda.仙女座导航中心_ac988b', default='🗺️ 仙女座导航中心') }}</span></div>
         <div class="nav-grid">
           <a class="nav-item" href="/andromeda/dashboard">
             <div class="nav-icon">🎛️</div>
-            <div><div class="nav-label">仪表盘</div><div class="nav-sub">Dashboard</div></div>
+            <div><div class="nav-label">{{ t('andromeda.仪表盘_3fa8b3', default='仪表盘') }}</div><div class="nav-sub">Dashboard</div></div>
           </a>
           <a class="nav-item" href="/andromeda/iceberg_evolution">
             <div class="nav-icon">📜</div>
-            <div><div class="nav-label">冰山演化</div><div class="nav-sub">Timeline 11阶段</div></div>
+            <div><div class="nav-label">{{ t('andromeda.冰山演化_8db19b', default='冰山演化') }}</div><div class="nav-sub">{{ t('andromeda.Timeline_11阶_e75f39', default='Timeline 11阶段') }}</div></div>
           </a>
           <a class="nav-item" href="/andromeda/knowledge_brain">
             <div class="nav-icon">🧠</div>
-            <div><div class="nav-label">知识脑库</div><div class="nav-sub">88 条 · 14 人格</div></div>
+            <div><div class="nav-label">{{ t('andromeda.知识脑库_8052af', default='知识脑库') }}</div><div class="nav-sub">{{ t('andromeda.88_条___14_人格_0e0941', default='88 条 · 14 人格') }}</div></div>
           </a>
-          <a class="nav-item" href="/andromeda/api/iceberg_structure">
+          <a class="nav-item" href="/api/iceberg_structure">
             <div class="nav-icon">🏔️</div>
-            <div><div class="nav-label">冰山结构</div><div class="nav-sub">API 原始数据</div></div>
+            <div><div class="nav-label">{{ t('andromeda.冰山结构_4fbc75', default='冰山结构') }}</div><div class="nav-sub">{{ t('andromeda.API_原始数据_20c904', default='API 原始数据') }}</div></div>
           </a>
           <a class="nav-item" href="/">
             <div class="nav-icon">🏠</div>
-            <div><div class="nav-label">冰山主页</div><div class="nav-sub">Home · 极简</div></div>
+            <div><div class="nav-label">{{ t('andromeda.冰山主页_50e59b', default='冰山主页') }}</div><div class="nav-sub">{{ t('andromeda.Home___极简_0ce48e', default='Home · 极简') }}</div></div>
           </a>
           <a class="nav-item" href="/auth/login">
             <div class="nav-icon">🔐</div>
-            <div><div class="nav-label">登录</div><div class="nav-sub">Auth · SA双密钥</div></div>
+            <div><div class="nav-label">{{ t('andromeda.登录_402d19', default='登录') }}</div><div class="nav-sub">{{ t('andromeda.Auth___SA双密钥_44cabf', default='Auth · SA双密钥') }}</div></div>
           </a>
         </div>
       </div>
 
       <!-- 🆕 仙女座 ↔ 冰山 深度绑定 IOL 面板 (v3.0) -->
       <div class="iol-panel">
-        <div class="iol-hd"><h3>深度绑定 IOL</h3><span class="council-badge">LOOP 8 → LOOP 10</span></div>
+        <div class="iol-hd"><h3>{{ t('andromeda.深度绑定_IOL_b9ceaa', default='深度绑定 IOL') }}</h3><span class="council-badge">LOOP 8 → LOOP 10</span></div>
         <div class="iol-stats">
-          <div class="iol-stat aPLIED"><div class="n" id="iolApplied">—</div><div class="l">已修复</div></div>
-          <div class="iol-stat pENDING"><div class="n" id="iolPending">—</div><div class="l">待消费</div></div>
-          <div class="iol-stat fAILED"><div class="n" id="iolFailed">—</div><div class="l">失败重试</div></div>
-          <div class="iol-stat sKIPPED"><div class="n" id="iolSkipped">—</div><div class="l">已跳过</div></div>
+          <div class="iol-stat aPLIED"><div class="n" id="iolApplied">—</div><div class="l">{{ t('andromeda.已修复_ddfcb2', default='已修复') }}</div></div>
+          <div class="iol-stat pENDING"><div class="n" id="iolPending">—</div><div class="l">{{ t('andromeda.待消费_065a91', default='待消费') }}</div></div>
+          <div class="iol-stat fAILED"><div class="n" id="iolFailed">—</div><div class="l">{{ t('andromeda.失败重试_37cd80', default='失败重试') }}</div></div>
+          <div class="iol-stat sKIPPED"><div class="n" id="iolSkipped">—</div><div class="l">{{ t('andromeda.已跳过_4a0854', default='已跳过') }}</div></div>
         </div>
-        <div class="iol-list" id="iolList">加载 IOL 数据中...</div>
+        <div class="iol-list" id="iolList">{{ t('andromeda.加载_IOL_数据中_a60ae5', default='加载 IOL 数据中...') }}</div>
       </div>
 
     </div>
   </div>
 
   <div class="footer">
-    <div class="footer-cite">「盖将自其变者而观之，則天地曾不能以一瞬」— 苏轼 · 赤壁赋</div>
+    <div class="footer-cite">{{ t('andromeda.盖将自其变者而观之_則_f57943', default='「盖将自其变者而观之，則天地曾不能以一瞬」— 苏轼 · 赤壁赋') }}</div>
   </div>
 
 </div>
+{% endblock %}
+
+{% block extra_scripts %}
+
+<script>
+(function(){
+var NI=[["🏠 入口",[{id:"home",label:"冰山主页",href:"/index",icon:"🏔️"},{id:"center",label:"控制中心",href:"/andromeda/iceberg_center",icon:"🧊"},{id:"dashboard",label:"仪表盘",href:"/andromeda/dashboard",icon:"🎛️"}]],["🧊 冰山",[{id:"evolution",label:"演化时间线",href:"/andromeda/iceberg_evolution",icon:"📜"},{id:"collapse",label:"坍缩定理",href:"/andromeda/collapse_theorem",icon:"⚓"}]],["🧠 知识",[{id:"brain",label:"知识脑库",href:"/andromeda/knowledge_brain",icon:"🧠"},{id:"graph",label:"知识图谱",href:"/andromeda/knowledge_graph",icon:"🕸️"},{id:"chat",label:"AI 人格聊天室",href:"/andromeda/persona_chat",icon:"💬"}]],["👥 天团",[{id:"eigenflux",label:"EigenFlux 矩阵",href:"/andromeda/eigenflux_council",icon:"👥"}]],["🛡️ 系统",[{id:"health",label:"健康度仪表盘",href:"/andromeda/health_board",icon:"🩺"},{id:"upgrade",label:"升级报告",href:"/andromeda/upgrade_board",icon:"📊"}]]];
+var CP=location.pathname,FA=null,BL=0;
+NI.forEach(g=>g.items.forEach(it=>{if(CP.startsWith(it.href)&&it.href.length>BL){FA=it;BL=it.href.length}}));
+if(!FA&&(CP==="/iceberg"||CP==="/andromeda"))FA=NI[0].items[1];
+var side=document.createElement("aside");side.className="andromeda-sidebar";
+side.innerHTML='<div class="as-header"><div class="as-logo">🪐</div><div class="as-title">仙女座</div><div class="as-sub">Andromeda v22.1</div></div>'+NI.map(g=>'<div class="as-group"><div class="as-group-title">'+g.group+'</div>'+g.items.map(it=>'<a class="as-item '+(FA&&FA.id===it.id?"active":"")+'" href="'+it.href+'"><span class="as-icon">'+it.icon+'</span><span class="as-label">'+it.label+'</span></a>').join("")+"</div>").join("")+'<div class="as-footer"><div class="as-status"><span class="as-dot"></span><span>Flask 8888</span></div><a class="as-link" href="/api/sync/health" target="_blank">Sync 状态</a></div>';
+var crumb=document.createElement("nav");crumb.className="andromeda-crumb";
+crumb.innerHTML='<a href="/andromeda/iceberg_center">🧊 仙女座</a>'+(FA?' › <span>'+FA.label+'</span>':"")+'<a href="/index" class="crumb-home">🏠 回主页</a>';
+var bot=document.createElement("nav");bot.className="andromeda-bottom";
+bot.innerHTML=NI.flatMap(g=>g.items).map(it=>'<a href="'+it.href+'" class="'+(FA&&FA.id===it.id?"active":"")+'"><span>'+it.icon+'</span><b>'+it.label+'</b></a>').join("");
+if(document.body){document.body.insertBefore(side,document.body.firstChild);document.body.insertBefore(crumb,document.body.children[1]||document.body.firstChild);document.body.appendChild(bot);document.body.classList.add("andromeda-has-nav")}
+})();
+</script>
 
 <script>
 const LAYER_NAME = { peak:'赤壁 Peak', spectrum:'承天寺 Spectrum', basement:'东坡 Basement' };
@@ -273,7 +556,7 @@ const LAYER_COLOR = { peak:'#2C5F7C', spectrum:'#1E4A63', basement:'#0F2836' };
 
 async function loadIceberg() {
   try {
-    const r = await fetch('/andromeda/api/iceberg_layer_stats');
+    const r = await fetch('/api/iceberg_layer_stats');
     const j = await r.json();
     const data = j.data;
     const totals = data.totals;
@@ -402,7 +685,7 @@ document.getElementById('themeToggle').textContent = initThemeNow === 'dark' ? '
 // ═══════════════════════════════════════════════════════════════════
 async function loadIOL() {
   try {
-    var r = await fetch('/andromeda/api/iol_summary');
+    var r = await fetch('/api/iol_summary');
     var j = await r.json();
     if (j.code !== 0) return;
     var d = j.data, s = d.stats || {};
@@ -430,7 +713,7 @@ setInterval(loadIOL, 30000);  // 30s 刷新
 // ═══════════════════════════════════════════════════════════════════
 async function loadDaemon() {
   try {
-    var r = await fetch('/andromeda/api/andromeda_daemon_status');
+    var r = await fetch('/api/andromeda_daemon_status');
     var j = await r.json();
     if (j.code !== 0) return;
     var d = j.data;
@@ -451,5 +734,5 @@ async function loadDaemon() {
 loadDaemon();
 setInterval(loadDaemon, 15000);  // 15s 刷新
 </script>
-</body>
-</html>
+
+{% endblock %}

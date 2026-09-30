@@ -230,34 +230,31 @@ _COMMON_DEFAULT_PASSWORDS = [
 ]
 
 
-# ---------- 密码哈希（与 server_real_db.py L5229 _hash_password 一致） ----------
+# ---------- 密码哈希（werkzeug scrypt, NIST 推荐, 安全协议 §2.1 承诺对齐） ----------
 def _hash_password(plain: str) -> str:
-    """SHA256 -> Base64（与 split_databases/auth.db users.password 一致）"""
+    """注册新用户统一使用 werkzeug scrypt（>= SHA256 x1000 倍抗暴力破解）
+
+    历史用户仍存储 SHA256 base64/hex，但 _password_matches 兼容两种形态。
+    """
+    from werkzeug.security import generate_password_hash
+    return generate_password_hash(plain, method='scrypt')
+
+
+def _hash_password_legacy_sha256_base64(plain: str) -> str:
+    """历史 SHA256 base64（保留仅用于校验 legacy 密码，新注册不再写入）"""
     return base64.b64encode(hashlib.sha256(plain.encode('utf-8')).digest()).decode('ascii')
 
 
-def _hash_password_hex(plain: str) -> str:
-    """SHA256 -> hex（与 _runtime/databases/Database/app.db users.password_hash 一致）
-
-    app.db 将密码存为 64 位十六进制摘要（非 Base64），历史 _hash_password 仅产出 Base64,
-    导致 app.db 用户即使密码正确也校验失败。本函数补齐 hex 形态以兼容两种存储。
-    """
+def _hash_password_legacy_sha256_hex(plain: str) -> str:
+    """历史 SHA256 hex（保留仅用于校验 legacy 密码，新注册不再写入）"""
     return hashlib.sha256(plain.encode('utf-8')).hexdigest()
 
 
 def _verify_password_fallback(plain: str, stored: str, username: str) -> bool:
-    """兼容多种历史哈希格式：bcrypt / werkzeug / 常见密码映射 / 占位哈希"""
+    """兼容多种历史哈希格式：werkzeug scrypt/pbkdf2 → bcrypt → legacy SHA256 → 常见密码映射"""
     if not plain or not stored:
         return False
-    # 1) bcrypt
-    if stored.startswith('$2'):
-        try:
-            import bcrypt
-            if bcrypt.checkpw(plain.encode(), stored.encode()):
-                return True
-        except ImportError:
-            pass
-    # 2) werkzeug 格式
+    # 1) werkzeug 格式 (scrypt / pbkdf2 / sha256$) —— 当前注册主用格式
     try:
         from werkzeug.security import check_password_hash as _wk_check
         if '$' in stored or stored.startswith('pbkdf2') or stored.startswith('scrypt') or stored.startswith('sha256$'):
@@ -268,7 +265,26 @@ def _verify_password_fallback(plain: str, stored: str, username: str) -> bool:
                 pass
     except Exception:
         pass
-    # 3) 常见密码映射（同时匹配 Base64 与 hex 两种存储形态）
+    # 2) bcrypt
+    if stored.startswith('$2'):
+        try:
+            import bcrypt
+            if bcrypt.checkpw(plain.encode(), stored.encode()):
+                return True
+        except ImportError:
+            pass
+    # 3) 历史 SHA256 base64 + hex
+    try:
+        if hmac.compare_digest(_hash_password_legacy_sha256_base64(plain), stored):
+            return True
+    except Exception:
+        pass
+    try:
+        if hmac.compare_digest(_hash_password_legacy_sha256_hex(plain), stored):
+            return True
+    except Exception:
+        pass
+    # 4) 常见密码映射（兼容极老版本占位哈希）
     cand_set = set(_COMMON_DEFAULT_PASSWORDS)
     cand_set.add(username or '')
     cand_set.add((username or '').lower())
@@ -276,31 +292,20 @@ def _verify_password_fallback(plain: str, stored: str, username: str) -> bool:
     for cand in cand_set:
         if not cand:
             continue
-        if _hash_password(cand) == stored or _hash_password_hex(cand) == stored:
+        if _hash_password_legacy_sha256_base64(cand) == stored or _hash_password_legacy_sha256_hex(cand) == stored:
             return plain == cand
     return False
 
 
 def _password_matches(plain: str, stored: str, username: str) -> bool:
-    """主密码校验入口：先标准 SHA256+base64, 再 SHA256+hex, 最后回退到兼容模式
+    """主密码校验入口：
 
-    兼容两种历史存储:
-      - auth.db / mtscos.db: users.password 列, Base64 编码 (44 字符)
-      - app.db: users.password_hash 列, 十六进制摘要 (64 字符)
+    优先级：werkzeug 格式（当前注册）→ bcrypt → legacy SHA256 base64/hex → 常见密码映射
+    这样新老用户均可正常登录。
     """
     if not plain or not stored:
         return False
     stored = stored.strip()
-    try:
-        if hmac.compare_digest(_hash_password(plain), stored):
-            return True
-    except Exception:
-        pass
-    try:
-        if hmac.compare_digest(_hash_password_hex(plain), stored):
-            return True
-    except Exception:
-        pass
     return _verify_password_fallback(plain, stored, username)
 
 
@@ -1195,64 +1200,222 @@ def session_health():
 #  规则§数据库唯一数据源：注册信息写入 SQLite users 表，禁止假数据
 # ============================================================
 @auth_bp.route('/register', methods=['GET', 'POST'])
-@system_container(require_auth='login')
+@system_container(require_auth='guest')
 def register():
     """用户注册：校验同意状态 → 写入数据库 → 落库 agreed_version"""
     if request.method == 'GET':
-        return render_template('register.html')
+        # 注入后端完整法规文档（4 份 × 多章节 × 多条款）
+        import server_real_db as _sdb
+        _docs = getattr(_sdb, '_LEGAL_DOCUMENTS', {})
+        _terms = getattr(_sdb, '_REQUIRED_TERMS_SLUGS',
+                         ('data_usage_notice', 'register_agreement', 'security_agreement', 'user_agreement'))
+        return render_template('register.html',
+                               legal_docs=_docs,
+                               required_terms=_terms)
 
-    # POST: JSON 注册
+    # POST: JSON 注册（冰山版 v3：birth_date → 后端计算周岁）
+    import server_real_db as _sdb
+    import json as _json
+    from datetime import date as _date
     data = request.get_json(silent=True) or {}
     username = (data.get('username') or '').strip()
     password = data.get('password') or ''
     agreed = data.get('agreed', False)
+    email = (data.get('email') or '').strip()
+    birth_date_str = (data.get('birth_date') or '').strip()  # 前端传 YYYY-MM-DD
+    guardian_consent = data.get('guardian_consent', False)
+    learning_group_selected = (data.get('learning_group') or '').strip()  # 🆕 用户自选教育组别（空=用年龄映射推荐）
+    language_groups_raw = data.get('language_groups') or []  # 🆕 用户自选语言组（数组，可多选共存）
+    if isinstance(language_groups_raw, str):
+        language_groups_raw = [s.strip() for s in language_groups_raw.split(',') if s.strip()]
 
-    # 1) 必须勾选同意
+    # ⚠️ 关键：后端自己算年龄 + 映射组别（防篡改，客户端值完全忽略）
+    def _calc_age_from_birth(birth_str: str) -> int | None:
+        """从 YYYY-MM-DD 生日字符串计算周岁（精确考虑今年生日是否已过）"""
+        if not birth_str: return None
+        try:
+            y, m, d = map(int, birth_str.split('-'))
+        except (ValueError, AttributeError):
+            return None
+        try:
+            b = _date(y, m, d)
+        except ValueError:  # 非法日期如 2015-02-30
+            return None
+        today = _date.today()
+        age = today.year - b.year
+        # 如果今年生日还没到，减 1
+        if (today.month, today.day) < (b.month, b.day):
+            age -= 1
+        return age
+
+    def _map_age_to_group(a: int | None) -> str:
+        if a is None or a < 6: return '普通组别'
+        if a <= 18: return 'K12'
+        if a <= 25: return '高等教育'
+        if a <= 60: return '成人教育'
+        return '老年大学'
+
+    # 🆕 学习组别排他表：每个组别允许的年龄范围 [min_age, max_age]
+    _GROUP_AGE_RANGE = {
+        '普通组别':   (6, 999),
+        'K12':        (6, 18),
+        '高等教育':   (17, 30),   # 17 岁可提前入学 (少年班)
+        '成人教育':   (18, 65),
+        '老年大学':   (55, 100),  # 下限 55 岁 (提前退休也可)
+    }
+    _GROUP_LABELS = {
+        '普通组别': '普通组别', 'K12': 'K12 学生',
+        '高等教育': '高等教育', '成人教育': '成人教育', '老年大学': '老年大学',
+    }
+
+    # 🆕 语言/专业组别（与教育组可共存，语言组内部也可多选共存）
+    _LANGUAGE_GROUPS = {
+        '商务英语': {'label': '商务英语',   'allowed_age': (6, 100)},
+        '日语':     {'label': '日语',       'allowed_age': (6, 100)},
+        '韩语':     {'label': '韩语',       'allowed_age': (6, 100)},
+        '法语':     {'label': '法语',       'allowed_age': (6, 100)},
+        'Python':   {'label': 'Python 编程', 'allowed_age': (10, 100)},
+    }
+    _LANGUAGE_KEYS = set(_LANGUAGE_GROUPS.keys())
+
+    def _resolve_language_groups(age: int, raw_list: list[str]) -> tuple[list[str], list[str]]:
+        """
+        校验语言组列表：
+          - 只保留合法的 group_key
+          - 每个 key 校验年龄范围（宽松：6-100）
+          - 语言组之间互不排他 → 可多选共存
+          返回 (最终列表, 被剔除项)
+        """
+        result, removed = [], []
+        for g in (raw_list or []):
+            g = (g or '').strip()
+            if not g: continue
+            if g not in _LANGUAGE_KEYS:
+                removed.append((g, '未知语言组')); continue
+            mn, mx = _LANGUAGE_GROUPS[g]['allowed_age']
+            if not (mn <= age <= mx):
+                removed.append((g, f'年龄 {age} 不在 {mn}-{mx}')); continue
+            result.append(g)
+        return result, removed
+
+    def _resolve_learning_group(age: int, selected: str) -> tuple[str, bool, str | None]:
+        """
+        最终决策学习组别:
+          返回 (group_key, is_auto, error_msg)
+          - selected 空 → 用年龄自动映射 (is_auto=True)
+          - selected 非空 → 后端校验该组别的年龄范围是否包含 age → 合法则返回
+        """
+        recommended = _map_age_to_group(age)
+        if not selected:
+            return recommended, True, None  # 自动映射
+        if selected not in _GROUP_AGE_RANGE:
+            return recommended, True, f"未知组别 '{selected}'，已自动推荐 '{recommended}'"
+        min_a, max_a = _GROUP_AGE_RANGE[selected]
+        if not (min_a <= age <= max_a):
+            # 年龄越界 → 拒绝自选，回退到年龄推荐
+            return recommended, True, (
+                f"您 {age} 岁不在「{_GROUP_LABELS[selected]}」允许的年龄范围 "
+                f"{min_a}-{max_a} 岁内，已自动调整为推荐组别「{recommended}」"
+            )
+        return selected, False, None  # 用户自选 + 年龄合法
+
+    # 1) 必须勾选同意（PIPL §14）
     if not agreed:
-        return jsonify({'success': False, 'message': '请先阅读并同意用户协议、规则告知、注册通告及数据使用说明'})
+        return jsonify({'success': False, 'message': '请先阅读并同意 4 份协议（数据使用/注册/安全/用户）'})
 
-    # 2) 用户名格式校验（复用现有校验函数）
+    # 2) 用户名格式校验
     fmt = _validate_username_format(username)
     if not fmt.get('ok'):
         return jsonify({'success': False, 'message': fmt.get('msg', '用户名格式不合法')})
-    if len(username) < 3 or len(username) > 20:
-        return jsonify({'success': False, 'message': '用户名长度须 3-20 字符'})
-    if not username.replace('_', '').isalnum():
-        return jsonify({'success': False, 'message': '用户名仅支持字母、数字、下划线'})
 
-    # 3) 密码长度校验
-    if len(password) < 6:
-        return jsonify({'success': False, 'message': '密码长度不少于 6 位'})
+    # 3) 密码校验（对齐安全协议 §1.1 推荐强度）
+    if len(password) < 8:
+        return jsonify({'success': False, 'message': '密码长度不少于 8 位（安全协议推荐：8-64位、至少3类字符）'})
 
-    # 4) 检查用户名是否已存在
+    # 4) 邮箱格式校验（注册协议 §2.1 承诺收集）
+    if email:
+        import re as _re
+        if not _re.match(r'^[^@\s]+@[^@\s]+\.[^@\s]+$', email):
+            return jsonify({'success': False, 'message': '邮箱格式不合法'})
+
+    # 5) 从出生年月日计算年龄 + 合法性校验
+    age_int = _calc_age_from_birth(birth_date_str)
+    if age_int is None:
+        return jsonify({'success': False, 'message': '请选择有效的出生年月日（格式 YYYY-MM-DD）'})
+    if age_int < 6:
+        return jsonify({'success': False, 'message': f'您当前 {age_int} 岁，须满 6 岁才能注册（K12 至老年大学学习阶段）'})
+    if age_int > 100:
+        return jsonify({'success': False, 'message': f'您当前 {age_int} 岁，超过平台上限 100 岁'})
+
+    # 6) <14 岁强制监护人同意（PIPL §31 + 未成年人保护法 §65）
+    if age_int < 14:
+        if not guardian_consent:
+            return jsonify({
+                'success': False,
+                'code': 'GUARDIAN_CONSENT_REQUIRED',
+                'message': '根据《个人信息保护法》和《未成年人保护法》，未满14周岁注册须由监护人陪同并勾选"监护人同意"'
+            })
+
+    # 7) 🆕 最终决策学习组别：用户自选 + 后端排他性校验 + 年龄自动映射兜底
+    education_type, is_auto_group, group_warning = _resolve_learning_group(age_int, learning_group_selected)
+
+    # 7.1) 🆕 语言/专业组别（可多选共存 + 宽松年龄校验）
+    language_groups_final, language_groups_removed = _resolve_language_groups(age_int, language_groups_raw)
+
+    # 8) 检查用户名是否已存在
     existing = _find_user_in_db(username)
-    if existing:
+    user_found = existing and existing[0]  # tuple (dict, path) or (None, None)
+    if user_found:
         return jsonify({'success': False, 'message': '该用户名已被注册'})
 
-    # 5) 写入数据库（优先写入 app.db 的 users 表）
-    import sqlite3 as _sq
-    hashed = _hash_password_hex(password)  # SHA256 hex
-    import time as _time
+    # 9) 动态计算当前法规版本号 + 审计记录（个保法 §14 同意可证明）
+    _docs_now = getattr(_sdb, '_LEGAL_DOCUMENTS', {})
+    _terms_now = getattr(_sdb, '_REQUIRED_TERMS_SLUGS',
+                         ('data_usage_notice', 'register_agreement', 'security_agreement', 'user_agreement'))
+    # 格式：v1.0.0_data_usage_notice+register_agreement+security_agreement+user_agreement（用最低版本号作 anchor）
+    _min_ver = '9.9.9'
+    _ver_map = {}
+    for slug in _terms_now:
+        d = _docs_now.get(slug)
+        if d:
+            v = d.get('version', '1.0.0')
+            _ver_map[slug] = v
+            if v < _min_ver:
+                _min_ver = v
+    agreed_version_str = f"v{_min_ver}_{'+'.join(f'{s}:{_ver_map[s]}' for s in _terms_now if _ver_map.get(s))}"
+    agreed_docs_json = _json.dumps(_ver_map, ensure_ascii=False)  # 完整版本映射落库
+
+    # 10) 写入数据库（优先写入 app.db 的 users 表）
+    #    关键：app.db 的 email 列是 NOT NULL UNIQUE，空值会触发约束失败 → 自动填 dummy 邮箱
+    import sqlite3 as _sq, time as _time
+    hashed = _hash_password(password)  # werkzeug scrypt（安全协议 §2.1 承诺对齐）
+    # email NOT NULL 兜底：空则用 username@mtscos.local 作为占位邮箱，后续用户可在个人设置修改
+    _email_for_write = email or f"{username}@mtscos.local"
     registered = False
     for db_path in _candidate_user_dbs():
         try:
             conn = _sq.connect(db_path, timeout=10)
             conn.execute('PRAGMA busy_timeout=10000')
-            # 检查 users 表结构
             cols = [r[1] for r in conn.execute('PRAGMA table_info(users)').fetchall()]
             if not cols:
                 conn.close()
                 continue
-            # 构造 INSERT（只填充存在的列）
+            # 构造 INSERT（只填充存在的列，避免 schema 漂移报错）
             col_map = {
                 'username': username,
-                'password': _hash_password(password),      # base64 (auth.db 兼容)
-                'password_hash': hashed,                    # hex (app.db 兼容)
+                'password_hash': hashed,                  # werkzeug scrypt（新格式）
+                'password': hashed,                       # 同一份哈希写入旧列名（兼容 auth.db）
+                'email': _email_for_write,                 # NOT NULL 兜底（自动填 dummy 邮箱）
+                'birth_date': birth_date_str,              # YYYY-MM-DD（永久存档）
+                'age': age_int,                            # 由 birth_date 计算（会变，仅快照）
+                'education_type': education_type or None,  # 后端按 age 映射（防篡改）
                 'role': 'guest',
                 'status': 'active',
                 'created_at': _time.strftime('%Y-%m-%d %H:%M:%S'),
                 'agreed': 1,
-                'agreed_version': 'v1.0_20260909',
+                'agreed_version': agreed_version_str,     # 动态版本号
+                'agreed_docs_json': agreed_docs_json,      # 完整审计记录
+                'guardian_consent': 1 if guardian_consent else 0,  # PIPL §31 审计
             }
             insert_cols = [c for c in col_map if c in cols]
             placeholders = ', '.join(['?'] * len(insert_cols))
@@ -1266,19 +1429,61 @@ def register():
             registered = True
             break
         except Exception:
-            try:
-                conn.close()
-            except Exception:
-                pass
+            try: conn.close()
+            except Exception: pass
             continue
 
     if not registered:
         return jsonify({'success': False, 'message': '注册失败，数据库不可写入，请联系管理员'})
 
+    # 🆕 user_learning_group 双类型落库
+    try:
+        for db_path in _candidate_user_dbs():
+            try:
+                _uc = _sq.connect(db_path, timeout=10)
+                _uc.execute('PRAGMA busy_timeout=10000')
+                # (a) education 类型：先 DELETE 旧的（排他性保证），再 INSERT 新的
+                _uc.execute("DELETE FROM user_learning_group WHERE user_id=? AND group_type='education'",
+                           (username,))
+                _uc.execute("""INSERT INTO user_learning_group
+                    (user_id, username, group_key, group_label, group_type, auto_mapped, age_at_select, birth_date, selected_at)
+                    VALUES (?, ?, ?, ?, 'education', ?, ?, ?, datetime('now','localtime'))""",
+                    (username, username, education_type, _GROUP_LABELS.get(education_type, education_type),
+                     1 if is_auto_group else 0, age_int, birth_date_str))
+                # (b) language 类型：INSERT OR REPLACE（允许多个共存，UNIQUE(user_id, group_key) 去重）
+                for lg in language_groups_final:
+                    _uc.execute("""INSERT OR REPLACE INTO user_learning_group
+                        (user_id, username, group_key, group_label, group_type, auto_mapped, age_at_select, birth_date, selected_at)
+                        VALUES (?, ?, ?, ?, 'language', 0, ?, ?, datetime('now','localtime'))""",
+                        (username, username, lg, _LANGUAGE_GROUPS.get(lg, {}).get('label', lg), age_int, birth_date_str))
+                _uc.commit()
+                _uc.close(); break
+            except Exception:
+                try: _uc.close()
+                except Exception: pass
+    except Exception: pass  # user_learning_group 可选表，落库失败不阻塞注册
+
+    # 🆕 返回双类型组别决策信息
     return jsonify({
         'success': True,
-        'message': '注册成功，请使用新账号登录',
-        'redirect': '/auth/login'
+        'message': '注册成功，正在为您自动登录...',
+        'redirect': '/auth/login',
+        'auto_login': True,
+        'learning_group': {
+            'type': 'education',
+            'group_key': education_type,
+            'group_label': _GROUP_LABELS.get(education_type, education_type),
+            'is_auto': is_auto_group,
+            'age_at_select': age_int,
+            'hint': group_warning,
+        },
+        'language_groups': [
+            {'group_key': lg, 'group_label': _LANGUAGE_GROUPS.get(lg, {}).get('label', lg)}
+            for lg in language_groups_final
+        ],
+        'language_removed': [
+            {'group_key': k, 'reason': r} for k, r in language_groups_removed
+        ],
     })
 
 

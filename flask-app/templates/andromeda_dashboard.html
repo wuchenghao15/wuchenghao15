@@ -1,13 +1,69 @@
-<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-<meta charset="UTF-8">
-<title>仙女座仪表盘 · Andromeda Dashboard</title>
-<link rel="stylesheet" href="https://unpkg.com/element-plus/dist/index.css">
-<script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
-<script src="https://unpkg.com/element-plus"></script>
-<script src="https://unpkg.com/echarts@5/dist/echarts.min.js"></script>
+{% extends "base_unified.html" %}
+
+{% block title %}
+MTSCOS AI
+{% endblock %}
+
+{% block extra_head %}
+
 <style>
+/* ═══════════════════════════════════════════════════
+     📐 美院院士设计 Tok{{ t('andromeda.上次刷新_367edc', default='上次刷新') }}2.4.0) — 统一注入
+     ═══════════════════════════════════════════════════ */
+  :root {
+    --ink-deep:#0A2342; --ink-mid:#1E4A63; --ink-light:#2C5F7C; --ink-wash:#5B8AA8;
+    --snow:#E8F0F2; --snow-bright:#F8FBFC; --paper:#FFFFFF;
+{{ t('andromeda.Daemon_活率_3d1762', default='Daemon 活率') }}#C9A96E; --gold-bright:#E8C98A; --gold-deep:#8B6F3F;
+    --seal-red:#B83A2F;
+    --text-primary:#1A2E{{ t('andromeda.daemon_守护进程_579a59', default='daemon 守护进程') }}condary:#4A6572; --text-muted:#8EA4B3;
+    --shadow-sm:0 1px 3px rgb{{ t('andromeda.系统健康分_dfaca2', default='系统健康分') }},66,0.08);
+    --shadow-md:0 4px 16px rgba(10,35,66,0.12);
+    --shadow-lg:0 12px 32px rgba(10,35,66,0.16);
+    --radius-sm:6px; --radius-md:10px; --radius-lg:16px; --radius-xl:24px;
+    --space-xs:4px; --space-sm:8px; --space-md:16px; --space-{{ t('andromeda.DB_业务总量_710d50', default='DB 业务总量') }}--space-xl:40px;
+    --ease-out:cubic-bezier(0.22,1,0.36,1);
+  }
+  * { -webkit-font-smoothing:anti{{ t('andromeda.核心表累计行数_9eb5b3', default='核心表累计行数') }}font-feature-settings:"kern","palt"; }
+  body {
+    font-family:'Not{{ t('andromeda.24h_增量_d08f7d', default='24h 增量') }}SC',-apple-system,BlinkMacSystemFont,serif;
+    background:var(--snow); color:var(--text-primary){{ t('andromeda.过去_24_小时_8408f1', default='过去 24 小时') }}ght:1.6;
+    background-image:
+      radial-gradient(ellipse 900px 500px at 10% {{ t('andromeda.🖥️_本机_·_MacBook_c758c9', default='🖥️ 本机 · MacBook Pro') }}.07), transparent 60%),
+      radial-gradient(ellipse 700px 400px at 90% 85%, rgba(30,74,99,0.06), transparent 60%);
+  }
+  .card, .panel, .box, .block {
+    background:var(--paper); border-radius:var(--radius-lg);
+    border:1px solid rgba(44,95,124,0.08);
+    box-shadow:var(--shadow-md);
+    transition:box-shadow 0.25s var(--ease-out), transform 0.25s var(--ease-out);
+  }
+  .card:hover, .panel:hover { box-shadow:var(--shadow-lg); }
+  .title, h1, h2, h3 { color:var(--ink-deep); font-weight:900; letter-spacing:0.02em; }
+  .subtitle, .muted, .hint { color:var(--text-muted); }
+  .gold-text { colo{{ t('andromeda.📊_Daemon_分类活率_b0a45c', default='📊 Daemon 分类活率') }}}
+  .seal-badge {
+    background:linear-gradient(135deg, var(--seal-red), #9A2E24);
+    color:white;{{ t('andromeda.📈_DB_核心表_24h_增量_bbbfbd', default='📈 DB 核心表 24h 增量') }}; border-radius:var(--radius-sm);
+    font-weight:700; font-size:0.7rem; letter-spacing:2px;
+  }
+  button{{ t('andromeda.❤️_系统健康检查_f2de83', default='❤️ 系统健康检查') }}  background:var(--ink-light); color:white; border:none;
+    border-radius:var(--radius-md); padding:8px 20px;
+    font-weight:600; cursor:pointer; transition:all 0.2s var(--ease-out);
+  }
+  button:hover, .btn:hover {
+    background:var(--ink-mid); transform:translateY(-1px);
+    box-shadow:var(--shadow-md);
+  }
+  table { border-collapse:collapse; width:100%; font-size:0.82rem; }
+  th { background:rgba(44,95,124,0.06); color:{{ t('andromeda.🧬_Daemon_分类详情_(_326a3c', default='🧬 Daemon 分类详情 (点击看心跳)') }}eight:700; padding:10px 12px; text-align:left; border-bottom:2px solid rgba(44,95,124,0.12); }
+  td { padding:8px 12px; border-bottom:1px solid rgba(44,95,124,0.06); color:var(--text-secondary); }
+  tr:hover td { background:rgba(44,95,124,0.02); }
+  code, .mono { font-family:'JetBrains Mono','SF Mono',monospace; font-size:0.85em; }
+  a { color:var(--ink-light); text-decoration:none; transition:color 0.2s; }
+  a:hover { color:var(--ink-mid); }
+  @media (max-width: 1100px) { .main-grid, .grid-2, .grid-3 { grid-template-columns:1fr !important; } }
+  @media (max-width: 720px)  { .container { padding:16px !important; } }title="{{ t('andromeda.title="d.last_h_e9ec85', default='d.last_heartbeat || \'从未心跳\'') }}"gleapis.com/css2?family=Noto+Serif+SC:wght@300;400;500;700;900&family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=JetBr{{ t('andromeda.🔄_每_10s_自动刷新_edca7b', default='🔄 每 10s 自动刷新') }}@400;500;700&display=swap');
+
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body { font-family: -apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif;
          background: linear-gradient(135deg, #0c1445 0%, #1a1a2e 50%, #16213e 100%);
@@ -85,19 +141,32 @@
     .twin-row { grid-template-columns: 1fr; }
   }
 </style>
-</head>
-<body>
+
+<meta charset="UTF-8">
+<title{{ t('andromeda.仙女座仪表盘_·_Androm_45082b', default='仙女座仪表盘 · Andromeda Dashboard') }}/title>
+<link rel="stylesheet" href="https://unpkg.com/element-plus/dist/index.css">
+<script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+<script sr{{ t('andromeda.🪐_仙女座仪表盘_·_Andr_e273c6', default='🪐 仙女座仪表盘 · Andromeda Dashboard') }}s"></script>
+<script src="https://unpkg.com/echarts@5/dist/echarts.min.js"></script>
+
+{% endblock %}
+
+{% block page_title %}
+    仙女座仪表盘
+{% endblock %}
+
+{% block content %}
 {% raw %}
 <div id="app">
 
 <!-- Header -->
 <div class="header">
   <div>
-    <h1>🪐 仙女座仪表盘 · Andromeda Dashboard</h1>
+    <h1>{{ t('andromeda.仙女座仪表盘___A_e273c6', default='🪐 仙女座仪表盘 · Andromeda Dashboard') }}</h1>
     <div class="subtitle">v6.2 · 七阶段演化总览 · daemon 活率 · DB 业务增量 · 双机健康</div>
   </div>
   <div style="text-align:right">
-    <div style="font-size:11px;color:#64748b">上次刷新</div>
+    <div style="font-size:11px;color:#64748b">{{ t('andromeda.上次刷新_367edc', default='上次刷新') }}</div>
     <div style="font-size:13px;color:#c4b5fd">{{ lastUpdate }}</div>
   </div>
 </div>
@@ -105,33 +174,33 @@
 <!-- Top stat cards -->
 <div class="stat-grid">
   <div class="stat-card" :class="{warn: daemonRate < 80, danger: daemonRate < 50}">
-    <div class="stat-label">Daemon 活率</div>
+    <div class="stat-label">{{ t('andromeda.Daemon_活率_3d1762', default='Daemon 活率') }}</div>
     <div class="stat-value">{{ daemonAlive }}/{{ daemonTotal }}</div>
-    <div class="stat-sub">daemon 守护进程</div>
+    <div class="stat-sub">{{ t('andromeda.daemon_守护进程_579a59', default='daemon 守护进程') }}</div>
   </div>
   <div class="stat-card">
-    <div class="stat-label">系统健康分</div>
+    <div class="stat-label">{{ t('andromeda.系统健康分_dfaca2', default='系统健康分') }}</div>
     <div class="stat-value">{{ healthScore }}<span style="font-size:18px;color:#64748b">/100</span></div>
     <div class="stat-sub">{{ healthOk }}/{{ healthTotal }} 检查通过</div>
   </div>
   <div class="stat-card">
-    <div class="stat-label">DB 业务总量</div>
+    <div class="stat-label">{{ t('andromeda.DB_业务总量_710d50', default='DB 业务总量') }}</div>
     <div class="stat-value">{{ totalRows.toLocaleString() }}</div>
-    <div class="stat-sub">核心表累计行数</div>
+    <div class="stat-sub">{{ t('andromeda.核心表累计行数_9eb5b3', default='核心表累计行数') }}</div>
   </div>
   <div class="stat-card">
-    <div class="stat-label">24h 增量</div>
+    <div class="stat-label">{{ t('andromeda.24h_增量_d08f7d', default='24h 增量') }}</div>
     <div class="stat-value">{{ delta24h.toLocaleString() }}</div>
-    <div class="stat-sub">过去 24 小时</div>
+    <div class="stat-sub">{{ t('andromeda.过去_24_小时_8408f1', default='过去 24 小时') }}</div>
   </div>
 </div>
 
 <!-- Twin machine -->
 <div class="twin-row">
   <div class="twin-card">
-    <h4>🖥️ 本机 · MacBook Pro</h4>
+    <h4>{{ t('andromeda.本机___MacB_c758c9', default='🖥️ 本机 · MacBook Pro') }}</h4>
     <div class="big-num">{{ daemonAlive }}</div>
-    <div style="font-size:12px;color:#64748b;margin-top:4px">活跃 daemon · Flask 8888 · Ollama</div>
+    <div style="font-size:12px;color:#64748b;margin-top:4px">{{ t('andromeda.活跃_daemon_9d077d', default='活跃 daemon · Flask 8888 · Ollama') }}</div>
   </div>
   <div class="twin-card">
     <h4>🖥️ Mac mini · HULK-MACMINI</h4>
@@ -146,18 +215,18 @@
 <!-- Charts -->
 <div class="chart-row">
   <div class="chart-card">
-    <h3>📊 Daemon 分类活率</h3>
+    <h3>{{ t('andromeda.Daemon_分类活_b0a45c', default='📊 Daemon 分类活率') }}</h3>
     <div ref="daemonChart" class="chart-box"></div>
   </div>
   <div class="chart-card">
-    <h3>📈 DB 核心表 24h 增量</h3>
+    <h3>{{ t('andromeda.DB_核心表_24h_bbbfbd', default='📈 DB 核心表 24h 增量') }}</h3>
     <div ref="dbChart" class="chart-box"></div>
   </div>
 </div>
 
 <!-- Health checks -->
 <div class="daemon-section">
-  <h3>❤️ 系统健康检查</h3>
+  <h3>{{ t('andromeda.系统健康检查_f2de83', default='❤️ 系统健康检查') }}</h3>
   <div class="health-grid">
     <div class="health-item" v-for="c in healthChecks" :key="c.name" :class="c.status.toLowerCase()">
       <span class="dot"></span>
@@ -169,7 +238,7 @@
 
 <!-- Daemon categories -->
 <div class="daemon-section">
-  <h3>🧬 Daemon 分类详情 (点击看心跳)</h3>
+  <h3>{{ t('andromeda.Daemon_分类详_326a3c', default='🧬 Daemon 分类详情 (点击看心跳)') }}</h3>
   <div class="cat-grid">
     <div class="cat-card" v-for="cat in daemonCats" :key="cat.category">
       <div class="cat-header">
@@ -182,7 +251,7 @@
       <div class="daemon-list">
         <span v-for="d in cat.daemons" :key="d.name"
               class="daemon-tag" :class="d.live ? 'live' : 'dead'"
-              :title="d.last_heartbeat || '从未心跳'">
+              :title="{{ t('andromeda.d_last_heart_e9ac55', default='d.last_heartbeat || \'从未心跳\'') }}">
           {{ d.name.replace('sys_','') }}
         </span>
       </div>
@@ -190,8 +259,14 @@
   </div>
 </div>
 
-<div class="refresh-badge">🔄 每 10s 自动刷新</div>
+<div class="refresh-badge">{{ t('andromeda.每_10s_自动刷新_edca7b', default='🔄 每 10s 自动刷新') }}</div>
 </div>
+
+
+{% endraw %}
+{% endblock %}
+
+{% block extra_scripts %}
 
 <script>
 const { createApp, ref, computed, onMounted, nextTick, watch } = Vue;
@@ -235,10 +310,10 @@ createApp({
 
     async function refreshAll() {
       const [dRes, bRes, hRes, tRes] = await Promise.all([
-        fetchJSON('/andromeda/api/daemon_status'),
-        fetchJSON('/andromeda/api/db_metrics'),
-        fetchJSON('/andromeda/api/system_health'),
-        fetchJSON('/andromeda/api/twin_machine'),
+        fetchJSON('/api/daemon_status'),
+        fetchJSON('/api/db_metrics'),
+        fetchJSON('/api/system_health'),
+        fetchJSON('/api/twin_machine'),
       ]);
 
       if (dRes.code === 0) {
@@ -329,6 +404,5 @@ createApp({
   }
 }).mount('#app');
 </script>
-{% endraw %}
-</body>
-</html>
+
+{% endblock %}

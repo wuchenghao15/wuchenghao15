@@ -57,8 +57,9 @@ from . import andromeda_dashboard_bp as bp
 andromeda_dashboard_bp = bp
 
 # ──────────────────────────────────────────────────────────────
-# DB 路径 (仙女座专属: flask-app/engines/app.db)
-# ──────────────────────────────────────────────────────────────
+# DB 路径 (v24.0: 仙女座引擎运行时专属 DB — 保留 engines/app.db, 
+#  因为 mt_daemon_registry/mt_upgrade_reports 等核心表 schema 与主库完全不同)
+# ⚠️ 注意: engines/app.db 也包含知识脑库 175 行 + 人格 14 行 + 版本档案 112 行
 _FLASK_APP = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 _PROJECT_ROOT = os.path.dirname(_FLASK_APP)
 ANDROMEDA_DB = os.path.join(_FLASK_APP, 'engines', 'app.db')
@@ -535,14 +536,6 @@ def upgrade_board_page():
     return render_template('andromeda_upgrade_board.html')
 
 
-@bp.route('/api/iceberg/eigenflux', methods=['GET'])
-def api_eigenflux():
-    """EigenFlux 专家团 + 真实 daemon"""
-    conn = _conn()
-    conn.row_factory = sqlite3.Row
-    # ✅ 真实 daemon 数据（从 mt_daemon_registry 读）
-
-
 # =================================================================
 # 🆕 Phase 8: 健康度仪表盘 + AI 人格聊天室 + 知识图谱
 # =================================================================
@@ -825,7 +818,7 @@ def api_iol_summary():
 
 
 @bp.route('/api/andromeda_daemon_status', methods=['GET'])
-def api_daemon_status():
+def api_andromeda_daemon_status():
     """守护进程状态 — PID / Ollama / daemon registry"""
     import subprocess, os
     daemon_online = bool(subprocess.getoutput("pgrep -f 'andromeda_core.py daemon'").strip())
@@ -859,6 +852,7 @@ def api_daemon_status():
 @bp.route('/api/knowledge_brain/search', methods=['GET'])
 def api_knowledge_search():
     """知识脑库搜索 API — 支持关键词/领域/难度/平台 过滤"""
+    keyword = (request.args.get('q') or request.args.get('keyword') or '').strip()
     domain = (request.args.get('domain') or '').strip()
     difficulty = (request.args.get('difficulty') or '').strip()
     platform = (request.args.get('platform') or '').strip()
@@ -866,7 +860,10 @@ def api_knowledge_search():
     limit = min(int(request.args.get('limit') or 20), 50)
     offset = (page - 1) * limit
 
-    conn = _conn()
+    try:
+        conn = _conn()
+    except Exception as e:
+        return jsonify({'success': False, 'data': [], 'total': 0, 'error': str(e)}), 500
     where = []
     args = []
     if keyword:
@@ -884,6 +881,20 @@ def api_knowledge_search():
         args.append(platform)
 
     where_sql = f"WHERE {' AND '.join(where)}" if where else ""
+
+    # 检查表是否存在（知识脑库可能尚未初始化）
+    try:
+        conn.execute("SELECT 1 FROM mt_andromeda_knowledge_base LIMIT 1")
+    except Exception:
+        conn.close()
+        return jsonify({
+            'code': 0, 'data': {
+                'total': 0, 'page': page, 'limit': limit,
+                'domains': [], 'difficulties': [], 'platforms': [], 'rows': [],
+            },
+            'note': '知识脑库表 mt_andromeda_knowledge_base 尚未初始化，请等待同步'
+        })
+
     total = conn.execute(
         f"SELECT COUNT(*) FROM mt_andromeda_knowledge_base {where_sql}", args
     ).fetchone()[0]

@@ -8,14 +8,6 @@ MTSCOS AI Flask 入口 (modular_start.py)
 import os
 import sys
 
-# 🆕 DB LockedProxy 必须在任何 import 之前 patch — 否则模块级 sqlite3.connect() 会绕过
-try:
-    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-    from core.db_path import patch_sqlite3_connect as _mtscos_patch
-    _mtscos_patch(verbose=True)
-except Exception as _e:
-    sys.stderr.write(f"[WARN] db_path patch failed: {_e}\n")
-
 # 🆕 2026-09-17: Flask 模式 — 全局拦截后台守护线程创建
 # 所有模块级单例 (auto_routine_maintenance, AI_Cluster_Manager, comprehensive 等)
 # 在 import 时会创建 threading.Thread 启动后台线程, 永久持 DB 写锁 → Flask worker 被堵
@@ -29,21 +21,14 @@ _SKIP_KEYWORDS = (
     'auto_repair', 'ai_inspection', 'auto_inspection', 'auto_patrol',
     'auto_hire', 'file_organizer', 'rule_enforcer', 'auto_learning',
     'monitoring', 'scheduler', 'heartbeat', 'watcher', 'health_check',
-    'archive', 'archiver',
+    # 🆕 Flask 模式下不需要的后台 (由 smart_mount_engine 独立进程负责)
+    'archive', 'archiver', 'evolution', 'andromeda', 'autosync',
     'normalize', 'idle_monitor', 'idlemonitor', 'idle.',
     'patrol', 'eigenflux', 'brain_feed',
-    # 🆕 2026-09-20: ANDROMEDA-EVOL / AUTOSYNC 是 Flask 无声退出的根因
-    # 它们 180s 后首次 cycle, 尝试调 Ollama (已挂) → 拖垮 Flask
-    # Flask 进程只做 HTTP handler, 不跑任何后台线程
-    'andromeda', 'evolution', 'evolve', 'autosync', 'auto_sync',
-    'ollama', 'embed', 'embedding',
-    'andromeda_evol', 'auto_evolution', 'andromeda_auto_evolution',
-    'system_norm', 'sys_norm',
-    'ai_firewall', 'firewall',
-    'idle_monitor',
 )
-# 直接拦截所有后台线程 — Flask 进程只做 HTTP handler 请求
-# (autosync daemon / ANDROMEDA 演化 例外: 需要在 Flask 内写 DB heartbeat)
+# 🆕 直接拦截所有后台线程 — Flask 进程只做 HTTP handler 请求
+# autosync daemon / ANDROMEDA 演化 / normalize_system / ai_archive 等
+# 全部改成 NOP 空跑, Flask 成纯 HTTP server
 def _patched_thread_init(self, *args, **kwargs):
     target = kwargs.get('target') or (args[0] if args else None)
     name = kwargs.get('name', '')
@@ -67,6 +52,12 @@ sys.stderr.write("[FLASK-MODE] threading.Thread.__init__ 已 patch, 拦截 17 �
 _BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 if _BASE_DIR not in sys.path:
     sys.path.insert(0, _BASE_DIR)
+
+try:
+    from core.db_path import patch_sqlite3_connect as _mtscos_patch
+    _mtscos_patch(verbose=False)
+except Exception as _e:
+    sys.stderr.write(f"[WARN] db_path patch failed: {_e}\n")
 
 # Phase 7 局部 Factory: 显式调用 ensure_app_ready() 完成蓝图+API注册
 # 注: server_real_db 模块加载时也会自动调一次 ensure_app_ready(),
@@ -116,26 +107,21 @@ if __name__ == "__main__":
             每 600s 周期跑一轮, 或被 autosync 同步完 eigenflux 消息后立刻唤醒.
             自举循环: AI 员工跨机讨论 → 同步 → 摄入脑库 → 关联图谱 → 衍生新知识 → 反向驱动新讨论
             """
-            try:
-                _time.sleep(180)  # 等 Flask + Ollama 完全就绪
-                sys.stderr.write("[ANDROMEDA-EVOL] 自演化后台线程启动 (cycle_interval=600s, autosync可唤醒)\n")
-                from engines.andromeda_auto_evolution import (
-                    run_cycle, EVOLUTION_WAKEUP_EVENT, reset_evolution_event,
-                )
-                while True:
-                    try:
-                        run_cycle()
-                    except Exception as _e:
-                        sys.stderr.write(f"[ANDROMEDA-EVOL] cycle crashed: {_e}\n")
-                    # 清唤醒信号 → wait 下一轮 (被唤醒则立刻跑, 否则等 600s)
-                    reset_evolution_event()
-                    _was_wakeup = EVOLUTION_WAKEUP_EVENT.wait(timeout=600)
-                    if _was_wakeup:
-                        sys.stderr.write("[ANDROMEDA-EVOL] 🔔 被 autosync 唤醒, 提前跑下一轮\n")
-            except Exception as _fatal:
-                import traceback
-                sys.stderr.write(f"[ANDROMEDA-EVOL] 💀 FATAL 线程顶层崩溃: {_fatal}\n")
-                traceback.print_exc()
+            _time.sleep(180)  # 等 Flask + Ollama 完全就绪
+            sys.stderr.write("[ANDROMEDA-EVOL] 自演化后台线程启动 (cycle_interval=600s, autosync可唤醒)\n")
+            from engines.andromeda_auto_evolution import (
+                run_cycle, EVOLUTION_WAKEUP_EVENT, reset_evolution_event,
+            )
+            while True:
+                try:
+                    run_cycle()
+                except Exception as _e:
+                    sys.stderr.write(f"[ANDROMEDA-EVOL] cycle crashed: {_e}\n")
+                # 清唤醒信号 → wait 下一轮 (被唤醒则立刻跑, 否则等 600s)
+                reset_evolution_event()
+                _was_wakeup = EVOLUTION_WAKEUP_EVENT.wait(timeout=600)
+                if _was_wakeup:
+                    sys.stderr.write("[ANDROMEDA-EVOL] 🔔 被 autosync 唤醒, 提前跑下一轮\n")
 
         _evol_thread = threading.Thread(
             target=_andromeda_evolution_loop,
@@ -151,14 +137,9 @@ if __name__ == "__main__":
     try:
         def _autosync_loop():
             """后台双向同步循环: 直接调用 autosync_andromeda.main_loop()"""
-            try:
-                sys.stderr.write("[AUTOSYNC] 双向同步后台线程启动\n")
-                import autosync_andromeda as _sync
-                _sync.main_loop()
-            except Exception as _fatal:
-                import traceback
-                sys.stderr.write(f"[AUTOSYNC] 💀 FATAL 线程顶层崩溃: {_fatal}\n")
-                traceback.print_exc()
+            sys.stderr.write("[AUTOSYNC] 双向同步后台线程启动\n")
+            import autosync_andromeda as _sync
+            _sync.main_loop()
 
         _sync_thread = threading.Thread(
             target=_autosync_loop,

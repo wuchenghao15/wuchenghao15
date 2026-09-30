@@ -1,0 +1,108 @@
+<!--
+  仙女座统一侧边导航组件
+  ========================
+  在每个 andromeda 模板的 <body> 开头加:
+    <script src="/static/js/andromeda_nav.js"></script>
+  就能自动注入侧边栏 + 面包屑 + 底部快捷栏。
+-->
+<link rel="stylesheet" href="/static/css/andromeda_nav.css">
+<script>
+(function(){
+  const NAV_ITEMS = [
+    { group:'🏠 入口', items:[
+      { id:'home',        label:'冰山主页',     href:'/index',                        icon:'🏔️' },
+      { id:'center',      label:'控制中心',     href:'/andromeda/iceberg_center',     icon:'🧊' },
+      { id:'dashboard',   label:'仪表盘',       href:'/andromeda/dashboard',          icon:'🎛️' },
+    ]},
+    { group:'🧊 冰山', items:[
+      { id:'evolution',   label:'演化时间线',   href:'/andromeda/iceberg_evolution',  icon:'📜' },
+      { id:'collapse',    label:'坍缩定理',     href:'/andromeda/collapse_theorem',   icon:'⚓' },
+    ]},
+    { group:'🧠 知识', items:[
+      { id:'brain',       label:'知识脑库',     href:'/andromeda/knowledge_brain',    icon:'🧠' },
+      { id:'graph',       label:'知识图谱',     href:'/andromeda/knowledge_graph',     icon:'🕸️' },
+      { id:'chat',        label:'AI 人格聊天室', href:'/andromeda/persona_chat',      icon:'💬' },
+    ]},
+    { group:'👥 天团', items:[
+      { id:'eigenflux',   label:'EigenFlux 矩阵', href:'/andromeda/eigenflux_council', icon:'👥' },
+    ]},
+    { group:'🛡️ 系统', items:[
+      { id:'health',      label:'健康度仪表盘', href:'/andromeda/health_board',       icon:'🩺' },
+      { id:'upgrade',     label:'升级报告',     href:'/andromeda/upgrade_board',      icon:'📊' },
+    ]},
+  ];
+
+  // 当前路径 → 找到 active
+  const curPath = location.pathname;
+  function findActive(){
+    let best = null, bestLen = 0;
+    NAV_ITEMS.forEach(g => g.items.forEach(it => {
+      if(curPath.startsWith(it.href) && it.href.length > bestLen){
+        best = it; bestLen = it.href.length;
+      }
+    }));
+    // 特殊: /iceberg /andromeda → center
+    if(!best && (curPath==='/iceberg' || curPath==='/andromeda')) best = NAV_ITEMS[0].items[1];
+    return best;
+  }
+  const active = findActive();
+
+  // 注入侧边栏
+  const side = document.createElement('aside');
+  side.className = 'andromeda-sidebar';
+  side.innerHTML = `
+    <div class="as-header">
+      <div class="as-logo">🪐</div>
+      <div class="as-title">仙女座</div>
+      <div class="as-sub">Andromeda v22.1</div>
+    </div>
+    ${NAV_ITEMS.map(g => `
+      <div class="as-group">
+        <div class="as-group-title">${g.group}</div>
+        ${g.items.map(it => `
+          <a class="as-item ${active && active.id===it.id ? 'active' : ''}" href="${it.href}">
+            <span class="as-icon">${it.icon}</span>
+            <span class="as-label">${it.label}</span>
+          </a>
+        `).join('')}
+      </div>
+    `).join('')}
+    <div class="as-footer">
+      <div class="as-status">
+        <span class="as-dot"></span>
+        <span>Flask 8888</span>
+      </div>
+      <a class="as-link" href="/api/sync/health" target="_blank">Sync 状态</a>
+    </div>
+  `;
+
+  // 注入面包屑 (页面顶部)
+  const crumb = document.createElement('nav');
+  crumb.className = 'andromeda-crumb';
+  crumb.innerHTML = `
+    <a href="/andromeda/iceberg_center">🧊 仙女座</a>
+    ${active ? `› <span>${active.label}</span>` : ''}
+    <a href="/index" class="crumb-home">🏠 回主页</a>
+  `;
+
+  // 注入底部快捷栏
+  const bottom = document.createElement('nav');
+  bottom.className = 'andromeda-bottom';
+  bottom.innerHTML = `
+    ${NAV_ITEMS.flatMap(g => g.items).map(it => `
+      <a href="${it.href}" title="${it.label}" class="${active && active.id===it.id?'active':''}">
+        <span>${it.icon}</span>
+        <b>${it.label}</b>
+      </a>
+    `).join('')}
+  `;
+
+  // 插到 body 最前面
+  if(document.body){
+    document.body.insertBefore(side, document.body.firstChild);
+    document.body.insertBefore(crumb, document.body.children[1] || document.body.firstChild);
+    document.body.appendChild(bottom);
+    document.body.classList.add('andromeda-has-nav');
+  }
+})();
+</script>

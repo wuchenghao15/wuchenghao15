@@ -1,0 +1,681 @@
+{% extends "base_unified.html" %}
+
+{% block title %}
+{{ t('andromeda.知识脑库___Andro_21d122', default='知识脑库 · Andromeda Knowledge Brain') }}
+{% endblock %}
+
+{% block extra_head %}
+
+<style>
+/* ═══════════════════════════════════════════════════
+     📐 美院院士设计 Token (v22.4.0) — 统一注入
+     ═══════════════════════════════════════════════════ */
+  :root { --ink-mid:#1E4A63; --ink-light:#2C5F7C; --ink-wash:#5B8AA8;
+    --snow:#E8F0F2; --snow-bright:#F8FBFC; --paper:#FFFFFF;
+    --gold:#C9A96E; --gold-bright:#E8C98A; --gold-deep:#8B6F3F;
+    --seal-red:#B83A2F;
+    --text-primary:#1A2E3D; --text-secondary:#4A6572; --text-muted:#8EA4B3;
+    --shadow-sm:0 1px 3px rgba(10,35,66,0.08);
+    --shadow-md: 0 4px 16px rgba(10,35,66,0.12);
+    --shadow-lg:0 12px 32px rgba(10,35,66,0.16);
+    --radius-sm:6px; --radius-md:10px; --radius-lg:16px; --radius-xl:24px;
+    --space-xs:4px; --space-sm:8px; --space-md:16px; --space-lg:24px; --space-xl:4placeholder=""  }
+  * { -webkit-font-smoothing:antialiased; font-fee-settings:"kern","palt"; }
+  body {
+    font-family:'Noto Serif SC',-apple-system,BlinkMacSystemFont,serif;
+    background:var(--snow); color:var(--text-primary); line-height:1.6;
+    background-image:
+      radial-gradient(ellipse 900px 500ba(44,95,124,0.07), transparent 60%),
+      radial-gradient(ellipse 700px 400px at 0.06), transparent 60%);
+  }
+  .card, .panel, .box, .b   background:var(--paper); border-radius:var(--radius-lg);
+    border:1px solid rgba(44,95,124,0.08);
+    box-shadow:var(--shadow-md);
+    transition:box-shadow 0.25s var(--ease-out), transform 0.25s var(--ease-out);
+  }
+  .card:hover, .panel:hover { box-shadow:var(--shadow-lg); }
+  .title, h1, h2, h3 { color:var(--ink-deeplaceholder=""m; }
+  .subtitle, .muted, .hint { color:var(--text-muted); }
+  .gold-text {old); }
+  .seal-badge {
+    background:linear-gradient(135deg, var(--seal-red), #9A2E24);
+    color:white; padding:4px 12px; border-radius:var(--radius-sm);
+    font-weight:700; font-size:0.7rem; letter-spacing:2px;
+  }
+  button, .btn {
+    background:var(--ink-light); color:white; border:none;
+    border-radius:var(--radius-md); padding:8px 20px;
+    font-weight:600; cursor:pointer; transition:all 0.2s var(--ease-out);
+  }
+  button:hover, .btn:hover {
+    background:var(--ink-mid); transform:translateY(-1px);
+    box-shadow:var(--shadow-md);
+  }
+  table { border-collapse:collapse; width:100%; font-size:0.82rem; }
+  th { background:rgba(44,95,124,0.06); color:var(--ink-deep); font-weight:700; padding:10px 12px; text-align:left; border-bottom:2px solid rgba(44,95,124,0.12); }
+  td { padding:8px 12px; border-bottom:1px solid rgba(44,95,124,0.06); color:var(--text-secondary); }
+  tr:hover td { background:rgba(44,95,124,0.02); }
+  code, .mono { font-family:'JetBrains Mono','SF Mono',monospace; font-size:0.85em; }
+  a { color:var(--ink-light); text-decoration:none; transition:color 0.2s; }
+  a:hover { color:var(--ink-mid); }
+  @media (max-width: 1100px) { .main-grid, .grid-2, .grid-3 { grid-template-columns:1fr !important; } }
+  @media (max-width: 720px)  { .container { padding:16px !important; } }
+
+  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;600;700&family=Noto+Serif+SC:wght@300;500;700&display=swap');
+
+  :root {
+    --bg-deep: #05060d;
+    --bg-nebula: #0a0d1a;
+    --bg-card: rgba(20, 24, 50, 0.7);
+    --cyan: #4fd1c5;
+    --cyan-glow: rgba(79, 209, 197, 0.4);
+    --violet: #a78bfa;
+    --violet-glow: rgba(167, 139, 250, 0.4);
+    --gold: #fbbf24;
+    --text-primary: #e8ecf8;
+    --text-muted: #8892a8;
+    --border-glow: rgba(79, 209, 197, 0.25);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Space Grotesk', 'Noto Serif SC', sans-serif;
+    background: var(--bg-deep);
+    color: var(--text-primary);
+    min-height: 100vh;
+    overflow-x: hidden;
+    position: relative;
+  }
+
+  /* 星空背景层 */
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background:
+      radial-gradient(ellipse at 20% 30%, rgba(79, 209, 197, 0.08) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 70%, rgba(167, 139, 250, 0.07) 0%, transparent 50%),
+      radial-gradient(ellipse at 50% 100%, rgba(59, 130, 246, 0.05) 0%, transparent 40%);
+    z-index: -2;
+  }
+
+  body::after {
+    content: '';
+    position: fixed; inset: 0;
+    background-image:
+      radial-gradient(1px 1px at 10% 20%, rgba(255,255,255,0.8), transparent),
+      radial-gradient(1px 1px at 30% 60%, rgba(255,255,255,0.6), transparent),
+      radial-gradient(2px 2px at 60% 30%, rgba(255,255,255,0.9), transparent),
+      radial-gradient(1px 1px at 80% 80%, rgba(255,255,255,0.5), transparent),
+      radial-gradient(1px 1px at 90% 10%, rgba(255,255,255,0.7), transparent),
+      radial-gradient(1px 1px at 15% 85%, rgba(255,255,255,0.6), transparent),
+      radial-gradient(2px 2px at 70% 50%, rgba(79,209,197,0.8), transparent),
+      radial-gradient(1px 1px at 40% 40%, rgba(167,139,250,0.7), transparent);
+    background-size: 800px 800px;
+    animation: twinkle 4s ease-in-out infinite alternate;
+    z-index: -1;
+  }
+
+  @keyframes twinkle {
+    from { opacity: 0.5; }
+    to   { opacity: 1; }
+  }
+
+  .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
+
+  /* Header */
+  header {
+    text-align: center;
+    padding: 50px 0 30px;
+    position: relative;
+  }
+  header h1 {
+    font-size: 2.8rem;
+    font-weight: 700;
+    letter-spacing: -2px;
+    background: linear-gradient(135deg, var(--cyan), var(--violet));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  header .subtitle {
+    font-size: 0.95rem;
+    color: var(--text-muted);
+    margin-top: 8px;
+    letter-spacing: 2px;
+  }
+  header .stats-row {
+    display: flex; gap: 30px; justify-content: center;
+    margin-top: 30px; flex-wrap: wrap;
+  }
+  .stat-chip {
+    background: var(--bg-card);
+    backdrop-filter: blur(10px);
+    border: 1px solid var(--border-glow);
+    border-radius: 12px;
+    padding: 14px 24px;
+    text-align: center;
+  }
+  .stat-chip .num {
+    font-size: 1.8rem; font-weight: 700;
+    color: var(--cyan);
+  }
+  .stat-chip .label {
+    font-size: 0.75rem; color: var(--text-muted);
+    letter-spacing: 1px; text-transform: uppercase;
+  }
+
+  /* 搜索区 */
+  .search-area {
+    background: var(--bg-card);
+    backdrop-filter: blur(12px);
+    border: 1px solid var(--border-glow);
+    border-radius: 16px;
+    padding: 28px;
+    margin: 30px 0;
+    box-shadow: 0 0 40px rgba(79,209,197,0.08);
+  }
+  .search-row {
+    display: flex; gap: 12px; margin-bottom: 18px;
+  }
+  .search-input {
+    flex: 1;
+    background: rgba(5,6,13,0.6);
+    border: 1px solid rgba(79,209,197,0.3);
+    border-radius: 10px;
+    padding: 14px 18px;
+    color: var(--text-primary);
+    font-size: 1rem;
+    font-family: inherit;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .search-input:focus {
+    border-color: var(--cyan);
+    box-shadow: 0 0 0 3px var(--cyan-glow);
+  }
+  .search-btn {
+    background: linear-gradient(135deg, var(--cyan), #2dd4bf);
+    border: none; border-radius: 10px;
+    padding: 0 32px; font-size: 1rem;
+    font-weight: 600; cursor: pointer;
+    color: #05060d; font-family: inherit;
+    transition: transform 0.1s;
+  }
+  .search-btn:hover { transform: scale(1.03); }
+
+  .filter-row {
+    display: flex; gap: 12px; flex-wrap: wrap;
+  }
+  .filter-chip {
+    background: rgba(5,6,13,0.6);
+    border: 1px solid rgba(167,139,250,0.3);
+    border-radius: 20px;
+    padding: 8px 16px;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: inherit;
+  }
+  .filter-chip:hover {
+    border-color: var(--violet);
+    color: var(--text-primary);
+  }
+  .filter-chip.active {
+    background: rgba(167,139,250,0.2);
+    border-color: var(--violet);
+    color: var(--violet);
+  }
+
+  /* 知识卡片 */
+  .knowledge-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    gap: 18px;
+    margin-top: 20px;
+  }
+  .knowledge-card {
+    background: var(--bg-card);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(79,209,197,0.15);
+    border-radius: 14px;
+    padding: 22px;
+    transition: all 0.25s;
+    position: relative;
+    overflow: hidden;
+  }
+  .knowledge-card::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    background: linear-gradient(90deg, transparent, var(--cyan), transparent);
+    opacity: 0; transition: opacity 0.3s;
+  }
+  .knowledge-card:hover {
+    border-color: rgba(79,209,197,0.5);
+    transform: translateY(-3px);
+    box-shadow: 0 10px 30px rgba(79,209,197,0.1);
+  }
+  .knowledge-card:hover::before { opacity: 1; }
+
+  .card-domain {
+    font-size: 0.7rem;
+    letter-spacing: 2px;
+    color: var(--cyan);
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+  .card-title {
+    font-size: 1.05rem;
+    font-weight: 600;
+    line-height: 1.4;
+    color: var(--text-primary);
+    margin-bottom: 12px;
+  }
+  .card-meta {
+    display: flex; gap: 16px; margin-bottom: 10px;
+    font-size: 0.78rem; color: var(--text-muted);
+  }
+  .card-meta span { display: flex; align-items: center; gap: 4px; }
+  .card-summary {
+    font-size: 0.88rem; line-height: 1.6;
+    color: #a0a8be;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .card-footer {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-top: 16px; padding-top: 14px;
+    border-top: 1px dashed rgba(255,255,255,0.08);
+  }
+  .card-score {
+    font-size: 0.75rem;
+    color: var(--gold);
+    font-weight: 600;
+  }
+  .card-link {
+    font-size: 0.75rem;
+    color: var(--cyan);
+    text-decoration: none;
+    font-weight: 500;
+  }
+  .card-link:hover { text-decoration: underline; }
+
+  /* ===== 人格区 ===== */
+  .personas-section {
+    margin: 40px 0 20px;
+  }
+  .personas-title {
+    font-size: 1.4rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, var(--violet), var(--cyan));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 20px;
+    letter-spacing: -1px;
+  }
+  .personas-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 14px;
+  }
+  .persona-card {
+    background: var(--bg-card);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(167,139,250,0.2);
+    border-radius: 12px;
+    padding: 18px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .persona-card:hover {
+    border-color: var(--violet);
+    transform: translateY(-2px);
+    box-shadow: 0 5px 20px rgba(167,139,250,0.15);
+  }
+  .persona-avatar {
+    font-size: 2rem;
+    margin-bottom: 8px;
+  }
+  .persona-name {
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+  .persona-type {
+    font-size: 0.65rem;
+    color: var(--violet);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin: 4px 0 8px;
+  }
+  .persona-domain {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    line-height: 1.4;
+  }
+
+  /* ===== 请教对话框 ===== */
+  .modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(5,6,13,0.9);
+    backdrop-filter: blur(8px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 999;
+  }
+  .modal-overlay.active { display: flex; }
+  .modal {
+    background: var(--bg-nebula);
+    border: 1px solid var(--border-glow);
+    border-radius: 18px;
+    padding: 32px;
+    max-width: 600px; width: 90%;
+    max-height: 80vh; overflow-y: auto;
+    position: relative;
+    box-shadow: 0 0 60px rgba(167,139,250,0.15);
+  }
+  .modal-close {
+    position: absolute; top: 16px; right: 18px;
+    background: none; border: none; color: var(--text-muted);
+    font-size: 1.5rem; cursor: pointer;
+  }
+  .modal-persona {
+    font-size: 1.6rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, var(--violet), var(--cyan));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 6px;
+  }
+  .modal-persona-type {
+    font-size: 0.75rem;
+    color: var(--violet);
+    letter-spacing: 2px;
+  }
+  .question-input {
+    width: 100%;
+    min-height: 80px;
+    background: rgba(5,6,13,0.6);
+    border: 1px solid rgba(167,139,250,0.3);
+    border-radius: 10px;
+    padding: 14px;
+    color: var(--text-primary);
+    font-size: 0.95rem;
+    font-family: inherit;
+    resize: vertical;
+    margin: 18px 0;
+    outline: none;
+  }
+  .question-input:focus {
+    border-color: var(--violet);
+    box-shadow: 0 0 0 3px var(--violet-glow);
+  }
+  .ask-btn {
+    background: linear-gradient(135deg, var(--violet), #8b5cf6);
+    border: none; border-radius: 10px;
+    padding: 12px 28px; font-size: 0.95rem;
+    font-weight: 600; cursor: pointer;
+    color: #05060d; font-family: inherit;
+    transition: transform 0.1s;
+  }
+  .ask-btn:hover { transform: scale(1.03); }
+  .ask-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+  .answer-block {
+    margin-top: 20px;
+    padding: 18px;
+    background: rgba(167,139,250,0.08);
+    border-left: 3px solid var(--violet);
+    border-radius: 8px;
+    font-size: 0.9rem;
+    line-height: 1.7;
+    color: var(--text-primary);
+    white-space: pre-wrap;
+  }
+  .loading { color: var(--cyan); font-size: 0.85rem; }
+
+  .empty-state {
+    text-align: center; padding: 60px 20px;
+    color: var(--text-muted);
+  }
+  .empty-state .icon { font-size: 3rem; margin-bottom: 10px; }
+</style>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{{ t('andromeda.知识脑库___Andro_21d122', default='知识脑库 · Andromeda Knowledge Brain') }}</title>
+
+{% endblock %}
+
+{% block page_title %}
+    知识脑库 · Andromeda Knowledge Brain
+{% endblock %}
+
+{% block content %}
+<!-- 🪐 仙女座统一导航组件 -->
+<link rel="stylesheet" href="/static/css/andromeda_nav.css">
+
+
+<div class="container">
+
+  <header>
+    <h1>🧠 Knowledge Brain</h1>
+    <div class="subtitle">{{ t('andromeda.仙女座知识脑库___全网_111d4c', default='仙女座知识脑库 · 全网教育内容聚合 · AI 自学习') }}</div>
+    <div class="stats-row" id="statsRow">
+      <div class="stat-chip"><div class="num" id="stat-total">—</div><div class="label">{{ t('andromeda.知识条目_255d36', default='知识条目') }}</div></div>
+      <div class="stat-chip"><div class="num" id="stat-play">—</div><div class="label">{{ t('andromeda.累计播放_f6a32a', default='累计播放') }}</div></div>
+      <div class="stat-chip"><div class="num" id="stat-persons">—</div><div class="label">{{ t('andromeda.AI_人格_69ed2e', default='AI 人格') }}</div></div>
+      <div class="stat-chip"><div class="num">45</div><div class="label">{{ t('andromeda.搜索词池_e16580', default='搜索词池') }}</div></div>
+    </div>
+  </header>
+
+  <!-- 搜索 -->
+  <div class="search-area">
+    <div class="search-row">
+      <input class="search-input" id="kw" placeholder="{{ t('andromeda.关键词__JLPT_4d25b5', default='🔍 关键词: JLPT / 新概念英语 / 高等数学 / 雅思 ...') }}">
+      <button class="search-btn" onclick="search()">{{ t('andromeda.搜索_e5f71f', default='搜索') }}</button>
+    </div>
+    <div class="filter-row" id="filters">
+      <!-- JS 填充 -->
+    </div>
+  </div>
+
+  <!-- 结果 -->
+  <div id="results" class="knowledge-grid"></div>
+  <div id="empty" class="empty-state" style="display:none;">
+    <div class="icon">🌌</div>
+    <div>{{ t('andromeda.暂无匹配知识__换个关键_83c22e', default='暂无匹配知识, 换个关键词试试') }}</div>
+  </div>
+
+  <!-- 🆕 AI 人格区 -->
+  <div class="personas-section">
+    <div class="personas-title">{{ t('andromeda.向_AI_人格请教_4aea53', default='🎭 向 AI 人格请教 · 伟人/专家团队') }}</div>
+    <div class="personas-grid" id="personasGrid">{{ t('andromeda.加载中_26b5bd', default='加载中...') }}</div>
+  </div>
+
+</div>
+
+<!-- 🆕 请教对话框 -->
+<div class="modal-overlay" id="askModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal()">×</button>
+    <div id="askPersona" class="modal-persona">—</div>
+    <div id="askPersonaType" class="modal-persona-type">—</div>
+    <textarea id="askInput" class="question-input" placeholder="{{ t('andromeda.请输入你的问题____例_adca24', default='请输入你的问题... 例如: 什么是仁? 时间是什么?') }}"></textarea>
+    <button class="ask-btn" id="askBtn" onclick="askPersona()">{{ t('andromeda.请教这位_AI_人格_607b13', default='✨ 请教这位 AI 人格') }}</button>
+    <div id="askAnswer"></div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+
+<script>
+(function(){
+var NI=[["🏠 入口",[{id:"home",label:"冰山主页",href:"/index",icon:"🏔️"},{id:"center",label:"控制中心",href:"/andromeda/iceberg_center",icon:"🧊"},{id:"dashboard",label:"仪表盘",href:"/andromeda/dashboard",icon:"🎛️"}]],["🧊 冰山",[{id:"evolution",label:"演化时间线",href:"/andromeda/iceberg_evolution",icon:"📜"},{id:"collapse",label:"坍缩定理",href:"/andromeda/collapse_theorem",icon:"⚓"}]],["🧠 知识",[{id:"brain",label:"知识脑库",href:"/andromeda/knowledge_brain",icon:"🧠"},{id:"graph",label:"知识图谱",href:"/andromeda/knowledge_graph",icon:"🕸️"},{id:"chat",label:"AI 人格聊天室",href:"/andromeda/persona_chat",icon:"💬"}]],["👥 天团",[{id:"eigenflux",label:"EigenFlux 矩阵",href:"/andromeda/eigenflux_council",icon:"👥"}]],["🛡️ 系统",[{id:"health",label:"健康度仪表盘",href:"/andromeda/health_board",icon:"🩺"},{id:"upgrade",label:"升级报告",href:"/andromeda/upgrade_board",icon:"📊"}]]];
+var CP=location.pathname,FA=null,BL=0;
+NI.forEach(g=>g.items.forEach(it=>{if(CP.startsWith(it.href)&&it.href.length>BL){FA=it;BL=it.href.length}}));
+if(!FA&&(CP==="/iceberg"||CP==="/andromeda"))FA=NI[0].items[1];
+var side=document.createElement("aside");side.className="andromeda-sidebar";
+side.innerHTML='<div class="as-header"><div class="as-logo">🪐</div><div class="as-title">仙女座</div><div class="as-sub">Andromeda v22.1</div></div>'+NI.map(g=>'<div class="as-group"><div class="as-group-title">'+g.group+'</div>'+g.items.map(it=>'<a class="as-item '+(FA&&FA.id===it.id?"active":"")+'" href="'+it.href+'"><span class="as-icon">'+it.icon+'</span><span class="as-label">'+it.label+'</span></a>').join("")+"</div>").join("")+'<div class="as-footer"><div class="as-status"><span class="as-dot"></span><span>Flask 8888</span></div><a class="as-link" href="/api/sync/health" target="_blank">Sync 状态</a></div>';
+var crumb=document.createElement("nav");crumb.className="andromeda-crumb";
+crumb.innerHTML='<a href="/andromeda/iceberg_center">🧊 仙女座</a>'+(FA?' › <span>'+FA.label+'</span>':"")+'<a href="/index" class="crumb-home">🏠 回主页</a>';
+var bot=document.createElement("nav");bot.className="andromeda-bottom";
+bot.innerHTML=NI.flatMap(g=>g.items).map(it=>'<a href="'+it.href+'" class="'+(FA&&FA.id===it.id?"active":"")+'"><span>'+it.icon+'</span><b>'+it.label+'</b></a>').join("");
+if(document.body){document.body.insertBefore(side,document.body.firstChild);document.body.insertBefore(crumb,document.body.children[1]||document.body.firstChild);document.body.appendChild(bot);document.body.classList.add("andromeda-has-nav")}
+})();
+</script>
+
+<script>
+let state = { domain: '', difficulty: '', platform: '', page: 1 };
+
+async function loadStats() {
+  const r = await fetch('/api/knowledge_brain/stats');
+  const j = await r.json();
+  const d = j.data;
+  document.getElementById('stat-total').textContent = d.total_knowledge;
+  document.getElementById('stat-play').textContent = (d.total_play_count/10000).toFixed(1)+'万';
+  document.getElementById('stat-persons').textContent = d.total_personas;
+}
+
+async function search() {
+  const kw = document.getElementById('kw').value.trim();
+  const params = new URLSearchParams({
+    keyword: kw, domain: state.domain,
+    difficulty: state.difficulty, platform: state.platform,
+    page: state.page
+  });
+  const r = await fetch('/api/knowledge_brain/search?'+params);
+  const j = await r.json();
+  const d = j.data;
+
+  // 填充过滤器 (首次)
+  const filterEl = document.getElementById('filters');
+  if (d.domains.length && !filterEl.dataset.inited) {
+    filterEl.dataset.inited = '1';
+    const chips = [...d.domains].sort();
+    chips.unshift('全部领域');
+    filterEl.innerHTML = chips.map(c =>
+      `<button class="filter-chip ${c===state.domain?'active':''}" onclick="toggleFilter('domain','${c}')">${c}</button>`
+    ).join('');
+  }
+
+  const grid = document.getElementById('results');
+  const empty = document.getElementById('empty');
+  if (!d.rows.length) {
+    grid.innerHTML = ''; empty.style.display='block'; return;
+  }
+  empty.style.display='none';
+
+  grid.innerHTML = d.rows.map(row => {
+    const title = (row.title || '').replace(/<[^>]+>/g,'');
+    const kps = (row.knowledge_points || '').replace(/\[|\]|"/g,'').split(',').slice(0,3);
+    const score = row.quality_score ? '★ '+row.quality_score : '';
+    const plays = row.play_count ? (row.play_count>=10000?(row.play_count/10000).toFixed(1)+'万':row.play_count) : '';
+    return `
+    <div class="knowledge-card">
+      <div class="card-domain">${row.domain||''} · ${row.source_platform||''}</div>
+      <div class="card-title">${title}</div>
+      <div class="card-meta">
+        <span>👤 ${row.author_name||'未知'}</span>
+        ${row.difficulty_level?`<span>📊 ${row.difficulty_level}</span>`:''}
+        ${plays?`<span>▶ ${plays}</span>`:''}
+      </div>
+      <div class="card-summary">${row.ai_summary||'—'}</div>
+      ${kps.length?`<div class="card-meta" style="margin-top:10px;">📎 ${kps.join(' · ')}</div>`:''}
+      <div class="card-footer">
+        <span class="card-score">${score}</span>
+        <a class="card-link" href="${row.source_url||'#'}" target="_blank">查看原始视频 →</a>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function toggleFilter(type, val) {
+  state.domain = type==='domain' && val!=='全部领域' ? val : (type==='domain' ? '' : state.domain);
+  if (type==='domain') search();
+}
+
+document.getElementById('kw').addEventListener('keydown', e => {
+  if (e.key==='Enter') search();
+});
+
+// 🆕 加载人格列表
+let personasMap = {};
+async function loadPersonas() {
+  try {
+    const r = await fetch('/api/knowledge_brain/personas');
+    const j = await r.json();
+    const grid = document.getElementById('personasGrid');
+    const avatarMap = { legend:'👑', professor:'🎓', expert:'💡', ai_delegate:'🤖' };
+    const typeMap = { legend:'伟人', professor:'教授', expert:'专家' };
+    if (!j.data.length) { grid.innerHTML = '(暂无)'; return; }
+    personasMap = {};
+    grid.innerHTML = j.data.map(p => {
+      personasMap[p.persona_id] = p;
+      return `<div class="persona-card" onclick="openAskModal(${p.persona_id})">
+        <div class="persona-avatar">${avatarMap[p.type]||'👤'}</div>
+        <div class="persona-name">${p.name}</div>
+        <div class="persona-type">${typeMap[p.type]||p.type} · ${p.domain||''}</div>
+        <div class="persona-domain">${(p.knowledge_summary||'').slice(0,60)}...</div>
+      </div>`;
+    }).join('');
+  } catch(e) {
+    document.getElementById('personasGrid').innerHTML = '(加载失败: ' + e.message + ')';
+  }
+}
+
+// 🆕 打开请教对话框
+function openAskModal(pid) {
+  const p = personasMap[pid];
+  if (!p) return;
+  const typeMap = { legend:'👑 伟人', professor:'🎓 教授', expert:'💡 专家' };
+  document.getElementById('askPersona').textContent = p.name;
+  document.getElementById('askPersonaType').textContent = `${typeMap[p.type]||p.type} · ${p.domain}`;
+  document.getElementById('askPersona').dataset.pid = pid;
+  document.getElementById('askInput').value = '';
+  document.getElementById('askAnswer').innerHTML = '';
+  document.getElementById('askModal').classList.add('active');
+  document.getElementById('askInput').focus();
+}
+function closeModal() { document.getElementById('askModal').classList.remove('active'); }
+
+// 🆕 调 Ollama 请教
+async function askPersona() {
+  const pid = document.getElementById('askPersona').dataset.pid;
+  const q = document.getElementById('askInput').value.trim();
+  if (!pid || !q) { alert('请先输入问题'); return; }
+  const btn = document.getElementById('askBtn');
+  const ans = document.getElementById('askAnswer');
+  btn.disabled = true;
+  ans.innerHTML = '<div class="loading">🤔 正在请 AI 人格思考中 (Ollama qwen2.5:7b)...</div>';
+  try {
+    const r = await fetch('/api/knowledge_brain/ask', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ persona_id: parseInt(pid), question: q })
+    });
+    const j = await r.json();
+    if (j.code === 0) {
+      ans.innerHTML = `<div class="answer-block">${j.data.answer}</div>`;
+    } else {
+      ans.innerHTML = `<div class="answer-block" style="border-color:#ef4444;color:#fca5a5">❌ ${j.msg}</div>`;
+    }
+  } catch(e) {
+    ans.innerHTML = `<div class="answer-block" style="border-color:#ef4444">❌ ${e.message}</div>`;
+  }
+  btn.disabled = false;
+}
+
+// 启动
+loadStats();
+search();
+loadPersonas();
+</script>
+
+{% endblock %}
