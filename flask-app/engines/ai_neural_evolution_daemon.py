@@ -46,17 +46,6 @@ import json
 import os
 import re
 import sqlite3
-
-# 🆕 2026-09-20: DB 锁争用修复 — patch_sqlite3_connect (WAL + busy_timeout=60s)
-try:
-    import sys as _sys, os as _os
-    _app_dir = _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__)))
-    if _app_dir not in _sys.path:
-        _sys.path.insert(0, _app_dir)
-    from core.db_path import patch_sqlite3_connect as _mtscos_patch
-    _mtscos_patch(verbose=False)
-except Exception:
-    pass
 import sys
 import threading
 import time

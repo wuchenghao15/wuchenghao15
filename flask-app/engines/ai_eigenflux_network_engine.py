@@ -23,17 +23,6 @@ import os
 import random
 import signal
 import sqlite3
-
-# 🆕 2026-09-20: DB 锁争用修复 — patch_sqlite3_connect (WAL + busy_timeout=60s)
-try:
-    import sys as _sys, os as _os
-    _app_dir = _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__)))
-    if _app_dir not in _sys.path:
-        _sys.path.insert(0, _app_dir)
-    from core.db_path import patch_sqlite3_connect as _mtscos_patch
-    _mtscos_patch(verbose=False)
-except Exception:
-    pass
 import sys
 import threading
 import time
@@ -43,123 +32,16 @@ from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional, Tuple
 
 # =========================================================
-# 貂蝉连环计 + 袁世凯民主集中制
-# 超级节点不再钦定, 动态选举产生
-# =========================================================
-EIGENFLUX_SUPER_COUNT = 5          # 保留 5 个超级节点
-EIGENFLUX_TERM_DAYS = 30           # 禅让周期 30 天
-EIGENFLUX_VARIANCE_THRESHOLD = 0.05  # 方差阈值, 低于此值强制打散
-
-
-def compute_dynamic_strength(left_name: str, right_name: str,
-                              conn: sqlite3.Connection,
-                              conn_uid: Optional[str] = None) -> float:
-    """动态计算 strength (不再用钦定超级节点).
-
-    貂蝉连环计: 初始平等起步 0.5, 有历史数据则按半衰期衰减 + 互动增长
-    """
-    # 1. 读历史得分 (从 connection 表里读取最近的 message 数量和评分)
-    if conn_uid:
-        existing = conn.execute("""
-            SELECT strength, interaction_score, total_messages
-            FROM mt_ai_eigenflux_connections WHERE conn_uid=?
-        """, (conn_uid,)).fetchone()
-        if existing and len(existing) >= 3 and existing[2] is not None:  # 有历史数据
-            base = existing[0] or 0.5  # 历史 strength
-            messages = existing[2] or 0
-            # 半衰期衰减 (30天)
-            decay = 0.95  # 每次衰减 5%
-            # 新消息带来的 strength 增长
-            growth = min(0.05, messages * 0.001)  # 最多 +0.05
-            new_strength = base * decay + growth
-            return round(min(1.0, max(0.1, new_strength)), 3)
-
-    # 新连接, 平等起步 0.5 (貂蝉连环计: 初始平等)
-    return 0.500
-
-
-def elect_super_hubs(db_path: str):
-    """貂蝉连环计: 动态选举超级节点 + 袁世凯制衡"""
-    import math
-    conn = sqlite3.connect(db_path)
-
-    # Step 1: 计算每个 AI 员工的总 strength (按 degree 和 avg strength 排序)
-    hubs: Dict[str, List[float]] = {}
-    for row in conn.execute(
-        "SELECT left_employee_name, strength FROM mt_ai_eigenflux_connections"
-    ).fetchall():
-        hubs.setdefault(row[0], []).append(row[1] or 0.5)
-    for row in conn.execute(
-        "SELECT right_employee_name, strength FROM mt_ai_eigenflux_connections"
-    ).fetchall():
-        hubs.setdefault(row[0], []).append(row[1] or 0.5)
-
-    # Step 2: 计算每个人的 hub_score = avg_strength × log(1+连接数)
-    scores: Dict[str, float] = {}
-    for name, strengths in hubs.items():
-        avg = sum(strengths) / len(strengths) if strengths else 0.5
-        degree_bonus = math.log(1 + len(strengths))
-        scores[name] = avg * degree_bonus
-
-    # Step 3: 选出 Top 5 超级节点
-    top5 = sorted(scores.items(), key=lambda x: x[1], reverse=True)[:EIGENFLUX_SUPER_COUNT]
-
-    # Step 4: 袁世凯制衡 —— 如果 Top 5 方差 < 阈值 → 强制打散
-    top_scores = [s for _, s in top5]
-    variance = (sum((s - sum(top_scores) / len(top_scores)) ** 2 for s in top_scores) / len(top_scores)) \
-        if len(top_scores) == EIGENFLUX_SUPER_COUNT else 999.0
-    force_reshuffle = variance < EIGENFLUX_VARIANCE_THRESHOLD
-
-    if force_reshuffle:
-        logger.warning(
-            "[制衡] Top %d 方差 %.4f < %.2f → 强制打散重选!",
-            EIGENFLUX_SUPER_COUNT, variance, EIGENFLUX_VARIANCE_THRESHOLD,
-        )
-        conn.execute("UPDATE mt_ai_eigenflux_connections SET strength=0.5")
-        conn.commit()
-        top5 = [("reshuffled-" + str(i), 0.5) for i in range(EIGENFLUX_SUPER_COUNT)]
-
-    conn.close()
-    return [name for name, _ in top5], force_reshuffle
-
-
-def migrate_strength_to_equal(db_path: str, checkpoint_path: str) -> bool:
-    """貂蝉连环计: 所有 strength 平等 0.5 起步 (替换旧的钦定幂律)"""
-    import sqlite3 as _sqlite3
-    _conn = _sqlite3.connect(db_path)
-    before = _conn.execute(
-        "SELECT AVG(strength) FROM mt_ai_eigenflux_connections"
-    ).fetchone()[0]
-    _conn.execute("UPDATE mt_ai_eigenflux_connections SET strength=0.5")
-    _conn.commit()
-    after = _conn.execute(
-        "SELECT AVG(strength) FROM mt_ai_eigenflux_connections"
-    ).fetchone()[0]
-    _conn.close()
-    logger.info("[Equal Start] strength: %.3f → %.3f", before or 0, after or 0.5)
-
-    # 写 checkpoint 标记 (幂等)
-    os.makedirs(os.path.dirname(checkpoint_path), exist_ok=True)
-    with open(checkpoint_path, "w") as f:
-        f.write("equal_start_done")
-    return True
-
-
-# =========================================================
 # 路径 & 日志
 # =========================================================
 _SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 _FLASK_APP_DIR = os.path.abspath(os.path.join(_SCRIPT_DIR, ".."))
 _PROJECT_ROOT = os.path.abspath(os.path.join(_FLASK_APP_DIR, ".."))
-# 强制优先 flask-app/database/app.db (拒绝损坏的 _runtime/databases)
-_REAL_DB_OVERRIDE = os.environ.get('ANDROMEDA_DB')
 _DB_CANDIDATES = [
-    _REAL_DB_OVERRIDE,
-    os.path.join(_FLASK_APP_DIR, "database", "app.db"),
+    os.path.join(_PROJECT_ROOT, "_runtime", "databases", "Database", "app.db"),
     os.path.join(_FLASK_APP_DIR, "app.db"),
     os.path.join(_PROJECT_ROOT, "app.db"),
 ]
-_DB_CANDIDATES = [p for p in _DB_CANDIDATES if p]  # 过滤 None
 APP_DB = next((p for p in _DB_CANDIDATES if os.path.exists(p)), _DB_CANDIDATES[0])
 
 _PID_DIR = os.path.join(_PROJECT_ROOT, "_runtime", "pids")
@@ -757,14 +639,14 @@ def _handshake_round(nodes: List[AINode], round_no: int) -> int:
                 total_msg = row["total_messages"] or 0
                 inter_score = (row["interaction_score"] or 0.0) + score * 0.3
                 new_level = _level_by_score(inter_score)
-                # strength 动态计算, 此处保留历史值不变
+                new_strength = min(1.0, (row["strength"] or 0.0) + score * 0.05)
                 conn.execute(
                     """UPDATE mt_ai_eigenflux_connections SET
-                        handshake_state=?, relation_level=?,
+                        handshake_state=?, relation_level=?, strength=?,
                         total_messages=?, interaction_score=?,
                         last_interaction_at=?, last_handshake_at=?
                     WHERE conn_uid=?""",
-                    ("CONNECTED", new_level, total_msg,
+                    ("CONNECTED", new_level, new_strength, total_msg,
                      inter_score, now_iso, now_iso, cu),
                 )
             else:
@@ -784,7 +666,7 @@ def _handshake_round(nodes: List[AINode], round_no: int) -> int:
                     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
                     (cu, a.employee_id, a.employee_table, a.name,
                      b.employee_id, b.employee_table, b.name,
-                     "CONNECTED", new_level, compute_dynamic_strength(a.name, b.name, conn, cu), 0,
+                     "CONNECTED", new_level, round(score, 4), 0,
                      round(inter_score, 4),
                      json.dumps([topic[0]], ensure_ascii=False),
                      now_iso, now_iso, now_iso, 0, now_iso),
@@ -1100,7 +982,7 @@ def _ensure_full_coverage(nodes: List[AINode], round_no: int) -> int:
                 VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
                 (cu, a.employee_id, a.employee_table, a.name,
                  b.employee_id, b.employee_table, b.name,
-                 "CONNECTED", "ACQUAINTANCE", compute_dynamic_strength(a.name, b.name, conn, cu), 0,
+                 "CONNECTED", "ACQUAINTANCE", round(best_score, 4), 0,
                  round(inter_score, 4),
                  json.dumps([best_topic[0]], ensure_ascii=False),
                  now_iso, now_iso, now_iso, 0, now_iso),
@@ -1254,7 +1136,7 @@ def _chat_round(nodes: List[AINode], round_no: int) -> int:
                     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
                     (cu, a.employee_id, a.employee_table, a.name,
                      b.employee_id, b.employee_table, b.name,
-                     "CONNECTED", "ACQUAINTANCE", compute_dynamic_strength(a.name, b.name, conn, cu), 0, 2.0,
+                     "CONNECTED", "ACQUAINTANCE", 0.3, 0, 2.0,
                      json.dumps([TOPIC_POOL[0][0]], ensure_ascii=False),
                      now_iso, now_iso, now_iso, 0, now_iso),
                 )
@@ -1894,24 +1776,17 @@ def _update_connection_sentiment(
         sentiment_delta = {"POSITIVE": 0.05, "NEGATIVE": -0.02, "NEUTRAL": 0.01}
         delta = sentiment_delta.get(sentiment, 0.01)
         new_score = (row["interaction_score"] or 0.0) + delta + learning_value * 0.1
+        new_strength = min(1.0, (row["strength"] or 0.0) + abs(delta) * 0.5)
         new_level = _level_by_score(new_score)
-        # strength 动态计算, 此处不做直接修改
         conn.execute(
             "UPDATE mt_ai_eigenflux_connections SET "
-            "interaction_score=?, relation_level=? "
+            "interaction_score=?, strength=?, relation_level=? "
             "WHERE conn_uid=?",
-            (round(new_score, 4), new_level, conn_uid),
+            (round(new_score, 4), round(new_strength, 4), new_level, conn_uid),
         )
     except sqlite3.Error:
         pass
 
 
 if __name__ == "__main__":
-    # 貂蝉连环计: 平等 0.5 起步迁移 (替换旧钦定幂律)
-    _EQUAL_CHECKPOINT = os.path.join(
-        _PROJECT_ROOT, "_runtime", "pids",
-        "equal_start_migration.done",
-    )
-    if os.path.exists(APP_DB):
-        migrate_strength_to_equal(APP_DB, _EQUAL_CHECKPOINT)
     main()

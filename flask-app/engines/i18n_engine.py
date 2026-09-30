@@ -13,17 +13,6 @@ i18n_engine — 文案管理 + 多语言翻译引擎 (v22.39.0)
 语言代码规范: zh_CN / ja_JP / en_US
 """
 import sqlite3 as _sqlite3
-
-# 🆕 2026-09-20: DB 锁争用修复 — patch_sqlite3_connect (WAL + busy_timeout=60s)
-try:
-    import sys as _sys, os as _os
-    _app_dir = _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__)))
-    if _app_dir not in _sys.path:
-        _sys.path.insert(0, _app_dir)
-    from core.db_path import patch_sqlite3_connect as _mtscos_patch
-    _mtscos_patch(verbose=False)
-except Exception:
-    pass
 from app.middlewares.system_container import system_container
 # [unused] import re as _re
 import os as _os

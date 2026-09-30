@@ -252,11 +252,6 @@ def patch_sqlite3_connect(verbose=False):
     sqlite3._mtscos_original_connect = original_connect
     mapping = _get_mapping()
 
-    # 🆕 2026-09-20 (v5 简化): 只做 DB 路径映射 + PRAGMA WAL + busy_timeout=60s
-    # 不做任何 proxy 包装 — 避免 __slots__/__setattr__/RLock 等复杂问题
-    # SQLite WAL + 60s busy_timeout 足够处理 Flask 单进程多线程并发
-    # 已停 smart_mount / LaunchAgent, 没有跨进程锁争用
-
     @wraps(original_connect)
     def new_connect(database, *args, **kwargs):
         actual_path = database
@@ -284,20 +279,23 @@ def patch_sqlite3_connect(verbose=False):
                 pass
         if actual_path != ':memory:':
             os.makedirs(os.path.dirname(os.path.abspath(actual_path)), exist_ok=True)
-
         conn = original_connect(actual_path, *args, **kwargs)
-
-        # PRAGMA: WAL + busy_timeout=60s + NORMAL sync + auto-checkpoint
+        # 🆕 2026-09-17: 所有连接自动加 busy_timeout=60s + 强制 WAL
+        # 之前 journal_mode 被某个模块先开成 delete → 所有后续连接继承 delete → 写锁竞争极激烈
+        # Flask 多线程里多个 BEGIN IMMEDIATE 互相等 → 死锁 → 永久 database is locked
+        # 强制 WAL: 读不阻塞写 + 写不阻塞读, busy_timeout=60s 让 SQLite 内部排队
+        # ⚠️ 关键: PRAGMA journal_mode 只能在第一个连接设, 必须确保第一个连接就是 WAL
         try:
             conn.execute("PRAGMA busy_timeout=60000")
+            # 检查当前 journal_mode, 如果不是 WAL 就强制
             cur_mode = conn.execute("PRAGMA journal_mode").fetchone()
             if cur_mode and cur_mode[0] != 'wal':
                 conn.execute("PRAGMA journal_mode=WAL")
             conn.execute("PRAGMA synchronous=NORMAL")
             conn.execute("PRAGMA wal_autocheckpoint=1000")
+            conn.execute("PRAGMA recursive_triggers=ON")
         except Exception:
-            pass
-
+            pass  # 只读连接或 :memory: 可能不支持, 忽略
         return conn
 
     sqlite3.connect = new_connect

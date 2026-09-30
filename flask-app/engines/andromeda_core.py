@@ -371,6 +371,7 @@ def council_dispatch(loop_name: str, task: str = "") -> list:
 # ── 12 循环 → 规则映射 ──
 _LOOP_RULE_MAP = {
     "self_architect":["MT_RULE_DEV", "MT_RULE_GOVERNANCE", "MT_IRON_RULE_12STEPS", "MT_RULE_SRC_MOD"],
+    "sniff":   ["MT_RULE_DEV", "MT_RULE_SRC_MOD", "MT_RULE_PERM", "MT_RULE_DESIGN"],
     "evolve":  ["MT_RULE_DEV", "MT_RULE_VERSION", "MT_RULE_AI_OPS"],
     "repair":  ["MT_RULE_SYS_OPS", "MT_RULE_AI_OPS", "MT_RULE_DEV"],
     "patrol":  ["MT_RULE_DEV", "MT_RULE_DESIGN", "MT_RULE_PERM", "MT_RULE_QBANK"],
@@ -387,6 +388,7 @@ _LOOP_RULE_MAP = {
 # ── 12 循环 → 顾问团 domain 映射 ──
 _LOOP_ADVISOR_MAP = {
     "self_architect":"系统架构",
+    "sniff":   "后端API",
     "evolve":   "AI引擎",
     "repair":   "运维部署",
     "patrol":   "安全攻防",
@@ -405,6 +407,7 @@ _HARD_CONSTRAINT_WORDS = ["禁止", "不得", "必须", "强制", "fail-closed",
 # ── 12 Loop → 活动关键词 (chunk 里提及这些词才算"相关") ──
 _LOOP_ACTIVITY_KEYWORDS = {
     "self_architect": ["架构", "architecture", "def ", "函数", "重构", "自画像"],
+    "sniff":   ["endpoint", "wraps", "import", "嗅探", "sniff", "硬编码", "TODO", "FIXME", "装饰器顺序"],
     "evolve":   ["路由", "route", "prompt", "进化", "RAG", "本地推理", "零token"],
     "repair":   ["daemon", "重启", "心跳", "巡检", "repair", "health"],
     "patrol":   ["secret", "密钥", "token", "装饰器", "@system", "硬编码颜色", "设计Token"],
@@ -420,6 +423,7 @@ _LOOP_ACTIVITY_KEYWORDS = {
 # ── 仙女座 Loop 可能做的违规动作 (扫描这些模式) ──
 _LOOP_VIOLATION_PATTERNS = {
     "self_architect": ["绕过flow_id", "直接写DB", "无自画像", "不生成重构建议"],
+    "sniff":   ["漏扫endpoint重复", "不报import缺失", "硬编码中文漏检", "TODO漏检", "跳过系统文件"],
     "evolve":  ["绕过flow_id", "直接写DB", "无RAG检索", "非本地推理"],
     "repair":  ["重启不记录", "daemon无心跳", "跳过巡检"],
     "patrol":  ["漏扫secret_key", "不检查装饰器", "硬编码颜色"],
@@ -1922,6 +1926,46 @@ def loop_auto_fix():
     return {"flow_count": flow_count, "fixed": fixed, "applied": applied}
 
 # ═══════════════════════════════════════════════
+# 🆕 Loop 12: 仙女座自动嗅探 (auto_sniff_engine)
+# 扫描 routes/ + engines/ + middlewares/ → 产出建议池
+# 产出的 HIGH/MEDIUM 建议会被后续 Loop (autofix/rule) 消费
+# ═══════════════════════════════════════════════
+def loop_sniff():
+    log("🔍 Loop 12: 仙女座自动嗅探 (auto_sniff_engine)", "sniff")
+    try:
+        sys.path.insert(0, str(BASE / "engines"))
+        from auto_sniff_engine import run_sniff_cycle, sniff_summary
+        result = run_sniff_cycle()
+        log(f"  📊 嗅探结果: {result['total_findings']} 项 / 入库 {result['inserted_to_pool']} / {result['elapsed_seconds']}s", "sniff")
+        # HIGH 级紧急建议 → 标记为高优先级供 Loop 10 autofix 消费
+        db = _db_connect()
+        try:
+            high_count = db.execute(
+                "SELECT COUNT(*) FROM mt_ai_suggestion_pool "
+                "WHERE source_name='auto_sniff_engine' "
+                "AND json_extract(meta_json, '$.severity')='HIGH' "
+                "AND created_at > datetime('now', '-6 hours')"
+            ).fetchone()[0]
+            if high_count > 0:
+                db.execute(
+                    "UPDATE mt_ai_suggestion_pool SET priority=10 "
+                    "WHERE source_name='auto_sniff_engine' "
+                    "AND json_extract(meta_json, '$.severity')='HIGH' "
+                    "AND created_at > datetime('now', '-6 hours')"
+                )
+                db.commit()
+                log(f"  ⚠️ HIGH 级嗅探建议已提权 → priority=10 (供 Loop 10 autofix)", "sniff")
+        finally:
+            db.close()
+        return result
+    except ImportError as e:
+        log(f"  ⚠️ auto_sniff_engine 未安装: {e}", "sniff")
+        return {"skipped": f"import_error: {e}"}
+    except Exception as e:
+        log(f"  ⚠️ sniff 异常: {e}", "sniff")
+        return {"error": str(e)}
+
+# ═══════════════════════════════════════════════
 # 🆕 Loop 11: 自动上报脑库 + handshake 双向同步
 # ═══════════════════════════════════════════════
 def loop_brain_feed():
@@ -1992,6 +2036,7 @@ def run_cycle():
     results = {}
     for name, loop_fn in [
         ("self_architect", loop_self_architect),  # 🏛️ Loop 0: 自我整理架构
+        ("sniff", loop_sniff),                     # 🔍 Loop 12: 自动嗅探 (产出建议供后续消费)
         ("evolve", loop_evolve),
         ("repair", loop_repair),
         ("patrol", loop_patrol),

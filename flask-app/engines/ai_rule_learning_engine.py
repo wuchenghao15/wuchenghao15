@@ -36,23 +36,12 @@ import json
 import os
 import signal
 import sqlite3
-
-# 🆕 2026-09-20: DB 锁争用修复 — patch_sqlite3_connect (WAL + busy_timeout=60s)
-try:
-    import sys as _sys, os as _os
-    _app_dir = _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__)))
-    if _app_dir not in _sys.path:
-        _sys.path.insert(0, _app_dir)
-    from core.db_path import patch_sqlite3_connect as _mtscos_patch
-    _mtscos_patch(verbose=False)
-except Exception:
-    pass
 import sys
 import threading
 import time
 import uuid
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+# [unused] from typing import Any, Dict, List, Optional
 # ---- 路径 & 依赖 ----
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # flask-app/
 AI_ENGINES_DIR = os.path.join(ROOT, "ai_engines")
@@ -437,35 +426,6 @@ def enforce_rules() -> Dict:
          f"violations={results['violations_found']} "
          f"alerts_fed={results['alerts_fed']} "
          f"bypass={results['bypass_attempts']}")
-
-    # ── MT_RULE_VERSION §3.2: 仙女座 ↔ 规则引擎 自动版本 bump 桥接 ──
-    # 每 300s 由 sys_rule_enforcer 调用, 扫描 6 个事件表判定是否触发版本 bump
-    try:
-        from ai_engines.rules_engine.rule_version import apply_auto_bumps
-        _bumps = apply_auto_bumps()
-        if _bumps:
-            _log(f"[ENFORCE] 自动版本 bump 触发: {', '.join(_bumps)}")
-            results["auto_bumps"] = _bumps
-    except Exception as _bex:  # noqa: BLE001
-        _log(f"[ENFORCE] auto_bump 跳过 (非阻断): {_bex}")
-
-    # ── MT_RULE_VERSION §3.2 + §4: 规则分块 ingest 自动补全 ──
-    # 每 300s 检查 rule_knowledge 覆盖度, 缺了自动补
-    try:
-        from ai_engines.rules_engine.rule_andromeda_bridge import (
-            rule_knowledge_health_check,
-            ingest_rules_to_knowledge,
-        )
-        _hc = rule_knowledge_health_check()
-        results["rule_knowledge_covered"] = _hc["covered"]
-        results["rule_knowledge_missing"] = _hc["missing"]
-        if _hc["missing"]:
-            _ing = ingest_rules_to_knowledge(force=False)
-            _log(f"[ENFORCE] rule_knowledge 补全: ingested={_ing['ingested']} "
-                 f"skipped={_ing['skipped']} missing={_hc['missing']}")
-    except Exception as _hx:  # noqa: BLE001
-        _log(f"[ENFORCE] rule_knowledge 检查跳过 (非阻断): {_hx}")
-
     return results
 
 
