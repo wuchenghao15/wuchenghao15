@@ -850,6 +850,137 @@ class VikeyEnforcementMiddleware:
 
         return decorator
 
+    # ============================================================
+    # v24.3 SA 专用页面跳转检测（Server-side redirect）
+    # flow_id: SA_REDIRECT_v24_3_20260930_023000
+    # 三条件 AND：双密钥在线 + SA 账号 + Terminal 绑定(127.0.0.1 loopback)
+    # ============================================================
+    @classmethod
+    def check_sa_redirect(cls, username=None, role=None, ip=None):
+        """检测是否应跳转到 SA 专用页面 /sa/dashboard。
+
+        返回 {should_redirect: bool, reason: str, dual_ok: bool,
+              is_sa: bool, terminal_bound: bool}
+        三条件同时满足才 should_redirect=True：
+          ① provider.verify_dual_key_atomic(timeout=5.0) → (True, 'ok')
+          ② session.username='wuchenghao15' 或 role='super_admin'
+          ③ request.remote_addr == '127.0.0.1' (loopback, 防远程绕过)
+
+        fail-closed：任一条件缺失/异常 → should_redirect=False，降级渲染 STANDARD 首页。
+        """
+        # 默认 fail-closed
+        result = {
+            'should_redirect': False,
+            'reason': 'not_sa_or_dual_offline',
+            'dual_ok': False,
+            'is_sa': False,
+            'terminal_bound': False,
+        }
+        # ② SA 账号检测（最快，先做短路）
+        _uname = str(username or '').lower()
+        _role = str(role or '').lower()
+        is_sa = (_uname == cls.SA_USERNAME) or (_role == 'super_admin')
+        result['is_sa'] = is_sa
+        if not is_sa:
+            result['reason'] = 'not_sa_account'
+            return result
+
+        # ③ Terminal 绑定（loopback 防远程绕过）
+        term_bound = cls._is_bound_terminal(ip)
+        result['terminal_bound'] = term_bound
+        if not term_bound:
+            result['reason'] = 'terminal_not_bound_remote_access_blocked'
+            return result
+
+        # ① 双密钥原子校验（threading.Lock + 双线程，2s 内存缓存已内建）
+        dual_ok = False
+        dual_reason = 'unknown'
+        try:
+            from core.services.vikey_driver import get_hardware_key_provider
+            provider = get_hardware_key_provider()
+            dual_ok, dual_reason = provider.verify_dual_key_atomic(timeout=5.0)
+        except Exception as _e:
+            dual_reason = f'provider_unavailable: {_e}'
+        result['dual_ok'] = bool(dual_ok)
+        if not dual_ok:
+            result['reason'] = f'dual_key_offline:{dual_reason}'
+            return result
+
+        # 三条件全满足
+        result['should_redirect'] = True
+        result['reason'] = 'ok'
+        return result
+
+    @staticmethod
+    def _get_main_db_path():
+        """v24.3: 返回 mt_sa_dual_key_status 实际所在的主库路径 (flask-app/database/app.db)。
+        _get_app_db_path() 指向 _runtime 小库(无该表)，必须用主库。"""
+        return os.path.join(PROJECT_ROOT, 'database', 'app.db')
+
+    @staticmethod
+    def _log_sa_redirect_audit(username=None, role=None, ip=None, ua=None,
+                               session_id=None, action='redirect', reason='ok'):
+        """v24.3 持续审计：每次 SA 跳转检测写入 mt_sa_dual_key_status。
+        后台线程执行 + WAL + busy_timeout，避免与 Flask 请求持有的 sqlite3 连接锁竞争。"""
+        import threading
+        def _write():
+            db_path = VikeyEnforcementMiddleware._get_main_db_path()
+            for _attempt in range(3):
+                try:
+                    conn = sqlite3.connect(db_path, timeout=10)
+                    conn.execute("PRAGMA journal_mode=WAL")
+                    conn.execute("PRAGMA busy_timeout=10000")
+                    cur = conn.cursor()
+                    now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                    sa_layout = 'SA_PROPRIETARY' if action == 'redirect' else 'STANDARD'
+                    cur.execute('''CREATE TABLE IF NOT EXISTS mt_sa_dual_key_status (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        check_time TEXT,
+                        vikey_present INTEGER,
+                        vikey_verified INTEGER,
+                        fingerprint_hash TEXT,
+                        fingerprint_len INTEGER,
+                        dual_authenticated INTEGER,
+                        sa_layout TEXT,
+                        trigger_reason TEXT,
+                        note TEXT,
+                        szu100_present INTEGER DEFAULT 0,
+                        szu100_authentic INTEGER DEFAULT 0)''')
+                    cur.execute('''INSERT INTO mt_sa_dual_key_status
+                        (check_time, vikey_present, vikey_verified, dual_authenticated,
+                         sa_layout, trigger_reason, note, szu100_present, szu100_authentic)
+                        VALUES (?,?,?,?,?,?,?,?,?)''', (
+                        now,
+                        1 if action in ('redirect', 'sa_dashboard_access') else 0,
+                        1 if action in ('redirect', 'sa_dashboard_access') else 0,
+                        1 if action in ('redirect', 'sa_dashboard_access') else 0,
+                        sa_layout, reason,
+                        f'user={username or "—"} role={role or "—"} ip={ip or "—"} action={action}',
+                        1 if action in ('redirect', 'sa_dashboard_access') else 0,
+                        1 if action in ('redirect', 'sa_dashboard_access') else 0,
+                    ))
+                    conn.commit()
+                    conn.close()
+                    return
+                except sqlite3.OperationalError as _oe:
+                    # database is locked → 退避重试
+                    time.sleep(0.15)
+                    try:
+                        conn.close()
+                    except Exception:
+                        pass
+                except Exception as e:
+                    logger.error(f"[sa_redirect_audit] mt_sa_dual_key_status 写入失败: {e}")
+                    try:
+                        conn.close()
+                    except Exception:
+                        pass
+                    return
+            logger.warning("[sa_redirect_audit] 3次重试后仍 locked，跳过本次审计写入")
+        # 后台线程执行，不阻塞 HTTP 响应
+        t = threading.Thread(target=_write, daemon=True)
+        t.start()
+
     def get_vikey_status(self):
         """获取当前vikey状态"""
         vikey_status = self._check_vikey()

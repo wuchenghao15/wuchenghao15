@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="andromeda">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="MTSCOS AI · SA 专用控制台 (v24.3 Server-side redirect)">
+    <title>SA 专用控制台 · {{ (footer_info.brand_name if footer_info else None) or 'MTSCOS 冰山' }} · v{{ version }}</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%230B0A1E'/%3E%3Ccircle cx='50' cy='50' r='30' fill='%23d4a017'/%3E%3C/svg%3E">
+    <link rel="stylesheet" href="/assets/css/mtscos-design-system.css">
+    <link rel="stylesheet" href="/static/css/sa_proprietary.css">
+    <link rel="stylesheet" href="/assets/font-awesome/css/all.min.css">
+    <style>
+        * { margin:0; padding:0; box-sizing:border-box; }
+        :root {
+            --sa-bg: #0B0A1E;
+            --sa-panel: rgba(255,255,255,0.04);
+            --sa-gold: #d4a017;
+            --sa-line: rgba(212,160,23,0.45);
+            --sa-text: #f8fafc;
+            --sa-text-dim: rgba(248,250,252,0.65);
+            --sa-radius: 18px;
+        }
+        html,body { height:100%; }
+        body {
+            font-family: var(--mtscos-font-sans, -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif);
+            color: var(--sa-text);
+            background: radial-gradient(ellipse at 20% 0%, rgba(59,130,246,0.12), transparent 50%),
+                        radial-gradient(ellipse at 80% 100%, rgba(168,85,247,0.10), transparent 50%),
+                        var(--sa-bg);
+            min-height: 100vh;
+        }
+        /* SA 顶部栏 */
+        .sa-topbar {
+            display:flex; align-items:center; justify-content:space-between;
+            padding: 14px 28px;
+            background: linear-gradient(90deg, rgba(11,10,30,0.95), rgba(40,30,60,0.95));
+            border-bottom: 2px solid var(--sa-gold);
+            box-shadow: 0 4px 30px -8px rgba(212,160,23,0.35);
+            position: sticky; top:0; z-index:50;
+        }
+        .sa-topbar .brand { display:flex; align-items:center; gap:14px; }
+        .sa-topbar .brand .badge {
+            font-size:11px; font-weight:700; letter-spacing:2px;
+            padding:4px 12px; border-radius:999px;
+            background: linear-gradient(90deg, var(--sa-gold), #ffe08a, var(--sa-gold));
+            color:#1f1500; box-shadow:0 2px 12px -3px var(--sa-gold);
+        }
+        .sa-topbar .brand h1 { font-size:18px; font-weight:700; color:var(--sa-text); }
+        .sa-topbar .meta { display:flex; align-items:center; gap:18px; font-size:13px; color:var(--sa-text-dim); }
+        .sa-topbar .meta .v { color: var(--sa-gold); font-weight:600; }
+        /* SA 网格 */
+        .sa-grid {
+            display:grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+            gap:18px; padding:24px 28px; max-width:1600px; margin:0 auto;
+        }
+        .sa-panel {
+            background: var(--sa-panel);
+            border: 1px solid var(--sa-line);
+            border-radius: var(--sa-radius);
+            padding: 20px 22px;
+            backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+            box-shadow: 0 8px 28px -12px rgba(0,0,0,0.6);
+        }
+        .sa-panel h2 {
+            font-size:14px; font-weight:700; letter-spacing:1.5px;
+            color: var(--sa-gold); text-transform:uppercase;
+            margin-bottom:14px; display:flex; align-items:center; gap:8px;
+        }
+        .sa-panel h2 i { font-size:14px; }
+        .sa-row { display:flex; align-items:center; justify-content:space-between; padding:8px 0; border-bottom:1px solid rgba(255,255,255,0.05); font-size:13px; }
+        .sa-row:last-child { border-bottom:none; }
+        .sa-row .k { color: var(--sa-text-dim); }
+        .sa-row .v { color: var(--sa-text); font-weight:600; font-family: ui-monospace, "SF Mono", monospace; }
+        .sa-row .v.ok { color: #6ee7b7; }
+        .sa-row .v.warn { color: #fcd34d; }
+        .sa-row .v.err { color: #fca5a5; }
+        .chip { display:inline-block; padding:2px 10px; border-radius:999px; font-size:11px; font-weight:600; }
+        .chip.on { background: rgba(16,185,129,0.18); border:1px solid rgba(16,185,129,0.45); color:#6ee7b7; }
+        .chip.off { background: rgba(239,68,68,0.18); border:1px solid rgba(239,68,68,0.45); color:#fca5a5; }
+        .chip.sa { background: rgba(212,160,23,0.18); border:1px solid var(--sa-line); color: var(--sa-gold); }
+        .sa-actions { display:flex; flex-wrap:wrap; gap:10px; margin-top:8px; }
+        .sa-actions a {
+            flex:1; min-width:140px; text-align:center;
+            padding:10px 14px; border-radius:12px;
+            background: rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1);
+            color: var(--sa-text); text-decoration:none; font-size:13px; font-weight:600;
+            transition: all .2s;
+        }
+        .sa-actions a:hover { border-color: var(--sa-gold); background: rgba(212,160,23,0.08); }
+        .sa-footer {
+            text-align:center; padding:20px; color:var(--sa-text-dim); font-size:12px;
+            border-top:1px solid rgba(255,255,255,0.05); margin-top:12px;
+        }
+        .sa-redirect-note {
+            margin:0 auto 18px; max-width:1600px; padding:14px 22px;
+            background: rgba(16,185,129,0.08); border:1px solid rgba(16,185,129,0.35);
+            border-radius:12px; color:#6ee7b7; font-size:13px; text-align:center;
+        }
+        .sa-redirect-note .code { font-family: ui-monospace, monospace; color: var(--sa-gold); }
+    </style>
+</head>
+<body class="layout-mode-SA_PROPRIETARY sa-proprietary"
+      data-layout-mode="SA_PROPRIETARY"
+      data-sa-flow="SA_REDIRECT_v24_3_20260930_023000">
+
+<!-- SA 顶部栏 -->
+<div class="sa-topbar">
+    <div class="brand">
+        <span class="badge">SA · 双钥已认证</span>
+        <h1>SA 专用控制台</h1>
+    </div>
+    <div class="meta">
+        <span>版本 <span class="v">{{ version }}</span></span>
+        <span>用户 <span class="v">{{ dual_status.username or 'wuchenghao15' }}</span></span>
+        <span>布局 <span class="v">{{ layout_mode }}</span></span>
+    </div>
+</div>
+
+<!-- 重定向来源提示 -->
+<div class="sa-redirect-note">
+    <i class="fa-solid fa-shield-halved"></i>
+    本页通过 <span class="code">Server-side redirect (302)</span> 自动跳转到达 — 三条件已满足：
+    双密钥在线 · SA 账号 · 127.0.0.1 loopback 终端绑定
+</div>
+
+<!-- SA 网格面板 -->
+<div class="sa-grid">
+
+    <!-- 面板 1: 双密钥状态 -->
+    <div class="sa-panel">
+        <h2><i class="fa-solid fa-key"></i>双密钥状态</h2>
+        <div class="sa-row"><span class="k">VIKEY 加密狗</span>
+            <span class="v {% if dual_status.vikey.present %}ok{% else %}err{% endif %}">
+                <span class="chip {% if dual_status.vikey.present %}on{% else %}off{% endif %}">{% if dual_status.vikey.present %}ON{% else %}OFF{% endif %}</span>
+                {{ dual_status.vikey.serial or '—' }}
+            </span>
+        </div>
+        <div class="sa-row"><span class="k">SZU100 专用U盘</span>
+            <span class="v {% if dual_status.szu100.present and dual_status.szu100.is_authentic %}ok{% elif dual_status.szu100.present %}warn{% else %}err{% endif %}">
+                <span class="chip {% if dual_status.szu100.present and dual_status.szu100.is_authentic %}on{% elif dual_status.szu100.present %}off{% else %}off{% endif %}">
+                    {% if dual_status.szu100.present and dual_status.szu100.is_authentic %}AUTHENTIC{% elif dual_status.szu100.present %}FORGED{% else %}ABSENT{% endif %}
+                </span>
+                {{ dual_status.szu100.volume_name or '—' }}
+            </span>
+        </div>
+        <div class="sa-row"><span class="k">双密钥原子校验</span>
+            <span class="v {% if dual_status.both_authenticated %}ok{% else %}err{% endif %}">
+                <span class="chip {% if dual_status.both_authenticated %}sa{% else %}off{% endif %}">{% if dual_status.both_authenticated %}VERIFIED{% else %}FAILED{% endif %}</span>
+            </span>
+        </div>
+        <div class="sa-row"><span class="k">Provider reason</span>
+            <span class="v">{{ dual_status.dual_reason or 'ok' }}</span>
+        </div>
+        <div class="sa-row"><span class="k">Layout 模式</span>
+            <span class="v">{{ dual_status.layout_mode or layout_mode }}</span>
+        </div>
+    </div>
+
+    <!-- 面板 2: 终端绑定 -->
+    <div class="sa-panel">
+        <h2><i class="fa-solid fa-network-wired"></i>终端绑定</h2>
+        <div class="sa-row"><span class="k">来源 IP</span>
+            <span class="v">{{ dual_status.terminal.ip or '127.0.0.1' }}</span>
+        </div>
+        <div class="sa-row"><span class="k">绑定状态</span>
+            <span class="v {% if dual_status.terminal.bound %}ok{% else %}err{% endif %}">
+                <span class="chip {% if dual_status.terminal.bound %}on{% else %}off{% endif %}">{% if dual_status.terminal.bound %}LOCAL_BOUND{% else %}NOT_BOUND{% endif %}</span>
+            </span>
+        </div>
+        <div class="sa-row"><span class="k">SA 账号</span>
+            <span class="v ok">{{ dual_status.username or 'wuchenghao15' }}</span>
+        </div>
+        <div class="sa-row"><span class="k">角色</span>
+            <span class="v">{{ dual_status.role or 'super_admin' }}</span>
+        </div>
+        <div class="sa-row"><span class="k">检测时间</span>
+            <span class="v">{{ dual_status.timestamp or '—' }}</span>
+        </div>
+    </div>
+
+    <!-- 面板 3: 系统监控 -->
+    <div class="sa-panel">
+        <h2><i class="fa-solid fa-gauge-high"></i>系统监控</h2>
+        <div class="sa-row"><span class="k">Flask 进程</span>
+            <span class="v ok"><span class="chip on">RUNNING</span>:8888</span>
+        </div>
+        <div class="sa-row"><span class="k">数据库表数</span>
+            <span class="v">{{ homepage_stats.tables if homepage_stats and homepage_stats.tables else 322 }}</span>
+        </div>
+        <div class="sa-row"><span class="k">AI 员工</span>
+            <span class="v">{{ homepage_stats.employees if homepage_stats and homepage_stats.employees else 11347 }}</span>
+        </div>
+        <div class="sa-row"><span class="k">Daemon 进程</span>
+            <span class="v">{{ homepage_stats.daemons if homepage_stats and homepage_stats.daemons else 15 }}</span>
+        </div>
+        <div class="sa-row"><span class="k">规则引擎</span>
+            <span class="v ok"><span class="chip on">ACTIVE</span> 12 篇</span>
+        </div>
+        <div class="sa-row"><span class="k">本地推理</span>
+            <span class="v ok"><span class="chip on">ZERO-TOKEN</span></span>
+        </div>
+    </div>
+
+    <!-- 面板 4: SA 专属操作 -->
+    <div class="sa-panel">
+        <h2><i class="fa-solid fa-screwdriver-wrench"></i>SA 专属操作</h2>
+        <div class="sa-row"><span class="k">flow_id</span>
+            <span class="v" style="font-size:11px;">SA_REDIRECT_v24_3_20260930_023000</span>
+        </div>
+        <div class="sa-row"><span class="k">Server-side redirect</span>
+            <span class="v ok"><span class="chip on">ENABLED</span></span>
+        </div>
+        <div class="sa-row"><span class="k">客户端轮询</span>
+            <span class="v warn"><span class="chip off">DEPRECATED</span></span>
+        </div>
+        <div class="sa-row"><span class="k">Banner 注入</span>
+            <span class="v warn"><span class="chip off">DEPRECATED</span></span>
+        </div>
+        <div class="sa-actions">
+            <a href="/"><i class="fa-solid fa-house"></i> 返回标准首页</a>
+            <a href="/admin_center"><i class="fa-solid fa-screwdriver-wrench"></i> 管理中心</a>
+            <a href="/system_status"><i class="fa-solid fa-heart-pulse"></i> 系统状态</a>
+            <a href="/auth/logout"><i class="fa-solid fa-right-from-bracket"></i> 退出</a>
+        </div>
+    </div>
+
+</div>
+
+<div class="sa-footer">
+    MTSCOS 冰山 · SA 专用控制台 · v24.3.0 (Server-side redirect 架构重写)
+    · flow_id: SA_REDIRECT_v24_3_20260930_023000
+    · 仅供 wuchenghao15 + 双密钥 + 127.0.0.1 loopback 访问
+</div>
+
+<script src="/static/js/sa_proprietary.js"></script>
+</body>
+</html>

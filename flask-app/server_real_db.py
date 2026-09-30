@@ -9441,6 +9441,41 @@ except Exception as _red_init_exc:
 @app.route('/index')
 @system_container('homepage', require_auth='guest')
 def index():
+    # ═══════════════════════════════════════════════════════════
+    # v24.3 SA 专用页面跳转 (Server-side redirect)
+    # flow_id: SA_REDIRECT_v24_3_20260930_023000
+    # 三条件 AND：双密钥在线 + SA 账号 + 127.0.0.1 loopback
+    # 任一不满足 → 降级渲染 STANDARD 首页 (fail-closed)
+    # ═══════════════════════════════════════════════════════════
+    try:
+        from app.middlewares.vikey_enforcement_middleware import VikeyEnforcementMiddleware
+        _sa_check = VikeyEnforcementMiddleware.check_sa_redirect(
+            username=session.get('username', ''),
+            role=session.get('role', ''),
+            ip=request.remote_addr if request else None,
+        )
+        # 持续审计：每次首页访问都记录 SA 检测结果到 mt_sa_dual_key_status
+        VikeyEnforcementMiddleware._log_sa_redirect_audit(
+            username=session.get('username', ''),
+            role=session.get('role', ''),
+            ip=request.remote_addr if request else None,
+            ua=request.headers.get('User-Agent', '')[:200] if request else '',
+            session_id=session.get('session_id', ''),
+            action='redirect' if _sa_check['should_redirect'] else 'standard',
+            reason=_sa_check.get('reason', 'unknown'),
+        )
+        if _sa_check['should_redirect']:
+            # 302 重定向到 SA 专用页面，彻底抛弃客户端轮询+banner
+            return redirect('/sa/dashboard', code=302)
+    except Exception as _sa_redir_err:
+        # fail-closed: 检测异常不阻断首页渲染，降级 STANDARD
+        try:
+            import logging as _lg_sa
+            _lg_sa_sa = _lg_sa.getLogger('sa_redirect')
+            _lg_sa_sa.warning("[sa_redirect] 检测异常，降级 STANDARD: %s", _sa_redir_err)
+        except Exception:
+            pass
+
     version, info, latest = get_version_info()
     stats = _get_homepage_stats()
     footer_info = _get_footer_info()
@@ -9487,6 +9522,97 @@ def index():
                            sa_rules=sa_rules,
                            theme_schemes=theme_schemes,
                            page_csrf_token=page_csrf_token)
+
+
+# ════════════════════════════════════════════════════════════════════
+# v24.3 SA 专用页面 /sa/dashboard (Server-side redirect 目标)
+# flow_id: SA_REDIRECT_v24_3_20260930_023000
+# 独立模板 sa_dashboard.html，不复用 index.html
+# 访问控制：必须 SA + 双密钥 + 127.0.0.1 loopback（与首页跳转条件一致）
+# ════════════════════════════════════════════════════════════════════
+@app.route('/sa/dashboard')
+@system_container('sa_dashboard', require_auth='super_admin')
+def sa_dashboard():
+    """SA 专用页面 — 双密钥在线 + SA 账号 + loopback 才能访问。
+    fail-closed：任一条件不满足 → 403。"""
+    # 三条件复检（防直接 URL 绕过）
+    try:
+        from app.middlewares.vikey_enforcement_middleware import VikeyEnforcementMiddleware
+        _sa_check = VikeyEnforcementMiddleware.check_sa_redirect(
+            username=session.get('username', ''),
+            role=session.get('role', ''),
+            ip=request.remote_addr if request else None,
+        )
+        VikeyEnforcementMiddleware._log_sa_redirect_audit(
+            username=session.get('username', ''),
+            role=session.get('role', ''),
+            ip=request.remote_addr if request else None,
+            ua=request.headers.get('User-Agent', '')[:200] if request else '',
+            session_id=session.get('session_id', ''),
+            action='sa_dashboard_access',
+            reason=_sa_check.get('reason', 'unknown'),
+        )
+        if not _sa_check['should_redirect']:
+            # 条件不满足，拒绝直接访问 SA 专用页面
+            return render_template('index.html',
+                                   **_sa_dashboard_fallback_context()), 403
+    except Exception as _sa_dash_err:
+        try:
+            import logging as _lg_dash
+            _lg_dash.getLogger('sa_dashboard').error(
+                "[sa_dashboard] 访问检测异常: %s", _sa_dash_err)
+        except Exception:
+            pass
+        return render_template('index.html',
+                               **_sa_dashboard_fallback_context()), 403
+
+    # 条件满足：渲染 SA 专用页面
+    version, info, latest = get_version_info()
+    stats = _get_homepage_stats()
+    footer_info = _get_footer_info()
+
+    # SA 双密钥详细状态（用于页面展示）
+    try:
+        from app.middlewares.vikey_enforcement_middleware import vikey_enforcement
+        dual_status = vikey_enforcement.get_dual_hardware_status(
+            username=session.get('username', ''),
+            role=session.get('role', ''),
+            ip=request.remote_addr if request else '127.0.0.1',
+        )
+    except Exception:
+        dual_status = {'vikey': {}, 'szu100': {}, 'both_authenticated': True,
+                       'layout_mode': 'SA_PROPRIETARY', 'dual_reason': 'ok'}
+
+    return render_template('sa_dashboard.html',
+                           version=version,
+                           version_info=info,
+                           latest_version=latest,
+                           homepage_stats=stats,
+                           _s=stats,
+                           footer_info=footer_info,
+                           dual_status=dual_status,
+                           layout_mode='SA_PROPRIETARY',
+                           sa_proprietary=True,
+                           page_csrf_token=session.get('csrf_token', ''))
+
+
+def _sa_dashboard_fallback_context():
+    """SA 专用页面访问被拒时的 fallback 上下文（渲染 STANDARD 首页用）。"""
+    version, info, latest = get_version_info()
+    stats = _get_homepage_stats()
+    footer_info = _get_footer_info()
+    return {
+        'version': version, 'version_info': info, 'latest_version': latest,
+        'homepage_stats': stats, '_s': stats, 'footer_info': footer_info,
+        'particle_config': _get_particle_frontend_config(),
+        'cognitive_profile': {}, 'ai_eco': {'employees': 0, 'experts': 0},
+        'sa_rules': {'integrity_failed': 0, 'weak_words': 0, 'last_scan': ''},
+        'theme_schemes': [{'scheme_id': 'default', 'name': '极光蓝',
+                           'preset_key': 'aurora', 'is_memorial': False}],
+        'page_csrf_token': session.get('csrf_token', ''),
+        'layout_mode': 'STANDARD', 'sa_proprietary': False,
+    }
+
 
 # ─── Arduino events/poll/ack + session/bind/redirect_target + arduino_ide_page + arduino_admin_setup_page 由 routes/arduino_session_routes.py blueprint 注册 (唯一).
 # 此文件只新增 /api/arduino/auto_detect (blueprint 没有).
