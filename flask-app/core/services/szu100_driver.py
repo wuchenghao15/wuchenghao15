@@ -526,6 +526,7 @@ def init_auth_file(mount_path):
 
 SZU100_API_VERSION = "1.0.0"
 SZU100_DRIVER_VERSION = "2.0.0"
+__version__ = SZU100_DRIVER_VERSION  # _check_drivers() 需要这个变量名
 
 
 class SZU100Manager:
