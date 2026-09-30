@@ -882,17 +882,20 @@
     {# v24.2 SA 双密钥: 客户端 JS — 实时轮询 /api/diag/sa_dual, 动态切换 body layout #}
     <script>
     (function(){
-        var SA_CSS_URL = "/assets/css/sa_proprietary.css";
-        var SA_JS_URL  = "/assets/js/sa_proprietary.js";
+        // ⚠️ 关键: Flask app.static_url_path = /static (不是 /assets!)
+        // sa_proprietary.css/js 在 flask-app/static/css|js/ 里
+        var SA_CSS_URL = "{{ url_for('static', filename='css/sa_proprietary.css') }}";
+        var SA_JS_URL  = "{{ url_for('static', filename='js/sa_proprietary.js') }}";
         var SA_CSS_ID  = "mt-sa-prop-css";
         var SA_JS_ID   = "mt-sa-prop-js";
         var POLL_MS    = 3000;
+        var _lastMode  = null;
 
         function applyLayout(mode, saProp){
             var body = document.body;
             if(!body) return;
             body.className = body.className.replace(/layout-mode-\w+/g, '');
-            body.className += (' ' + 'layout-mode-' + mode);
+            body.className += (' layout-mode-' + mode);
             body.classList.toggle('sa-proprietary', !!saProp);
             body.setAttribute('data-layout-mode', mode);
             body.setAttribute('data-dual-authenticated', saProp ? 'true' : 'false');
@@ -903,15 +906,22 @@
                     var l = document.createElement('link');
                     l.id = SA_CSS_ID; l.rel='stylesheet'; l.href=SA_CSS_URL;
                     document.head.appendChild(l);
+                    console.log('[SA-DUAL] injected', SA_CSS_URL);
                 }
                 if(!document.getElementById(SA_JS_ID)){
                     var s = document.createElement('script');
                     s.id = SA_JS_ID; s.src = SA_JS_URL; s.defer = true;
                     document.body.appendChild(s);
+                    console.log('[SA-DUAL] injected', SA_JS_URL);
                 }
             } else {
                 document.getElementById(SA_CSS_ID)?.remove();
                 document.getElementById(SA_JS_ID)?.remove();
+            }
+
+            if(_lastMode !== mode){
+                console.log('[SA-DUAL] layout → ' + mode + '  sa_proprietary=' + !!saProp);
+                _lastMode = mode;
             }
         }
 
@@ -922,9 +932,17 @@
             }).then(function(r){ return r.json(); }).then(function(d){
                 if(d && d.OK && d.ctx_computed){
                     applyLayout(d.ctx_computed.layout_mode || 'STANDARD', !!d.ctx_computed.sa_proprietary);
+                } else {
+                    console.warn('[SA-DUAL] diag endpoint returned non-OK:', d);
                 }
-            }).catch(function(){});
+            }).catch(function(e){
+                // 轮询失败不打 warn (避免 console 刷屏)
+            });
         }
+
+        console.log('[SA-DUAL] v24.2 轮询启动, interval=' + POLL_MS + 'ms');
+        console.log('[SA-DUAL] CSS=' + SA_CSS_URL);
+        console.log('[SA-DUAL] JS=' + SA_JS_URL);
 
         // 首次 + 定时轮询
         pollOnce();
