@@ -89,11 +89,13 @@ class PortGuardDaemon:
         )""")
         conn.commit()
 
-    # ─── SA 双密钥监测 ───
+    # ─── SA 双密钥监测 (v24.2 升级: HardwareKeyProvider 统一入口) ───
     def check_sa_dual_key(self):
         result = {
             "vikey_present": False,
             "vikey_verified": False,
+            "szu100_present": False,
+            "szu100_authentic": False,
             "fingerprint_hash": "",
             "fingerprint_len": 0,
             "dual_authenticated": False,
@@ -101,49 +103,65 @@ class PortGuardDaemon:
             "trigger_reason": "",
             "note": ""
         }
-        # 1) VIKEY 检测
+        # v24.2 升级: 统一使用 HardwareKeyProvider 原子校验 (VIKEY + SZU100 同时检测)
         try:
-            from core.services.vikey_api import get_vikey_api
-            vk = get_vikey_api()
-            detect = vk.detect()
-            result["vikey_present"] = bool(detect and detect.get("devices"))
-            if result["vikey_present"]:
-                for dev in detect.get("devices", []):
-                    if dev.get("is_present"):
-                        result["vikey_verified"] = True
-                        result["note"] = f"VIKEY serial={dev.get('serial','?')[:16]}"
-                        break
-        except Exception as e:
-            result["note"] = f"vikey_api err: {str(e)[:80]}"
-            # fallback
-            try:
-                from core.services.vikey_driver import get_vikey_manager
-                vm = get_vikey_manager()
-                result["vikey_present"] = bool(vm.is_present())
-                result["vikey_verified"] = bool(vm.verify())
-                result["note"] = f"[driver] present={result['vikey_present']} verified={result['vikey_verified']}"
-            except Exception as e2:
-                result["note"] += f" | fallback_err: {str(e2)[:60]}"
+            from core.services.vikey_driver import get_hardware_key_provider
+            provider = get_hardware_key_provider()
+            # 分别检测 + 原子校验 (verify_dual_key_atomic 内部已 threading.Lock)
+            result["vikey_present"] = provider.detect_vikey()
+            result["vikey_verified"] = result["vikey_present"]  # detect_vikey 已含 authenticity
+            result["szu100_present"] = provider.detect_szu100()
+            result["szu100_authentic"] = result["szu100_present"]
 
-        # 2) 指纹 (无 session → 生成随机 mock hash 表示"系统端未识别")
+            dual_ok, dual_reason = provider.verify_dual_key_atomic(timeout=5.0)
+            result["dual_authenticated"] = dual_ok
+            result["trigger_reason"] = dual_reason if not dual_ok else ""
+
+            parts = []
+            if result["vikey_present"]:
+                parts.append("VIKEY=OK")
+            else:
+                parts.append("VIKEY=MISS")
+            if result["szu100_present"]:
+                parts.append("SZU100=OK")
+            else:
+                parts.append("SZU100=MISS")
+            result["note"] = " | ".join(parts)
+            result["sa_layout"] = "FULL" if dual_ok else "STANDARD"
+
+        except ImportError as e:
+            result["note"] = f"provider_import_err: {str(e)[:60]}"
+            # fallback: 老接口分别检测
+            try:
+                from core.services.vikey_api import get_vikey_api
+                vk = get_vikey_api()
+                detect = vk.detect()
+                result["vikey_present"] = bool(detect and detect.get("devices"))
+                result["vikey_verified"] = bool(result["vikey_present"])
+            except Exception as e2:
+                result["note"] += f" | vikey_api_err: {str(e2)[:50]}"
+            try:
+                from core.services.szu100_driver import get_szu100_manager
+                sm = get_szu100_manager()
+                result["szu100_present"] = sm.is_present()
+                result["szu100_authentic"] = sm.verify()
+            except Exception as e3:
+                result["note"] += f" | szu100_err: {str(e3)[:50]}"
+            result["dual_authenticated"] = result["vikey_verified"] and result["szu100_authentic"]
+            result["sa_layout"] = "FULL" if result["dual_authenticated"] else "STANDARD"
+            if not result["dual_authenticated"]:
+                reasons = []
+                if not result["vikey_verified"]: reasons.append("VIKEY_MISSING")
+                if not result["szu100_authentic"]: reasons.append("SZU100_MISSING")
+                result["trigger_reason"] = "+".join(reasons)
+
+        # 指纹占位 (无浏览器 session → 固定 probe hash)
         try:
             import hashlib
-            # 尝试读当前运行的浏览器指纹 (如果有的话)
             result["fingerprint_hash"] = hashlib.sha256(b"port_guard_server_probe").hexdigest()[:16]
             result["fingerprint_len"] = 16
         except Exception:
             pass
-
-        # 3) 判定
-        result["dual_authenticated"] = result["vikey_verified"] and result["fingerprint_len"] >= 16
-        if not result["vikey_verified"]:
-            result["trigger_reason"] = "VIKEY_MISSING"
-            result["sa_layout"] = "STANDARD"  # SA 无 VIKEY → 强制降级
-        elif result["fingerprint_len"] < 16:
-            result["trigger_reason"] = "FINGERPRINT_MISSING"
-            result["sa_layout"] = "STANDARD"
-        else:
-            result["trigger_reason"] = ""
             result["sa_layout"] = "SA_PROPRIETARY"
 
         return result

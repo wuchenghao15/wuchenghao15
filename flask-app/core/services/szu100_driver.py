@@ -509,3 +509,120 @@ def init_auth_file(mount_path):
         return True, 'auth_file_created'
     except Exception as e:
         return False, str(e)
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# SZU100 Manager + get_szu100_manager() 入口 (v24.2 新增 — 统一接口)
+# 仿 VikeyManager 的 API 风格, 供 HardwareKeyProvider 原子校验调用
+# ═══════════════════════════════════════════════════════════════════════════
+
+SZU100_API_VERSION = "1.0.0"
+SZU100_DRIVER_VERSION = "2.0.0"
+
+
+class SZU100Manager:
+    """SZU100 统一管理类 — 提供 is_present() / verify() 等稳定接口"""
+
+    def __init__(self):
+        self._last_check = 0
+        self._cache_ttl = _CACHE_TTL
+
+    # ── 核心接口 (仿 VikeyManager) ──
+    def is_present(self):
+        """SZU100 是否物理插入"""
+        try:
+            d = detect_szu100()
+            return bool(d.get('present'))
+        except Exception:
+            return False
+
+    def verify(self):
+        """SZU100 是否 authentic (硬件+认证通过)"""
+        try:
+            d = detect_szu100()
+            return bool(d.get('is_authentic'))
+        except Exception:
+            return False
+
+    def get_serial(self):
+        """获取 authentic SZU100 的序列号"""
+        try:
+            d = detect_szu100()
+            return (d.get('authentic_device') or {}).get('serial', '')
+        except Exception:
+            return ''
+
+    def get_volume_name(self):
+        """获取 SZU100 卷标"""
+        try:
+            d = detect_szu100()
+            return (d.get('authentic_device') or {}).get('volume_name', '')
+        except Exception:
+            return ''
+
+    def get_mount_point(self):
+        """获取 SZU100 挂载点"""
+        try:
+            d = detect_szu100()
+            return (d.get('authentic_device') or {}).get('mount_point', '')
+        except Exception:
+            return ''
+
+    def get_device_info(self):
+        """获取完整 SZU100 设备信息"""
+        try:
+            d = detect_szu100()
+            return d
+        except Exception:
+            return {}
+
+    def list_devices(self):
+        """列出所有检测到的 USB 设备 (SZU100 + 可能的伪造)"""
+        try:
+            d = detect_szu100()
+            return d.get('devices', [])
+        except Exception:
+            return []
+
+    def has_fake_detected(self):
+        """是否检测到伪造 SZU100"""
+        try:
+            d = detect_szu100()
+            return bool(d.get('has_fake_detected'))
+        except Exception:
+            return False
+
+    def health_check(self):
+        """健康检查 (供 daemon / 监控调用)"""
+        d = self.get_device_info()
+        return {
+            'driver': 'SZU100',
+            'driver_version': SZU100_DRIVER_VERSION,
+            'api_version': SZU100_API_VERSION,
+            'present': self.is_present(),
+            'authentic': self.verify(),
+            'fake_detected': self.has_fake_detected(),
+            'device_count': len(d.get('devices', [])),
+            'serial': self.get_serial(),
+            'volume_name': self.get_volume_name(),
+            'mount_point': self.get_mount_point(),
+            'auth_status': d.get('auth_status', 'unknown'),
+            'cdrom_only': True,  # 真 SZU100 是 CD-ROM 仿真设备
+        }
+
+
+# 单例缓存
+_szu100_mgr_singleton = None
+
+
+def get_szu100_manager():
+    """获取 SZU100Manager 单例 (仿 get_vikey_manager)"""
+    global _szu100_mgr_singleton
+    if _szu100_mgr_singleton is None:
+        _szu100_mgr_singleton = SZU100Manager()
+    return _szu100_mgr_singleton
+
+
+def get_szu100_api():
+    """SZU100 Facade (仿 get_vikey_api — 供 HardwareKeyProvider 统一调用)"""
+    return get_szu100_manager()
