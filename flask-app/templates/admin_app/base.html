@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark" data-art-theme="aurora">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}MTSCOS AI 管理系统{% endblock %}</title>
+
+  {# === Art Design Pro 视觉融合 (flow_frontend_refactor_20260831_145440) ===
+     依赖顺序: design_tokens → layout → components → pages → art_layer → art_components → art_themes #}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/mtscos_design_tokens.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/mtscos_layout.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/mtscos_components.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/mtscos_pages.css') }}">
+  {# 艺术动效层 + 组件库 + 主题 (与 mtscos_layout 共存) #}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/art_layer.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/art_components.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/art_themes.css') }}">
+  {% if sa_proprietary %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/sa_proprietary.css') }}">
+  {% endif %}
+  {# 仙女座 v5.1: mt_params 前端参数动态覆盖层 (23 参数) — 最后加载, 覆盖所有静态 Token #}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/mtscos_frontend_overrides.css') }}">
+
+  {% block extra_head %}{% endblock %}
+<style>
+  /* 动态侧边栏分组样式 (flow_id=layout_rebuild_20260902) */
+  .art-sidebar-dynamic { overflow: hidden; display: flex; flex-direction: column; }
+  .art-nav-scroll { flex: 1; overflow-y: auto; overflow-x: hidden; scrollbar-width: thin; padding-right: 4px; }
+  .art-nav-scroll::-webkit-scrollbar { width: 4px; }
+  .art-nav-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 2px; }
+  .art-nav-group { margin-bottom: 8px; }
+  .art-nav-group-title { font-size: 10px; font-weight: 700; color: rgba(255,255,255,0.4); text-transform: uppercase; letter-spacing: 0.08em; padding: 12px 16px 4px; }
+  .art-sidebar-dynamic .art-nav-item { display: flex; align-items: center; gap: 10px; padding: 8px 16px; color: rgba(255,255,255,0.7); text-decoration: none; font-size: 13px; transition: all 0.2s; border-radius: 6px; margin: 1px 8px; }
+  .art-sidebar-dynamic .art-nav-item:hover { background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.95); }
+  .art-sidebar-dynamic .art-nav-item.active { background: rgba(64,158,255,0.18); color: #409eff; }
+  .art-sidebar-dynamic .art-nav-icon { width: 16px; height: 16px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .art-sidebar-dynamic .art-nav-icon svg { width: 16px; height: 16px; }
+  .art-sidebar-dynamic .art-nav-label { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  [data-collapsed="true"] .art-nav-label { display: none; }
+  [data-collapsed="true"] .art-nav-group-title { text-align: center; padding: 8px 0 4px; font-size: 0; }
+  [data-collapsed="true"] .art-nav-item { justify-content: center; padding: 10px; }
+</style>
+</head>
+<body class="layout-mode-{{ layout_mode or 'STANDARD' }}"
+      data-layout-mode="{{ layout_mode or 'STANDARD' }}"
+      data-dual-authenticated="{{ 'true' if dual_authenticated else 'false' }}"
+      data-is-super-admin="{{ 'true' if is_super_admin_container else 'false' }}">
+  <!-- 艺术渐变背景 -->
+  <div class="art-gradient-bg"></div>
+  <!-- 粒子画布 -->
+  <canvas class="art-particle-canvas" id="artParticles"></canvas>
+  <!-- 鼠标光斑 -->
+  <div class="art-cursor-glow" id="artCursorGlow"></div>
+
+  <div class="art-layout" data-layout-mode="{{ layout_mode or 'STANDARD' }}">
+    <!-- 侧边栏 — 动态分组渲染 (flow_id=layout_rebuild_20260902) -->
+    <aside class="art-sidebar art-sidebar-dynamic" data-collapsed="{{ 'true' if sidebar_collapsed else 'false' }}">
+      <div class="art-sidebar-logo">
+        <img src="/static/img/icons/sidebar-logo.svg" alt="ICEBERG" width="28" height="28" style="vertical-align:middle;margin-right:8px;border-radius:6px;">
+        <span class="art-sidebar-logo-text">MTSCOS AI</span>
+      </div>
+      <nav class="art-nav-scroll">
+        {# 动态渲染 sidebar_menus._groups (8 大功能域 + 角色权限自适应) #}
+        {% if sidebar_menus and sidebar_menus._groups %}
+          {% for group in sidebar_menus._groups %}
+            <div class="art-nav-group">
+              <div class="art-nav-group-title">{{ group['group'] }}</div>
+              {% for item in group['items'] %}
+                <a href="{{ item.url }}" class="art-nav-item{% if current_page == item.url.split('?')[0].split('/')[-1] or request.path == item.url %} active{% endif %}" title="{{ item.label }}">
+                  <span class="art-nav-icon">{{ item.icon|safe }}</span>
+                  <span class="art-nav-label">{{ item.label }}</span>
+                </a>
+              {% endfor %}
+            </div>
+          {% endfor %}
+        {% else %}
+          {# 兜底: 无 sidebar_menus 时显示基础导航 #}
+          <a href="/admin_app/dashboard" class="art-nav-item">
+            <span class="art-nav-icon">📊</span> <span class="art-nav-label">仪表盘</span>
+          </a>
+          <a href="/smart_dashboard" class="art-nav-item">
+            <span class="art-nav-icon">🌐</span> <span class="art-nav-label">智能总览</span>
+          </a>
+          <a href="/settings" class="art-nav-item">
+            <span class="art-nav-icon">⚙️</span> <span class="art-nav-label">系统设置</span>
+          </a>
+        {% endif %}
+      </nav>
+    </aside>
+
+    <!-- 主内容 -->
+    <main class="art-main">
+      <header class="art-header">
+        <h1 class="art-header-title">{% block page_title %}仪表盘{% endblock %}</h1>
+        <div class="art-theme-switcher" id="artThemeSwitcher">
+          <div class="art-theme-dot active" data-theme="aurora" title="极光"></div>
+          <div class="art-theme-dot" data-theme="twilight" title="暮光"></div>
+          <div class="art-theme-dot" data-theme="dawn" title="晨曦"></div>
+          <div class="art-theme-dot" data-theme="ink" title="墨韵"></div>
+        </div>
+      </header>
+      <div class="art-content" data-page-type="{{ page_type or 'default' }}">
+        {% block content %}{% endblock %}
+      </div>
+    </main>
+  </div>
+
+  <!-- 粒子系统 + 光斑跟随 + 主题切换 -->
+  <script>
+    (function() {
+      const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      if (reduceMotion) return;
+
+      // === 粒子画布 ===
+      const canvas = document.getElementById('artParticles');
+      if (canvas) {
+        const ctx = canvas.getContext('2d');
+        let particles = [];
+        const PARTICLE_COUNT = 60;
+        const colors = ['rgba(64,158,255,0.5)', 'rgba(16,185,129,0.5)', 'rgba(139,92,246,0.5)', 'rgba(249,115,22,0.4)'];
+
+        function resizeCanvas() {
+          canvas.width = window.innerWidth;
+          canvas.height = window.innerHeight;
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        for (let i = 0; i < PARTICLE_COUNT; i++) {
+          particles.push({
+            x: Math.random() * canvas.width,
+            y: Math.random() * canvas.height,
+            vx: (Math.random() - 0.5) * 0.3,
+            vy: (Math.random() - 0.5) * 0.3,
+            r: Math.random() * 2 + 0.5,
+            color: colors[Math.floor(Math.random() * colors.length)],
+            alpha: Math.random() * 0.5 + 0.2
+          });
+        }
+
+        function drawParticles() {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          particles.forEach(p => {
+            p.x += p.vx;
+            p.y += p.vy;
+            if (p.x < 0 || p.x > canvas.width) p.vx *= -1;
+            if (p.y < 0 || p.y > canvas.height) p.vy *= -1;
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+            ctx.fillStyle = p.color;
+            ctx.globalAlpha = p.alpha;
+            ctx.fill();
+          });
+          ctx.globalAlpha = 1;
+          requestAnimationFrame(drawParticles);
+        }
+        drawParticles();
+      }
+
+      // === 鼠标光斑跟随 ===
+      const glow = document.getElementById('artCursorGlow');
+      if (glow) {
+        let mouseX = window.innerWidth / 2;
+        let mouseY = window.innerHeight / 2;
+        let glowX = mouseX;
+        let glowY = mouseY;
+
+        document.addEventListener('mousemove', (e) => {
+          mouseX = e.clientX;
+          mouseY = e.clientY;
+        });
+
+        function updateGlow() {
+          glowX += (mouseX - glowX) * 0.08;
+          glowY += (mouseY - glowY) * 0.08;
+          glow.style.left = glowX + 'px';
+          glow.style.top = glowY + 'px';
+          requestAnimationFrame(updateGlow);
+        }
+        updateGlow();
+      }
+
+      // === 主题切换 ===
+      const switcher = document.getElementById('artThemeSwitcher');
+      if (switcher) {
+        const dots = switcher.querySelectorAll('.art-theme-dot');
+        const savedTheme = localStorage.getItem('art-theme') || 'aurora';
+        applyTheme(savedTheme);
+
+        dots.forEach(dot => {
+          dot.addEventListener('click', () => {
+            const theme = dot.getAttribute('data-theme');
+            applyTheme(theme);
+            localStorage.setItem('art-theme', theme);
+          });
+        });
+
+        function applyTheme(theme) {
+          document.documentElement.setAttribute('data-art-theme', theme);
+          dots.forEach(d => d.classList.toggle('active', d.getAttribute('data-theme') === theme));
+        }
+      }
+    })();
+  </script>
+  <!-- 隐性双钥匙自动检测 (所有 admin_app 页面通用) -->
+  <script src="{{ url_for('static', filename='js/client-key-detect.js') }}"></script>
+  <script>
+    (function () {
+      function _startDualKeyPolling() {
+        if (!window.ClientKeyDetect || !ClientKeyDetect.startAutoPolling) return;
+        ClientKeyDetect.startAutoPolling({
+          onDualKeyLogin: function (data) {
+            console.log('[admin-base] SA 双钥匙自动登录成功, 刷新页面');
+            setTimeout(function () { window.location.reload(); }, 1000);
+          },
+          onKeyRemoved: function (info) {
+            console.log('[admin-base] 双钥匙拔出, 跳转首页');
+            setTimeout(function () { window.location.href = '/'; }, 1000);
+          },
+        });
+      }
+      setTimeout(_startDualKeyPolling, 3000);
+    })();
+  </script>
+  {% block extra_scripts %}{% endblock %}
+  {# v24.3.3: 始终加载 SA 双密钥 JS — 中途插钥/登录后前端轮询自动跳转 #}
+  <script src="{{ url_for('static', filename='js/sa_proprietary.js') }}?v=24.3.3"></script>
+  <script src="{{ url_for('static', filename='js/arduino_global_hotplug.js') }}" defer></script>
+</body>
+</html>

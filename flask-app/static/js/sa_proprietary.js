@@ -171,8 +171,9 @@
     var both = !!(p && p.both_authenticated);
     var layout = (p && p.layout_mode) || 'STANDARD';
 
-    // 满足条件自动切换：SA 已登录 + 双钥在线 + 当前在首页 → 页面级跳转 SA 专用页
-    if (p && p.is_sa && both) {
+    // 满足条件自动切换：双钥在线 + 当前在首页 → 页面级跳转 SA 专用页
+    // （不管是否已登录 SA —— 未登录走 pre_auth 锁定态，已登录走 full_auth 完整态）
+    if (both) {
       var path = window.location.pathname || '/';
       if (path === '/' || path === '/index') {
         if (timer) { clearTimeout(timer); timer = null; }
@@ -219,9 +220,14 @@
   function tick() {
     var req;
     try { req = new XMLHttpRequest(); } catch (e) { return; }
-    var url = isDedicatedPage() && authStage() !== 'full_auth'
-      ? API + '?hardware_only=1'
-      : API;
+    // v24.3.3: 标准页也用 hardware_only=1 — guest 访问 dual-status 返回 both_authenticated:false (401)，
+    // 必须走 hardware_only 才能拿到真实双钥在位布尔（loopback 限定，零敏感字段）
+    var url;
+    if (isDedicatedPage()) {
+      url = authStage() === 'full_auth' ? API : API + '?hardware_only=1';
+    } else {
+      url = API + '?hardware_only=1';
+    }
     req.open('GET', url, true);
     req.timeout = Math.min(interval, 8000);
     req.onreadystatechange = function () {
@@ -233,8 +239,22 @@
         // 专用页：退避不影响响应及时性，保持 5s
         applyDedicated(p, ok, req.status);
       } else {
+        // 标准页：hardware_only 返回 both_present；登录态完整载荷返回 both_authenticated
+        // 统一映射到 both 变量供 applyTransition 使用
+        var _both = false;
+        if (p) {
+          if (p.hardware_only) _both = !!p.both_present;
+          else _both = !!p.both_authenticated;
+        }
+        // 构造一个兼容 p 对象（applyTransition 用 p.both_authenticated 和 p.is_sa）
+        var _compat = p ? {
+          both_authenticated: _both,
+          is_sa: !!p.is_sa,
+          layout_mode: p.layout_mode,
+          error: p.error,
+        } : null;
         backoff(!ok);
-        if (ok && p) applyTransition(p);
+        if (ok && _compat) applyTransition(_compat);
       }
       schedule();
     };
