@@ -485,8 +485,14 @@
         .wb-register-link a { color:var(--andromeda-purple,#9B59B6); font-weight:600; text-decoration:none; }
         .wb-register-link a:hover { text-decoration:underline; }
     </style>
+    {# v24.2 SA 双密钥: 条件加载 SA_PROPRIETARY 专属视觉 CSS #}
+    {% if sa_proprietary %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/sa_proprietary.css') }}">
+    {% endif %}
 </head>
-<body>
+<body class="layout-mode-{{ layout_mode or 'STANDARD' }}{% if sa_proprietary %} sa-proprietary{% endif %}"
+      data-layout-mode="{{ layout_mode or 'STANDARD' }}"
+      data-dual-authenticated="{{ 'true' if dual_authenticated else 'false' }}">
 
 <!-- ═══════════════ LEFT SIDEBAR ═══════════════ -->
 <!-- ═══════════════ LEFT SIDEBAR (仙女座公共侧栏) ═══════════════ -->
@@ -869,5 +875,9 @@
   });
 })();
 </script>
+    {# v24.2 SA 双密钥: 条件加载 SA_PROPRIETARY 专属行为 JS #}
+    {% if sa_proprietary %}
+    <script src="{{ url_for('static', filename='js/sa_proprietary.js') }}"></script>
+    {% endif %}
 </body>
 </html>
