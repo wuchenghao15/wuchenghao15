@@ -475,10 +475,33 @@ def rule_compliance_scan(loop_name: str) -> dict:
     rules_loaded = len(set(c[0] for c in chunks))
     log(f"  🌐 [{loop_name}] 规则合规扫描: {rules_loaded} 规则 × {len(chunks)} chunks", "rule_comply")
     
-    # 3. 硬约束词 + Loop 活动关键词 双重命中检测
+    # 3. 硬约束词 + Loop 活动关键词 + 真实行为验证 (v24.3.5 去误报风暴)
     violation_patterns = _LOOP_VIOLATION_PATTERNS.get(loop_name, [])
     activity_kws = _LOOP_ACTIVITY_KEYWORDS.get(loop_name, [])
     single_hit_info = 0  # 单硬约束词命中但没提 loop 活动 → INFO 计数
+    
+    # ── v24.3.5 新: 每轮扫描只查一次 mt_dev_flow_session (避免每个 chunk 都查) ──
+    _db_loop_activity = {}  # loop_name → {has_flow_id, done_count, last_step}
+    try:
+        db2c = _db_connect()
+        # 该 loop 对应的 flow 前缀。实测: AUTOFIX-*, BRAIN-*, EVOLVE-* 等
+        for _probe in (loop_name,):
+            _pfx = f"{_probe.upper()}%"
+            _row = db2c.execute(
+                "SELECT COUNT(*), SUM(CASE WHEN final_status='DONE' THEN 1 ELSE 0 END), "
+                "MAX(current_step) FROM mt_dev_flow_session "
+                "WHERE flow_id LIKE ?", (_pfx,)).fetchone()
+            _db_loop_activity[_probe] = {
+                "total": _row[0] or 0,
+                "done": _row[1] or 0,
+                "max_step": _row[2] or '',
+                "compliant": (_row[0] or 0) > 0,
+            }
+        db2c.close()
+    except Exception as _e:
+        log(f"    db_flow 验证跳过: {_e}", "rule_comply")
+    
+    _is_iron = False  # 先不设, 下面每条 chunk 动态判断
     
     for rule_id, rule_name, rule_level, rule_version, is_iron, chunk, tags_str in chunks:
         tags = json.loads(tags_str or "[]")
@@ -495,25 +518,48 @@ def rule_compliance_scan(loop_name: str) -> dict:
             single_hit_info += 1
             continue
         
-        # 违规模式检测: Loop 代码/行为是否违反了这条规则里的硬约束
+        _is_iron = bool(is_iron)
+        
+        # v24.3.5 真行为验证: 只有"有 flow_id 但没 DONE"才告警
+        # 规则 chunk 里出现 "必须/不得/强制" 只是规则本身的表述，不等于仙女座 loop 违规
+        _db_state = _db_loop_activity.get(loop_name, {})
+        _flow_total = _db_state.get("total", 0)
+        _flow_done = _db_state.get("done", 0)
+        
+        if _flow_total == 0:
+            # 无 flow_id 记录 → loop 可能是 AI 员工子域（brain/evolve/repair 等），不走人类 12 步骤
+            # 无法判定合规性 → 降级 INFO，不告警
+            single_hit_info += 1
+            continue
+        
+        if _flow_done >= 1:
+            # ✅ 至少有一个 DONE flow → loop 走通了 12 步骤 → 合规
+            single_hit_info += 1
+            continue
+        
+        # 到这里: _flow_total > 0 但 _flow_done == 0 → 有 flow_id 但没走完 12 步骤 → 真告警
+        
+        # ③ Loop 代码/行为违规模式检测
         for pat in violation_patterns:
-            # 规则 chunk 里有硬约束词 + 仙女座 Loop 代码有该违规模式
             alert_payload = json.dumps({
                 "loop": loop_name,
                 "rule_id": rule_id,
                 "rule_level": rule_level,
                 "rule_version": rule_version,
-                "is_iron_rule": bool(is_iron),
+                "is_iron_rule": _is_iron,
                 "violation_pattern": pat,
                 "hit_constraints": hit_words[:5],
                 "chunk_preview": chunk[:300],
                 "tags": tags[:8],
+                "v24_compliant": False,  # v24.3.5: 本轮扫描 DB 验证结果
             }, ensure_ascii=False)
             
-            alert_severity = "CRITICAL" if is_iron else ("HIGH" if "L1" in rule_level else "MEDIUM")
+            alert_severity = "CRITICAL" if _is_iron else ("HIGH" if "L1" in rule_level else "MEDIUM")
             
-            alert_id = f"ALERT-{loop_name}-{rule_id}-{time.strftime('%Y%m%d%H%M%S')}-{hashlib.md5(pat.encode()).hexdigest()[:6]}"
-            viol_code = "DEV-FLOW-VIOLATION-IRON-RULE" if is_iron else "RULE-VIOLATION-ANDROMEDA"
+            # v24.3.5: alert_id 改成稳定哈希 — 不要时间戳! 同一告警跨轮只落一次
+            _stable_key = f"ALERT-{loop_name}-{rule_id}-{hashlib.md5(pat.encode()).hexdigest()[:12]}"
+            alert_id = _stable_key
+            viol_code = "DEV-FLOW-VIOLATION-IRON-RULE" if _is_iron else "RULE-VIOLATION-ANDROMEDA"
             
             # 落库 mt_rule_violation_alert
             try:
@@ -529,11 +575,11 @@ def rule_compliance_scan(loop_name: str) -> dict:
             except Exception as e2:
                 log(f"    ⚠️ alert 落库跳过: {e2}", "rule_comply")
             
-            alerts.append({"rule_id":rule_id, "iron":bool(is_iron), "severity":alert_severity,
+            alerts.append({"rule_id":rule_id, "iron":_is_iron, "severity":alert_severity,
                            "pattern":pat, "hits":hit_words[:3]})
-            log(f"    {'🚫' if is_iron else '⚠️'} [{alert_severity}] {rule_id} ({rule_level}) 硬约束 {hit_words[:2]} 命中, 模式={pat}", "rule_comply")
+            log(f"    {'🚫' if _is_iron else '⚠️'} [{alert_severity}] {rule_id} ({rule_level}) 硬约束 {hit_words[:2]} 命中, 模式={pat}", "rule_comply")
             
-            if is_iron:
+            if _is_iron:
                 # 真 BLOCK 只针对"明显绕过 12 步骤/无 flow_id"类硬违规
                 _block_patterns = ["无flow_id", "绕过flow_id", "直接写DB", "无auto_create_flow",
                                    "无advance_flow", "skip 12步骤", "绕开12步骤", "无flow_session"]
