@@ -879,5 +879,60 @@
     {% if sa_proprietary %}
     <script src="{{ url_for('static', filename='js/sa_proprietary.js') }}"></script>
     {% endif %}
+    {# v24.2 SA 双密钥: 客户端 JS — 实时轮询 /api/diag/sa_dual, 动态切换 body layout #}
+    <script>
+    (function(){
+        var SA_CSS_URL = "/assets/css/sa_proprietary.css";
+        var SA_JS_URL  = "/assets/js/sa_proprietary.js";
+        var SA_CSS_ID  = "mt-sa-prop-css";
+        var SA_JS_ID   = "mt-sa-prop-js";
+        var POLL_MS    = 3000;
+
+        function applyLayout(mode, saProp){
+            var body = document.body;
+            if(!body) return;
+            body.className = body.className.replace(/layout-mode-\w+/g, '');
+            body.className += (' ' + 'layout-mode-' + mode);
+            body.classList.toggle('sa-proprietary', !!saProp);
+            body.setAttribute('data-layout-mode', mode);
+            body.setAttribute('data-dual-authenticated', saProp ? 'true' : 'false');
+
+            // 动态注入/移除 SA CSS/JS
+            if(saProp){
+                if(!document.getElementById(SA_CSS_ID)){
+                    var l = document.createElement('link');
+                    l.id = SA_CSS_ID; l.rel='stylesheet'; l.href=SA_CSS_URL;
+                    document.head.appendChild(l);
+                }
+                if(!document.getElementById(SA_JS_ID)){
+                    var s = document.createElement('script');
+                    s.id = SA_JS_ID; s.src = SA_JS_URL; s.defer = true;
+                    document.body.appendChild(s);
+                }
+            } else {
+                document.getElementById(SA_CSS_ID)?.remove();
+                document.getElementById(SA_JS_ID)?.remove();
+            }
+        }
+
+        function pollOnce(){
+            fetch('/api/diag/sa_dual', {
+                credentials:'same-origin',
+                headers:{'Referer': location.origin + '/'}
+            }).then(function(r){ return r.json(); }).then(function(d){
+                if(d && d.OK && d.ctx_computed){
+                    applyLayout(d.ctx_computed.layout_mode || 'STANDARD', !!d.ctx_computed.sa_proprietary);
+                }
+            }).catch(function(){});
+        }
+
+        // 首次 + 定时轮询
+        pollOnce();
+        setInterval(pollOnce, POLL_MS);
+
+        // 窗口 focus 时也立刻检查
+        window.addEventListener('focus', pollOnce);
+    })();
+    </script>
 </body>
 </html>

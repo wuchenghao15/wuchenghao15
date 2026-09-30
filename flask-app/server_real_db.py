@@ -5402,6 +5402,30 @@ def inject_theme_and_layout():
     theme_key, forced_mourning = _resolve_theme()
     is_admin = user['is_admin'] if user else False
     is_super = user['is_super_admin'] if user else False
+
+    # ═══════════════════════════════════════════════════════════
+    # v24.2 SA 双密钥 layout 注入 (给模板用 {{ layout_mode }})
+    # ═══════════════════════════════════════════════════════════
+    layout_mode = 'STANDARD'
+    dual_authenticated = False
+    sa_proprietary = False
+    try:
+        from app.middlewares.vikey_enforcement_middleware import vikey_enforcement
+        _uname = session.get('username', '')
+        _role  = session.get('role', '')
+        _dual = vikey_enforcement.get_dual_hardware_status(
+            username=_uname, role=_role,
+            ip=request.remote_addr if request else '127.0.0.1',
+            force_refresh=False,  # 用缓存, 不阻塞
+        )
+        layout_mode = _dual.get('layout_mode') or 'STANDARD'
+        dual_authenticated = bool(_dual.get('both_authenticated'))
+        sa_proprietary = bool(dual_authenticated and (
+            _uname.lower() == 'wuchenghao15' or str(_role).lower() == 'super_admin'
+        ))
+    except Exception:
+        pass  # 硬件检测失败不阻断渲染, 降级 STANDARD
+
     return {
         'theme_key': theme_key,
         'theme_forced_mourning': forced_mourning,
@@ -5411,6 +5435,10 @@ def inject_theme_and_layout():
         'current_user': user,
         'is_admin': is_admin,
         'is_super_admin': is_super,
+        # v24.2 SA 双密钥 layout 注入
+        'layout_mode': layout_mode,
+        'dual_authenticated': dual_authenticated,
+        'sa_proprietary': sa_proprietary,
     }
 
 
@@ -12540,3 +12568,53 @@ def _api_auto_infer_auth(path):
                 '/api/neuralhub/routes/', '/api/japanese/', '/api/mobile/fingerprint/', '/api/ai/derive'):
         if path.startswith(_pf):
             return None
+
+
+# ═══════════════════════════════════════════════════════════
+# 【临时诊断】SA 双密钥 + layout_mode 实时状态
+# 调试完请删除
+# ═══════════════════════════════════════════════════════════
+@app.route('/api/diag/sa_dual', methods=['GET'])
+def _mt_diag_sa_dual():
+    """curl http://127.0.0.1:8888/api/diag/sa_dual -H 'Referer: http://127.0.0.1:8888/'"""
+    try:
+        from app.middlewares.vikey_enforcement_middleware import vikey_enforcement
+        uname = session.get('username', '')
+        role  = session.get('role', '')
+        dual = vikey_enforcement.get_dual_hardware_status(
+            username=uname, role=role,
+            ip=request.remote_addr, ua=request.headers.get('User-Agent','')[:100],
+            session_id=session.sid if getattr(session,'sid',None) else '',
+            force_refresh=True,
+        )
+        layout_mode    = dual.get('layout_mode') or 'STANDARD'
+        dual_authed    = bool(dual.get('both_authenticated'))
+        sa_proprietary = bool(dual_authed and (uname.lower()=='wuchenghao15' or str(role).lower()=='super_admin'))
+        return jsonify({
+            'OK': True,
+            'session': {
+                'username': uname,
+                'role': role,
+                'keys': [k for k in session.keys() if not k.startswith('_')],
+                '_sa_override_from_vikey': session.get('_sa_override_from_vikey'),
+            },
+            'hardware': {
+                'vikey_present':     dual.get('vikey',{}).get('present'),
+                'vikey_serial':      dual.get('vikey',{}).get('serial'),
+                'szu100_present':    dual.get('szu100',{}).get('present'),
+                'szu100_auth':       dual.get('szu100',{}).get('is_authentic'),
+                'szu100_volume':     dual.get('szu100',{}).get('volume_name'),
+                'both_authenticated':dual.get('both_authenticated'),
+                'dual_reason':       dual.get('dual_reason'),
+                'terminal_bound':    dual.get('terminal',{}).get('bound'),
+            },
+            'ctx_computed': {
+                'layout_mode':     layout_mode,
+                'dual_authenticated': dual_authed,
+                'sa_proprietary':  sa_proprietary,
+                'body_class_would_be': f"layout-mode-{layout_mode}{' sa-proprietary' if sa_proprietary else ''}",
+            },
+        })
+    except Exception as e:
+        import traceback as _tb
+        return jsonify({'OK': False, 'error': str(e), 'tb': _tb.format_exc()}), 500
