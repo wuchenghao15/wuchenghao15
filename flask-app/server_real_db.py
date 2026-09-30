@@ -10506,10 +10506,13 @@ def api_hardware_dual_status():
             if (request.args.get('hardware_only') == '1'
                     and request.remote_addr in ('127.0.0.1', '::1')):
                 try:
+                    # v24.3.4: hardware_only 加 force_refresh=True 绕过 2s 缓存 —
+                    # 心跳 2s 间隔需要实时感知插拔，缓存反而拖慢 1-2s
                     _hw = _mt_dual.get_dual_hardware_status(
                         username='wuchenghao15', role='super_admin',
                         ip=request.remote_addr,
-                        ua=request.headers.get('User-Agent', '')[:300])
+                        ua=request.headers.get('User-Agent', '')[:300],
+                        force_refresh=True)
                     _vp = bool(_hw.get('vikey', {}).get('present'))
                     _sp = bool(_hw.get('szu100', {}).get('present'))
                     return jsonify({

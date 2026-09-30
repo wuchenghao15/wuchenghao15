@@ -1,25 +1,29 @@
 /**
- * sa_proprietary.js  —— SA 专有 UI 热插拔控制器 (v24.3.3)
+ * sa_proprietary.js  —— SA 专有 UI 热插拔控制器 (v24.3.4 · 低延迟)
+ *
+ * 延迟优化（v24.3.4）：
+ *   - BASE_INTERVAL: 5000ms → 2000ms（2s 心跳，安全场景快速响应）
+ *   - 删除 legacy 模式 10s lockTimer → 检测到 both=false 立即锁定/跳转
+ *   - backoff 仅在网络错误时触发，密钥在位=false 不退避（保持 2s 固定间隔）
+ *   - 专用页 exitToHome 延迟 700ms → 400ms（更快跳转）
+ *
  * 两种模式（按 body[data-auth-stage] 自动识别）：
  *
  * A) SA 专用页模式（/sa/dashboard，data-auth-stage = pre_auth | full_auth）
  *    · full_auth：心跳 /api/hardware/dual-status（登录态完整载荷）
- *        - 任一密钥离线 / 401 → 立即跳 /index?from=sa_dual_lost（自动登出）
+ *        - 任一密钥离线 / 401 → 立即锁定遮罩 + 400ms 后 /auth/logout 登出回首页
  *    · pre_auth：心跳 ?hardware_only=1（仅硬件在位布尔，loopback 限定）
- *        - 密钥拔出 → 立即跳 /index?from=sa_no_keys
- *    · 注：server 端在 should_redirect=False 时已 302→/index，前端此 JS 是补充
- *          （会话中途密钥拔出的"主动检测"，不依赖下一次 HTTP 请求才触发）
+ *        - 密钥拔出 → 立即锁定遮罩 + 400ms 后回首页
  *
- * B) 标准页模式（无 data-auth-stage：首页/base/admin 等，legacy 行为）
- *    · 5s 心跳；双钥 true→false：≤10s 内锁定遮罩 + body 切 STANDARD
- *    · 双钥 false→true：恢复 SA_PROPRIETARY 布局
- *    · SA 已登录 + 双钥在线且当前在 / 或 /index → 自动跳转 /sa/dashboard（页面级切换）
- *    · 连续失败指数退避：5 → 10 → 20 → 40 → 60（max）；成功一次立刻重置 5s
+ * B) 标准页模式（无 data-auth-stage：首页/base/admin 等）
+ *    · 2s 心跳 ?hardware_only=1（guest 也能拿到真实双钥在位布尔）
+ *    · 双钥在线 + 当前在 / 或 /index → 自动跳转 /sa/dashboard
+ *    · 双钥离线（已在 SA 页面的例外）→ 立即 setLocked + setLayout STANDARD
  */
 (function () {
   'use strict';
-  var BASE_INTERVAL = 5000;   // 5s 心跳
-  var MAX_INTERVAL = 60000;   // 60s 退避上限
+  var BASE_INTERVAL = 2000;   // 2s 心跳（v24.3.4: 5000→2000，安全场景快速响应）
+  var MAX_INTERVAL = 30000;   // 30s 退避上限（原 60s）
   var API = '/api/hardware/dual-status';
 
   function body() { return document.body || document.documentElement; }
@@ -82,12 +86,11 @@
   var interval = BASE_INTERVAL;
   var timer = null;
   var consecutiveErrors = 0;
-  var lastBoth = null;        // legacy: null | true | false
+  var lastBoth = null;
   var lockShown = false;
-  var lockTimer = null;       // legacy: 拔出 → ≤10s 锁定计时器
-  var exiting = false;        // dedicated: 已触发跳首页（一次性，防重复）
+  var exiting = false;
 
-  /** 注入顶栏三模块占位：如果模板已有，就不覆盖 */
+  /** 顶栏三模块占位注入 */
   function ensureTopbarModules() {
     var b = body();
     if (!b.classList.contains('layout-mode-SA_PROPRIETARY')) return;
@@ -114,9 +117,13 @@
     host.prepend ? host.prepend(wrap) : host.insertBefore(wrap, host.firstChild);
   }
 
-  function backoff(err) {
-    consecutiveErrors = err ? Math.min(consecutiveErrors + 1, 5) : 0;
-    if (err) {
+  /**
+   * 退避：仅网络错误时触发（req.status >= 500 / timeout / onerror）。
+   * 密钥在位=false 是正常业务状态，不退避——保持 2s 固定间隔快速响应。
+   */
+  function backoff(networkErr) {
+    consecutiveErrors = networkErr ? Math.min(consecutiveErrors + 1, 5) : 0;
+    if (networkErr) {
       var mul = Math.pow(2, consecutiveErrors - 1);
       interval = Math.min(BASE_INTERVAL * mul, MAX_INTERVAL);
     } else {
@@ -124,24 +131,21 @@
     }
   }
 
-  /* ════════ A) SA 专用页模式：密钥离线 → 先播退出动画再跳首页 ════════ */
+  /* ════════ A) SA 专用页模式 ════════ */
 
   function exitToHome(reason, doLogout) {
     if (exiting) return;
     exiting = true;
     var target = doLogout ? '/auth/logout?from=sa_dual_lost' : '/index?from=' + (reason || 'sa_no_keys');
     fireLayoutEvent({ mode: 'EXIT', reason: reason || 'dual_key_lost', stage: authStage() });
-
-    // 先播放退出动画（body 加 .sa-exit + 锁定遮罩脉冲），等动画播完再跳页
     var b = body();
     b.classList.remove('sa-enter');
     b.classList.add('sa-exit');
     setLocked(true, reason === 'sa_dual_lost' ? '双密钥已断开，正在安全退出…' : 'SA 会话已锁定，即将返回首页…');
-
     setTimeout(function () {
       try { window.location.replace(target); }
       catch (e) { window.location.href = target; }
-    }, 700);  // 与 .sa-exit (0.65s) + 遮罩入场 (0.08s) 匹配，留 60ms 余量
+    }, 400);  // v24.3.4: 700→400ms，更快跳转
   }
 
   function applyDedicated(p, ok, status) {
@@ -150,7 +154,6 @@
     if (stage === 'full_auth') {
       var both = !!(ok && p && p.both_authenticated);
       if (!both) {
-        // 登录态：密钥离线 / 401 / 服务端判失败 → 登出回首页
         exitToHome('sa_dual_lost', true);
       }
       return;
@@ -162,17 +165,15 @@
       }
       return;
     }
-    // 其他（无 data-auth-stage / locked_nokeys 已删）→ 不处理
   }
 
-  /* ════════ B) 标准页模式（legacy） ════════ */
+  /* ════════ B) 标准页模式 ════════ */
 
   function applyTransition(p) {
     var both = !!(p && p.both_authenticated);
     var layout = (p && p.layout_mode) || 'STANDARD';
 
-    // 满足条件自动切换：双钥在线 + 当前在首页 → 页面级跳转 SA 专用页
-    // （不管是否已登录 SA —— 未登录走 pre_auth 锁定态，已登录走 full_auth 完整态）
+    // 自动跳转：双钥在线 + 当前在首页 → 立即跳 /sa/dashboard
     if (both) {
       var path = window.location.pathname || '/';
       if (path === '/' || path === '/index') {
@@ -182,23 +183,17 @@
       }
     }
 
-    // 初始化 lastBoth
+    // v24.3.4: 删除 legacy 10s lockTimer — 检测到 both=false 立即锁定
     if (lastBoth === null) lastBoth = both;
 
-    // true → false：启动 10s 锁定计时
     if (lastBoth && !both) {
-      if (!lockTimer) {
-        lockTimer = setTimeout(function () {
-          setLayout('STANDARD');
-          setLocked(true, (p && p.error) || '双密钥已断开，请重新插入 VIKEY 和 SZU100。');
-          lockShown = true;
-          fireLayoutEvent({ mode: 'STANDARD', reason: 'dual_key_lost', payload: p });
-        }, Math.max(0, 10000 - (interval - BASE_INTERVAL)));
-      }
-    }
-    // false → true：清除锁定
-    if (!lastBoth && both) {
-      if (lockTimer) { clearTimeout(lockTimer); lockTimer = null; }
+      // 双钥刚离线：立即锁定 + STANDARD 布局（不再等 10s）
+      setLayout('STANDARD');
+      setLocked(true, (p && p.error) || '双密钥已断开，请重新插入 VIKEY 和 SZU100。');
+      lockShown = true;
+      fireLayoutEvent({ mode: 'STANDARD', reason: 'dual_key_lost', payload: p });
+    } else if (!lastBoth && both) {
+      // 双钥刚恢复：清除锁定 + SA 布局
       setLocked(false);
       lockShown = false;
       setLayout(layout);
@@ -220,8 +215,7 @@
   function tick() {
     var req;
     try { req = new XMLHttpRequest(); } catch (e) { return; }
-    // v24.3.3: 标准页也用 hardware_only=1 — guest 访问 dual-status 返回 both_authenticated:false (401)，
-    // 必须走 hardware_only 才能拿到真实双钥在位布尔（loopback 限定，零敏感字段）
+    // 专用页 full_auth 走完整载荷；其余（专用页未登录 + 标准页）走 hardware_only
     var url;
     if (isDedicatedPage()) {
       url = authStage() === 'full_auth' ? API : API + '?hardware_only=1';
@@ -229,32 +223,39 @@
       url = API + '?hardware_only=1';
     }
     req.open('GET', url, true);
-    req.timeout = Math.min(interval, 8000);
+    req.timeout = Math.min(interval, 5000);
     req.onreadystatechange = function () {
       if (req.readyState !== 4) return;
       var ok = req.status >= 200 && req.status < 300;
       var p = null;
       try { p = JSON.parse(req.responseText || '{}'); } catch (e) { p = null; ok = false; }
+
       if (isDedicatedPage()) {
-        // 专用页：退避不影响响应及时性，保持 5s
         applyDedicated(p, ok, req.status);
+        // 专用页不退避 — 退出由 exitToHome 控制，正常响应保持 2s
+        if (!ok) backoff(true); else interval = BASE_INTERVAL;
       } else {
-        // 标准页：hardware_only 返回 both_present；登录态完整载荷返回 both_authenticated
-        // 统一映射到 both 变量供 applyTransition 使用
+        // 标准页：硬件在位=false 是正常业务状态，不退避
         var _both = false;
-        if (p) {
+        var networkErr = false;
+        if (ok && p) {
           if (p.hardware_only) _both = !!p.both_present;
           else _both = !!p.both_authenticated;
+        } else {
+          networkErr = true;
         }
-        // 构造一个兼容 p 对象（applyTransition 用 p.both_authenticated 和 p.is_sa）
+        if (networkErr) {
+          backoff(true);  // 仅网络错误退避
+        } else {
+          interval = BASE_INTERVAL;  // 正常 + 密钥离线/在线都保持 2s
+        }
         var _compat = p ? {
           both_authenticated: _both,
           is_sa: !!p.is_sa,
           layout_mode: p.layout_mode,
           error: p.error,
         } : null;
-        backoff(!ok);
-        if (ok && _compat) applyTransition(_compat);
+        if (_compat) applyTransition(_compat);
       }
       schedule();
     };
