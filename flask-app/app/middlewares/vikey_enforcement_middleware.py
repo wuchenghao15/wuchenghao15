@@ -853,46 +853,53 @@ class VikeyEnforcementMiddleware:
     # ============================================================
     # v24.3 SA 专用页面跳转检测（Server-side redirect）
     # flow_id: SA_REDIRECT_v24_3_20260930_023000
-    # 三条件 AND：双密钥在线 + SA 账号 + Terminal 绑定(127.0.0.1 loopback)
+    # v24.3.1 PATCH flow_id: SA_PREAUTH_v24_3_1_20260930
+    #   双密钥预认证先跳转：跳转条件去掉 SA 登录硬性要求，
+    #   未登录 guest 在 /sa/dashboard 锁定态内完成登录。
+    # 跳转两条件 AND：双密钥在线 + Terminal 绑定(127.0.0.1 loopback)
     # ============================================================
     @classmethod
     def check_sa_redirect(cls, username=None, role=None, ip=None):
-        """检测是否应跳转到 SA 专用页面 /sa/dashboard。
+        """检测是否应跳转到 SA 专用页面 /sa/dashboard（v24.3.1 预认证版）。
 
-        返回 {should_redirect: bool, reason: str, dual_ok: bool,
-              is_sa: bool, terminal_bound: bool}
-        三条件同时满足才 should_redirect=True：
+        返回 {should_redirect: bool, auth_stage: str, reason: str,
+              dual_ok: bool, is_sa: bool, terminal_bound: bool}
+
+        should_redirect=True 只需两条件 AND（不再要求已登录）：
           ① provider.verify_dual_key_atomic(timeout=5.0) → (True, 'ok')
-          ② session.username='wuchenghao15' 或 role='super_admin'
-          ③ request.remote_addr == '127.0.0.1' (loopback, 防远程绕过)
+          ② request.remote_addr 为插钥终端 (127.0.0.1 loopback，防远程绕过)
 
-        fail-closed：任一条件缺失/异常 → should_redirect=False，降级渲染 STANDARD 首页。
+        auth_stage:
+          'pre_auth'  — 双密钥+终端满足但未登录 SA（跳转后渲染锁定态 + 登录表单）
+          'full_auth' — 已登录 wuchenghao15/super_admin（渲染完整 SA 面板）
+
+        fail-closed：双密钥离线/非绑定终端/异常 → should_redirect=False，降级 STANDARD 首页。
         """
         # 默认 fail-closed
         result = {
             'should_redirect': False,
-            'reason': 'not_sa_or_dual_offline',
+            'auth_stage': 'pre_auth',
+            'reason': 'dual_or_terminal_not_satisfied',
             'dual_ok': False,
             'is_sa': False,
             'terminal_bound': False,
         }
-        # ② SA 账号检测（最快，先做短路）
+        # 登录态仅用于区分 auth_stage，不作为跳转前置条件
         _uname = str(username or '').lower()
         _role = str(role or '').lower()
         is_sa = (_uname == cls.SA_USERNAME) or (_role == 'super_admin')
         result['is_sa'] = is_sa
-        if not is_sa:
-            result['reason'] = 'not_sa_account'
-            return result
+        result['auth_stage'] = 'full_auth' if is_sa else 'pre_auth'
 
-        # ③ Terminal 绑定（loopback 防远程绕过）
+        # ② Terminal 绑定（loopback 防远程绕过；纯本地判断，最快先短路）
         term_bound = cls._is_bound_terminal(ip)
         result['terminal_bound'] = term_bound
         if not term_bound:
             result['reason'] = 'terminal_not_bound_remote_access_blocked'
             return result
 
-        # ① 双密钥原子校验（threading.Lock + 双线程，2s 内存缓存已内建）
+        # ① 双密钥原子校验（threading.Lock + 双线程，provider 内建短缓存）
+        #    该校验为机器级硬件状态，与会话登录无关：guest 在线同样返回 True
         dual_ok = False
         dual_reason = 'unknown'
         try:
@@ -906,7 +913,7 @@ class VikeyEnforcementMiddleware:
             result['reason'] = f'dual_key_offline:{dual_reason}'
             return result
 
-        # 三条件全满足
+        # 两条件全满足 → 预认证跳转（登录在 SA 页面内完成）
         result['should_redirect'] = True
         result['reason'] = 'ok'
         return result

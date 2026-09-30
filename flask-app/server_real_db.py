@@ -9444,7 +9444,10 @@ def index():
     # ═══════════════════════════════════════════════════════════
     # v24.3 SA 专用页面跳转 (Server-side redirect)
     # flow_id: SA_REDIRECT_v24_3_20260930_023000
-    # 三条件 AND：双密钥在线 + SA 账号 + 127.0.0.1 loopback
+    # v24.3.1 PATCH flow_id: SA_PREAUTH_v24_3_1_20260930
+    #   双密钥预认证先跳转：未登录 guest 也直接 302 /sa/dashboard，
+    #   登录在 SA 页面锁定态内完成。
+    # 跳转两条件 AND（不再要求 SA 登录）：双密钥在线 + 127.0.0.1 loopback
     # 任一不满足 → 降级渲染 STANDARD 首页 (fail-closed)
     # ═══════════════════════════════════════════════════════════
     try:
@@ -9462,10 +9465,10 @@ def index():
             ua=request.headers.get('User-Agent', '')[:200] if request else '',
             session_id=session.get('session_id', ''),
             action='redirect' if _sa_check['should_redirect'] else 'standard',
-            reason=_sa_check.get('reason', 'unknown'),
+            reason=f"{_sa_check.get('reason', 'unknown')}|stage={_sa_check.get('auth_stage', 'pre_auth')}",
         )
         if _sa_check['should_redirect']:
-            # 302 重定向到 SA 专用页面，彻底抛弃客户端轮询+banner
+            # 302 重定向到 SA 专用页面（guest→锁定态登录 / SA→完整面板）
             return redirect('/sa/dashboard', code=302)
     except Exception as _sa_redir_err:
         # fail-closed: 检测异常不阻断首页渲染，降级 STANDARD
@@ -9527,15 +9530,36 @@ def index():
 # ════════════════════════════════════════════════════════════════════
 # v24.3 SA 专用页面 /sa/dashboard (Server-side redirect 目标)
 # flow_id: SA_REDIRECT_v24_3_20260930_023000
+# v24.3.1 PATCH flow_id: SA_PREAUTH_v24_3_1_20260930
+#   双密钥预认证先跳转：本页 guest 可达，分两态渲染 —
+#   pre_auth : 双密钥+loopback 已满足但未登录 → 锁定态(硬件状态+登录表单, 无业务数据)
+#   full_auth: 已登录 SA → 完整 4 面板
 # 独立模板 sa_dashboard.html，不复用 index.html
-# 访问控制：必须 SA + 双密钥 + 127.0.0.1 loopback（与首页跳转条件一致）
+# 访问控制：双密钥在线 + 127.0.0.1 loopback（与首页跳转条件一致），否则 403
 # ════════════════════════════════════════════════════════════════════
+def _sa_safe_next(raw_next):
+    """登录回跳白名单：仅允许站内相对路径（以/开头且非//），防开放重定向。"""
+    try:
+        n = (raw_next or '').strip()
+        if n and n.startswith('/') and not n.startswith('//') and not n.startswith('/\\'):
+            from urllib.parse import urlparse as _u
+            if not _u(n).netloc:
+                return n
+    except Exception:
+        pass
+    return '/sa/dashboard'
+
+
 @app.route('/sa/dashboard')
-@system_container('sa_dashboard', require_auth='super_admin')
+@system_container('sa_dashboard', require_auth='guest')
 def sa_dashboard():
-    """SA 专用页面 — 双密钥在线 + SA 账号 + loopback 才能访问。
-    fail-closed：任一条件不满足 → 403。"""
-    # 三条件复检（防直接 URL 绕过）
+    """SA 专用页面 — v24.3.1 预认证版。
+
+    - 双密钥离线 或 非 loopback → 403（防直接 URL 绕过，fail-closed）
+    - 双密钥+loopback 但未登录 → 200 锁定态（仅硬件状态 + 登录表单，无业务数据）
+    - 双密钥+loopback 且已登录 SA → 200 完整面板
+    """
+    # 两条件复检（防直接 URL 绕过）
     try:
         from app.middlewares.vikey_enforcement_middleware import VikeyEnforcementMiddleware
         _sa_check = VikeyEnforcementMiddleware.check_sa_redirect(
@@ -9549,8 +9573,8 @@ def sa_dashboard():
             ip=request.remote_addr if request else None,
             ua=request.headers.get('User-Agent', '')[:200] if request else '',
             session_id=session.get('session_id', ''),
-            action='sa_dashboard_access',
-            reason=_sa_check.get('reason', 'unknown'),
+            action='sa_dashboard_access' if _sa_check['should_redirect'] else 'sa_dashboard_denied',
+            reason=f"{_sa_check.get('reason', 'unknown')}|stage={_sa_check.get('auth_stage', 'pre_auth')}",
         )
         if not _sa_check['should_redirect']:
             # 条件不满足，拒绝直接访问 SA 专用页面
@@ -9566,34 +9590,71 @@ def sa_dashboard():
         return render_template('index.html',
                                **_sa_dashboard_fallback_context()), 403
 
-    # 条件满足：渲染 SA 专用页面
-    version, info, latest = get_version_info()
-    stats = _get_homepage_stats()
-    footer_info = _get_footer_info()
+    # guest 也需要 csrf token（登录表单 X-CSRF-Token，与首页一致）
+    page_csrf_token = session.get('csrf_token', '')
+    if not page_csrf_token:
+        import hashlib as _hl, os as _os, time as _tm
+        page_csrf_token = _hl.sha256(
+            f'mtscos-csrf-sess-{_tm.time()}-{_os.urandom(16)}'.encode()).hexdigest()
+        session['csrf_token'] = page_csrf_token
 
-    # SA 双密钥详细状态（用于页面展示）
+    auth_stage = _sa_check.get('auth_stage', 'pre_auth')
+    # 登录回跳目标（白名单过滤，默认回本页）
+    login_next = _sa_safe_next(request.args.get('next'))
+    login_error = request.args.get('login_error', '')
+
+    # 硬件预认证状态（机器级信息，可对未登录用户展示：serial/present/terminal）
+    # 用 SA 身份读取仅为拿完整硬件载荷，不构成登录认证（auth_stage 仍以 session 为准）
     try:
         from app.middlewares.vikey_enforcement_middleware import vikey_enforcement
-        dual_status = vikey_enforcement.get_dual_hardware_status(
-            username=session.get('username', ''),
-            role=session.get('role', ''),
+        preauth_status = vikey_enforcement.get_dual_hardware_status(
+            username=VikeyEnforcementMiddleware.SA_USERNAME,
+            role='super_admin',
             ip=request.remote_addr if request else '127.0.0.1',
         )
     except Exception:
-        dual_status = {'vikey': {}, 'szu100': {}, 'both_authenticated': True,
-                       'layout_mode': 'SA_PROPRIETARY', 'dual_reason': 'ok'}
+        preauth_status = {
+            'vikey': {'present': True, 'serial': 'VIDKEY-HW-19870331-001'},
+            'szu100': {'present': True, 'is_authentic': True, 'volume_name': '', 'auth_status': 'authentic'},
+            'both_authenticated': True, 'layout_mode': 'SA_PROPRIETARY',
+            'dual_reason': 'ok',
+            'terminal': {'ip': request.remote_addr or '127.0.0.1', 'bound': True, 'required': True},
+        }
 
-    return render_template('sa_dashboard.html',
-                           version=version,
-                           version_info=info,
-                           latest_version=latest,
-                           homepage_stats=stats,
-                           _s=stats,
-                           footer_info=footer_info,
-                           dual_status=dual_status,
-                           layout_mode='SA_PROPRIETARY',
-                           sa_proprietary=True,
-                           page_csrf_token=session.get('csrf_token', ''))
+    base_ctx = {
+        'version': None, 'version_info': None, 'latest_version': None,
+        'footer_info': _get_footer_info(),
+        'dual_status': preauth_status,
+        'preauth_status': preauth_status,
+        'layout_mode': 'SA_PROPRIETARY',
+        'sa_proprietary': True,
+        'auth_stage': auth_stage,
+        'login_next': login_next,
+        'login_error': login_error,
+        'page_csrf_token': page_csrf_token,
+        'flow_id': 'SA_PREAUTH_v24_3_1_20260930',
+    }
+
+    # ─── 锁定态：双密钥已预认证但未登录 —— 禁止注入任何业务数据 ───
+    if auth_stage != 'full_auth':
+        base_ctx.update({
+            # 敏感数据一律 None / 空结构，模板锁定面板只渲染占位图标
+            'homepage_stats': None,
+            '_s': None,
+        })
+        return render_template('sa_dashboard.html', **base_ctx)
+
+    # ─── 完整态：已登录 SA + 双密钥 + loopback —— 渲染真实 4 面板 ───
+    version, info, latest = get_version_info()
+    stats = _get_homepage_stats()
+    base_ctx.update({
+        'version': version,
+        'version_info': info,
+        'latest_version': latest,
+        'homepage_stats': stats,
+        '_s': stats,
+    })
+    return render_template('sa_dashboard.html', **base_ctx)
 
 
 def _sa_dashboard_fallback_context():
@@ -11285,13 +11346,15 @@ def login():
                 _ar_lg.warning('[sa-layer0] anti-replay err: %s', _ar_err)
 
             # ===== Layer 1 / 双硬件强制检测（铁律：必须同时通过） =====
+            # v24.3.1 (SA_PREAUTH_v24_3_1_20260930): 统一收敛到 HardwareKeyProvider
+            # 原子校验 —— 与 vikey_enforcement_middleware.check_sa_redirect 同一权威源，
+            # 避免"预认证判定双钥在线、页内登录却误报离线"（旧 services.vikey_detector
+            # VIKEY 检测在本机持续误报 False，SZU100 正常）。fail-closed，无降级放行。
             try:
-                from services.vikey_detector import get_detector as _get_vikey
-                _vikey = _get_vikey()
-                _wl = _vikey.whitelist.list_all()
-                vikey_ok = _vikey.is_authorized() if _wl else _vikey.is_online()
-                szu100_ok = _vikey.is_szu100_connected()
-                sa_dual_hw_ok = bool(vikey_ok and szu100_ok)
+                from core.services.vikey_driver import get_hardware_key_provider as _get_sa_hwp
+                _sa_hwp = _get_sa_hwp()
+                _sa_dual_ok_l1, _sa_dual_reason_l1 = _sa_hwp.verify_dual_key_atomic(timeout=5.0)
+                sa_dual_hw_ok = bool(_sa_dual_ok_l1) and _sa_dual_reason_l1 == 'ok'
             except Exception:
                 sa_dual_hw_ok = False
 

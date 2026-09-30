@@ -67,6 +67,35 @@ andromeda_dashboard_bp = Blueprint('andromeda_dashboard', __name__)
 # ---- home_bp 路由定义 (根路由不挂 url_prefix, 提供 / 和 /index) ----
 from flask import redirect as _redirect, session as _session, render_template as _render_template, request as _request
 
+# ═════════════════════════════════════════════════════════════
+# v24.3.1 SA 双密钥预认证先跳转 (flow_id: SA_PREAUTH_v24_3_1_20260930)
+# 双密钥在线 + 127.0.0.1 loopback 即 302 /sa/dashboard（不要求已登录），
+# 登录在 SA 页面锁定态内完成。fail-closed：异常/不满足 → None 正常首页。
+# ═════════════════════════════════════════════════════════════
+def _sa_preauth_redirect():
+    """命中预认证条件 → 返回 302 redirect(/sa/dashboard)；否则 None。"""
+    try:
+        from app.middlewares.vikey_enforcement_middleware import VikeyEnforcementMiddleware as _VEM
+        _chk = _VEM.check_sa_redirect(
+            username=_session.get('username', ''),
+            role=_session.get('role', ''),
+            ip=_request.remote_addr if _request else None)
+        _VEM._log_sa_redirect_audit(
+            username=_session.get('username', ''),
+            role=_session.get('role', ''),
+            ip=_request.remote_addr if _request else None,
+            ua=_request.headers.get('User-Agent', '')[:200] if _request else '',
+            session_id=_session.get('session_id', ''),
+            action='redirect' if _chk['should_redirect'] else 'standard',
+            reason="%s|stage=%s" % (_chk.get('reason', 'unknown'),
+                                    _chk.get('auth_stage', 'pre_auth')))
+        if _chk['should_redirect']:
+            return _redirect('/sa/dashboard', code=302)
+    except Exception:
+        pass
+    return None
+
+
 @home_bp.route('/', methods=['GET'])
 def _root_redirect():
     """根路径 `/` → 唯一首页入口 `/index`。
@@ -84,6 +113,10 @@ def _root_redirect():
         if _vp: qs += '&vid_pid=' + _vp
         if _md: qs += '&model=' + _md
         return _redirect('/login?' + qs)
+    # v24.3.1: 双密钥在线 + loopback → 直达 SA 专用页（guest 锁定态 / SA 完整态）
+    _sa_r = _sa_preauth_redirect()
+    if _sa_r is not None:
+        return _sa_r
     return _redirect('/index')
 
 @home_bp.route('/index', methods=['GET'])
@@ -98,6 +131,11 @@ def _index_entry():
     避免 index.html 内 `{{ particle_config|tojson }}`/`{{ footer_info|tojson }}` 命中
     未定义变量(_FriendlyUndefined)触发 JSON 序列化 500。
     """
+    # v24.3.1 (SA_PREAUTH_v24_3_1_20260930): 双密钥预认证先跳转 —
+    # 双密钥在线 + loopback（guest 同样）→ 302 /sa/dashboard，登录在 SA 页内完成
+    _sa_r = _sa_preauth_redirect()
+    if _sa_r is not None:
+        return _sa_r
     try:
         import sqlite3 as _sq3
         import server_real_db as _sdb

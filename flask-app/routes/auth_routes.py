@@ -553,14 +553,23 @@ def check_username():
 #  源参考: server_real_db.py L8622-L9500（精简版，去掉 SSL/VIKEY/EigenFlux 等高级流程）
 # ============================================================
 @auth_bp.route('/login', methods=['GET', 'POST'])
-@system_container(require_auth='login')
+@system_container(require_auth='guest')
 def login():
-    """登录主路由
+    """登录主路由（v24.3.1 起代理到权威核心 server_real_db.login()）
 
-    GET  → 返回登录页提示（前端用 JS 提交，不直接 GET 表单）
-    POST → JSON: {username, password, remember_me?, next?}
-           返回 JSON: {success, message?, user?, redirect?}
+    v24.3.1 (SA_PREAUTH_v24_3_1_20260930):
+    - 原 require_auth='login' 使 guest 在进入登录逻辑前即被 401 拦截（鸡生蛋）；
+    - 原蓝图精简版 SA 仅凭双硬件免密登录、next 无开放重定向白名单，安全强度弱于核心；
+    - 权威 5 层加固核心（Layer0 防重放 + Layer1 双密钥 + 密码 + next 白名单）
+      明确保留在 server_real_db.py，蓝图不得遮蔽，故此处直接代理。
     """
+    try:
+        import server_real_db as _sdb_core_login
+        return _sdb_core_login.login()
+    except Exception:
+        return jsonify({'success': False, 'message': '登录服务异常，请稍后重试'}), 503
+
+    # ---- 以下为历史精简实现（v24.3.1 起不可达，保留备查）----
     if request.method == 'GET':
         return jsonify({
             'success': True,
